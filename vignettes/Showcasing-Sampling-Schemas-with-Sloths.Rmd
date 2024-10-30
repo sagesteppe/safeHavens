@@ -1,0 +1,141 @@
+---
+title: "Showcasing Sampling Schemas with Sloths"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Showcasing Sampling Schemas with Sloths}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, eval  = F}
+library(safeHavens)
+```
+
+
+# Notes about `safeHavens`
+
+This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession.
+It provides six different sampling approaches for curators to choose from for each individual taxon they hope to process.
+It also allows for easy integration into existing workflows and will put out the required spatial data to share with collection teams.
+
+Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics. 
+They have various trade offs in terms of computational and environmental complexity. 
+The table below presents the currently implemented sampling schemas and the user facing function associated with them. 
+In my mind the first four functions are really flavors of the same process, one whereby we try and partition the species range into chunks of similar sizes. 
+However, as is often the case four things which seem very similar to me may have enormously different results in implementation. 
+The fifth method `IBDBasedSample` is largely in a class of it's own, in lieu of using the *continuity* of geographic space as it's primary method, it focuses on the discontinuity of space and using distance matrices and clustering to determine which patches of range are more close to each than other patches. 
+The impetus behind this method is of course Sewall Wrights version of Isolation by Distance (1943). 
+
+The `EcoregionBasedSample` may be the most commonly encountered method in North America and in various formats is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
+This method using environmental variation as an implicit guide to targeting populations for seed collections, i.e. the different ecoregions serve as a stratification agent. 
+In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. 
+Given it's relative popularity in implementation, this function has more arguments than it's counterparts, which will be discussed below. 
+
+The final function `EnvironmentalBasedSample` is both the most computationally expensive, and the most environmentally explicit. 
+This function will rely on a Species Distribution Model, generated via a generalized linear model, supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
+On paper, this draws together all aspects of the above functions, however no testing of this approach has been implemented. 
+It will be discussed below in depth. 
+
+
+|        Function           |              Description               | Comp.| Envi.|
+|---------------------------|----------------------------------------|------|------|
+| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
+| `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
+| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
+| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
+| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
+| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
+| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
+Note in this table 'Comp.' and 'Envi.' refer to computational and environmental complexity respectively, and range from low (L) through medium to high. 
+
+# General notes about this vignette
+
+This package is strongly focused on plants, no disrespect to animals, they just never occurred to me during development, and I'm sure you all have enough money things like this don't matter anyways. 
+Otherwise just ask a FAANG do donate a team of developers - I'm sure they would be happy to oblige and blow this rag tag thing out of the water. 
+However, to make it up to animal people, we will use a Sloth, which I think is (*Bradypus variegatus*)[https://en.wikipedia.org/wiki/Brown-throated_sloth] it's both a maniacally and mischievous looking little thing. 
+Beyond looking at the inspiration for most Jim Henson puppets above, we will treat Bradypus more like a plant species when we discuss these sampling schemes - that is we will assume we are focused on organisms which seldom move great distances in dispersal processes.
+
+We can access some data on *Bradypus* from the `dismo` package - presumably short for '*Dis*tribution *Mo*delling', which was created by Robert Hijman and others. 
+We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. If you want to read more about dismo and distribution modelling in general here an awesome bookdown resource written by (Hijman and Elith)[https://rspatial.org/raster/sdm/] - aspects of this vignette are definitely based on it. 
+We will use Species Distribution Models as the input variable to many of the arguments in this function - don't get caught up in the details of making them. 
+These days you can get good results out of essentially entirely automated pipelines, we'll have the truncated process outlined here in a chunk, but I honestly argue you should ignore this chunk the first few times you read this document, and go back for the details (discussed in the link above) only if you decide to pursue the route of `EnvironmentalBasedSample` 
+
+# Species Distribution Modelling (skip me your first few read throughs?!)
+
+```{r Prepare data for a Species Distribution Model, eval = F}
+
+x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+x <- x[,c('lon', 'lat')]
+x <- dplyr::distinct(x, .keep_all = )
+
+files <- list.files(
+  path = file.path(system.file(package="dismo"), 'ex'), 
+  pattern = 'grd',  full.names=TRUE )
+predictors <- terra::rast(files) # import the independent variables
+
+# define a reasonable spatial extent around the species of interest. 
+pts_plan <-   sf::st_transform(
+  sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326), 
+  '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+
+bb <- sf::st_bbox(pts_plan)
+buff_dist <- as.numeric( # here we get the mean distance of the XY distances of the bb
+  ((bb[3] - bb[1]) + (bb[4] - bb[2])) / 2 
+) / 2 # the mean distance * 0.25 is how much we will enlarge the area of analysis. 
+
+bb1 <- sf::st_union(pts_plan) |>
+  sf::st_buffer(buff_dist) |>
+  terra::vect() |>
+  terra::project(terra::crs(predictors)) |>
+  terra::ext()
+
+p1 <- terra::mask(predictors, bb1)
+
+rm(pts_plan, bb, buff_dist, bb1)
+```
+
+```{r Generating Pseudo Absence Points}
+
+# Step 1 Select Background points - let's use SDM package `envidist` for this
+pa <- sdm::background(x = p1, n = nrow(x), sp = x, method = 'eDist') |>
+  dplyr::select(lon = x,  lat = y)
+
+pa$occurrence <- 0 ; x$occurrence <- 1
+x <- dplyr::bind_rows(x, pa) |> # combine the presence and pseudoabsence points
+  sf::st_as_sf(coords = c('lon', 'lat'), crs = 4326)  |>
+  dplyr::mutate(occurrence = factor(occurrence))
+
+brady.df <- data.frame(Species = 'Species', data.frame(sf::st_coordinates(x)))
+
+dists <- sf::st_distance(x[ sf::st_nearest_feature(x), ], x, by_element = TRUE)
+thinD <- as.numeric(quantile(dists, c(0.05)) / 1000) # ARGUMENT TO FN @PARAM 
+
+thinned <- spThin::thin(
+  loc.data = brady.df, thin.par = thinD,
+  spec.col = 'Species',
+  lat.col = 'Y', long.col = 'X', reps = 100, 
+  locs.thinned.list.return = TRUE, 
+  write.files = FALSE, 
+  write.log.file = FALSE)
+
+thinned <- data.frame(thinned[ which.max(unlist(lapply(thinned, nrow)))]) |>
+  sf::st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
+
+x <- x[lengths(sf::st_intersects(x, thinned))>0,]
+
+rm(thinned, brady.df, pa, thinD, dists, files)
+
+# Step 1.3 - Extract data to points for modelling
+x <- terra::extract(predictors, x, bind = TRUE) |>
+  sf::st_as_sf() 
+
+```
+
+

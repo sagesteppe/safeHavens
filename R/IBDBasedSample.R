@@ -32,16 +32,18 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, prop_split, min.nc, max.n
   pts <- as.data.frame(pts)
   if(fixedClusters==TRUE){ # run the clustering processes. 
     
-    geoDist_scaled <- dist(scale(geoDist), method = 'euclidean') # scale variables
-    clusters <- hclust(geoDist_scaled, method = 'ward.D2')
-    pts$ID <- cutree(clusters, n)
+    geoDist_scaled <- stats::dist(scale(geoDist), method = 'euclidean') # scale variables
+    clusters <- stats::hclust(geoDist_scaled, method = 'ward.D2')
+    pts$ID <- stats::cutree(clusters, n)
     
   } else {
+    
     if(missing(min.nc)){min.nc <- 5}
     if(missing(max.nc)){max.nc <- 5}
-    geoDist_scaled <- dist(scale(geoDist), method = 'euclidean') # scale variables
+    
+    geoDist_scaled <- stats::dist(scale(geoDist), method = 'euclidean') # scale variables
     NoClusters <- NbClust::NbClust(
-      data = as.dist(geoDist), diss = geoDist_scaled, 
+      data = stats::as.dist(geoDist), diss = geoDist_scaled, 
       distance = NULL, min.nc = min.nc, max.nc = max.nc, 
       method = 'complete', index = 'silhouette'
     )
@@ -67,7 +69,6 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, prop_split, min.nc, max.n
   # LET'S RETURN AN SF OBJECT INSTEAD !!!!!!!
   return(spatialClusters)
 }
-
 
 out <- IBDBasedSample(template$Supplemented, n = 20, fixedClusters = TRUE)
 plot(out)
