@@ -1,14 +1,3 @@
-setwd('~/Documents/assoRted/StrategizingGermplasmCollections/scripts')
-
-ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE) |>
-  sf::st_transform(4326) |>
-  sf::st_make_valid()
-
-polygon <- spData::us_states |>
-  dplyr::select(NAME) |>
-  dplyr::filter(NAME == 'California') |>
-  sf::st_transform(4326)
-
 #' Determine the sample size for n ecoregions in an area
 #' 
 #' Intersect US Omernik level 4 ecoregions with the range of a focal taxon and 
@@ -35,19 +24,33 @@ polygon <- spData::us_states |>
 #'  I do not modify them here, and on rare occasion (essentially islands), what I
 #'  refer to as a 'polygon' may technically be a multipolygon. 
 #'  
-#' @param x a range of species
-#' @param ecoregions an Omernik L4 ecoregion vector data file (shapefile) in sf
+#' @param x a range of species as a simple feature (sf) object. 
+#' @param ecoregions An Omernik L4 ecoregion vector data file (~shapefile) in sf
 #' format with minimal modifications made to it. 
-#' @param n desired total number of samples across this range
-#' @param increase_method Method to implement if the number of L4 ecoregions is
+#' @param n Numeric. desired total number of samples across this range
+#' @param increase_method Character. Method to implement if the number of L4 ecoregions is
 #' less than n. 'Area' (the default) will reallocate points based on the relative
 #' sizes of each ecoregion. 
-#' @param decrease_method Method to implement if the number of L4 ecoregions is
+#' @param decrease_method Character. Method to implement if the number of L4 ecoregions is
 #' greater than n. 'Largest' (the default) will select the n largest ecoregions by 
 #' total area, and then select the largest single polygon within each of these classes. 
 #' 'Smallest' will select the n smallest ecoregions by total area, and then select
 #' the largest single polygon within these classes. 'Most' will select the n ecoregions
 #' with the most polygons, and select the largest polygon from each. 
+#' @examples \dontrun{
+#' ecoregions <- system.file("gpkg/WesternEcoregions.gpkg", package = "safeHavens")
+#'
+#' polygon <- spData::us_states |>
+#'    dplyr::select(NAME) |>
+#'    dplyr::filter(NAME == 'California') |>
+#'    sf::st_transform(4326)
+#'
+#' out <- EcoregionBasedSample(polygon, ecoregions)
+#' 
+#' ggplot2::ggplot() + 
+#'   ggplot2::geom_sf(data = out, aes(fill = n))
+#' }
+#' @export
 EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_method){
   
   if(missing(n)){n<-20} 
@@ -145,17 +148,20 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
     # representing the amount of discontinuity of each L4. 
     
     if(decrease_method=='Largest'){
-      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Total_area, decreasing = TRUE)[1:n],]$Name, ]
+      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Total_area, 
+                                                        decreasing = TRUE)[1:n],]$Name, ]
       out <- dplyr::group_by(out, L4_KEY) |> 
         dplyr::arrange(dplyr::desc(Area), .by_group = TRUE) |>
         dplyr::slice(1) 
     } else if(decrease_method=='Smallest'){
-      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Total_area, decreasing = FALSE)[1:n],]$Name, ]
+      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Total_area,
+                                                        decreasing = FALSE)[1:n],]$Name, ]
       out <- dplyr::group_by(out, L4_KEY) |> 
         dplyr::arrange(dplyr::desc(Area), .by_group = TRUE) |>
         dplyr::slice(1) 
     } else {
-      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Polygon_ct, decreasing = TRUE)[1:n],]$Name, ]
+      out <- area[area$L4_KEY %in% area_summaries[order(area_summaries$Polygon_ct,
+                                                        decreasing = TRUE)[1:n],]$Name, ]
       out <- dplyr::group_by(out, L4_KEY) |> 
         dplyr::arrange( dplyr::desc(Area), .by_group = TRUE) |>
         dplyr::slice(1) 
@@ -183,8 +189,3 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
   
 }
 
-
-ob <- EcoregionBasedSample(polygon, ecoregions, n = 20)
-
-ggplot() + 
-  geom_sf(data = ob, aes(fill = n))

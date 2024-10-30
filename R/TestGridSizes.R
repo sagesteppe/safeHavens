@@ -3,9 +3,21 @@
 #' This function uses the dimensions of a species grid to estimate how many grids
 #' would need to be added in the x and y directions to cover it with 20 grid cells
 #' of roughly equal areas. 
-#' @param x a species range as a simple feature (`sf`) object. 
+#' @param target a species range as a simple feature (`sf`) object. 
+#' @examples
+#' RI <- spData::us_states |>
+#' dplyr::select(NAME) |>
+#'    dplyr::filter(NAME == 'Rhode Island') |>
+#'    sf::st_transform(32617)
+#'
+#' sizeOptions <- TestGridSizes(RI)
+#' head(sizeOptions)
+#' @return A dataframe with testing results for each grid combination. A user needs to select
+#' the optimal grid size based on a tradeoff with minimizing variance, without 
+#' creating too many grids which will need to be erased. In the Rhode Island
+#' example I would use the 'Original' option which asks for 4 x grids and 7 y grids. 
 #' @export
-TestGridSizes <- function(x){
+TestGridSizes <- function(target){
   
   bound <- sf::st_bbox(target)
   x_dist <- bound['xmax'] - bound['xmin']
@@ -13,10 +25,10 @@ TestGridSizes <- function(x){
   
   ratio <- x_dist/y_dist
   rm(bound, x_dist, y_dist)
-  # values < 0.8 indicate y is considerable greater than x
+  # values < 0.8 indicate y is considerable greater (longer) than x
   # values near 1 indicate a natural symmetry between x and y, both values can start at 5. 
-  # values < 0.9 > 0.8 indicate y is greater than x
-  # values > 1.4 indicate x is much greater than y
+  # values < 0.9 > 0.8 indicate x is greater (wider) than y
+  # values > 1.4 indicate x is much greater (wider) than y
   
   if(ratio < 0.8){ # these areas are very long
     x_start = 4; y_start = 7} else if(ratio > 0.8 & ratio < 0.9) {
@@ -24,6 +36,7 @@ TestGridSizes <- function(x){
         x_start = 5; y_start = 5} else {
           x_start = 6; y_start = 4} 
   
+  # intitial casting of recommended grid sizes. 
   gr <- sf::st_make_grid(target, n = c(x_start, y_start), square = FALSE)
   gr <- sf::st_intersection(gr, target) 
   areas <- as.numeric(sf::st_area(gr))
@@ -58,6 +71,7 @@ TestGridSizes <- function(x){
   gr_smallest_area <- sort(gr_smallest_area / max(gr_smallest_area) * 100, decreasing = TRUE)[1:20]
   var_smallest <- var(gr_smallest_area, na.rm = TRUE)
   
+  # results for the user. 
   results <- data.frame(
     Name = c('Smallest', 'Smaller', 'Original',   'Larger', 'Largest'),
     Grids = c(

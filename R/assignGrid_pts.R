@@ -1,6 +1,3 @@
-library(tidyverse)
-library(sf)
-
 #' place random points in the polygon which will be dissolved with the larger polygons
 #' 
 #' This function is ran within `GridBasedSample` it will place points throughout polygon geometries
