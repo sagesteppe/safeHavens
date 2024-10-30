@@ -1,0 +1,11 @@
+Package: safeHavens
+Title: Developing sampling schemas for ex situ conservation of plant germplasm
+Version: 0.0.0.9000
+Authors@R: 
+    person("Reed", "Benkendorf", , "rbenkendorf@chicagobotanic.org", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-9178-3087"))
+Description: This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides six different sampling approaches for curators to choose from for each individual taxon they hope to process. It also allows for easy integration into existing workflows and will put out the required spatial data to share with collection teams. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
