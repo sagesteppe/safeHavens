@@ -26,6 +26,7 @@ RescaleRasters <- function(model, predictors, training_data, sdModel, pred_mat){
   # this rescales the raster to be equivalent to the inputs to the elastic net model. 
   # after this they still need to be multiplied by the beta coefficients 
   pred_rescale <- predictors
+  pred_rescale <- pred_rescale[[ names(pred_rescale) %in% coef_tab$Variable ]]
   for (i in seq_along(1:dim(pred_rescale)[3])){
     
     lyr_name <- names(pred_rescale)[[i]]

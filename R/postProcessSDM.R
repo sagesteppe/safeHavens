@@ -20,7 +20,7 @@
 #' for adding surface to presence points which were not placed in binary suitable habitat.
 #' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.  
 #' @param export
-postProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_proj){
+PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_proj){
   
   if(missing(thresh_metric)){thresh_metric <- 'sensitivity'}
   if(missing(quant_amt)){quant_amt <- 0.25}

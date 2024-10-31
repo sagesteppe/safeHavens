@@ -65,6 +65,8 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
     as.data.frame() |>
     dplyr::select(-Supplemented) 
   
+  weighted_mat <- weighted_mat[ complete.cases(weighted_mat), ]
+
   if(fixedClusters==TRUE){ # run the clustering processes. 
     
     w_dist <- dist(weighted_mat, method = 'euclidean')

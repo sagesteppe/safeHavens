@@ -183,6 +183,7 @@ elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
     list(
       RasterPredictions = rast_cont, 
       Predictors = predictors, 
+      PCNM = pcnm,
       Model = mod,
       CVStructure = obs$cv_model, 
       ConfusionMatrix = cm, 
@@ -201,7 +202,7 @@ sdModel <- elasticSDM(
 
 terra::plot(sdModel$RasterPredictions)
 
-threshold_rasts <- postProcessSDM(
+threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
   planar_proj =
@@ -222,32 +223,34 @@ rr <- RescaleRasters(
   training_data = sdModel$TrainData, 
   pred_mat = sdModel$PredictMatrix)
 
-pred_rescale <- rr$rescaled_predictors
-coef_tab <- rr$coefficient_table
+terra::plot(rr$RescaledPredictors)
+print(rr$BetaCoefficients)
 
 # write out the results of the SDM process, including thresholds, and
 # rescaling. 
 
-cv_model, pcnm, model, cm, coef_tab, f_rasts
+
+setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
+getwd()
 
 writeSDMresults(
   cv_model = sdModel$CVStructure, 
-  pcnm, 
+  pcnm = sdModel$PCNM, 
   model = sdModel$Model, 
   cm = sdModel$ConfusionMatrix, 
-  coef_tab, 
-  file.path(tempdir(), 'SDM'), 'Bradypus_test')
-
+  coef_tab = rr$BetaCoefficients, 
+  f_rasts = threshold_rasts$FinalRasters,
+  thresh = threshold_rasts$Threshold,
+  file.path('results', 'SDM'), 'Bradypus_test')
 
 # perform the clustering 
-EnvironmentalBasedSample(
-  pred_rescale = pred_rescale, 
-  path = file.path( 'results', 'SDM'),
+wm <- EnvironmentalBasedSample(
+  pred_rescale = rr$RescaledPredictors, 
+  path = file.path('results', 'SDM'),
   taxon = 'Bradypus_test', 
   f_rasts = f_rasts, n = 20, fixedClusters = TRUE, n_pts = 500, 
   planar_proj = 
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
   buffer_d = 3, prop_split = 0.8)
 
-
-??thin
+plot(wm)
