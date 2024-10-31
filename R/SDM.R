@@ -30,6 +30,23 @@ predictors <- terra::rast(files) # import the independent variables
 #' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`. 
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025. 
+#' @param examples \dontrun{
+#' 
+#'  x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+#'  x <- x[,c('lon', 'lat')]
+#'  x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+#' 
+#'  files <- list.files(
+#'    path = file.path(system.file(package="dismo"), 'ex'), 
+#'    pattern = 'grd',  full.names=TRUE )
+#'  predictors <- terra::rast(files)
+#' 
+#' sdModel <- elasticSDM(
+#'    x = x, predictors = predictors, quantile_v = 0.025,
+#'    planar_proj =
+#'      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+#'  terra::plot(sdModel$RasterPredictions)
+#' }
 elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
   
   if(missing(quantile_v)){quantile_v <- 0.025}
@@ -179,7 +196,8 @@ elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
   
   rast_cont <- terra::predict(preds, model = mod, fun=predfun, na.rm=TRUE)
   
-  return(
+  return( # many objects were made in this function! Given that a sampling
+    # schema may have a very long lifetime, it is likely best to save all of them. 
     list(
       RasterPredictions = rast_cont, 
       Predictors = predictors, 
@@ -192,6 +210,7 @@ elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
       PredictMatrix = obs$pred_mat
     )
   )
+  
 }
 
 
@@ -200,17 +219,12 @@ sdModel <- elasticSDM(
   planar_proj =
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
 
-terra::plot(sdModel$RasterPredictions)
-
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
   planar_proj =
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
   thresh_metric = 'sensitivity', quant_amt = 0.25)
-
-f_rasts <- threshold_rasts$FinalRasters
-thresh <- threshold_rasts$Threshold
 
 ########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
 # STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
@@ -231,7 +245,7 @@ print(rr$BetaCoefficients)
 
 
 setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
-getwd()
+getwd() # verify we are working from where we think we are. 
 
 writeSDMresults(
   cv_model = sdModel$CVStructure, 

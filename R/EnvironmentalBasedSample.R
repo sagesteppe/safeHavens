@@ -155,7 +155,6 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
   spatialClusters <- terra::mask(spatialClusters, f_rasts[['Supplemented']])
   
   #Clean up products for distribution
-  
   ClusterVectors <- terra::as.polygons(spatialClusters) |>
     sf::st_as_sf() |>
     sf::st_make_valid() |>
