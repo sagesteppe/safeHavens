@@ -1,22 +1,19 @@
-setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
-source('./scripts/createPCNM_fitModel.R')
-source('./scripts/WriteSDMresults.R')
-source('./scripts/postProcessSDM.R')
-source('./scripts/trainKNN.R')
-source('./scripts/EnvironmentalBasedSample.R')
-source('./scripts/RescaleRasters.R')
+setwd('~/Documents/assoRted/safeHavens/R')
+source('./createPCNM_fitModel.R')
+source('./WriteSDMresults.R')
+source('./postProcessSDM.R')
+source('./trainKNN.R')
+source('./EnvironmentalBasedSample.R')
+source('./RescaleRasters.R')
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
-X <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 
 files <- list.files(
   path = file.path(system.file(package="dismo"), 'ex'), 
   pattern = 'grd',  full.names=TRUE )
 predictors <- terra::rast(files) # import the independent variables
-
-
-
 
 #' Create a quick SDM using elastic net regression
 #' 
@@ -32,8 +29,8 @@ predictors <- terra::rast(files) # import the independent variables
 #' @param predictors a terra 'rasterstack' of variables to serve as indepedent predictors. 
 #' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`. 
-#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025
-elasticSDM <- function(x){
+#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025. 
+elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
   
   if(missing(quantile_v)){quantile_v <- 0.025}
   
@@ -50,7 +47,6 @@ elasticSDM <- function(x){
     terra::project(terra::crs(predictors)) |>
     terra::ext()
   
-  
   # THIS EXTENDING THE BB IS NOT DONE YET ##
   
   #######
@@ -58,17 +54,18 @@ elasticSDM <- function(x){
   #######
   
   # Step 1 Select Background points - let's use SDM package `envidist` for this
-  pa <- sdm::background(x = p1, n = nrow(x), sp = x, method = 'eDist') |>
-    dplyr::select(lon = x,  lat = y)
+  pa <- sdm::background(x = predictors, n = nrow(x), sp = x, method = 'eDist') |>
+    dplyr::select(lon = x,  lat = y) |>
+    sf::st_as_sf(coords = c('lon', 'lat'), crs = terra::crs(predictors)) |>
+    dplyr::mutate(occurrence = 0)
   
-  pa$occurrence <- 0 ; x$occurrence <- 1
+  x$occurrence <- 1
   x <- dplyr::bind_rows(x, pa) |> # combine the presence and pseudoabsence points
-    sf::st_as_sf(coords = c('lon', 'lat'), crs = 4326)  |>
     dplyr::mutate(occurrence = factor(occurrence))
   
   sp.coords <- data.frame(Species = 'Species', data.frame(sf::st_coordinates(x)))
   dists <- sf::st_distance(x[sf::st_nearest_feature(x), ], x, by_element = TRUE)
-  thinD <- as.numeric(quantile(dists, c(quantile_v)) / 1000) # ARGUMENT TO FN @PARAM 
+  thinD <- as.numeric(quantile(dists, c(quantile_v), na.rm = TRUE) / 1000) # ARGUMENT TO FN @PARAM 
   
   # Step 2 thin points to ensure there are not too many too close to each other. 
   # at worst these points are total duplicates 
@@ -77,6 +74,7 @@ elasticSDM <- function(x){
     spec.col = 'Species',
     lat.col = 'Y', long.col = 'X', reps = 100, 
     locs.thinned.list.return = TRUE, 
+    verbose = FALSE, 
     write.files = FALSE, 
     write.log.file = FALSE)
   
@@ -141,22 +139,24 @@ elasticSDM <- function(x){
     x = sub, 
     sf::st_drop_geometry(train)$occurrence, 
     family = 'binomial', 
-    keep = TRUE,
+    keep = TRUE, 
     lambda = cv_model$bestTune$lambda, alpha = cv_model$bestTune$alpha
   )
   
   obs <- createPCNM_fitModel(
     x = train, 
-    planar_proj = 
-      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+    ctrl = ctrl, 
+    indices_knndm = indices_knndm, 
+    planar_proj = planar_proj, 
+    sub = sub
+    )
   
-  mod <- obs$mod; cv_model <- obs$cv_model; pcnm <- obs$pcnm
-  pred_mat <- obs$pred_mat
+  mod <- obs$mod; pcnm <- obs$pcnm
   
-  predictors <- c(predictors, pcnm)
+  predictors <- c(predictors, pcnm) 
   # get the variables to extract from the rasters for creating a matrix for 
   # predictions, glmnet predict is kind of wonky and needs exact matrix dimensions. 
-  vars <- rownames(coef(mod)); vars <- vars[2:length(vars)]
+  vars <- rownames(coef(mod)); vars <- vars[2:length(vars)] 
   
   # now we need just the COORDINATES FOR TEST and will extract the data from
   # this set of predictors to them... 
@@ -179,29 +179,64 @@ elasticSDM <- function(x){
   
   rast_cont <- terra::predict(preds, model = mod, fun=predfun, na.rm=TRUE)
   
-  rm(lmProfile, predfun)
-  ob <- postProcessSDM(rast_cont, thresh_metric = 'sensitivity', quant_amt = 0.25)
-  f_rasts <- ob$f_rasts
-  thresh <- ob$thresh
-  
-  ########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
-  # STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
-  # FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
-  rr <- RescaleRasters(model = mod, predictors = preds, training_data = train)
-  pred_rescale <- rr$rescaled_predictors
-  coef_tab <- rr$coefficient_table
-  
-  # write out the results of the SDM process. 
-  writeSDMresults(
-    file.path( 'results', 'SDM'), 'Bradypus_test')
+  return(
+    list(
+      RasterPredictions = rast_cont, 
+      Predictors = predictors, 
+      Model = mod,
+      CVStructure = obs$cv_model, 
+      ConfusionMatrix = cm, 
+      TrainData = train,
+      TestData = test,
+      PredictMatrix = obs$pred_mat
+    )
+  )
 }
 
 
+sdModel <- elasticSDM(
+  x = x, predictors = predictors, quantile_v = 0.025,
+  planar_proj =
+    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
 
+terra::plot(sdModel$RasterPredictions)
 
-elasticSDM(
-  x = x, predictors = predictors, 
-  plan_proj = '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+threshold_rasts <- postProcessSDM(
+  rast_cont = sdModel$RasterPredictions, 
+  test = sdModel$TestData,
+  planar_proj =
+    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
+  thresh_metric = 'sensitivity', quant_amt = 0.25)
+
+f_rasts <- threshold_rasts$FinalRasters
+thresh <- threshold_rasts$Threshold
+
+########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
+# STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
+# FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
+# we will also write out the beta coefficients using writeSDMresults right after
+# this. 
+rr <- RescaleRasters(
+  model = sdModel$Model,
+  predictors = sdModel$Predictors, 
+  training_data = sdModel$TrainData, 
+  pred_mat = sdModel$PredictMatrix)
+
+pred_rescale <- rr$rescaled_predictors
+coef_tab <- rr$coefficient_table
+
+# write out the results of the SDM process, including thresholds, and
+# rescaling. 
+
+cv_model, pcnm, model, cm, coef_tab, f_rasts
+
+writeSDMresults(
+  cv_model = sdModel$CVStructure, 
+  pcnm, 
+  model = sdModel$Model, 
+  cm = sdModel$ConfusionMatrix, 
+  coef_tab, 
+  file.path(tempdir(), 'SDM'), 'Bradypus_test')
 
 
 # perform the clustering 
@@ -214,3 +249,5 @@ EnvironmentalBasedSample(
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
   buffer_d = 3, prop_split = 0.8)
 
+
+??thin

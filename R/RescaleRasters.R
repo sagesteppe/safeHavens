@@ -2,12 +2,13 @@
 #' 
 #' These rescaled rasters can then be used for clustering, and predicting the 
 #' results of cluster analysis back into space for a final product. 
-#' @param model the final output model from glmnet
-#' @param predictors the raster stack to use for the process
+#' @param model the final output model from glmnet from `elasticSDM`
+#' @param predictors the raster stack to use for the process from `elasticSDM`
 #' @param training_data the same data that went into the glmnet model, this is used
-#' for calculating variance which is required for the scaling process.
+#' for calculating variance which is required for the scaling process. From `elasticSDM`
+#' @param the Prediction matrix from `elasticSDM`
 #' @export 
-RescaleRasters <- function(model, predictors, training_data){
+RescaleRasters <- function(model, predictors, training_data, sdModel, pred_mat){
   
   sdN <- function(x){sigma=sqrt((1/length(x)) * sum((x-mean(x))^2))}
   
@@ -36,8 +37,8 @@ RescaleRasters <- function(model, predictors, training_data){
     names(pred_rescale[[i]]) <- lyr_name
   }
   return(list(
-    rescaled_predictors = pred_rescale, 
-    coefficient_table = coef_tab)
+    RescaledPredictors = pred_rescale, 
+    BetaCoefficients = coef_tab)
     )
   
 }

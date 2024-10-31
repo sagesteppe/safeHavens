@@ -10,8 +10,14 @@
 #' be placed. 
 #' @param path a root path where each of 5 folders will be created, if they do not exist. 
 #' @param taxon the name of the taxonomic entity for which the models were created. 
-#' 
-writeSDMresults <- function(path, taxon){
+#' @param cv_model the cross validation data from `elasticSDM`
+#' @param pcnm the pcnm/mem rasters from `elasticSDM`
+#' @param model the final glmnet model from `elasticSDM`
+#' @param cm the confusion matrix from `elasticSDM`
+#' @param coef_tab the coefficient table from `RescaleRasters`
+#' @param f_rasts the final rasters from `RescaleRasters`
+#' @export
+writeSDMresults <- function(path, taxon, cv_model, pcnm, model, cm, coef_tab, f_rasts){
   
   dir.create(file.path(path, 'PCNM'), showWarnings = FALSE)
   dir.create(file.path(path, 'Fitting'), showWarnings = FALSE)
@@ -31,7 +37,7 @@ writeSDMresults <- function(path, taxon){
     ) 
   
   saveRDS( # save the final fitted model.
-    mod, 
+    model, 
     file = file.path(path, 'Model', paste0(taxon, '-Model.rds'))
     )
   

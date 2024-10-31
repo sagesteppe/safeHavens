@@ -10,14 +10,17 @@
 #' observed, hopefully these are not missed in the original SDM, but there are always
 #' some suspicious points which are difficult to fit in light of the inertia 
 #' of the rest of the species. 
-#' @param x the raw unaltered (except masked) raster predictions. 
+#' @param rast_cont the raw unaltered (except masked) raster predictions (x$RasterPredictions). 
+#' @param test the test data partition from the `elasticSDM` function (x$TestData).
+#' @param train the train data partition from the `elasticSDM` function (x$TrainData).
 #' @param thresh_metric ?dismo::threshold for all options, defaults to 'sensitivity'
 #' @param quan_amt the quantile of nearest neighbors distance to use for steps 2 and 3. 
 #' defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping replicates for
 #' estimating a buffer to restrict the SDM surface too, and the minimum of the 10 bootstrap reps
-#' for adding surface to presence points which were not placed in binary suitable habitat. 
-
-postProcessSDM <- function(rast_cont, thresh_metric, quant_amt){
+#' for adding surface to presence points which were not placed in binary suitable habitat.
+#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.  
+#' @param export
+postProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_proj){
   
   if(missing(thresh_metric)){thresh_metric <- 'sensitivity'}
   if(missing(quant_amt)){quant_amt <- 0.25}
@@ -63,10 +66,11 @@ postProcessSDM <- function(rast_cont, thresh_metric, quant_amt){
     )
   }
   
-  pres <- x[ x$occurrence==1, ]
-  pres <- sf::st_transform(
-    pres, 
-    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+ pres <-  dplyr::bind_rows(
+    sdModel$TrainingData, sdModel$TestData) |>
+    dplyr::filter(occurrence == 1)
+  pres <- sf::st_transform(pres, planar_proj)
+
   indices_knndm <- CAST::knndm(pres, predictors, k=10)
   
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
@@ -87,24 +91,29 @@ postProcessSDM <- function(rast_cont, thresh_metric, quant_amt){
   # points above. 
   
   pres <- sf::st_transform(pres, terra::crs(rast_binary))
+
   outside_binary <- terra::extract(rast_binary, pres, bind = TRUE) |>
     sf::st_as_sf() |>
     dplyr::filter(is.na(s0)) |>
-    sf::st_transform(
-      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs') |>
+    sf::st_transform(planar_proj) |>
     sf::st_buffer(min(dists)) |>
     dplyr::summarize(geometry = sf::st_union(geometry)) |>
     dplyr::mutate(occurrence = 1) |>
     terra::vect() |>
     terra::project(terra::crs(rast_binary)) |>
-    terra::rasterize( rast_binary, field = 'occurrence')
-  
+    terra::rasterize(rast_binary, field = 'occurrence') 
+
+  #return(list(rast_clipped, outside_binary))
   rast_clipped_supplemented <- max(rast_clipped, outside_binary, na.rm = TRUE)
   
   ##########   COMBINE ALL RASTERS TOGETHER FOR A FINAL PRODUCT      #############
-  f_rasts <- c(rast_cont, rast_binary, rast_clipped, rast_clipped_supplemented)
+   f_rasts <- c(rast_cont, rast_binary, rast_clipped, rast_clipped_supplemented)
   names(f_rasts) <- c('Predictions', 'Threshold', 'Clipped', 'Supplemented')
   
-  return(list(f_rasts = f_rasts, thresh = thresh))
-}
+  return(
+    list(
+      FinalRasters = f_rasts,
+      Threshold = thresh)
+    )
   
+}

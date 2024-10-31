@@ -12,7 +12,11 @@
 #' information from carets process. 
 #' @param x should be the training data as an sf/tibble/dataframe
 #' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
-createPCNM_fitModel <- function(x, planar_proj){
+#' @param ctrl the control object created by character in the SDM function. 
+#' @param indices_knndm from sdm function
+#' @param sub 
+#' @param test
+createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, test){
   
   train_planar <- sf::st_transform(x, planar_proj) 
   
@@ -90,9 +94,11 @@ createPCNM_fitModel <- function(x, planar_proj){
   
   rm(pcnm2raster, pcnmProfile)
   
-  return(list(
-    mod = mod,
-    pred_mat = preds,
-    cv_model = cv_model, 
-    pcnm = pcnm))
+  return(
+    list(
+      mod = mod,
+      pred_mat = preds,
+      cv_model = cv_model,
+      pcnm = pcnm)
+    )
 }
