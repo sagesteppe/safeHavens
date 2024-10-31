@@ -6,6 +6,7 @@
 #' @param n Numeric. the number of clusters desired. 
 #' @param fixedClusters Boolean. Defaults to TRUE, which will create n clusters. If False then use NbClust::NbClust to determine the optimal number of clusters.
 #' @param n_pts Numeric. the number of points to use for generating the clusters, these will be randomly sampled within the mask area `mask`. Defaults to 1000, which generally allows for enough points to be split for the KNN training.  
+#' @param template Raster. A raster file which can be used as a template for plotting. 
 #' @param prop_split Numeric. The proportion of records to be used for training the KNN classifier. Defaults to 
 #' 0.8 to use 80% of records for training and 20% for the independent test sample.  
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
@@ -13,7 +14,7 @@
 #' @example
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export 
-IBDBasedSample <- function(x, n, fixedClusters, n_pts, prop_split, min.nc, max.nc){
+IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min.nc, max.nc){
   
   if(missing(fixedClusters)){fixedClusters <- TRUE}
   if(missing(prop_split)){prop_split <- 0.8}
@@ -25,7 +26,7 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, prop_split, min.nc, max.n
     sf::st_coordinates() |>
     as.matrix()
   
-  geoDist <- pointDistance(
+  geoDist <- raster::pointDistance(
     pts, 
     longlat = TRUE) # calculate great circle distances between locations
   
@@ -58,17 +59,36 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, prop_split, min.nc, max.n
   confusionMatrix <- fit.knn$confusionMatrix
   
   preds <- c(
-    terra::init(template$Supplemented, 'x'), 
-    terra::init(template$Supplemented, 'y')
+    terra::init(template, 'x'), 
+    terra::init(template, 'y')
   )
   names(preds) <- c('X', 'Y')
   spatialClusters <- terra::mask(preds, x)
   
   spatialClusters <- terra::predict(spatialClusters, model = fit.knn, na.rm = TRUE)
+  spatialClusters <- terra::as.polygons(spatialClusters) |>
+    sf::st_as_sf()
+  
+  # now number the grids in a uniform fashion
+  sf::st_agr(spatialClusters) = "constant"
+  cents <- sf::st_point_on_surface(spatialClusters)
+  cents <- cents |>
+    dplyr::mutate(
+      X = sf::st_coordinates(cents)[,1],
+      Y = sf::st_coordinates(cents)[,2]
+    ) |>
+    dplyr::arrange(-Y, X) |>
+    dplyr::mutate(Cluster = 1:dplyr::n()) |>
+    dplyr::arrange(Cluster) |>
+    dplyr::select(Cluster, geometry)
+  
+  sf::st_agr(cents) = "constant"
+  ints <- unlist(sf::st_intersects(spatialClusters, cents))
+  spatialClusters <- spatialClusters |>
+    dplyr::mutate(Cluster = ints, .before = 1) |>
+    dplyr::select(-class)
   
   # LET'S RETURN AN SF OBJECT INSTEAD !!!!!!!
   return(spatialClusters)
 }
 
-out <- IBDBasedSample(template$Supplemented, n = 20, fixedClusters = TRUE)
-plot(out)

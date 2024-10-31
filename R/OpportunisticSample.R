@@ -1,20 +1,4 @@
 #' Design additional collections around already existing collections
-nc <- spData::us_states |>
-  dplyr::select(NAME) |>
-  dplyr::filter(NAME == 'Rhode Island') |>
-  sf::st_transform(32617)
-existing_collections <- sf::st_sample(nc, size = 5) |>
-  sf::st_as_sf() |>
-  dplyr::rename(geometry = x)
-
-system.time(
-  out <- PointBasedSample(polygon = nc, reps = 150) 
-)
-
-ggplot2::ggplot() + 
-  ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
-  ggplot2::geom_sf(data = existing_collections) 
-
 #' Generate a sampling grid using points as the input data - including existing collections
 #' 
 #' This function utilizes a regular, or nearly so in the case of existing collections, grid of points 
@@ -35,7 +19,7 @@ ggplot2::ggplot() +
 #'   dplyr::rename(geometry = x)
 #'
 #' system.time(
-#'   out <- PointBasedSample(polygon = nc, reps = 150) 
+#'   out <- OpportunisticSample(polygon = nc, reps = 150) 
 #' ) # set very low for example
 #' # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 #' # 7 seconds per species so not much concern on the speed end of things.
@@ -44,7 +28,7 @@ ggplot2::ggplot() +
 #'    ggplot2::geom_sf(data = existing_collections) 
 #' @return A list containing two sublists, the first of which [['SummaryData']] details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second [[Geometry]], contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
-PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
+OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
   
   if(missing(n)){n = 20}
   if(missing(reps)){reps = 100}
@@ -78,12 +62,12 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
       sf::st_as_sf() |> 
       dplyr::rename(geometry = x) 
     
-    if(!missing(collections)){
-      pts <- dplyr::bind_rows(
-        collections, 
-        pts[-sf::st_nearest_feature(collections, pts),], ) |>
-        dplyr::slice_head(n=n)
-    } else {pts <- dplyr::slice_head(pts, n=n)}
+  #  if(!missing(collections)){
+  #    pts <- dplyr::bind_rows(
+  #      collections, 
+  #      pts[-sf::st_nearest_feature(collections, pts),], ) |>
+  #      dplyr::slice_head(n=n)
+   # } else {pts <- dplyr::slice_head(pts, n=n)}
     
     vorons <- sf::st_voronoi(sf::st_union(pts), sf::st_as_sfc(sf::st_bbox(polygon)))
     vorons <- sf::st_intersection(sf::st_cast(vorons), sf::st_union(polygon))
@@ -103,11 +87,11 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
   if(missing(collections)){
     voronoiPolygons <- replicate(
       reps, 
-      VoronoiSampler(polygon = nc, n = n), 
+      VoronoiSampler(polygon = polygon, n = n), 
       simplify = FALSE)} else {
         voronoiPolygons <- replicate(
           reps, 
-          VoronoiSampler(polygon = nc, n = n, collections = collections), 
+          VoronoiSampler(polygon = polygon, n = n, collections = collections), 
           simplify = FALSE)
       }
   

@@ -112,6 +112,7 @@ sdModel$CVStructure
 ```
 
 Here we can see how the elastic net decided which is the top model. 
+We used Accuracy rather than Kappa as the main criterion for model selection. 
 
 ```{r Explore SDM output - Confusion Matrix}
 sdModel$ConfusionMatrix
@@ -172,6 +173,10 @@ We can compare the results of applying this function side by side using the outp
 
 ```
 
+glmnet is used for three main reasons, 1) it gives directional coefficients and so we have a feel for how each 1 unit increase in an independent variable predicts the response, In my mind this is a big improvement over 'Variable Importance Factors' where we just know that certain variables contributed more to the model than others. 
+2) It maintains some degree of automated selection reducing the work an analyst needs to do, i.e. you can process many species without spending too much time on any single one. 
+And 3) glmnet actually re-scales all variables before model generation, which I suppose can be implemented with other models, we will use the same re-scaling that glmnet does to transform our independent variables in the raster stack and then multiply them by their beta-coefficients. 
+In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
 
 ```{r Rescale Predictor Variables}
 ########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
@@ -187,8 +192,15 @@ rr <- RescaleRasters(
 
 terra::plot(rr$RescaledPredictors)
 print(rr$BetaCoefficients)
-
 ```
+
+
+`safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
+Given then one of these sampling schema may be followed for quite some time, I think it is best practice to save many of these objects. 
+Yes they will take up some storage space, but storage is virtually free these days anyways. 
+So why not write out all of the following items? 
+I test write them in a directory which exists for the project associated with the creation of this R package, just save them somewhere and delete them after this. 
+These test files are tiny anyways. 
 
 ```{r Save SDM results}
 
@@ -207,21 +219,141 @@ writeSDMresults(
 
 ```
 
+And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
+
+# Alternative to SDM, just buffer!
+
+So the SDM is a whole thing, and not all users may want to create them. 
+Here we provide an approach which will give us results we can work with, and is computationally cheap as dirt. 
+As a minimalist that would probably just use the `EqualAreaBasedSample` function, this would almost certainly be the route I took to gridding out areas. 
+
+It relies on one input, the same occurrence data as above, and a simple process - drawing a circle at a specific radius around each point!
+
+```{r Just Buffer it!}
+planar_proj =
+    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+
+x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+x <- x[,c('lon', 'lat')]
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+x_buff <- sf::st_transform(x, planar_proj) |>
+  sf::st_buffer(125000) |> # we are working in planar metric coordinates, we are
+  sf::st_as_sfc() |> # buffer by this many / 1000 kilometers. 
+  sf::st_union()
+
+plot(x_buff)
+rm(x)
+```
+
+
+Voila! That's the whole process. Just play around with the distances until you get something which looks OK. 
+How do I define 'OK' a feeling in that gut that your boots are tingling. 
 
 # Running the Various Sample Design Algorithms
 
+Now that we have some data which can represent species ranges, we can run the various sampling approaches. 
+
 ### Grid Based and Point Based Sample
+
+Ecologists love grids. 
+All of us are taught to love grids for sampling. 
+Grids are create for contiguous things. 
+Species ranges are often not like this. 
+Surprisingly coding the functions to create a grid based sample where the most difficult of anything in this whole package. 
+So why did I do it, you ask. 
+Because I love grids, I also was already loathe to hear the question after a talk "Why didn't you code grids? I love grids? I don't think these comparisons are complete until we see grids. We gave you bagels and you gave us shit..."
+
+You can look at the output below to see why grids are not great for this type of problem. 
+
+```{r Grid and Point Based Samples}
+library(ggplot2)
+grzzz <- GridBasedSample(x_buff, planar_proj) 
+
+ggplot(data = grzzz) + 
+  geom_sf(aes(fill = factor(Assigned))) + 
+  geom_sf_label(aes(label = Assigned))
+
+###########3 PBS NEEDS TO ASSIGN POINTS ON THE EXPORT OF DATA!!!!!!!!!!!!!!!!!!!
+#######################
+################333333
+#########################
+pbs <- PointBasedSample(grzzz)
+
+pbs.sf <- pbs$Geometry
+
+ggplot(data = pbs.sf) + 
+  geom_sf()# + 
+  geom_sf_label(aes(label = Assigned))
+
+```
+
 
 ### Equal Area Sample
 
-### Opporunistic Sample
+Perhaps the simplest method which is offered in `safeHavens` is `EqualAreaSample`. 
+It simply creates many points, `pts` defaults to 5000, within our target polygon and then subjects them to k-means sampling where the groups are specified by `n` our target number of collections. 
+The individual points then assigned to these groups have polygons which 'take' up all of the map space developed, and are intersected back to the species range, and the area of each polygon is then measured. 
+This process will be ran a few times, defaulting to 100 `reps`, and the set of polygons which was created during these reps with the smallest variance in polygon size will be selected to be returned from the function. 
+
+```{r Equal Area Sample}
+eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
+eas.sf <- eas$Geometry
+
+ggplot(data = eas.sf) + 
+  geom_sf(aes(fill = factor(Cluster))) + 
+  geom_sf_label(aes(label = Cluster))
+```
+
+
+### Opportunistic Sample
+
+```{r Opportunistic Sample}
+
+exist_pts <- sf::st_sample(x_buff, size = 5) |>
+   sf::st_as_sf() |>
+   dplyr::rename(geometry = x)
+
+os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
+os.sf <- os$Geometry
+
+ggplot(data = os.sf) + 
+  geom_sf(aes(fill = factor(ID))) + 
+  geom_sf_label(aes(label = ID)) + 
+  geom_sf(data = exist_pts)
+```
+
 
 ### Isolation by Distance Based Sample
 
+
+```{r Isolate by Distance }
+files <- list.files(
+  path = file.path(system.file(package="dismo"), 'ex'), 
+  pattern = 'grd',  full.names=TRUE )
+predictors <- terra::rast(files)
+
+x_buff.sf <- sf::st_as_sf(x_buff) |> 
+  dplyr::mutate(Range = 1) |> 
+  sf::st_transform( terra::crs(predictors))
+
+v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
+
+ggplot(data = ibdbs) +
+  geom_sf(aes(fill = factor(Cluster))) + 
+  geom_sf_label(aes(label = Cluster))
+
+rm(predictors, files, v, x_buff.sf)
+```
+
 ### Ecoregion Based Sample 
 
-### Environmental Based Sample 
+```{r}
 
+```
+
+
+### Environmental Based Sample 
 
 
 ```{r Environmental Based Sample}

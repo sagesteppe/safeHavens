@@ -26,10 +26,7 @@ plot(out$Geometry)
 #'   dplyr::select(NAME) |>
 #'   dplyr::filter(NAME == 'Rhode Island') |>
 #'   sf::st_transform(32617)
-#' existing_collections <- sf::st_sample(nc, size = 5) |>
-#'   sf::st_as_sf() |>
-#'   dplyr::rename(geometry = x)
-#'
+#'   
 #' out <- PointBasedSample(polygon = nc, reps = 10, BS.reps = 10) # set very low for example
 #' # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 #' # 2 seconds per species so not much concern on the speed end of things!
@@ -135,9 +132,11 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
     probs = c(0.001), 
     level = 0.95) 
   
+  # Assign IDS to the ouput. 
+  
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
-  
+
   output <- list(
     'SummaryData' = data.frame(
       'Metric' = c(
