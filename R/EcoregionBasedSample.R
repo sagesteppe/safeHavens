@@ -1,11 +1,14 @@
 #' Determine the sample size for n ecoregions in an area
 #' 
-#' Intersect US Omernik level 4 ecoregions with the range of a focal taxon and 
-#' selects n ecoregions to sample. If fewer than n ecoregions exist in the range of 
+#' Intersect a vector data file of ecoregions (`ecoregions`) with the range of a focal taxon (`x`) and 
+#' selects `n` ecoregions to sample. If fewer than n ecoregions exist in the range of 
 #' the species, then extra samples are added to the largest ecoregions by their
 #' area proportions to meet n. 
-#' If more ecoregions exist across the range of the species than n (very common), s
-#' elect a method to determine how sample sizes (in this instance 1 sample per 
+#' 
+#' This function has adequate support for the official Omernik L4 shapefiles created
+#' by the EPA, and has worked with minimal experimentation to other vector data sources. 
+#' If more ecoregions exist across the range of the species than n (very common), 
+#' select a method to determine how sample sizes (in this instance 1 sample per 
 #' ecoregion) are selected. Methods include sampling from the n largest, or 
 #' smallest ecoregions by number, or the ecoregion with the most disconnected
 #'  habitat (measured soley by the number of polygons). Each of these three methods
@@ -15,7 +18,7 @@
 #'  formats, a 'MULTIPOLYGON', where all individual polygons composing a class are stored
 #'  collectively, or as 'POLYGONS' where each individual polygon is a unique entry within the class. 
 #'  'Polygons' are generally used when two areas of the same class are discontinuous, 
-#'  and an analyst wants to easily analyze them separately.  'MULTIPOLYGONS' are 
+#'  and an analyst wants to easily analyze them separately. 'MULTIPOLYGONS' are 
 #'  generally created by an analyst interested in understanding properties of the 
 #'  entire class. The EPA Omernik spatial data set comes with both 'POLYGONS' and
 #'  'MULTIPOLYGONS', I have used it somewhat extensively and believe that the 
@@ -25,18 +28,16 @@
 #'  refer to as a 'polygon' may technically be a multipolygon. 
 #'  
 #' @param x a range of species as a simple feature (sf) object. 
+#' @param ecoregions An ecoregion vector data file (~shapefile) in sf. 
 #' @param OmernikEPA Boolean. TRUE indicates that the data are from the US EPA and minimally modified, 
 #' if FALSE several more input are required to ensure the function maps over appropriately. 
 #' If left blank the default method is to scan for an exact match of the standard 
 #' Omernik ecoregion field (column) names, and if matched dispatched to the Omernik module, else 
 #' fail unless the associated columns are specified (SEE BELOW). 
-#' @param ecoregions An Omernik L4 ecoregion vector data file (~shapefile) in sf
-#' format with minimal modifications made to it. 
-#' @param ecoregion_col Character vector, name of the column contain the finest resolution data which are to be used for the analysis. For an Omernik L4 file it defaults to the relevant columns automatically, if a different type of file is submitted, and these not specified the function fails. 
+#' @param ecoregion_col Character. Name of the column contain the finest resolution data which are to be used for the analysis. For an Omernik L4 file it defaults to the relevant columns automatically, if a different type of file is submitted, and these not specified the function fails. 
 #' @param n Numeric. desired total number of samples across this range
 #' @param increase_method Character. Method to implement if the number of L4 ecoregions is
-#' less than n. 'Area' (the default) will reallocate points based on the relative
-#' sizes of each ecoregion. 
+#' less than n. 
 #' @param decrease_method Character. Method to implement if the number of L4 ecoregions is
 #' greater than n. 'Largest' (the default) will select the n largest ecoregions by 
 #' total area, and then select the largest single polygon within each of these classes. 
@@ -55,7 +56,7 @@
 #'    dplyr::filter(NAME == 'California') |>
 #'    sf::st_transform(4326)
 #' 
-#' Weco <- sf::st_read(system.file("shape/WesternEcoregions.gpkg", package="safeHavens"))
+#' Weco <- sf::st_read(system.file("data/WesternEcoregions.gpkg", package="safeHavens"))
 #' head(Weco)
 #' 
 #' out <- EcoregionBasedSample(polygon, Weco)
@@ -95,11 +96,11 @@
 #'  ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n))) + 
 #'  ggplot2::geom_sf(data = sp_range, fill = NA, color = 'Red') 
 #' 
-#' Note that both of the files of the above ecoregions have had their geometry
-#' simplified, i.e. made less complex - you should notice they look slightly angular
-#' like an old cartoon such as Rugrats or so. We do this to reduce the file size
-#'  to make it easier to install the package, and reduce the run time of the functions
-#' for these simple examples. 
+#' # Note that both of the files of the above ecoregions have had their geometry
+#' # simplified, i.e. made less complex - you should notice they look slightly angular
+#' # like an old cartoon such as Rugrats or so. We do this to reduce the file size
+#' # to make it easier to install the package, and reduce the run time of the functions
+#' # for these simple examples. 
 #' }
 #' @export 
 EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){

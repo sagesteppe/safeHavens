@@ -30,6 +30,7 @@
 #'      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
 #'  terra::plot(sdModel$RasterPredictions)
 #' }
+#' @export
 elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
   
   if(missing(quantile_v)){quantile_v <- 0.025}
