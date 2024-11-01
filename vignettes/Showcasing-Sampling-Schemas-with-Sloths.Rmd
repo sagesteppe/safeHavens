@@ -87,7 +87,7 @@ The goal of these models are rather to understand the degree to which various en
 Accordingly, they are not optimized for use in making the typical decisions associated with species distribution models. 
 Rather they are focused on estimating the effects of various parameters on the species distribution. 
 
-```{r Create Species Distribution Model}
+```{r Create Species Distribution Model, message=F, warning=F}
 
 sdModel <- elasticSDM(
   x = x, predictors = predictors, quantile_v = 0.025,
@@ -169,8 +169,7 @@ threshold_rasts <- PostProcessSDM(
 
 We can compare the results of applying this function side by side using the output from the function. 
 ```{r Compare Threshold Results}
-
-
+terra::plot(threshold_rasts$FinalRasters)
 ```
 
 glmnet is used for three main reasons, 1) it gives directional coefficients and so we have a feel for how each 1 unit increase in an independent variable predicts the response, In my mind this is a big improvement over 'Variable Importance Factors' where we just know that certain variables contributed more to the model than others. 
@@ -191,8 +190,17 @@ rr <- RescaleRasters(
   pred_mat = sdModel$PredictMatrix)
 
 terra::plot(rr$RescaledPredictors)
+```
+
+We can see that the variables are 'close' to be on the same scale, this will work in a clustering algorithm. 
+If any of the layers are all the same color (maybe yellow?) that means they have no variance, that's a term that was shrunk from the model. 
+It will be dealt with internall in a future function. 
+
+```{r Show beta Coefficients from model}
 print(rr$BetaCoefficients)
 ```
+We can also look at the beta coefficients for each variable. 
+glmnet returns the 'untransformed' variables, i.e. the coefficients on the same scale as the input rasters, we calculate the BC right afterwards. 
 
 
 `safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
@@ -202,10 +210,9 @@ So why not write out all of the following items?
 I test write them in a directory which exists for the project associated with the creation of this R package, just save them somewhere and delete them after this. 
 These test files are tiny anyways. 
 
-```{r Save SDM results}
+```{r Save SDM results, eval = F}
 
-setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
-getwd() # verify we are working from where we think we are. 
+bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
 
 writeSDMresults(
   cv_model = sdModel$CVStructure, 
@@ -215,8 +222,10 @@ writeSDMresults(
   coef_tab = rr$BetaCoefficients, 
   f_rasts = threshold_rasts$FinalRasters,
   thresh = threshold_rasts$Threshold,
-  file.path('results', 'SDM'), 'Bradypus_test')
+  file.path(bp, 'results', 'SDM'), 'Bradypus_test')
 
+# we can see that the fils were placed here using this. 
+list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```
 
 And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
@@ -252,6 +261,18 @@ How do I define 'OK' a feeling in that gut that your boots are tingling.
 # Running the Various Sample Design Algorithms
 
 Now that we have some data which can represent species ranges, we can run the various sampling approaches. 
+The table in the introduction is reproduced here for your leisure. 
+
+|        Function           |              Description               | Comp.| Envi.|
+|---------------------------|----------------------------------------|------|------|
+| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
+| `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
+| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
+| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
+| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
+| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
+| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
+Note in this table 'Comp.' and 'Envi.' refer to computational and environmental complexity respectively, and range from low (L) through medium to high. 
 
 ### Grid Based and Point Based Sample
 
@@ -261,29 +282,53 @@ Grids are create for contiguous things.
 Species ranges are often not like this. 
 Surprisingly coding the functions to create a grid based sample where the most difficult of anything in this whole package. 
 So why did I do it, you ask. 
-Because I love grids, I also was already loathe to hear the question after a talk "Why didn't you code grids? I love grids? I don't think these comparisons are complete until we see grids. We gave you bagels and you gave us shit..."
+Because I love grids, I also was already loathe to hear the question after a talk "Why didn't you code grids? I love grids? I don't think these comparisons are complete until we see grids. We gave you *hors d'oeuvres* and you gave us shit..."
 
 You can look at the output below to see why grids are not great for this type of problem. 
 
+The first step in grid sampling is determining an OK number of grids to try and draw as a starting point, if we want 20 collections we will need more than 20 grids, because several will be merged into the larger ones. 
+Using the aspect ratio of a simple bounding box around the area will be analysing, the function will determine a default number of grids ('Original') for testing. 
+Using these defaults it will create a few other sets of grids as well, by either removing one of two grids per direction. 
+Theoretically you could automate grid selection by comparing the number of grids and the minimization of variance. 
+To be safe I wouldn't consider configurations which generate less than 25 of these initial grids. 
+
+In the table below I op for using the 'Smaller' option, with 28 grids generated by prompting `sf::st_make_grid` with 7 grids in the x direction and 5 in the y direction. 
+
+```{r Test Grid Sizes}
+tgs <- TestGridSizes(x_buff)
+print(tgs)
+tgs <- tgs[tgs$Name=='Smaller',]
+```
+
 ```{r Grid and Point Based Samples}
 library(ggplot2)
-grzzz <- GridBasedSample(x_buff, planar_proj) 
 
-ggplot(data = grzzz) + 
+grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
+
+ggplot(data = grid_buff) + 
   geom_sf(aes(fill = factor(Assigned))) + 
   geom_sf_label(aes(label = Assigned))
 
+vector_sdm <- terra::as.polygons(threshold_rasts$FinalRasters[[4]]) |>
+  sf::st_as_sf() |>
+  sf::st_make_valid()
+
+grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs) 
+```
+
+
+```{r}
 ###########3 PBS NEEDS TO ASSIGN POINTS ON THE EXPORT OF DATA!!!!!!!!!!!!!!!!!!!
 #######################
 ################333333
 #########################
-pbs <- PointBasedSample(grzzz)
+pbs <- PointBasedSample(x_buff)
 
 pbs.sf <- pbs$Geometry
 
 ggplot(data = pbs.sf) + 
-  geom_sf()# + 
-  geom_sf_label(aes(label = Assigned))
+  geom_sf(aes(fill = factor(ID))) + 
+  geom_sf_label(aes(label = ID))
 
 ```
 
@@ -300,16 +345,22 @@ eas <- EqualAreaSample(x_buff, planar_projection = planar_proj)
 eas.sf <- eas$Geometry
 
 ggplot(data = eas.sf) + 
-  geom_sf(aes(fill = factor(Cluster))) + 
-  geom_sf_label(aes(label = Cluster))
+  geom_sf(aes(fill = factor(ID))) + 
+  geom_sf_label(aes(label = ID))
 ```
 
 
 ### Opportunistic Sample
 
+To be blunt, while there are many new players to the germplasm conservation table (and we are thrilled to have you here!), many existing collections have largely grown out of opportunity (which we are still very happy about). 
+Many Curators may be interested in how much they can embed their existing collections into a sampling framework. 
+The function `OpportunisticSample` makes a few very minor modifications to the point based sample to try and maximize an existing collection. 
+It doesn't always work exceptionally, especially when a couple collections are very close to each other, but it may be a beneficial tool in the belt. 
+
+Essentially 
 ```{r Opportunistic Sample}
 
-exist_pts <- sf::st_sample(x_buff, size = 5) |>
+exist_pts <- sf::st_sample(x_buff, size = 10) |>
    sf::st_as_sf() |>
    dplyr::rename(geometry = x)
 
@@ -355,8 +406,11 @@ rm(predictors, files, v, x_buff.sf)
 
 ### Environmental Based Sample 
 
-
+The environmental based sample can only be conducted if you have the species distribution model data. 
 ```{r Environmental Based Sample}
+
+setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
+getwd()
 
 wm <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 

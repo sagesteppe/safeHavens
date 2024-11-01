@@ -4,6 +4,7 @@
 #' range.  
 #' @param x An SF object or terra spatraster. the range over which to generate the clusters.
 #' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
+#' @param gridDimensions A single row form the ouput of `TestGridSizes` with the optimal number of grids to generate. 
 #' @examples
 #' target <- spData::us_states |> 
 #' dplyr::filter(NAME == 'Rhode Island') |>
@@ -12,15 +13,17 @@
 #' plot(output)
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
-GridBasedSample <- function(x, planar_projection){
+GridBasedSample <- function(x, planar_projection, gridDimensions){
   
   if(missing(planar_projection)){planar_projection = 5070}
   # Determine the size of each grid. 
-  gr <- sf::st_make_grid(x, n = c(8, 6), square = FALSE) # toy data. 
+  gr <- sf::st_make_grid(x, n = c(gridDimensions$GridNOx, gridDimensions$GridNOy), square = FALSE) 
+  
   gr <- sf::st_intersection(gr, x) 
   gr <- sf::st_collection_extract(gr, 'POLYGON')
   
   grid_areas <- sf::st_as_sf(gr) |> 
+    sf::st_make_valid() |>
     dplyr::mutate(
       ID   = 1:dplyr::n(),
       Area = as.numeric(sf::st_area(gr))
@@ -137,7 +140,7 @@ GridBasedSample <- function(x, planar_projection){
       neighbors[[i]]
     )
   }
-  
+
   rm(area_des, area_sort, i, prop_donor, prop_target, areas)
   
   gr <- dplyr::mutate(gr, ID = 1:dplyr::n(),  .before = x) |>
@@ -146,7 +149,7 @@ GridBasedSample <- function(x, planar_projection){
   for (i in seq_along(neighbors)){
     neighb_grid[[i]] <- gr[neighbors[[i]], ]
   }
-  
+
   # place points throughout the grids which need to be merged to determine
   # how they will be reallocated into larger grids. 
   to_merge_sf <- dplyr::rename(to_merge_sf, geometry = x)
@@ -177,6 +180,8 @@ GridBasedSample <- function(x, planar_projection){
   final_grids <- lapply(groups, snapR) |> bind_rows()
   final_grids <- sf::st_make_valid(final_grids)
   
+  sf::st_agr(final_grids) <- 'constant'; sf::st_agr(gr) = "constant"
+  
   # reconstitute all original input grids, i.e. those without neighbors, 
   # with all reassigned grids. 
   gr2 <- sf::st_difference(
@@ -191,6 +196,7 @@ GridBasedSample <- function(x, planar_projection){
   
   # now number the grids in a uniform fashion
   cents <- sf::st_point_on_surface(final_grids)
+  sf::st_agr(cents) = "constant"
   cents <- cents |>
     dplyr::mutate(
       X = sf::st_coordinates(cents)[,1],

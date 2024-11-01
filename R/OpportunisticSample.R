@@ -69,6 +69,7 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
   #      dplyr::slice_head(n=n)
    # } else {pts <- dplyr::slice_head(pts, n=n)}
     
+    pts <- dplyr::slice_head(pts, n=n)
     vorons <- sf::st_voronoi(sf::st_union(pts), sf::st_as_sfc(sf::st_bbox(polygon)))
     vorons <- sf::st_intersection(sf::st_cast(vorons), sf::st_union(polygon))
     variance <- var(as.numeric(sf::st_area(vorons))/10000)

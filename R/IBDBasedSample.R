@@ -78,14 +78,14 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(Cluster = 1:dplyr::n()) |>
-    dplyr::arrange(Cluster) |>
-    dplyr::select(Cluster, geometry)
+    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::arrange(ID) |>
+    dplyr::select(ID, geometry)
   
   sf::st_agr(cents) = "constant"
   ints <- unlist(sf::st_intersects(spatialClusters, cents))
   spatialClusters <- spatialClusters |>
-    dplyr::mutate(Cluster = ints, .before = 1) |>
+    dplyr::mutate(ID = ints, .before = 1) |>
     dplyr::select(-class)
   
   # LET'S RETURN AN SF OBJECT INSTEAD !!!!!!!

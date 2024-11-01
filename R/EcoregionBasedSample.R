@@ -25,6 +25,11 @@
 #'  refer to as a 'polygon' may technically be a multipolygon. 
 #'  
 #' @param x a range of species as a simple feature (sf) object. 
+#' @param OmernikEPA Boolean. TRUE indicates that the data are from the US EPA and minimally modified, 
+#' if FALSE several more input are required to ensure the function maps over appropriately. 
+#' If left blank the default method is to scan for an exact match of the standard 
+#' Omernik ecoregion field (column) names, and if matched dispatched to the Omernik module, else 
+#' fail unless the associated columns are specified (SEE BELOW). 
 #' @param ecoregions An Omernik L4 ecoregion vector data file (~shapefile) in sf
 #' format with minimal modifications made to it. 
 #' @param n Numeric. desired total number of samples across this range
@@ -38,6 +43,11 @@
 #' the largest single polygon within these classes. 'Most' will select the n ecoregions
 #' with the most polygons, and select the largest polygon from each. 
 #' @examples \dontrun{
+#' 
+#' # First example is using a subset (and with simplified geometry) Omernik L4
+#' # ecoregion shapefile from the EPA. Which as of the time of writing were 
+#' # available, at no cost, at the following URL
+#' # https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states
 #' ecoregions <- system.file("gpkg/WesternEcoregions.gpkg", package = "safeHavens")
 #'
 #' polygon <- spData::us_states |>
@@ -49,6 +59,16 @@
 #' 
 #' ggplot2::ggplot() + 
 #'   ggplot2::geom_sf(data = out, aes(fill = n))
+#'   
+#' # This second example is from a recent publication by Morreno et al. 2022 and 
+#' # presents biogeographic regions of the Neotropics and is available from a 
+#' # google drive linked in the publication describing there creation located at
+#' # https://www.scielo.br/j/aabc/a/hPft4CK6RV8QBr8nP7bxhRQ/?lang=en#
+#' 
+#' # Essentially we showcase how a user can maintain this functions utility
+#' # while catering to data in a format differing from the Omernik L4 distribution. 
+#' 
+#' 
 #' }
 #' @export
 EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_method){

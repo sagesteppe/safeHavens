@@ -10,12 +10,12 @@ snapGrids <- function(x, neighb_grid, focal_grid){
   # combine the output of `assignGrid_pts` together and create a small
   # polygon around there extent. 
   
+  focal_grid <- sf::st_make_valid(focal_grid)
+  neighb_grid <- sf::st_make_valid(neighb_grid)
+  
   sf::st_agr(focal_grid) = "constant"
   sf::st_agr(x) = "constant"
   sf::st_agr(neighb_grid) = "constant"
-  
-  focal_grid <- sf::st_make_valid(focal_grid)
-  neighb_grid <- sf::st_make_valid(neighb_grid)
   
   x <- x |>
     dplyr::group_by(Assigned) |> 
@@ -67,6 +67,8 @@ snapGrids <- function(x, neighb_grid, focal_grid){
     sf::st_difference() |>
     sf::st_buffer(snap_dist) |>
     sf::st_difference()
+  
+  sf::st_agr(all_pts_surface) <- 'constant'
   
   all_pts_surface <- sf::st_difference(
     all_pts_surface,  sf::st_make_valid(sf::st_union(sf::st_combine(neighb_grid)))

@@ -54,13 +54,13 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
     pts <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
     
     kmeans_res <- kmeans(sf::st_coordinates(pts), centers = n)
-    pts$Cluster <- kmeans_res$cluster
+    pts$ID <- kmeans_res$cluster
     
     # gather the geographic centers of the polygons. 
     kmeans_centers <- setNames(
       data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
       # use the centers as voronoi cores ... ?
-      c('X', 'Y', 'Cluster'))
+      c('X', 'Y', 'ID'))
     kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
     
     voronoi_poly <- kmeans_centers |> # create polygons surrounding the 
@@ -80,7 +80,7 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
                          sf::st_crs(voronoi_poly)))
     ) |>  
       # we can assign an arbitrary number. 
-      dplyr::mutate(Cluster = 1:nrow(voronoi_poly)) |>
+      dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
       sf::st_make_valid() |>
       sf::st_as_sf() |>
       dplyr::rename(any_of(lkp))

@@ -1,5 +1,12 @@
 setwd('~/Documents/assoRted/StrategizingGermplasmCollections/scripts')
 
+library(tidyverse)
+library(sf)
+
+################################################################################
+# First we do this in USA, so people have a standard Omernik L4 ecoregion shapefile
+# to play with. This is the default for the function to utilize. 
+
 polygon <- spData::us_states |>
   dplyr::select(NAME) |>
   dplyr::filter(NAME %in% c('California', 'Oregon')) |>
@@ -20,3 +27,23 @@ setwd('~/Documents/assoRted/safeHavens/data/gpkg')
 sf::st_write(ecoregions, 'WesternEcoregions.gpkg')
 
 rm(ecoregions, polygon)
+
+
+###############################################################################
+# Now we do this for the Bradypus example for the vignette. 
+
+neo_eco <- sf::st_read('../data/spatial/NeoTropics-Ecoregions/NeotropicMap_Geo.shp', quiet = TRUE) |>
+  dplyr::filter(Provincias != 'N/A') |>
+  sf::st_transform(4326) |>
+  sf::st_make_valid() |>
+  sf::st_cast('MULTIPOLYGON') |>
+  rmapshaper::ms_simplify(keep = 0.01) |>
+  sf::st_make_valid() 
+
+format(object.size(neo_eco), units = 'MiB')
+head(neo_eco)
+
+ggplot() + 
+  geom_sf(data = neo_eco, aes(fill = Provincias))
+
+          

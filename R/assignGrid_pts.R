@@ -112,7 +112,8 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
       }
       
       rm(focal, indices, nn)
-      # if a point is disconnected from it's remaining neighbors then assign it to the neighbor which needs more points to reach the ideal sample ratio for it's grid class.
+      # if a point is disconnected from it's remaining neighbors then assign it
+      # to the neighbor which needs more points to reach the ideal sample ratio for it's grid class.
       if(any(matches==F)){
         indices <- neighs[which(matches==F)] 
         
@@ -134,23 +135,3 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
     dplyr::mutate(Assigned = as.numeric(Assigned))
   return(pts)
 }
-
-
-# NEED TO FIX SEVERAL ITEMS
-
-# 2) Error in spdep::knearneigh(pts, k = 4)[["nn"]][needAssigned$ID, ] : 
-# subscript out of bounds
-
-##################################### SAND BOX ###############################
-
-target <- tigris::states() |> 
-  dplyr::filter(NAME == 'Maryland') |>
-  sf::st_transform(5070)
-
-TestGridSizes(target)
-output <- GridBasedSample(target)
-
-ggplot() + 
-  geom_sf(data = target) + 
-  geom_sf(data = output, aes(fill = Assigned))
-

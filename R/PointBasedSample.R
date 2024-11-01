@@ -1,16 +1,4 @@
 #' Design additional collections around already existing collections
-nc <- spData::us_states |>
-  dplyr::select(NAME) |>
-  dplyr::filter(NAME == 'Rhode Island') |>
-  sf::st_transform(32617)
-existing_collections <- sf::st_sample(nc, size = 5) |>
-  sf::st_as_sf() |>
-  dplyr::rename(geometry = x)
-
-out <- PointBasedSample(polygon = nc, reps = 150)
-head(out$SummaryData)
-plot(out$Geometry)
-
 #' Generate a sampling grid using points as the input data - including existing collections
 #' 
 #' This function utilizes a regular, or nearly so in the case of existing collections, grid of points 
@@ -133,6 +121,24 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
     level = 0.95) 
   
   # Assign IDS to the ouput. 
+  
+  # now number the grids in a uniform fashion
+  sf::st_agr(SelectedSample) = "constant"
+  cents <- sf::st_point_on_surface(SelectedSample)
+  cents <- cents |>
+    dplyr::mutate(
+      X = sf::st_coordinates(cents)[,1],
+      Y = sf::st_coordinates(cents)[,2]
+    ) |>
+    dplyr::arrange(-Y, X) |>
+    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::arrange(ID) |>
+    dplyr::select(ID, geometry)
+  
+  sf::st_agr(cents) = "constant"
+  ints <- unlist(sf::st_intersects(SelectedSample, cents))
+  SelectedSample <- SelectedSample |>
+    dplyr::mutate(ID = ints, .before = 1) 
   
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
