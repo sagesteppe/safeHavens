@@ -3,8 +3,8 @@ This package helps germplasm curators communicate areas of interest to collectio
 
 safeHavens, is currently - and likely only ever will be, available for installation from here on github.
 It can be installed using the following commands. 
-
+I am currently trying to make a pretty comprehensive vignette which requires  a 
 ```
 install.packages('devtools')
-devtools::install_github('sagesteppe/safeHavens')
+devtools::install_github('sagesteppe/safeHavens', build_vignettes = FALSE)
 ```
