@@ -1,9 +1,9 @@
 #' turn the point grid suggestions made by assignGrid_pts into polygons
 #' 
-#' This function is called by `snapGrids` to turn small grid cells, which are to be
-#' # broken up, into a larger existing grid cell(s). 
+#' This function is part of the grid based sampling process to turn small grid cells, 
+#' which are to be broken up, into a larger existing grid cells. 
 #' @param x output of `assignGrid_pts`
-#' @param neighb_grid the neighboring grid options
+#' @param neighb_grid the neighboring grid options.
 #' @param focal_grid the grid to reassign the area of. 
 snapGrids <- function(x, neighb_grid, focal_grid){
   

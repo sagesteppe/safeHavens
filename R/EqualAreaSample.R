@@ -9,7 +9,7 @@
 #' @param returnProjected. Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new `projection` (TRUE). Defaults to FALSE. 
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 100. 
-#' @BS.reps number of bootstrap replicates for evaluating results. 
+#' @param BS.reps number of bootstrap replicates for evaluating results. 
 #' @examples \donttest{
 #' nc <- sf::st_read(system.file("shape/nc.shp", package="sf")) |>
 #' dplyr::select(NAME)
