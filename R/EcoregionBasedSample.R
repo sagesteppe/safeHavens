@@ -49,17 +49,20 @@
 #' # ecoregion shapefile from the EPA. Which as of the time of writing were 
 #' # available, at no cost, at the following URL
 #' # https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states
-#' ecoregions <- system.file("gpkg/WesternEcoregions.gpkg", package = "safeHavens")
 #'
 #' polygon <- spData::us_states |>
-#'    dplyr::select(NAME) |>
+#' dplyr::select(NAME) |>
 #'    dplyr::filter(NAME == 'California') |>
 #'    sf::st_transform(4326)
-#'
-#' out <- EcoregionBasedSample(polygon, ecoregions)
+#' 
+#' Weco <- sf::st_read(system.file("shape/WesternEcoregions.gpkg", package="safeHavens"))
+#' head(Weco)
+#' 
+#' out <- EcoregionBasedSample(polygon, Weco)
+#' sum(out$n)
 #' 
 #' ggplot2::ggplot() + 
-#'   ggplot2::geom_sf(data = out, aes(fill = n))
+#'    ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n)))
 #'   
 #' # This second example is from a recent publication by Morreno et al. 2022 and 
 #' # presents biogeographic regions of the Neotropics and is available from a 
@@ -69,7 +72,34 @@
 #' # Essentially we showcase how a user can maintain this functions utility
 #' # while catering to data in a format differing from the Omernik L4 distribution. 
 #' 
+#' neo_eco <- sf::st_read(system.file("shape/NeoTropicsEcoregions.gpkg", package="safeHavens"))
+#'sp_range <- sf::st_polygon( # complete
+#'  list(
+#'    rbind(
+#'      c(-80,-5), c(-80,10), c(-60,10), c(-55,5),
+#'      c(-60,-5), c(-80,-5) 
+#'    )
+#'  )
+#' ) |>
+#'  sf::st_sfc() |> 
+#'  sf::st_as_sf() |>
+#'  sf::st_set_crs(4326) |>
+#'  dplyr::rename(geometry = x) |>
+#'  dplyr::mutate(Species = 'Da species')
+#'
+#'out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
+#'sum(out$n)
+#'
+#'ggplot2::ggplot() + 
+#'  ggplot2::geom_sf(data = neo_eco) + 
+#'  ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n))) + 
+#'  ggplot2::geom_sf(data = sp_range, fill = NA, color = 'Red') 
 #' 
+#' Note that both of the files of the above ecoregions have had their geometry
+#' simplified, i.e. made less complex - you should notice they look slightly angular
+#' like an old cartoon such as Rugrats or so. We do this to reduce the file size
+#'  to make it easier to install the package, and reduce the run time of the functions
+#' for these simple examples. 
 #' }
 #' @export 
 EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){
@@ -217,46 +247,4 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   
 }
 
-polygon <- spData::us_states |>
-  dplyr::select(NAME) |>
-  dplyr::filter(NAME == 'California') |>
-  sf::st_transform(4326)
-ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE) |>
-  sf::st_transform(4326) |>
-  sf::st_make_valid() |>
-  sf::st_intersection(polygon, ) |>
-  sf::st_cast('MULTIPOLYGON') |>
-  rmapshaper::ms_simplify(keep = 0.01) |>
-  sf::st_make_valid() |>
-  dplyr::select(-NAME) # be sure to remove any columns written over from the intersected geometry
 
-
-out <- EcoregionBasedSample(polygon, ecoregions)
-sum(out$n)
-
-ggplot2::ggplot() + 
-   ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n)))
-
-
-sp_range <- sf::st_polygon( # complete
-  list(
-    rbind(
-      c(-80,-5), c(-80,10), c(-60,10), c(-55,5),
-      c(-60,-5), c(-80,-5) 
-    )
-  )
-) |>
-  sf::st_sfc() |> 
-  sf::st_as_sf() |>
-  sf::st_set_crs(4326) |>
-  dplyr::rename(geometry = x) |>
-  dplyr::mutate(Species = 'Da species')
-
-out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
-
-sum(out$n)
-
-ggplot2::ggplot() + 
-  ggplot2::geom_sf(data = neo_eco) + 
-  ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n))) + 
-  ggplot2::geom_sf(data = sp_range, fill = NA, color = 'Red') 

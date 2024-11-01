@@ -45,6 +45,9 @@ neo_eco <- sf::st_read('../data/spatial/NeoTropics-Ecoregions/NeotropicMap_Geo.s
 format(object.size(neo_eco), units = 'MiB')
 head(neo_eco)
 
+setwd('~/Documents/assoRted/safeHavens/data/gpkg')
+sf::st_write(neo_eco, 'NeoTropicsEcoregions.gpkg')
+
 ggplot() + 
   geom_sf(data = neo_eco, aes(fill = Provincias))
 
