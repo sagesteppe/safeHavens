@@ -16,6 +16,10 @@ for calculating variance which is required for the scaling process. From \code{e
 
 \item{the}{Prediction matrix from \code{elasticSDM}}
 }
+\value{
+A list with two objects. 1) The rescaled raster stack.
+2) A table of both standardized and unstandardized coefficients from the glmnet model.
+}
 \description{
 These rescaled rasters can then be used for clustering, and predicting the
 results of cluster analysis back into space for a final product.

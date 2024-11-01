@@ -10,10 +10,9 @@ TestGridSizes(target)
 \item{target}{a species range as a simple feature (\code{sf}) object.}
 }
 \value{
-A dataframe with testing results for each grid combination. A user needs to select
-the optimal grid size based on a tradeoff with minimizing variance, without
-creating too many grids which will need to be erased. In the Rhode Island
-example I would use the 'Original' option which asks for 4 x grids and 7 y grids.
+A dataframe with testing results for each grid combination.
+A user needs to select the optimal grid size based on a tradeoff with minimizing variance, without creating too many grids which will need to be erased.
+In the Rhode Island example I would use the 'Original' option which asks for 4 x grids and 7 y grids.
 }
 \description{
 This function uses the dimensions of a species grid to estimate how many grids

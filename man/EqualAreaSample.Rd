@@ -22,6 +22,10 @@ measured using their variance of areas will be selected. Defaults to 100.}
 
 \item{returnProjected.}{Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new \code{projection} (TRUE). Defaults to FALSE.}
 }
+\value{
+A list containing two objects, the first the results of bootstrap simulations.
+The second an sf dataframe containing the polygons with the smallest amount of variance in size.
+}
 \description{
 This function creates \code{n} geographic clusters over a geographic area (\code{x}), typically a species
 range, using kmeans clustering.

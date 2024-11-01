@@ -2,8 +2,7 @@
 % Please edit documentation in R/OpportunisticSample.R
 \name{OpportunisticSample}
 \alias{OpportunisticSample}
-\title{Design additional collections around already existing collections
-Generate a sampling grid using points as the input data - including existing collections}
+\title{Design additional collections around already existing collections}
 \usage{
 OpportunisticSample(polygon, n, collections, reps, BS.reps)
 }
@@ -22,10 +21,10 @@ OpportunisticSample(polygon, n, collections, reps, BS.reps)
 A list containing two sublists, the first of which [\link{'SummaryData'}] details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second [\link{Geometry}], contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
-This function utilizes a regular, or nearly so in the case of existing collections, grid of points
-to develop a sampling scheme or n polygons.
+This function utilizes a regular, or nearly so in the case of existing collections, grid of points to develop a sampling scheme or n polygons.
 }
 \examples{
+\donttest{
 #' Design additional collections around already existing collections
 nc <- spData::us_states |>
   dplyr::select(NAME) |>
@@ -43,4 +42,5 @@ system.time(
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
    ggplot2::geom_sf(data = existing_collections) 
+ }
 }

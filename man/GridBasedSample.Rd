@@ -17,8 +17,7 @@ GridBasedSample(x, planar_projection, gridDimensions)
 An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
-This function creates 20 grid cells over a geographic area (\code{x}), typically a species
-range.
+This function creates 20 grid cells over a geographic area (\code{x}), typically a species range.
 }
 \examples{
 target <- spData::us_states |> 

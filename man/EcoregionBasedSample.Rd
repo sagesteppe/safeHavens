@@ -19,54 +19,44 @@ EcoregionBasedSample(
 
 \item{ecoregions}{An ecoregion vector data file (~shapefile) in sf.}
 
-\item{OmernikEPA}{Boolean. TRUE indicates that the data are from the US EPA and minimally modified,
-if FALSE several more input are required to ensure the function maps over appropriately.
-If left blank the default method is to scan for an exact match of the standard
-Omernik ecoregion field (column) names, and if matched dispatched to the Omernik module, else
-fail unless the associated columns are specified (SEE BELOW).}
+\item{OmernikEPA}{Boolean. TRUE indicates that the data are from the US EPA and minimally modified, if FALSE several more input are required to ensure the function maps over appropriately.
+If left blank the default method is to scan for an exact match of the standard Omernik ecoregion field (column) names, and if matched dispatched to the Omernik module, else fail unless the associated columns are specified (SEE BELOW).}
 
 \item{n}{Numeric. desired total number of samples across this range}
 
-\item{ecoregion_col}{Character. Name of the column contain the finest resolution data which are to be used for the analysis. For an Omernik L4 file it defaults to the relevant columns automatically, if a different type of file is submitted, and these not specified the function fails.}
+\item{ecoregion_col}{Character.
+Name of the column contain the finest resolution data which are to be used for the analysis.
+For an Omernik L4 file it defaults to the relevant columns automatically, if a different type of file is submitted, and these not specified the function fails.}
 
 \item{increase_method}{Character. Method to implement if the number of L4 ecoregions is
 less than n.}
 
 \item{decrease_method}{Character. Method to implement if the number of L4 ecoregions is
-greater than n. 'Largest' (the default) will select the n largest ecoregions by
-total area, and then select the largest single polygon within each of these classes.
-'Smallest' will select the n smallest ecoregions by total area, and then select
-the largest single polygon within these classes. 'Most' will select the n ecoregions
-with the most polygons, and select the largest polygon from each.}
+greater than n.
+'Largest' (the default) will select the n largest ecoregions by total area, and then select the largest single polygon within each of these classes.
+'Smallest' will select the n smallest ecoregions by total area, and then select the largest single polygon within these classes.
+'Most' will select the n ecoregions with the most polygons, and select the largest polygon from each.}
+}
+\value{
+An sf object, the same length as the input data set, with only the finest resolution eco level, and geometry fields retained, and a new column 'n' indicating how many accession should be gather from the ecoregion.
 }
 \description{
-Intersect a vector data file of ecoregions (\code{ecoregions}) with the range of a focal taxon (\code{x}) and
-selects \code{n} ecoregions to sample. If fewer than n ecoregions exist in the range of
-the species, then extra samples are added to the largest ecoregions by their
+Intersect a vector data file of ecoregions (\code{ecoregions}) with the range of a focal taxon (\code{x}) and selects \code{n} ecoregions to sample.
+If fewer than n ecoregions exist in the range of the species, then extra samples are added to the largest ecoregions by their
 area proportions to meet n.
-}
-\details{
-This function has adequate support for the official Omernik L4 shapefiles created
-by the EPA, and has worked with minimal experimentation to other vector data sources.
-If more ecoregions exist across the range of the species than n (very common),
-select a method to determine how sample sizes (in this instance 1 sample per
-ecoregion) are selected. Methods include sampling from the n largest, or
-smallest ecoregions by number, or the ecoregion with the most disconnected
-habitat (measured soley by the number of polygons). Each of these three methods
-then returns the largest polygon within the criterion.
 
-A note on 'polygons'. Simple features are able to store polygon data in two main
-formats, a 'MULTIPOLYGON', where all individual polygons composing a class are stored
-collectively, or as 'POLYGONS' where each individual polygon is a unique entry within the class.
+This function has adequate support for the official Omernik L4 shapefiles created by the EPA, and has worked with minimal experimentation to other vector data sources.
+If more ecoregions exist across the range of the species than n (very common),  select a method to determine how sample sizes (in this instance 1 sample per ecoregion) are selected.
+Methods include sampling from the n largest, orsmallest ecoregions by number, or the ecoregion with the most disconnected habitat (measured soley by the number of polygons).
+Each of these three methods then returns the largest polygon within the criterion.
+
+A note on 'polygons'.
+Simple features are able to store polygon data in two main formats, a 'MULTIPOLYGON', where all individual polygons composing a class are stored collectively, or as 'POLYGONS' where each individual polygon is a unique entry within the class.
 'Polygons' are generally used when two areas of the same class are discontinuous,
-and an analyst wants to easily analyze them separately. 'MULTIPOLYGONS' are
-generally created by an analyst interested in understanding properties of the
-entire class. The EPA Omernik spatial data set comes with both 'POLYGONS' and
-'MULTIPOLYGONS', I have used it somewhat extensively and believe that the
-creators struck a happy balance between creating too many small polygons, e.g.
-for areas like coastal reef island (a MULTIPOLYGON use case), and big polygons.
-I do not modify them here, and on rare occasion (essentially islands), what I
-refer to as a 'polygon' may technically be a multipolygon.
+and an analyst wants to easily analyze them separately.
+'MULTIPOLYGONS' are generally created by an analyst interested in understanding properties of the entire class.
+The EPA Omernik spatial data set comes with both 'POLYGONS' and 'MULTIPOLYGONS', I have used it somewhat extensively and believe that the creators struck a happy balance between creating too many small polygons, e.g.  for areas like coastal reef island (a MULTIPOLYGON use case), and big polygons.
+I do not modify them here, and on rare occasion (essentially islands), what I refer to as a 'polygon' may technically be a multipolygon.
 }
 \examples{
 \dontrun{

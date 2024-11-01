@@ -22,6 +22,11 @@ defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping
 estimating a buffer to restrict the SDM surface too, and the minimum of the 10 bootstrap reps
 for adding surface to presence points which were not placed in binary suitable habitat.}
 }
+\value{
+A list containing two options. 1) A spatraster with 4 layers, A) the continuous probabilities of suitable habitat feed in from \code{elasticSDM}, B) this raster in binary format based on the specified thresholding statistic, C) the binary raster from B + with habitat clipped to the buffer distances determined by measuring nearest neighbor distances and thresholding at a quantile D) the binary raster from C, adding the same distance to points which were initially in cells classified by thresholding as not having suitable habitat.
+D' is the general basis for all future steps, but either B, or C serve as alternatives.
+2) All threshold statistics calculated by dismo as a dataframe.
+}
 \description{
 This is the last 'analytical' portion of the SD modelling process. It will
 produce binary (Yes/ NA) rasters of species suitable habitat based on a three step

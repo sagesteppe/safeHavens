@@ -37,6 +37,5 @@ IBDBasedSample(
 An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
-Create n seed collection areas based on the distance geographic (great circle)
-distance between points.
+Create n seed collection areas based on the distance geographic (great circle) distance between points.
 }

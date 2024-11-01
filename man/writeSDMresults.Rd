@@ -35,13 +35,11 @@ writeSDMresults(
 
 \item{thresh}{threshold statistics from \code{PostProcessSDM}}
 }
+\value{
+all the above objects, or all objects above specified, are written to disk.
+}
 \description{
-This function is used to write out a wide range of values from the
-\code{fitPredictOperationalize} process. It will create multiple subdirectories
-within a user specified path.
-These include: 'Rasters' where a raster stack of the four final rasters will go,
-Fitting' where the details of model fitting from Caret will be placed,
-'Models' where the final fit model will go, 'Evaluation' where all evaluation
-statistics will be placed, 'Threshold' where results form dismo::threshold will
-be placed.
+This function is used to write out a wide range of values from the \code{fitPredictOperationalize} process.
+It will create multiple subdirectories within a user specified path.
+These include: 'Rasters' where a raster stack of the four final rasters will go, Fitting' where the details of model fitting from Caret will be placed, Models' where the final fit model will go, 'Evaluation' where all evaluation statistics will be placed, 'Threshold' where results form dismo::threshold will be placed.
 }

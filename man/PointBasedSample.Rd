@@ -2,8 +2,7 @@
 % Please edit documentation in R/PointBasedSample.R
 \name{PointBasedSample}
 \alias{PointBasedSample}
-\title{Design additional collections around already existing collections
-Generate a sampling grid using points as the input data - including existing collections}
+\title{Generate a sampling grid based off of regularly sampled points across the species range.}
 \usage{
 PointBasedSample(polygon, n, collections, reps, BS.reps)
 }
@@ -17,6 +16,10 @@ PointBasedSample(polygon, n, collections, reps, BS.reps)
 \item{reps}{further arguments passed to np.boot}
 
 \item{BS.reps}{number of bootstrap replicates for evaluating results.}
+}
+\value{
+A list containing two objects, the first the results of bootstrap simulations.
+The second an sf dataframe containing the polygons with the smallest amount of variance in size.
 }
 \description{
 This function utilizes a regular, or nearly so in the case of existing collections, grid of points

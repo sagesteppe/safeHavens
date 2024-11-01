@@ -17,6 +17,11 @@ elasticSDM(x, predictors, planar_proj, domain, quantile_v)
 
 \item{quantile_v}{Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5\% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.}
 }
+\value{
+A list of 12 objects, each of these subsequently used in the downstream  SDM Post processing sequence, or which we think are best written to disk.
+The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the indepedent variables used in the final model are present in 'Predictors, and just the global PCNM/MEM raster surfaces are in 'PCNM'.
+The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix.
+}
 \description{
 This function quickly creates a SDM using elastic net regression, and it will
 properly format all data for downstream use with the \code{safeHavens} workflow.
