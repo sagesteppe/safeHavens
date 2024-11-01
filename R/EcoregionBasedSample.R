@@ -32,6 +32,7 @@
 #' fail unless the associated columns are specified (SEE BELOW). 
 #' @param ecoregions An Omernik L4 ecoregion vector data file (~shapefile) in sf
 #' format with minimal modifications made to it. 
+#' @param ecoregion_col Character vector, name of the column contain the finest resolution data which are to be used for the analysis. For an Omernik L4 file it defaults to the relevant columns automatically, if a different type of file is submitted, and these not specified the function fails. 
 #' @param n Numeric. desired total number of samples across this range
 #' @param increase_method Character. Method to implement if the number of L4 ecoregions is
 #' less than n. 'Area' (the default) will reallocate points based on the relative
@@ -70,9 +71,17 @@
 #' 
 #' 
 #' }
-#' @export
-EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_method){
+#' @export 
+EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){
   
+  
+  if(missing(OmernikEPA)){
+    if(any(colnames(ecoregions) %in% 'L4_KEY')){OmernikEPA <- TRUE} else {
+      OmernikEPA <- FALSE
+      stop('A difference between the user submitted ecoregions data and standard Omernik L4 ecoregions has been detected. Please ensure you provide the appropriate colnames to fns `ecoregion_col`, set `OmernikEPA` to FALSE and try again.')}
+  }
+  
+  if(missing(ecoregion_col)){L4_KEY <- 'L4_KEY'}
   if(missing(n)){n<-20} 
   if(missing(increase_method)){increase_method<-'Area'}
   if(missing(decrease_method)){decrease_method<-'Largest'}
@@ -99,12 +108,11 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
     dplyr::ungroup()
   
   eco_lvls_ct <- data.frame(
-    Eco_lvl = c('L1', 'L2', 'L3', 'L4'), 
-    ct = c(length(unique(area$L1_KEY)), length(unique(area$L2_KEY)),
-           length(unique(area$US_L3CODE)), length(unique(area$US_L4CODE)))
+    Eco_lvl = 'L4', 
+    ct =  length(unique(area$L4_KEY))
   )
   
-  cols <- c('ID', 'US_L4CODE', 'US_L4NAME', 'n', 'geometry')
+  cols <- c('ID', L4_KEY, 'n', 'geometry')
   
   # in this method we only assign counts to each area. 
   if(eco_lvls_ct[eco_lvls_ct$Eco_lvl=='L4','ct'] == n){
@@ -119,7 +127,7 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
       # if n polygons > n, select a polygon in each ecoregion to represent it.  Either by AREA or CENTRALITY 
       if(increase_method == 'Area'){
         
-        out <- dplyr::group_by(polygons, US_L4CODE) |>
+        out <- dplyr::group_by(polygons, L4_KEY) |>
           dplyr::arrange(Area, .by_group = TRUE) |>
           slice_max(n = 1) |>
           dplyr::mutate(n = 1) |>
@@ -127,7 +135,7 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
         
       } else {
         
-        unions <- dplyr::group_by(polygons, US_L4CODE) |>
+        unions <- dplyr::group_by(polygons, L4_KEY) |>
           dplyr::summarise(geometry = sf::st_union(geometry))
         pts <- sf::st_point_on_surface(unions) 
         out <- polygons[lengths(sf::st_intersects(pts, unions))>0, ] |>
@@ -209,3 +217,23 @@ EcoregionBasedSample <- function(x, ecoregions, n, increase_method, decrease_met
   
 }
 
+colnames(ecoregions)
+ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE) |>
+  sf::st_transform(4326) |>
+  sf::st_make_valid() |>
+  sf::st_intersection(polygon, ) |>
+  sf::st_cast('MULTIPOLYGON') |>
+  rmapshaper::ms_simplify(keep = 0.01) |>
+  sf::st_make_valid() |>
+  dplyr::select(-NAME) # be sure to remove any columns written over from the intersected geometry
+
+polygon <- spData::us_states |>
+  dplyr::select(NAME) |>
+  dplyr::filter(NAME == 'California') |>
+  sf::st_transform(4326)
+
+out <- EcoregionBasedSample(polygon, ecoregions)
+
+head(out)
+ggplot2::ggplot() + 
+   ggplot2::geom_sf(data = out, aes(fill = factor(n)))

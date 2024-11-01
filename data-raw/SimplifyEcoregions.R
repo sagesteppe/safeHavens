@@ -12,7 +12,9 @@ polygon <- spData::us_states |>
   dplyr::filter(NAME %in% c('California', 'Oregon')) |>
   sf::st_transform(4326)
 
-ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE) |>
+paste0(colnames(ecoregions), collapse = ', ')
+
+ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE)# |>
   sf::st_transform(4326) |>
   sf::st_make_valid() |>
   sf::st_intersection(polygon, ) |>
@@ -46,4 +48,5 @@ head(neo_eco)
 ggplot() + 
   geom_sf(data = neo_eco, aes(fill = Provincias))
 
-          
+
+   
