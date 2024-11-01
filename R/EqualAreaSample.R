@@ -43,50 +43,6 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
     x <- sf::st_transform(x, planar_projection)
   }
   
-
-  #### Voronoi polygons can be formed many times in many ways, We want to run
-  ## a number of iterations, and then determine the configuration which has #
-  ## the smallest amount of variance in the geographic size of each cluster. #
-  VoronoiSamplerEAS <- function(x, kmeans_centers, reps){
-    
-    # determine which portions of the STZ are likely to be populated by converting
-    # the sdm output to vectors and masking the STZ to this area. 
-    pts <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
-    
-    kmeans_res <- kmeans(sf::st_coordinates(pts), centers = n)
-    pts$ID <- kmeans_res$cluster
-    
-    # gather the geographic centers of the polygons. 
-    kmeans_centers <- setNames(
-      data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
-      # use the centers as voronoi cores ... ?
-      c('X', 'Y', 'ID'))
-    kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
-    
-    voronoi_poly <- kmeans_centers |> # create polygons surrounding the 
-      sf::st_transform(planar_projection) |> # clusters using voronoi polygons
-      sf::st_union() |>  
-      sf::st_voronoi() |>  
-      sf::st_cast() |>  
-      sf::st_as_sf() |>
-      sf::st_make_valid() 
-    
-    lkp <- c(geometry = "x") 
-    
-    voronoi_poly <- sf::st_intersection(
-      # reduce the extent of the voronoi polygons to the area of analysis. 
-      voronoi_poly, sf::st_union(
-        sf::st_transform(x, 
-                         sf::st_crs(voronoi_poly)))
-    ) |>  
-      # we can assign an arbitrary number. 
-      dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
-      sf::st_make_valid() |>
-      sf::st_as_sf() |>
-      dplyr::rename(any_of(lkp))
-    
-  }
-  
   # now run the request numbed of iterations. 
   voronoiPolygons <- replicate(
     reps, 
@@ -138,5 +94,48 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
     'Geometry' = SelectedSample)
   
   return(output)
+  
+}
+
+#### Voronoi polygons can be formed many times in many ways, We want to run
+## a number of iterations, and then determine the configuration which has #
+## the smallest amount of variance in the geographic size of each cluster. #
+VoronoiSamplerEAS <- function(x, kmeans_centers, reps){
+  
+  # determine which portions of the STZ are likely to be populated by converting
+  # the sdm output to vectors and masking the STZ to this area. 
+  pts <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
+  
+  kmeans_res <- stats::kmeans(sf::st_coordinates(pts), centers = n)
+  pts$ID <- stats::kmeans_res$cluster
+  
+  # gather the geographic centers of the polygons. 
+  kmeans_centers <- setNames(
+    data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
+    # use the centers as voronoi cores ... ?
+    c('X', 'Y', 'ID'))
+  kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
+  
+  voronoi_poly <- kmeans_centers |> # create polygons surrounding the 
+    sf::st_transform(planar_projection) |> # clusters using voronoi polygons
+    sf::st_union() |>  
+    sf::st_voronoi() |>  
+    sf::st_cast() |>  
+    sf::st_as_sf() |>
+    sf::st_make_valid() 
+  
+  lkp <- c(geometry = "x") 
+  
+  voronoi_poly <- sf::st_intersection(
+    # reduce the extent of the voronoi polygons to the area of analysis. 
+    voronoi_poly, sf::st_union(
+      sf::st_transform(x, 
+                       sf::st_crs(voronoi_poly)))
+  ) |>  
+    # we can assign an arbitrary number. 
+    dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
+    sf::st_make_valid() |>
+    sf::st_as_sf() |>
+    dplyr::rename(any_of(lkp))
   
 }

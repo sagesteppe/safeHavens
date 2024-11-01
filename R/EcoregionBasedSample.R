@@ -159,7 +159,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
         
         out <- dplyr::group_by(polygons, !!L4_KEY_quo) |>
           dplyr::arrange(Area, .by_group = TRUE) |>
-          slice_max(n = 1) |>
+          dplyr::slice_max(n = 1) |>
           dplyr::mutate(n = 1) |>
           dplyr::select(cols)
         

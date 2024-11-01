@@ -13,3 +13,27 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Imports: 
+    caret,
+    CAST,
+    dismo,
+    dplyr,
+    fields,
+    gdistance,
+    ggplot2,
+    glmnet,
+    NbClust,
+    nngeo,
+    nptest,
+    raster,
+    rlang,
+    rmapshaper,
+    sdm,
+    sf,
+    spData,
+    spdep,
+    spThin,
+    stats,
+    terra,
+    units,
+    vegan
