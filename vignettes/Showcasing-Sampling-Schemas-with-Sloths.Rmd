@@ -106,7 +106,6 @@ Rather they are focused on estimating the effects of various parameters on the s
 
 ```{r Create Species Distribution Model, message=F, warning=F}
 
-?elasticSDM
 sdModel <- elasticSDM(
   x = x, predictors = predictors, quantile_v = 0.025,
   planar_proj =
@@ -181,7 +180,7 @@ threshold_rasts <- PostProcessSDM(
   test = sdModel$TestData,
   planar_proj =
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
-  thresh_metric = 'sensitivity', quant_amt = 0.25)
+  thresh_metric = 'sensitivity', quant_amt = 0.5)
 
 ```
 
@@ -220,7 +219,6 @@ print(rr$BetaCoefficients)
 We can also look at the beta coefficients for each variable. 
 glmnet returns the 'untransformed' variables, i.e. the coefficients on the same scale as the input rasters, we calculate the BC right afterwards. 
 
-
 `safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
 Given then one of these sampling schema may be followed for quite some time, I think it is best practice to save many of these objects. 
 Yes they will take up some storage space, but storage is virtually free these days anyways. 
@@ -247,6 +245,11 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```
 
 And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
+We will play around with it as an example dataset to compare our buffered distance results to. 
+
+```{r Clean up SDM variables}
+rm(rr, predictors, files, sdModel, bp)
+```
 
 # Alternative to SDM, just buffer!
 
@@ -272,9 +275,16 @@ plot(x_buff)
 rm(x)
 ```
 
-
 Voila! That's the whole process. Just play around with the distances until you get something which looks OK. 
 How do I define 'OK' a feeling in that gut that your boots are tingling. 
+
+# Just load the SDM!
+ 
+The package also has an SDM projection saved in the data we can just load that too. 
+```{r}
+sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'data/Bradypus_test.tif'))
+
+```
 
 # Running the Various Sample Design Algorithms
 
