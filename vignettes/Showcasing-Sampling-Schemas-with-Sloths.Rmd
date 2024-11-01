@@ -15,6 +15,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, eval  = F}
+# install.packages('devtools')
+devtools::install_github('sagesteppe/safeHavens')
 library(safeHavens)
 ```
 
@@ -68,6 +70,10 @@ We will use Species Distribution Models as the input variable to many of the arg
 These days you can get good results out of essentially entirely automated pipelines, we'll have the truncated process outlined here in a chunk, but I honestly argue you should ignore this chunk the first few times you read this document, and go back for the details (discussed in the link above) only if you decide to pursue the route of `EnvironmentalBasedSample` 
 
 # Species Distribution Modelling (skip me your first few read throughs?!)
+
+If you are interested in visualizing what a sampling schema under safeHavens most complex function `EnvironmentalBasedSample` requires, you can explore this section to understand the costs required to achieve this process. 
+It goes on for a while, so I almost recommend checking this section last. 
+In the meantime, if you still want to see the results from `EnvironmentalBasedSample` compared to the other functions, you can load the results from disk, they are distributed with the package. 
 
 ```{r Prepare data for a Species Distribution Model, eval = F}
 
@@ -399,8 +405,12 @@ rm(predictors, files, v, x_buff.sf)
 
 ### Ecoregion Based Sample 
 
-```{r}
+As mentioned this is by far the most commonly implemented method for guiding native seed collection. 
+However, I am not sure exactly how practitioners all implement it, and whether the formats of application are consistent among practitioners!
+For these reasons a few different sets of options are supported for a user. 
 
+```{r Ecoregion Based Sample}
+neo_eco <- sf::st_read(system.file("data/gpkg/NeoTropicsEcoregions.gpkg", package="safeHavens"))
 ```
 
 
@@ -424,3 +434,12 @@ wm <- EnvironmentalBasedSample(
 ```
 
 # Comparision of different sampling schema
+
+So, we've made got some maps for you to look at!
+They all look relatively similar to me when plotted one after another, let's plot them all simultaneously and see if that's still the case. 
+
+```{r Plot all Sampling Schemas together}
+
+```
+
+
