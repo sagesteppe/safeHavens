@@ -75,13 +75,14 @@
 EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){
   
   
-  if(missing(OmernikEPA)){
+  if(missing(OmernikEPA) & missing(ecoregion_col)){
     if(any(colnames(ecoregions) %in% 'L4_KEY')){OmernikEPA <- TRUE} else {
       OmernikEPA <- FALSE
       stop('A difference between the user submitted ecoregions data and standard Omernik L4 ecoregions has been detected. Please ensure you provide the appropriate colnames to fns `ecoregion_col`, set `OmernikEPA` to FALSE and try again.')}
   }
   
   if(missing(ecoregion_col)){L4_KEY <- 'L4_KEY'}
+  L4_KEY_quo <- enquo(L4_KEY)
   if(missing(n)){n<-20} 
   if(missing(increase_method)){increase_method<-'Area'}
   if(missing(decrease_method)){decrease_method<-'Largest'}
@@ -89,27 +90,27 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   sf::st_agr(x) = 'constant'
   
   # reduce their input ecoregions data set to the areas where x is. 
-  ecoregions <- sf::st_intersection(ecoregions, x) |>
-    sf::st_make_valid() |>
-    dplyr::mutate(ID = 1:dplyr::n(), .before = 1)
+  ecoregions <- sf::st_intersection(ecoregions, x) |> 
+    sf::st_make_valid() |> 
+    dplyr::mutate(ID = 1:dplyr::n(), .before = 1) 
   
   area <- dplyr::mutate(
     ecoregions, Area = units::set_units(sf::st_area(ecoregions), ha), .before = geometry)
   
-  area_summaries <- area |>
-    sf::st_drop_geometry() |>
-    dplyr::group_by(L4_KEY) |>
+  area_summaries <- area |> 
+    sf::st_drop_geometry() |> 
+    dplyr::group_by(!!L4_KEY_quo) |> 
     dplyr::summarise(
       Eco_lvl = 4,
       Polygon_ct = dplyr::n(), 
       Total_area = sum(Area)
     ) |>
-    dplyr::rename(Name = L4_KEY) |>
+    dplyr::rename(Name = !!L4_KEY_quo) |>
     dplyr::ungroup()
   
   eco_lvls_ct <- data.frame(
     Eco_lvl = 'L4', 
-    ct =  length(unique(area$L4_KEY))
+    ct =  length(unique(area[,L4_KEY]))
   )
   
   cols <- c('ID', L4_KEY, 'n', 'geometry')
@@ -127,7 +128,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
       # if n polygons > n, select a polygon in each ecoregion to represent it.  Either by AREA or CENTRALITY 
       if(increase_method == 'Area'){
         
-        out <- dplyr::group_by(polygons, L4_KEY) |>
+        out <- dplyr::group_by(polygons, !!L4_KEY_quo) |>
           dplyr::arrange(Area, .by_group = TRUE) |>
           slice_max(n = 1) |>
           dplyr::mutate(n = 1) |>
@@ -135,7 +136,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
         
       } else {
         
-        unions <- dplyr::group_by(polygons, L4_KEY) |>
+        unions <- dplyr::group_by(polygons, !!L4_KEY_quo) |>
           dplyr::summarise(geometry = sf::st_union(geometry))
         pts <- sf::st_point_on_surface(unions) 
         out <- polygons[lengths(sf::st_intersects(pts, unions))>0, ] |>
@@ -233,7 +234,38 @@ polygon <- spData::us_states |>
   sf::st_transform(4326)
 
 out <- EcoregionBasedSample(polygon, ecoregions)
-
-head(out)
 ggplot2::ggplot() + 
    ggplot2::geom_sf(data = out, aes(fill = factor(n)))
+
+
+sp_range <- st_polygon( # complete
+  list(
+    rbind(
+      c(-80,0), c(-80,10), c(-60,10), c(-65,5),
+      c(-60,0), c(-80,0) 
+    )
+  )
+) |>
+  sf::st_sfc() |>
+  sf::st_as_sf() |>
+  sf::st_set_crs(4326) |>
+  dplyr::rename(geometry = x) |>
+  dplyr::mutate(Species = 'Da species')
+
+out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
+
+
+sf::st_crs(neo_eco) == sf::st_crs(polygon)
+
+
+
+ecoregions <- sf::st_intersection(neo_eco, sp_range) |> 
+  sf::st_make_valid() #|> 
+  dplyr::mutate(ID = 1:nrow(), .before = 1) 
+
+
+neo_eco$Provincias
+
+ggplot() + 
+  geom_sf(data = sp_range) + 
+  geom_sf(data = neo_eco)
