@@ -74,15 +74,14 @@
 #' @export 
 EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){
   
-  
   if(missing(OmernikEPA) & missing(ecoregion_col)){
     if(any(colnames(ecoregions) %in% 'L4_KEY')){OmernikEPA <- TRUE} else {
       OmernikEPA <- FALSE
       stop('A difference between the user submitted ecoregions data and standard Omernik L4 ecoregions has been detected. Please ensure you provide the appropriate colnames to fns `ecoregion_col`, set `OmernikEPA` to FALSE and try again.')}
   }
   
-  if(missing(ecoregion_col)){L4_KEY <- 'L4_KEY'}
-  L4_KEY_quo <- enquo(L4_KEY)
+  if(missing(ecoregion_col)){L4_KEY <- 'L4_KEY'} else {L4_KEY <- ecoregion_col}
+#  L4_KEY_quo <- rlang::enquo(L4_KEY)
   if(missing(n)){n<-20} 
   if(missing(increase_method)){increase_method<-'Area'}
   if(missing(decrease_method)){decrease_method<-'Largest'}
@@ -99,13 +98,13 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   
   area_summaries <- area |> 
     sf::st_drop_geometry() |> 
-    dplyr::group_by(!!L4_KEY_quo) |> 
+    dplyr::group_by(!!rlang::sym(L4_KEY)) |> 
     dplyr::summarise(
       Eco_lvl = 4,
       Polygon_ct = dplyr::n(), 
       Total_area = sum(Area)
     ) |>
-    dplyr::rename(Name = !!L4_KEY_quo) |>
+    dplyr::rename(Name = !!rlang::sym(L4_KEY)) |>
     dplyr::ungroup()
   
   eco_lvls_ct <- data.frame(
@@ -136,7 +135,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
         
       } else {
         
-        unions <- dplyr::group_by(polygons, !!L4_KEY_quo) |>
+        unions <- dplyr::group_by(polygons, !!rlang::sym(L4_KEY)) |>
           dplyr::summarise(geometry = sf::st_union(geometry))
         pts <- sf::st_point_on_surface(unions) 
         out <- polygons[lengths(sf::st_intersects(pts, unions))>0, ] |>
@@ -206,7 +205,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   
   ids <- unique(dplyr::pull(out, ID))
   out <- ecoregions |>
-    dplyr::filter(! US_L4NAME %in% ids) |>
+    dplyr::filter(! ID %in% ids) |>
     dplyr::bind_rows(out) |>
     dplyr::arrange(ID) |>
     dplyr::select(dplyr::all_of(cols)) |>
@@ -218,7 +217,10 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   
 }
 
-colnames(ecoregions)
+polygon <- spData::us_states |>
+  dplyr::select(NAME) |>
+  dplyr::filter(NAME == 'California') |>
+  sf::st_transform(4326)
 ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet = TRUE) |>
   sf::st_transform(4326) |>
   sf::st_make_valid() |>
@@ -228,25 +230,23 @@ ecoregions <- sf::st_read('../data/spatial/us_eco_l4/us_eco_l4_no_st.shp', quiet
   sf::st_make_valid() |>
   dplyr::select(-NAME) # be sure to remove any columns written over from the intersected geometry
 
-polygon <- spData::us_states |>
-  dplyr::select(NAME) |>
-  dplyr::filter(NAME == 'California') |>
-  sf::st_transform(4326)
 
 out <- EcoregionBasedSample(polygon, ecoregions)
+sum(out$n)
+
 ggplot2::ggplot() + 
-   ggplot2::geom_sf(data = out, aes(fill = factor(n)))
+   ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n)))
 
 
-sp_range <- st_polygon( # complete
+sp_range <- sf::st_polygon( # complete
   list(
     rbind(
-      c(-80,0), c(-80,10), c(-60,10), c(-65,5),
-      c(-60,0), c(-80,0) 
+      c(-80,-5), c(-80,10), c(-60,10), c(-55,5),
+      c(-60,-5), c(-80,-5) 
     )
   )
 ) |>
-  sf::st_sfc() |>
+  sf::st_sfc() |> 
   sf::st_as_sf() |>
   sf::st_set_crs(4326) |>
   dplyr::rename(geometry = x) |>
@@ -254,18 +254,9 @@ sp_range <- st_polygon( # complete
 
 out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
 
+sum(out$n)
 
-sf::st_crs(neo_eco) == sf::st_crs(polygon)
-
-
-
-ecoregions <- sf::st_intersection(neo_eco, sp_range) |> 
-  sf::st_make_valid() #|> 
-  dplyr::mutate(ID = 1:nrow(), .before = 1) 
-
-
-neo_eco$Provincias
-
-ggplot() + 
-  geom_sf(data = sp_range) + 
-  geom_sf(data = neo_eco)
+ggplot2::ggplot() + 
+  ggplot2::geom_sf(data = neo_eco) + 
+  ggplot2::geom_sf(data = out, ggplot2::aes(fill = factor(n))) + 
+  ggplot2::geom_sf(data = sp_range, fill = NA, color = 'Red') 
