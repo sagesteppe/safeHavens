@@ -15,13 +15,17 @@ knitr::opts_chunk$set(
 ```
 
 `safeHavens` can be installed directly from github, no plans are made to release the package to CRAN as it's user base is relatively niche relative to a typical R package. 
+
 ```{r Install Package, eval  = F}
-# install.packages('devtools') # devtools, or a similar package, is required to install packages from github
-devtools::install_github('sagesteppe/safeHavens')
+# install.packages('devtools') # `devtools`, or a similar package, is required to install packages from github
+# devtools::install_github('sagesteppe/safeHavens')
+# install.packages('remotes')  # lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
+remotes::install_github('sagesteppe/safeHavens') # blah even samd function name!
 ```
 
 Once installed `safeHavens` can be loaded like any other package, whether they are installed from CRAN or github. 
 We will also load `ggplot2` for it's excellent ability to plot simple features, and `tidyverse` for pushing some columns around etc.
+
 ```{r Load Libraries}
 library(safeHavens)
 library(ggplot2)
@@ -36,7 +40,7 @@ It also allows for easy integration into existing workflows and will put out the
 
 Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics. 
 They have various trade offs in terms of computational and environmental complexity. 
-The table below presents the currently implemented sampling schemas and the user facing function associated with them. 
+The table below presents the currently implemented sampling schema and the user facing function associated with them. 
 In my mind the first four functions are really flavors of the same process, one whereby we try and partition the species range into chunks of similar sizes. 
 However, as is often the case four things which seem very similar to me may have enormously different results in implementation. 
 The fifth method `IBDBasedSample` is largely in a class of it's own, in lieu of using the *continuity* of geographic space as it's primary method, it focuses on the discontinuity of space and using distance matrices and clustering to determine which patches of range are more close to each than other patches. 
@@ -102,6 +106,7 @@ Rather they are focused on estimating the effects of various parameters on the s
 
 ```{r Create Species Distribution Model, message=F, warning=F}
 
+?elasticSDM
 sdModel <- elasticSDM(
   x = x, predictors = predictors, quantile_v = 0.025,
   planar_proj =

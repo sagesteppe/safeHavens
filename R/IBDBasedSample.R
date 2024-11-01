@@ -1,7 +1,6 @@
 #' Sample a species based on Isolation by Geographic Distance (IBD)
 #' 
-#' Create n seed collection areas based on the distance geographic (great circle)
-#' distance between points. 
+#' @description Create n seed collection areas based on the distance geographic (great circle) distance between points. 
 #' @param x a Raster surface to sample the points within, e.g. the output of SDM$Supplemented. 
 #' @param n Numeric. the number of clusters desired. 
 #' @param fixedClusters Boolean. Defaults to TRUE, which will create n clusters. If False then use NbClust::NbClust to determine the optimal number of clusters.
@@ -88,7 +87,6 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
     dplyr::mutate(ID = ints, .before = 1) |>
     dplyr::select(-class)
   
-  # LET'S RETURN AN SF OBJECT INSTEAD !!!!!!!
   return(spatialClusters)
 }
 

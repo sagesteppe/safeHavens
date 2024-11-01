@@ -1,6 +1,6 @@
 #' Create a quick SDM using elastic net regression
 #' 
-#' This function quickly creates a SDM using elastic net regression, and it will 
+#' @description This function quickly creates a SDM using elastic net regression, and it will 
 #' properly format all data for downstream use with the `safeHavens` workflow. 
 #' Note that elastic net models are used for a couple very important reasons: 
 #' they rescale all input independent variables before modelling, allowing us 
@@ -31,6 +31,9 @@
 #'      
 #'  terra::plot(sdModel$RasterPredictions)
 #' }
+#' @returns A list of 12 objects, each of these subsequently used in the downstream  SDM Post processing sequence, or which we think are best written to disk. 
+#' The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the indepedent variables used in the final model are present in 'Predictors, and just the global PCNM/MEM raster surfaces are in 'PCNM'. 
+#' The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix. 
 #' @export
 elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
   

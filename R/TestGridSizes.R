@@ -1,6 +1,6 @@
 #' Get an estimate for how many grids to draw over a species range
 #' 
-#' This function uses the dimensions of a species grid to estimate how many grids
+#' @description This function uses the dimensions of a species grid to estimate how many grids
 #' would need to be added in the x and y directions to cover it with 20 grid cells
 #' of roughly equal areas. 
 #' @param target a species range as a simple feature (`sf`) object. 
@@ -12,10 +12,9 @@
 #'
 #' sizeOptions <- TestGridSizes(RI)
 #' head(sizeOptions)
-#' @return A dataframe with testing results for each grid combination. A user needs to select
-#' the optimal grid size based on a tradeoff with minimizing variance, without 
-#' creating too many grids which will need to be erased. In the Rhode Island
-#' example I would use the 'Original' option which asks for 4 x grids and 7 y grids. 
+#' @return A dataframe with testing results for each grid combination. 
+#' A user needs to select the optimal grid size based on a tradeoff with minimizing variance, without creating too many grids which will need to be erased.
+#' In the Rhode Island example I would use the 'Original' option which asks for 4 x grids and 7 y grids. 
 #' @export
 TestGridSizes <- function(target){
   

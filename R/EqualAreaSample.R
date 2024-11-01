@@ -1,6 +1,6 @@
 #' Create equal area polygons over a geographic range
 #' 
-#' This function creates `n` geographic clusters over a geographic area (`x`), typically a species
+#' @description This function creates `n` geographic clusters over a geographic area (`x`), typically a species
 #' range, using kmeans clustering. 
 #' @param x An SF object or terra spatraster. the range over which to generate the clusters.
 #' @param n Numeric. the number of clusters desired. Defaults to 20. 
@@ -22,6 +22,8 @@
 #' plot(nc, main = 'Counties of North Carolina')
 #' plot(zones, main = 'Clusters')
 #' }
+#' @return A list containing two objects, the first the results of bootstrap simulations.
+#' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
 EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps, BS.reps){
   

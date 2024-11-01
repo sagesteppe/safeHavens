@@ -1,7 +1,6 @@
-#' Design additional collections around already existing collections
-#' Generate a sampling grid using points as the input data - including existing collections
+#' Generate a sampling grid based off of regularly sampled points across the species range. 
 #' 
-#' This function utilizes a regular, or nearly so in the case of existing collections, grid of points 
+#' @description This function utilizes a regular, or nearly so in the case of existing collections, grid of points 
 #' to develop a sampling scheme or n polygons. 
 #' @param polygon the input sf polygon, i.e. species range or administrative unit, where sampling is desired. 
 #' @param n Numeric. The total number of desired collections. Defaults to 20.
@@ -21,6 +20,8 @@
 #' head(out$SummaryData)
 #' plot(out$Geometry)
 #' }
+#' @return A list containing two objects, the first the results of bootstrap simulations.
+#' The second an sf dataframe containing the polygons with the smallest amount of variance in size.  
 #' @export
 PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
   
