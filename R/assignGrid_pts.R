@@ -7,6 +7,7 @@
 #' @param focal_grid 
 #' @param props 
 #' @param nf_pct 
+#' @export
 assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
   
   # Ensure that we are only working on a grid with 100 points

@@ -15,6 +15,8 @@
 GridBasedSample <- function(x, planar_projection, gridDimensions){
   
   if(missing(planar_projection)){planar_projection = 5070}
+  if(sf::st_crs(x) != planar_projection){x <-  sf::st_transform(x, planar_projection)}
+  
   # Determine the size of each grid. 
   gr <- sf::st_make_grid(x, n = c(gridDimensions$GridNOx, gridDimensions$GridNOy), square = FALSE) 
   
@@ -59,6 +61,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   for (i in seq_along(neighbors)){
     if(sum(neighbors[[i]])==0){
       need_distance_neighbs <- which(sum(neighbors[[i]])==0)
+    #  sf::st_agr(need_distance_neighbs) <- 'constant'
       gr_pos <- sf::st_point_on_surface(gr)
       ob <- spdep::knearneigh(gr_pos, k=4)[['nn']]
       neighbors[[i]] <- ob[20+need_distance_neighbs,]
@@ -179,7 +182,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   final_grids <- lapply(groups, snapR) |> bind_rows()
   final_grids <- sf::st_make_valid(final_grids)
   
-  sf::st_agr(final_grids) <- 'constant'; sf::st_agr(gr) = "constant"
+#  sf::st_agr(final_grids) <- 'constant'; sf::st_agr(gr) = "constant"
   
   # reconstitute all original input grids, i.e. those without neighbors, 
   # with all reassigned grids. 

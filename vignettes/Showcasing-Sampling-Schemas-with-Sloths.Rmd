@@ -29,6 +29,8 @@ We will also load `ggplot2` for it's excellent ability to plot simple features, 
 ```{r Load Libraries}
 library(safeHavens)
 library(ggplot2)
+library(sf)
+library(terra)
 suppressPackageStartupMessages(library(dplyr))
 ```
 
@@ -86,7 +88,7 @@ If you are interested in visualizing what a sampling schema under safeHavens mos
 It goes on for a while, so I almost recommend checking this section last. 
 In the meantime, if you still want to see the results from `EnvironmentalBasedSample` compared to the other functions, you can load the results from disk, they are distributed with the package. 
 
-```{r Prepare data for a Species Distribution Model, eval = F}
+```{r Prepare data for a Species Distribution Model}
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
@@ -104,7 +106,7 @@ The goal of these models are rather to understand the degree to which various en
 Accordingly, they are not optimized for use in making the typical decisions associated with species distribution models. 
 Rather they are focused on estimating the effects of various parameters on the species distribution. 
 
-```{r Create Species Distribution Model, message=F, warning=F}
+```{r Create Species Distribution Model, message=F, warning=F, eval = F}
 
 sdModel <- elasticSDM(
   x = x, predictors = predictors, quantile_v = 0.025,
@@ -124,14 +126,14 @@ Note that by using this we don't exactly get a feel for which variable is really
 Infer from this at your own risk!
 Inference from SDM's is something I do not recommend except in the most special of circumstances anyways. 
 
-```{r Explore SDM output - Different alpha}
+```{r Explore SDM output - Different alpha, eval = F}
 sdModel$CVStructure
 ```
 
 Here we can see how the elastic net decided which is the top model. 
 We used Accuracy rather than Kappa as the main criterion for model selection. 
 
-```{r Explore SDM output - Confusion Matrix}
+```{r Explore SDM output - Confusion Matrix, eval = F}
 sdModel$ConfusionMatrix
 ```
 
@@ -141,7 +143,7 @@ This is not a bug, CV folds are testing on their own holdouts, while this is a b
 The main reason the confustion matrix results are likely to be higher is due to spatial auto-correlation which are not address in a typical 'random split' of test and train data. 
 Consider the ouput from CVStructure to be a little bit more realistic. 
 
-```{r Explore SDM output - Map}
+```{r Explore SDM output - Map, eval = F}
 terra::plot(sdModel$RasterPredictions)
 ```
 
@@ -173,7 +175,7 @@ With the Bradypus data set I use 0.25 as the quantile, which is saying "Neighbor
 Increasing this value to say 1.0 will mean that no suitable habitat is removed, decreasing it makes maps more conservative. 
 The cost with increasing the distances greatly is that the sampling methods may then puts grids in many areas without populations to collect from. 
 
-```{r Threshold the SDM output}
+```{r Threshold the SDM output, eval = F}
 
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
@@ -185,7 +187,7 @@ threshold_rasts <- PostProcessSDM(
 ```
 
 We can compare the results of applying this function side by side using the output from the function. 
-```{r Compare Threshold Results}
+```{r Compare Threshold Results, eval = F}
 terra::plot(threshold_rasts$FinalRasters)
 ```
 
@@ -194,7 +196,7 @@ glmnet is used for three main reasons, 1) it gives directional coefficients and 
 And 3) glmnet actually re-scales all variables before model generation, which I suppose can be implemented with other models, we will use the same re-scaling that glmnet does to transform our independent variables in the raster stack and then multiply them by their beta-coefficients. 
 In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
 
-```{r Rescale Predictor Variables}
+```{r Rescale Predictor Variables, eval = F}
 ########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
 # STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
 # FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
@@ -213,7 +215,7 @@ We can see that the variables are 'close' to be on the same scale, this will wor
 If any of the layers are all the same color (maybe yellow?) that means they have no variance, that's a term that was shrunk from the model. 
 It will be dealt with internall in a future function. 
 
-```{r Show beta Coefficients from model}
+```{r Show beta Coefficients from model, eval = F}
 print(rr$BetaCoefficients)
 ```
 We can also look at the beta coefficients for each variable. 
@@ -283,7 +285,7 @@ How do I define 'OK' a feeling in that gut that your boots are tingling.
 The package also has an SDM projection saved in the data we can just load that too. 
 ```{r}
 sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'data/Bradypus_test.tif'))
-
+terra::plot(sdm)
 ```
 
 # Running the Various Sample Design Algorithms
@@ -329,7 +331,6 @@ tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
 ```{r Grid and Point Based Samples}
-library(ggplot2)
 
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
@@ -337,19 +338,18 @@ ggplot(data = grid_buff) +
   geom_sf(aes(fill = factor(Assigned))) + 
   geom_sf_label(aes(label = Assigned))
 
-vector_sdm <- terra::as.polygons(threshold_rasts$FinalRasters[[4]]) |>
+vector_sdm <- terra::as.polygons(sdm$Supplemented) |>
   sf::st_as_sf() |>
   sf::st_make_valid()
+
+sf::st_crs(vector_sdm) == sf::st_crs(planar_proj)
 
 grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs) 
 ```
 
 
 ```{r}
-###########     PBS NEEDS TO ASSIGN POINTS ON THE EXPORT OF DATA      ##########
-################
-################
-################
+
 pbs <- PointBasedSample(x_buff)
 
 pbs.sf <- pbs$Geometry
@@ -406,16 +406,21 @@ ggplot(data = os.sf) +
 
 
 ```{r Isolate by Distance Example}
-files <- list.files(
-  path = file.path(system.file(package="dismo"), 'ex'), 
-  pattern = 'grd',  full.names=TRUE )
-predictors <- terra::rast(files)
+files <- list.files( # note that for this process we need a raster rather than 
+  path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
+  pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
+predictors <- terra::rast(files) # this can also be done using 'fasterize'. Whenever
+# we rasterize a product, we will need to provide a template raster that our vector
+# will inherit the cell size, coordinate system, etc. from 
 
 x_buff.sf <- sf::st_as_sf(x_buff) |> 
   dplyr::mutate(Range = 1) |> 
   sf::st_transform( terra::crs(predictors))
 
-v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
+# and here we specify the field/column with our variable we want to become an attribute of our raster
+v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
+
+# now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 
 ggplot(data = ibdbs) +

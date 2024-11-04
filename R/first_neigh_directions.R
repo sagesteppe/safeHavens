@@ -8,6 +8,7 @@
 #' This is preferable to simply using the nearest feature (e.g. sf:;st_nearest_feature) when the chain of islands is elongated and may more appropriately be split across multiple grids downstream from here. 
 #' @param from a point on surface of the grid which will be merged. POS will ensure it lands on a feature.
 #' @param destinations the set of kearneigh which are accepting polygon merges 
+#' @export
 first_neigh_directions <- function(from, destinations){
   
   dest_POS <- sf::st_point_on_surface(destinations)
