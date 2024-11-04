@@ -85,7 +85,8 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
   ints <- unlist(sf::st_intersects(spatialClusters, cents))
   spatialClusters <- spatialClusters |>
     dplyr::mutate(ID = ints, .before = 1) |>
-    dplyr::select(-class)
+    dplyr::select(-class) |>
+    dplyr::arrange(ID)
   
   return(spatialClusters)
 }

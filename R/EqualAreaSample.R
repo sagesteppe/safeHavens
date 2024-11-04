@@ -48,7 +48,8 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
   # now run the request numbed of iterations. 
   voronoiPolygons <- replicate(
     reps, 
-    VoronoiSamplerEAS(x = x, kmeans_centers = kmeans_centers, reps = reps, pts = pts), 
+    VoronoiSamplerEAS(x = x, kmeans_centers = kmeans_centers, reps = reps, 
+                      pts = 100, n = n, planar_projection = planar_projection), 
     simplify = FALSE)
   
   # we use variance to determine the configuration of voronoi polygons which have
@@ -102,14 +103,14 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
 #### Voronoi polygons can be formed many times in many ways, We want to run
 ## a number of iterations, and then determine the configuration which has #
 ## the smallest amount of variance in the geographic size of each cluster. #
-VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts){
+VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection){
   
   # determine which portions of the STZ are likely to be populated by converting
   # the sdm output to vectors and masking the STZ to this area. 
-  pts <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
+  pts_n <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
   
-  kmeans_res <- stats::kmeans(sf::st_coordinates(pts), centers = n)
-  pts$ID <- stats::kmeans_res$cluster
+  kmeans_res <- kmeans(sf::st_coordinates(pts_n), centers = n)
+  pts_n$ID <- kmeans_res$cluster
   
   # gather the geographic centers of the polygons. 
   kmeans_centers <- setNames(
