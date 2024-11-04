@@ -31,8 +31,10 @@ library(safeHavens)
 library(ggplot2)
 library(sf)
 library(terra)
+library(spData)
 suppressPackageStartupMessages(library(dplyr))
 ```
+
 
 # Notes about `safeHavens`
 
@@ -288,6 +290,30 @@ sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'data/Bradypus_t
 terra::plot(sdm)
 ```
 
+# Now prep some data for visualizing the results 
+
+While not necessary, we are going to add some context to our maps which should help you interpret the results of the various functions from the package. 
+We will use the `spData` package which uses naturalearth data for it's World data and is suitable for creating effective maps at a variety of resolutions. 
+
+```{r Map themes}
+carto_theme <- function(){
+  theme(
+  legend.position = 'none', 
+  panel.background = element_rect(fill = "aliceblue"), 
+  panel.grid.minor.x = element_line(colour = "red", linetype = 3, size = 0.5)
+  )
+}
+
+x_extra_buff <- sf::st_buffer(x_buff, 100000) |>
+  sf::st_transform(4326)
+
+americas <- world
+americas <- sf::st_crop(americas, sf::st_bbox(x_extra_buff)) |>
+  dplyr::select(name_long)
+
+rm(x_extra_buff)
+```
+
 # Running the Various Sample Design Algorithms
 
 Now that we have some data which can represent species ranges, we can run the various sampling approaches. 
@@ -330,19 +356,20 @@ print(tgs)
 tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
-```{r Grid and Point Based Samples, warning = FALSE}
+```{r Grid Based Samples, warning = FALSE}
 
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 ggplot(data = grid_buff) + 
-  geom_sf(aes(fill = factor(Assigned))) + 
-  geom_sf_label(aes(label = Assigned))
+  geom_sf(data = americas) + 
+  geom_sf( aes(fill = factor(Assigned))) + 
+  geom_sf_label(aes(label = Assigned), alpha = 0.4) + 
+  carto_theme()  + 
+  labs(title = 'Grid Based Sample')
 
 vector_sdm <- terra::as.polygons(sdm$Supplemented) |>
   sf::st_as_sf() |>
   sf::st_make_valid()
-
-sf::st_crs(vector_sdm) == sf::st_crs(planar_proj)
 
 grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs) 
 ```
@@ -354,8 +381,12 @@ pbs <- PointBasedSample(x_buff)
 pbs.sf <- pbs$Geometry
 
 ggplot(data = pbs.sf) + 
+  geom_sf(data = americas) + 
+  carto_theme() + 
   geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID))
+  geom_sf_label(aes(label = ID), alpha = 0.4) + 
+  carto_theme() + 
+  labs(title = 'Point Based Sample')
 
 ```
 
@@ -372,10 +403,12 @@ eas <- EqualAreaSample(x_buff, planar_projection = planar_proj)
 eas.sf <- eas$Geometry
 
 ggplot(data = eas.sf) + 
+  geom_sf(data = americas) + 
   geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID))
+  geom_sf_label(aes(label = ID), alpha = 0.4) + 
+  carto_theme() + 
+  labs(title = 'Equal Area Sample')
 ```
-
 
 ### Opportunistic Sample
 
@@ -397,14 +430,20 @@ os.sf <- os$Geometry
 ggplot(data = os.sf) + 
   geom_sf(aes(fill = factor(ID))) + 
   geom_sf_label(aes(label = ID)) + 
-  geom_sf(data = exist_pts)
+  geom_sf(data = exist_pts) + 
+  carto_theme() + 
+  xlab('Longitude (x)') + 
+  ylab('Latitude (y)') +
+  labs(title = 'Opporunistic Sample / Point Based')
+  
+
 ```
 
 
 ### Isolation by Distance Based Sample
 
 
-```{r Isolate by Distance Example}
+```{r Isolatation by Distance Example}
 files <- list.files( # note that for this process we need a raster rather than 
   path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
   pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
@@ -424,7 +463,11 @@ ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predicto
 
 ggplot(data = ibdbs) +
   geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID))
+  geom_sf_label(aes(label = ID)) + 
+  carto_theme() + 
+  xlab('Longitude (x)') + 
+  ylab('Latitude (y)') +
+  labs(title = 'Isolation by Distance')
 
 rm(predictors, files, v, x_buff.sf)
 ```
@@ -450,11 +493,16 @@ neo_eco <- sf::st_read(
 head(neo_eco[,c(1, 3, 4, 6, 11)])
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
-obby <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
+ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
 
 ggplot() + 
-  geom_sf(data = obby, aes(fill = n)) 
+  geom_sf(data = ebs.sf, aes(fill = n))  + 
+  carto_theme() + 
+  xlab('Longitude (x)') + 
+  ylab('Latitude (y)') +
+  labs(title = 'Sampling by Ecoregion (Largest)')
 
+rm(neo_eco)
 ```
 
 ### Environmental Based Sample 
