@@ -48,7 +48,7 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
   # now run the request numbed of iterations. 
   voronoiPolygons <- replicate(
     reps, 
-    VoronoiSamplerEAS(x = x, kmeans_centers = kmeans_centers, reps = reps), 
+    VoronoiSamplerEAS(x = x, kmeans_centers = kmeans_centers, reps = reps, pts = pts), 
     simplify = FALSE)
   
   # we use variance to determine the configuration of voronoi polygons which have
@@ -102,7 +102,7 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
 #### Voronoi polygons can be formed many times in many ways, We want to run
 ## a number of iterations, and then determine the configuration which has #
 ## the smallest amount of variance in the geographic size of each cluster. #
-VoronoiSamplerEAS <- function(x, kmeans_centers, reps){
+VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts){
   
   # determine which portions of the STZ are likely to be populated by converting
   # the sdm output to vectors and masking the STZ to this area. 

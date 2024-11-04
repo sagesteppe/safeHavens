@@ -181,8 +181,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   groups <- split(final_grids, f = final_grids$Assigned)
   final_grids <- lapply(groups, snapR) |> bind_rows()
   final_grids <- sf::st_make_valid(final_grids)
-  
-#  sf::st_agr(final_grids) <- 'constant'; sf::st_agr(gr) = "constant"
+  sf::st_agr(final_grids) <- 'constant'
   
   # reconstitute all original input grids, i.e. those without neighbors, 
   # with all reassigned grids. 
