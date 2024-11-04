@@ -106,15 +106,20 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   if(missing(increase_method)){increase_method<-'Area'}
   if(missing(decrease_method)){decrease_method<-'Largest'}
   sf::st_agr(ecoregions) = 'constant'
-  sf::st_agr(x) = 'constant'
   
   # reduce their input ecoregions data set to the areas where x is. 
-  ecoregions <- sf::st_intersection(ecoregions, x) |> 
+  
+  ecoregions <- ecoregions  |> 
     sf::st_make_valid() |> 
     dplyr::mutate(ID = 1:dplyr::n(), .before = 1) 
   
+  ecoregions_sub <- sf::st_intersection(ecoregions, x) |>
+    sf::st_make_valid()
+  ecoregions_sub <- ecoregions_sub [ !sf::st_is_empty(ecoregions_sub), ]
+  ecoregions_sub <- ecoregions_sub[sf::st_geometry_type(ecoregions_sub) %in% c('POLYGON', 'MULTIPOLYGON'),]
+  
   area <- dplyr::mutate(
-    ecoregions, Area = units::set_units(sf::st_area(ecoregions), ha), .before = geometry)
+    ecoregions_sub, Area = units::set_units(sf::st_area(ecoregions_sub), ha), .before = geometry)
   
   area_summaries <- area |> 
     sf::st_drop_geometry() |> 
@@ -132,7 +137,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
     ct =  length(unique(area[,L4_KEY]))
   )
   
-  cols <- c('ID', L4_KEY, 'n', 'geometry')
+  cols <- c('ID', L4_KEY, 'n', 'geometry', 'x')
   
   # in this method we only assign counts to each area. 
   if(eco_lvls_ct[eco_lvls_ct$Eco_lvl=='L4','ct'] == n){
@@ -141,7 +146,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
       # if n polygons == n  woohoo! each ecoregion is allocated a sample size of one point 
       
       out <- dplyr::mutate(polygons, n = 1) |>
-        dplyr::select(cols)
+        dplyr::select(dplyr::any_of(cols))
       
     } else {
       # if n polygons > n, select a polygon in each ecoregion to represent it.  Either by AREA or CENTRALITY 
@@ -151,7 +156,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
           dplyr::arrange(Area, .by_group = TRUE) |>
           dplyr::slice_max(n = 1) |>
           dplyr::mutate(n = 1) |>
-          dplyr::select(cols)
+          dplyr::select(dplyr::any_of(cols))
         
       } else {
         
@@ -160,7 +165,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
         pts <- sf::st_point_on_surface(unions) 
         out <- polygons[lengths(sf::st_intersects(pts, unions))>0, ] |>
           dplyr::mutate(n = 1) |>
-          dplyr::select(dplyr::all_of(cols))
+          dplyr::select(dplyr::any_of(cols))
         
       }
     }
@@ -179,13 +184,13 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
       pct_record <- sum(pct_area[pct_area>5]) / n_remain
       sample[pct_area>5] <- round(pct_area[pct_area>5] / pct_record)
       out <- dplyr::mutate(area, n = sample) |>
-        dplyr::select(dplyr::all_of(cols))
+        dplyr::select(dplyr::any_of(cols))
     } else {
       # some areas bay be composed entirely of very small coverage areas. 
       # the largest 20 will get the records in that case. 
       area$n <- NA
       area$n[(order(pct_area, decreasing = TRUE)[1:20])] <- 1
-      out <- dplyr::select(area, dplyr::all_of(cols))
+      out <- dplyr::select(area, dplyr::any_of(cols))
     }
     
   } else { # MANY L4's across the species range, 
@@ -216,25 +221,27 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
     }
     
     out <- dplyr::mutate(out, n = 1) |>
-      dplyr::select(dplyr::all_of(cols))
+      dplyr::select(dplyr::any_of(cols)) 
   }
   
   # above we only added the desired sample sizes to each targeted ecoregion, 
   # now we will add back the ecoregions which are not targeted for sampling to reach
   # the n = 20 goal. 
+  cols <- c('ID', L4_KEY, 'n', 'geometry')
   
-  ids <- unique(dplyr::pull(out, ID))
+  out_assigned <- out[!is.na(out$n),]
+  ids <- unique(dplyr::pull(out_assigned, ID))
+  
+  
   out <- ecoregions |>
-    dplyr::filter(! ID %in% ids) |>
-    dplyr::bind_rows(out) |>
+    dplyr::mutate(n = dplyr::if_else(ID %in% ids, 1, 0)) |>
     dplyr::arrange(ID) |>
     dplyr::select(dplyr::all_of(cols)) |>
     dplyr::select(-ID) |>
-    dplyr::mutate(
-      n = dplyr::if_else(is.na(n), 0, n)
-    ) |>
     sf::st_make_valid()
   
+  return(out)
 }
+
 
 

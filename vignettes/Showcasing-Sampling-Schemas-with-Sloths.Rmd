@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 `safeHavens` can be installed directly from github, no plans are made to release the package to CRAN as it's user base is relatively niche relative to a typical R package. 
 
-```{r Install Package, eval  = F}
+```{r Install Package}
 # install.packages('devtools') # `devtools`, or a similar package, is required to install packages from github
 # devtools::install_github('sagesteppe/safeHavens')
 # install.packages('remotes')  # lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
@@ -330,7 +330,7 @@ print(tgs)
 tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
-```{r Grid and Point Based Samples}
+```{r Grid and Point Based Samples, warning = FALSE}
 
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
@@ -348,7 +348,7 @@ grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs)
 ```
 
 
-```{r Point Based Sample}
+```{r Point Based Sample, warning=FALSE}
 
 pbs <- PointBasedSample(x_buff)
 pbs.sf <- pbs$Geometry
@@ -445,12 +445,17 @@ This column should contain unique names for the highest resolution level ecoregi
 ```{r Ecoregion Based Sample}
 neo_eco <- sf::st_read(
   system.file("data/NeoTropicsEcoregions.gpkg", package="safeHavens"), 
-  quiet = TRUE)
+  quiet = TRUE) |>
+  dplyr::rename(geometry = geom)
 head(neo_eco[,c(1, 3, 4, 6, 11)])
 
-EcoregionBasedSample(sp_range, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
-```
+x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
+obby <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
 
+ggplot() + 
+  geom_sf(data = obby, aes(fill = n)) 
+
+```
 
 ### Environmental Based Sample 
 
