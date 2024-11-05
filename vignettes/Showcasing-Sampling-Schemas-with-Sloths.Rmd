@@ -36,7 +36,9 @@ library(sf)
 library(terra)
 library(spData)
 library(dplyr)
+library(patchwork)
 set.seed(23)
+planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 ```
 
 
@@ -80,13 +82,16 @@ Note in this table 'Comp.' and 'Envi.' refer to computational and environmental 
 
 This package is strongly focused on plants, no disrespect to animals, they just never occurred to me during development, and I'm sure you all have enough money things like this don't matter anyways. 
 Otherwise just ask a FAANG do donate a team of developers - I'm sure they would be happy to oblige and blow this rag tag thing out of the water. 
-However, to make it up to animal people, we will use a Sloth, which I think is (*Bradypus variegatus*)[https://en.wikipedia.org/wiki/Brown-throated_sloth] it's both a maniacally and mischievous looking little thing. 
+However, to make it up to animal people, we will use a Sloth, which I think is [*Bradypus variegatus*](https://en.wikipedia.org/wiki/Brown-throated_sloth) it's both a maniacally and mischievous looking little thing. 
 Beyond looking at the inspiration for most Jim Henson puppets above, we will treat Bradypus more like a plant species when we discuss these sampling schemes - that is we will assume we are focused on organisms which seldom move great distances in dispersal processes.
 
 We can access some data on *Bradypus* from the `dismo` package - presumably short for '*Dis*tribution *Mo*delling', which was created by Robert Hijman and others. 
-We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. If you want to read more about dismo and distribution modelling in general here an awesome bookdown resource written by (Hijman and Elith)[https://rspatial.org/raster/sdm/] - aspects of this vignette are definitely based on it. 
+We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. If you want to read more about dismo and distribution modelling in general here an awesome bookdown resource written by [Hijman and Elith](https://rspatial.org/raster/sdm/) - aspects of this vignette are definitely based on it. 
 We will use Species Distribution Models as the input variable to many of the arguments in this function - don't get caught up in the details of making them. 
 These days you can get good results out of essentially entirely automated pipelines, we'll have the truncated process outlined here in a chunk, but I honestly argue you should ignore this chunk the first few times you read this document, and go back for the details (discussed in the link above) only if you decide to pursue the route of `EnvironmentalBasedSample` 
+
+Future users will need to obtain their own occurrence records for using with this package. 
+The r package `rbgif` is a fantastic way to do this, a well documented article linking to several vignettes for the package is [here](https://docs.ropensci.org/rgbif/articles/rgbif.html). 
 
 # Species Distribution Modelling (skip me your first few read throughs?!)
 
@@ -95,7 +100,6 @@ It goes on for a while, so I almost recommend checking this section last.
 In the meantime, if you still want to see the results from `EnvironmentalBasedSample` compared to the other functions, you can load the results from disk, they are distributed with the package. 
 
 ```{r Prepare data for a Species Distribution Model}
-
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
@@ -104,7 +108,6 @@ files <- list.files(
   path = file.path(system.file(package="dismo"), 'ex'), 
   pattern = 'grd',  full.names=TRUE )
 predictors <- terra::rast(files) # import the independent variables
-
 ```
 
 
@@ -114,12 +117,9 @@ Accordingly, they are not optimized for use in making the typical decisions asso
 Rather they are focused on estimating the effects of various parameters on the species distribution. 
 
 ```{r Create Species Distribution Model, message=F, warning=F, eval = F}
-
 sdModel <- elasticSDM(
   x = x, predictors = predictors, quantile_v = 0.025,
-  planar_proj =
-    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
-
+  planar_proj = planar_proj)
 ```
 
 We use the `caret` package to help out with our glmnet modelling, it's unnecessary, but it provides output which is very easy to explore and interact with. 
@@ -178,19 +178,16 @@ We then summarize these distances and can understand the distribution of distanc
 We use a selected quantile, to then serve as a buffer. 
 Area with predicted suitable habitat outside of this buffer become 'cut off' (or masked) from the binary raster map, and areas within buffer distance from known occurrences which are currently masked are reassigned as probabilities. 
 The theory behind this process in underdeveloped and nascent, it does come down to the gut of an analyst. 
-With the Bradypus data set I use 0.25 as the quantile, which is saying "Neighbors are generally 100km apart, I am happy with the risk of saying that 25km within each occurrence is occupied suitable habitat".
+With the *Bradypus* data set I use 0.25 as the quantile, which is saying "Neighbors are generally 100km apart, I am happy with the risk of saying that 25km within each occurrence is occupied suitable habitat".
 Increasing this value to say 1.0 will mean that no suitable habitat is removed, decreasing it makes maps more conservative. 
 The cost with increasing the distances greatly is that the sampling methods may then puts grids in many areas without populations to collect from. 
 
 ```{r Threshold the SDM output, eval = F}
-
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
-  planar_proj =
-    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
+  planar_proj = planar_proj,
   thresh_metric = 'sensitivity', quant_amt = 0.5)
-
 ```
 
 We can compare the results of applying this function side by side using the output from the function. 
@@ -237,7 +234,6 @@ I test write them in a directory which exists for the project associated with th
 These test files are tiny anyways. 
 
 ```{r Save SDM results, eval = F}
-
 bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
 
 writeSDMresults(
@@ -306,7 +302,6 @@ While not necessary, we are going to add some context to our maps which should h
 We will use the `spData` package which uses naturalearth data for it's World data and is suitable for creating effective maps at a variety of resolutions. 
 
 ```{r Map themes}
-
 x_extra_buff <- sf::st_buffer(x_buff, 100000) |>
   sf::st_transform(4326)
 
@@ -374,8 +369,7 @@ print(tgs)
 tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
-```{r Grid Based Samples, warning = FALSE, width="200%"}
-
+```{r Grid Based Samples, warning = FALSE, width="200%", message = FALSE}
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 gbs.p <- map + 
@@ -393,7 +387,6 @@ grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs)
 
 
 ```{r Point Based Sample, warning=FALSE, message = FALSE}
-
 pbs <- PointBasedSample(x_buff)
 pbs.sf <- pbs$Geometry
 
@@ -402,9 +395,7 @@ pbs.p <- map +
 #  geom_sf_label(data = pbs.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Point') + 
   coord_sf(expand = F)
-
 ```
-
 
 ### Equal Area Sample
 
@@ -433,7 +424,6 @@ It doesn't always work exceptionally, especially when a couple collections are v
 
 Essentially 
 ```{r Opportunistic Sample, message = FALSE}
-
 exist_pts <- sf::st_sample(x_buff, size = 10) |>
    sf::st_as_sf() |>
    dplyr::rename(geometry = x)
@@ -444,15 +434,16 @@ os.sf <- os$Geometry
 os.p <- map + 
   geom_sf(data = os.sf, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  geom_sf(data = exist_pts) + 
+  geom_sf(data = exist_pts, alpha = 0.4) + 
   labs(title = 'Opportunistic') + 
   coord_sf(expand = F)
-
 ```
-
 
 ### Isolation by Distance Based Sample
 
+Isolation by Distance, and to a much lesser extent Toblers first law of geography, are the fundamental ideas driving this package. 
+While the above sampling schemes are implicetly based around the former idea, the latter is the most essential for germplasm conservation. 
+This function explicitly uses IBD to develop a sampling scheme, and does not obfusciate it with any other parameters. 
 
 ```{r Isolatation by Distance Example, warning=FALSE, message = FALSE}
 files <- list.files( # note that for this process we need a raster rather than 
@@ -480,6 +471,9 @@ ibdbs.p <- map +
 
 rm(predictors, files, v, x_buff.sf)
 ```
+
+Because these data were processed from a raster, they have these sharp edges, representing raster tiles. 
+However, it should immediately be evident that the borders of the clusters are more natural looking than in the previous (and future) sampling schemes. 
 
 ### Ecoregion Based Sample 
 
@@ -518,8 +512,8 @@ rm(neo_eco)
 The data which are output by this function differ drastically than the data output by all the other functions. 
 It simply represents a count of targeted accession by ecoregion. 
 For some reason I am convinced this is a product many people will prefer relative to the 'post-processed' object which we will return below. 
-```{r Post-process Ecoregion Based Sample, eval = F}
 
+```{r Post-process Ecoregion Based Sample, eval = F}
 neo_eco <- select(neo_eco, Provincias)
 step1 <- st_difference(neo_eco, sf::st_union(x_buff))
 plot(step1)
@@ -544,7 +538,7 @@ The environmental based sample can only be conducted if you have the species dis
 Included in the data directory of the folder are all of the objects required to run this example for the species. 
 We will load them here. 
 
-```{r Load data for Environmental Based Sample}
+```{r Load data for Environmental Based Sample, message = F, results = 'hide'}
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'data', 'sdModel.rds')
   )
@@ -560,7 +554,6 @@ Whereas earlier in this vignette we showcased that the functions generated the s
 This approach was chosen as this function is only writing out four objects: 1) the groups as vector data, 2) and the groups as raster data, 3) the k nearest neighbors (knn) model used to generate these clusters, and 4) the confusion matrix associated with testing the knn model. 
 
 ```{r Environmental Based Sample}
-
 rr <- RescaleRasters( # you may have already done this!
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -592,8 +585,60 @@ ENVIbs.p <- map +
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
-
 ```
+
+
+The function `EnvironmentalBasedSample` can take any of the three binary rasters created by `PostProcessSDM` as arguments for the template. 
+Here we showcase the different results from using each of them. 
+
+```{r Compare Environmental Based Samples, echo = F, message = F, warning = F}
+ENVIbs_thresh <- EnvironmentalBasedSample(
+  pred_rescale = rr$RescaledPredictors, 
+  path = file.path(p, 'safeHavens-Vignette'),
+  taxon = 'Bradypus_test', 
+  f_rasts = sdm, n = 20, 
+  planar_projection = planar_proj,
+  lyr = 'Threshold')
+
+ENVIbs_clipped <- EnvironmentalBasedSample(
+  pred_rescale = rr$RescaledPredictors, 
+  path = file.path(p, 'safeHavens-Vignette'),
+  taxon = 'Bradypus_test', 
+  f_rasts = sdm, n = 20, 
+  planar_projection = planar_proj,
+  lyr = 'Clipped')
+
+ENVIbs.p.thresh <- map + 
+  geom_sf(data = ENVIbs_thresh, aes(fill = factor(ID))) + 
+  labs(title = 'Threshold') + 
+  coord_sf(expand = FALSE)
+
+ENVIbs.p.clipped <- map + 
+  geom_sf(data = ENVIbs_clipped, aes(fill = factor(ID))) + 
+  labs(title = 'Clipped') + 
+  coord_sf(expand = FALSE)
+
+ENVIbs.p.supp <- map + 
+  geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
+  labs(title = 'Supplemented') + 
+  coord_sf(expand = FALSE)
+
+ENVIbs.p.thresh + ENVIbs.p.clipped + ENVIbs.p.supp + 
+  plot_layout(ncol = 3)
+```
+
+These plots are able to showcase the difference in results depending on which of the three input rasters are utilized. 
+As with all of the sampling schemes, results vary widely based on the spatial extents which the functions are applied to. 
+Using the SDM output which have undergone thresholding results in the largest classified area. 
+At first glance the results may seem very different, but if you look at central america, they are largely consistent, as they are near the Andes; large differences do exist in the Amazon Basin, but even there some alignment between the systems is evident. 
+Accordingly, the surface used for a species should match some evaluation criterion. 
+
+Using the threshold raster surface is a very good option if we do not want to 'miss' too many areas, whereas the clipped and supplemented options may be better suited for scenarios where we do not want to draw up clusters, which lack any populations which can be collected from.  
+
+```{r echo = FALSE}
+rm(ENVIbs_thresh, ENVIbs_clipped, ENVIbs.p.thresh, ENVIbs.p.clipped, p, ENVIbs, rr, ENVIbs.p.supp)
+```
+
 
 # Comparision of different sampling schemes
 
@@ -612,13 +657,8 @@ They all look relatively similar to me when plotted one after another, let's plo
 | `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
 
 ```{r Plot all Sampling Schemes together}
-library(patchwork)
-
-
 gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
-  plot_layout(ncol = 2)
- 
-
+  plot_layout(ncol = 3)
 ```
 
 

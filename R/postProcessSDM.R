@@ -18,12 +18,12 @@
 #' defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping replicates for
 #' estimating a buffer to restrict the SDM surface too, and the minimum of the 10 bootstrap reps
 #' for adding surface to presence points which were not placed in binary suitable habitat.
-#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.  
+#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.  
 #' @return A list containing two options. 1) A spatraster with 4 layers, A) the continuous probabilities of suitable habitat feed in from `elasticSDM`, B) this raster in binary format based on the specified thresholding statistic, C) the binary raster from B + with habitat clipped to the buffer distances determined by measuring nearest neighbor distances and thresholding at a quantile D) the binary raster from C, adding the same distance to points which were initially in cells classified by thresholding as not having suitable habitat.
 #' D' is the general basis for all future steps, but either B, or C serve as alternatives. 
 #' 2) All threshold statistics calculated by dismo as a dataframe. 
 #' @export 
-PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_proj){
+PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_projection){
   
   if(missing(thresh_metric)){thresh_metric <- 'sensitivity'}
   if(missing(quant_amt)){quant_amt <- 0.25}
@@ -72,7 +72,7 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
  pres <-  dplyr::bind_rows(
     sdModel$TrainingData, sdModel$TestData) |>
     dplyr::filter(occurrence == 1)
-  pres <- sf::st_transform(pres, planar_proj)
+  pres <- sf::st_transform(pres, planar_projection)
 
   indices_knndm <- CAST::knndm(pres, predictors, k=10)
   
@@ -98,7 +98,7 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   outside_binary <- terra::extract(rast_binary, pres, bind = TRUE) |>
     sf::st_as_sf() |>
     dplyr::filter(is.na(s0)) |>
-    sf::st_transform(planar_proj) |>
+    sf::st_transform(planar_projection) |>
     sf::st_buffer(min(dists)) |>
     dplyr::summarize(geometry = sf::st_union(geometry)) |>
     dplyr::mutate(occurrence = 1) |>

@@ -22,6 +22,7 @@
 EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr, taxon, path, n, fixedClusters, n_pts, planar_projection, coord_wt, buffer_d, prop_split){
   
   if(missing(lyr)){lyr <- 'Supplemented'}
+  if(missing(n)){n <- 20}
   if(missing(fixedClusters)){fixedClusters <- TRUE}
   if(missing(prop_split)){prop_split <- 0.8}
   if(missing(n_pts)){n_pts <- 500}

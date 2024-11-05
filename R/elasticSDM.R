@@ -10,7 +10,7 @@
 #' prohibited by older model selection frameworks. 
 #' @param x A (simple feature) sf data set of occurrence data for the species. 
 #' @param predictors a terra 'rasterstack' of variables to serve as indepedent predictors. 
-#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
+#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`. 
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025. 
 #' @examples \dontrun{
@@ -26,7 +26,7 @@
 #' 
 #' sdModel <- elasticSDM(
 #'    x = x, predictors = predictors, quantile_v = 0.025,
-#'    planar_proj =
+#'    planar_projection =
 #'      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
 #'      
 #'  terra::plot(sdModel$RasterPredictions)
@@ -35,11 +35,11 @@
 #' The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the indepedent variables used in the final model are present in 'Predictors, and just the global PCNM/MEM raster surfaces are in 'PCNM'. 
 #' The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix. 
 #' @export
-elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
+elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
   
   if(missing(quantile_v)){quantile_v <- 0.025}
   
-  pts_plan <-   sf::st_transform(x, planar_proj)
+  pts_plan <-   sf::st_transform(x, planar_projection)
   
   bb <- sf::st_bbox(pts_plan)
   buff_dist <- as.numeric( # here we get the mean distance of the XY distances of the bb
@@ -152,7 +152,7 @@ elasticSDM <- function(x, predictors, planar_proj, domain, quantile_v){
     x = train, 
     ctrl = ctrl, 
     indices_knndm = indices_knndm, 
-    planar_proj = planar_proj, 
+    planar_proj = planar_projection, 
     sub = sub
     )
   
