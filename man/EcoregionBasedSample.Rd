@@ -59,7 +59,6 @@ The EPA Omernik spatial data set comes with both 'POLYGONS' and 'MULTIPOLYGONS',
 I do not modify them here, and on rare occasion (essentially islands), what I refer to as a 'polygon' may technically be a multipolygon.
 }
 \examples{
-\dontrun{
 
 # First example is using a subset (and with simplified geometry) Omernik L4
 # ecoregion shapefile from the EPA. Which as of the time of writing were 
@@ -70,8 +69,8 @@ polygon <- spData::us_states |>
 dplyr::select(NAME) |>
    dplyr::filter(NAME == 'California') |>
    sf::st_transform(4326)
-
-Weco <- sf::st_read(system.file("data/WesternEcoregions.gpkg", package="safeHavens"))
+   
+Weco <- sf::st_read(file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'))
 head(Weco)
 
 out <- EcoregionBasedSample(polygon, Weco)
@@ -116,5 +115,5 @@ ggplot2::ggplot() +
 # like an old cartoon such as Rugrats or so. We do this to reduce the file size
 # to make it easier to install the package, and reduce the run time of the functions
 # for these simple examples. 
-}
+
 }
