@@ -5,6 +5,7 @@
 #' @param x output of `assignGrid_pts`
 #' @param neighb_grid the neighboring grid options.
 #' @param focal_grid the grid to reassign the area of. 
+#' @keywords internal
 snapGrids <- function(x, neighb_grid, focal_grid){
   
   # combine the output of `assignGrid_pts` together and create a small

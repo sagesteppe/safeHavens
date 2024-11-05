@@ -3,6 +3,7 @@
 #' this function uses sf::st_snap to remove small lines and other artifacts associated
 #' with the unioning of polygons. This is ran within `snapGrids`
 #' @param x most of the output of `snapgrids`
+#' @keywords internal
 healPolygons <- function(x){
   
   healR <- function(x){
@@ -29,6 +30,7 @@ healPolygons <- function(x){
 #' this function uses sf::st_snap to remove small lines and other artifacts associated
 #' with the unioning of polygons
 #' @param x the output of healPolygons
+#' @keywords internal
 snapR <- function(x){
   sf::st_agr(x) = 'constant'
   Assigned <- sf::st_drop_geometry(x$Assigned)[1]

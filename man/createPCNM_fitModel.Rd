@@ -35,3 +35,4 @@ out into the environment, 1) pcnm, surfaces for only those eigenvectors used in
 the glmnet model (including if shrunk out), 2) the glmnet model 3) all fitting
 information from carets process.
 }
+\keyword{internal}

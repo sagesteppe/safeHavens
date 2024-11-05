@@ -590,6 +590,8 @@ ENVIbs.p <- map +
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
+
+ENVIbs.p
 ```
 
 
@@ -649,17 +651,6 @@ rm(ENVIbs_thresh, ENVIbs_clipped, ENVIbs.p.thresh, ENVIbs.p.clipped, p, ENVIbs, 
 
 So, we've made got some maps for you to look at!
 They all look relatively similar to me when plotted one after another, let's plot them all simultaneously and see if that's still the case. 
-
-
-|        Function           |              Description               | Comp.| Envi.|
-|---------------------------|----------------------------------------|------|------|
-| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
-| `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
-| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
-| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
-| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
-| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
-| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
 
 ```{r Plot all Sampling Schemes together}
 gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 

@@ -7,6 +7,7 @@
 #' @param focal_grid 
 #' @param props 
 #' @param nf_pct 
+#' @keywords internal
 #' @export
 assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
   

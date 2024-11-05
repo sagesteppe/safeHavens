@@ -20,3 +20,4 @@ This function is ran within \code{GridBasedSample} it will place points througho
 which should be merged to larger polygons and assign them to neighboring polygons
 based on how much area we want to grow these polygons too.
 }
+\keyword{internal}

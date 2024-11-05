@@ -13,3 +13,4 @@ healPolygons(x)
 this function uses sf::st_snap to remove small lines and other artifacts associated
 with the unioning of polygons. This is ran within \code{snapGrids}
 }
+\keyword{internal}

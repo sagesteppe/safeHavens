@@ -4,6 +4,7 @@
 #' @param x distance matrix between the points and their potential neighbors polygons
 #' @param props the existing proportional area of each potential neighbor polygons
 #' @param nf_pct the desired proportional area of each potential neighbor polygon
+#' @keywords internal
 assign_pts_frst <- function(x, props, nf_pct){
 
   # ensure these are in the same order. so we can match by position

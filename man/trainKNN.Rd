@@ -14,3 +14,4 @@ trainKNN(x, split_prop)
 \description{
 Simply use this to partition your test data and quickly train a simple model
 }
+\keyword{internal}

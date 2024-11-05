@@ -20,3 +20,4 @@ if the lines cross any other neighbor they are discarded.
 \details{
 This is preferable to simply using the nearest feature (e.g. sf:;st_nearest_feature) when the chain of islands is elongated and may more appropriately be split across multiple grids downstream from here.
 }
+\keyword{internal}

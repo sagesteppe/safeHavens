@@ -7,6 +7,7 @@
 #' but the areas themselves tend to be remarkable inconsequential, and worth randomly
 #' reassigning to a neighbor
 #' @param final_grids truthfully nearly final at this point. 
+#' @keywords internal
 reduceFinalGrids <- function(final_grids){
   
   grid_sz_order <- order(

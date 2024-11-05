@@ -18,3 +18,4 @@ assign_pts_frst(x, props, nf_pct)
 Assign randomly sampled points to their nearest grid based on the difference
 between the polygons original and desired size.
 }
+\keyword{internal}

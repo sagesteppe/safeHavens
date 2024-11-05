@@ -17,3 +17,4 @@ snapGrids(x, neighb_grid, focal_grid)
 This function is part of the grid based sampling process to turn small grid cells,
 which are to be broken up, into a larger existing grid cells.
 }
+\keyword{internal}
