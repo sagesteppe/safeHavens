@@ -161,7 +161,7 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
   
   sf::st_agr(ClusterVectors) = "constant"
   cents <- sf::st_point_on_surface(ClusterVectors)
-  ClusterVectors <- cents |>
+  cents <- cents |>
     dplyr::mutate(
       X = sf::st_coordinates(cents)[,1],
       Y = sf::st_coordinates(cents)[,2]
@@ -170,6 +170,13 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
     dplyr::mutate(ID = 1:dplyr::n()) |>
     dplyr::arrange(ID) |>
     dplyr::select(ID, geometry)
+  
+  sf::st_agr(cents) = "constant"
+  ints <- unlist(sf::st_intersects(ClusterVectors, cents))
+  ClusterVectors <- ClusterVectors |>
+    dplyr::mutate(ID = ints, .before = 1) |>
+    dplyr::select(-class) |>
+    dplyr::arrange(ID)
   
   # convert the polygons back into a raster, allowing the raster to match the ID
   # numbers. 
