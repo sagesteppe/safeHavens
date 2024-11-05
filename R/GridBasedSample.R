@@ -6,8 +6,8 @@
 #' @param gridDimensions A single row form the ouput of `TestGridSizes` with the optimal number of grids to generate. 
 #' @examples
 #' target <- spData::us_states |> 
-#' dplyr::filter(NAME == 'Rhode Island') |>
-#'  sf::st_transform(32615)
+#'   dplyr::filter(NAME == 'Rhode Island') |>
+#'   sf::st_transform(32615)
 #' output <- GridBasedSample(target, 5070)
 #' plot(output)
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 

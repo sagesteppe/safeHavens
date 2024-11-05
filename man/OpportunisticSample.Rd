@@ -24,23 +24,22 @@ A list containing two sublists, the first of which [\link{'SummaryData'}] detail
 This function utilizes a regular, or nearly so in the case of existing collections, grid of points to develop a sampling scheme or n polygons.
 }
 \examples{
-\donttest{
 #' Design additional collections around already existing collections
-nc <- spData::us_states |>
+ri <- spData::us_states |>
   dplyr::select(NAME) |>
   dplyr::filter(NAME == 'Rhode Island') |>
   sf::st_transform(32617)
-existing_collections <- sf::st_sample(nc, size = 5) |>
+existing_collections <- sf::st_sample(ri, size = 5) |>
   sf::st_as_sf() |>
   dplyr::rename(geometry = x)
 
 system.time(
-  out <- OpportunisticSample(polygon = nc, reps = 150) 
+  out <- OpportunisticSample(polygon = ri, reps = 150) 
 ) # set very low for example
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 7 seconds per species so not much concern on the speed end of things.
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
    ggplot2::geom_sf(data = existing_collections) 
- }
+ 
 }

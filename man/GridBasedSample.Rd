@@ -21,8 +21,8 @@ This function creates 20 grid cells over a geographic area (\code{x}), typically
 }
 \examples{
 target <- spData::us_states |> 
-dplyr::filter(NAME == 'Rhode Island') |>
- sf::st_transform(32615)
+  dplyr::filter(NAME == 'Rhode Island') |>
+  sf::st_transform(32615)
 output <- GridBasedSample(target, 5070)
 plot(output)
 }

@@ -10,7 +10,7 @@
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 100. 
 #' @param BS.reps number of bootstrap replicates for evaluating results. 
-#' @examples \donttest{
+#' @examples 
 #' nc <- sf::st_read(system.file("shape/nc.shp", package="sf")) |>
 #' dplyr::select(NAME)
 #'
@@ -20,8 +20,9 @@
 #' )
 #' 
 #' plot(nc, main = 'Counties of North Carolina')
-#' plot(zones, main = 'Clusters')
-#' }
+#' plot(zones$Geometry, main = 'Clusters')
+#' zones$SummaryData
+#' 
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export

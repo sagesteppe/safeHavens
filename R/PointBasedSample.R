@@ -7,19 +7,21 @@
 #' @param collections an sf point geometry data set of where existing collections have been made.
 #' @param reps further arguments passed to np.boot 
 #' @param BS.reps number of bootstrap replicates for evaluating results. 
-#' @examples \donttest{
-#' #' Design additional collections around already existing collections
-#' nc <- spData::us_states |>
+#' @examples
+#' #' Utilize a grid based stratified sample for drawing up polygons
+#' ri <- spData::us_states |>
 #'   dplyr::select(NAME) |>
 #'   dplyr::filter(NAME == 'Rhode Island') |>
 #'   sf::st_transform(32617)
 #'   
-#' out <- PointBasedSample(polygon = nc, reps = 10, BS.reps = 10) # set very low for example
+#'  system.time(
+#'   out <- PointBasedSample(polygon = ri, reps = 10, BS.reps = 10) # set very low for example
+#'  )
 #' # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 #' # 2 seconds per species so not much concern on the speed end of things!
 #' head(out$SummaryData)
 #' plot(out$Geometry)
-#' }
+#' 
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export

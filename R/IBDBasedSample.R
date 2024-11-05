@@ -10,7 +10,7 @@
 #' 0.8 to use 80% of records for training and 20% for the independent test sample.  
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
-#' @examples \dontrun{
+#' @examples 
 #' planar_proj =
 #' '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 #' 
@@ -40,7 +40,7 @@
 #' # now we run the function demanding 20 areas to make accessions from, 
 #' ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 #' plot(ibdbs)
-#' }
+#' 
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export 
 IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min.nc, max.nc){

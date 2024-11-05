@@ -6,25 +6,25 @@
 #' @param collections an sf point geometry data set of where existing collections have been made.
 #' @param reps further arguments passed to np.boot 
 #' @param BS.reps number of bootstrap replicates for evaluating results. 
-#' @examples \donttest{
+#' @examples 
 #' #' Design additional collections around already existing collections
-#' nc <- spData::us_states |>
+#' ri <- spData::us_states |>
 #'   dplyr::select(NAME) |>
 #'   dplyr::filter(NAME == 'Rhode Island') |>
 #'   sf::st_transform(32617)
-#' existing_collections <- sf::st_sample(nc, size = 5) |>
+#' existing_collections <- sf::st_sample(ri, size = 5) |>
 #'   sf::st_as_sf() |>
 #'   dplyr::rename(geometry = x)
 #'
 #' system.time(
-#'   out <- OpportunisticSample(polygon = nc, reps = 150) 
+#'   out <- OpportunisticSample(polygon = ri, reps = 150) 
 #' ) # set very low for example
 #' # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 #' # 7 seconds per species so not much concern on the speed end of things.
 #' ggplot2::ggplot() + 
 #'   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
 #'    ggplot2::geom_sf(data = existing_collections) 
-#'  }
+#'  
 #' @return A list containing two sublists, the first of which [['SummaryData']] details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second [[Geometry]], contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
 OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){

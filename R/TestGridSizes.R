@@ -5,12 +5,12 @@
 #' of roughly equal areas. 
 #' @param target a species range as a simple feature (`sf`) object. 
 #' @examples
-#' RI <- spData::us_states |>
+#' ri <- spData::us_states |>
 #' dplyr::select(NAME) |>
 #'    dplyr::filter(NAME == 'Rhode Island') |>
 #'    sf::st_transform(32617)
 #'
-#' sizeOptions <- TestGridSizes(RI)
+#' sizeOptions <- TestGridSizes(ri)
 #' head(sizeOptions)
 #' @return A dataframe with testing results for each grid combination. 
 #' A user needs to select the optimal grid size based on a tradeoff with minimizing variance, without creating too many grids which will need to be erased.

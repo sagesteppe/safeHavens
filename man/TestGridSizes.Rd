@@ -20,11 +20,11 @@ would need to be added in the x and y directions to cover it with 20 grid cells
 of roughly equal areas.
 }
 \examples{
-RI <- spData::us_states |>
+ri <- spData::us_states |>
 dplyr::select(NAME) |>
    dplyr::filter(NAME == 'Rhode Island') |>
    sf::st_transform(32617)
 
-sizeOptions <- TestGridSizes(RI)
+sizeOptions <- TestGridSizes(ri)
 head(sizeOptions)
 }

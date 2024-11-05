@@ -40,7 +40,6 @@ An simple features (sf) object containing the final grids for saving to computer
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
 }
 \examples{
-\dontrun{
 planar_proj =
 '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 
@@ -70,5 +69,5 @@ v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 plot(ibdbs)
-}
+
 }

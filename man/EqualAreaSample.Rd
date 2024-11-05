@@ -31,7 +31,6 @@ This function creates \code{n} geographic clusters over a geographic area (\code
 range, using kmeans clustering.
 }
 \examples{
-\donttest{
 nc <- sf::st_read(system.file("shape/nc.shp", package="sf")) |>
 dplyr::select(NAME)
 
@@ -41,6 +40,7 @@ system.time(
 )
 
 plot(nc, main = 'Counties of North Carolina')
-plot(zones, main = 'Clusters')
-}
+plot(zones$Geometry, main = 'Clusters')
+zones$SummaryData
+
 }
