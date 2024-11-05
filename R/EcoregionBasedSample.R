@@ -32,7 +32,7 @@
 #' 'Largest' (the default) will select the n largest ecoregions by total area, and then select the largest single polygon within each of these classes. 
 #' 'Smallest' will select the n smallest ecoregions by total area, and then select the largest single polygon within these classes. 
 #' 'Most' will select the n ecoregions with the most polygons, and select the largest polygon from each. 
-#' @examples \dontrun{
+#' @examples 
 #' 
 #' # First example is using a subset (and with simplified geometry) Omernik L4
 #' # ecoregion shapefile from the EPA. Which as of the time of writing were 
@@ -43,8 +43,8 @@
 #' dplyr::select(NAME) |>
 #'    dplyr::filter(NAME == 'California') |>
 #'    sf::st_transform(4326)
-#' 
-#' Weco <- sf::st_read(system.file("data/WesternEcoregions.gpkg", package="safeHavens"))
+#'    
+#' Weco <- sf::st_read(file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'))
 #' head(Weco)
 #' 
 #' out <- EcoregionBasedSample(polygon, Weco)
@@ -89,7 +89,7 @@
 #' # like an old cartoon such as Rugrats or so. We do this to reduce the file size
 #' # to make it easier to install the package, and reduce the run time of the functions
 #' # for these simple examples. 
-#' }
+#' 
 #' @returns An sf object, the same length as the input data set, with only the finest resolution eco level, and geometry fields retained, and a new column 'n' indicating how many accession should be gather from the ecoregion. 
 #' @export 
 EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, increase_method, decrease_method){
