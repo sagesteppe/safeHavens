@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 `safeHavens` can be installed directly from github, no plans are made to release the package to CRAN as it's user base is relatively niche relative to a typical R package. 
 
-```{r Install Package}
+```{r Install Package, message=FALSE}
 # install.packages('devtools') # `devtools`, or a similar package, is required to install packages from github
 # devtools::install_github('sagesteppe/safeHavens')
 # install.packages('remotes')  # lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
@@ -26,13 +26,13 @@ remotes::install_github('sagesteppe/safeHavens') # blah even same function name!
 Once installed `safeHavens` can be loaded like any other package, whether they are installed from CRAN or github. 
 We will also load `ggplot2` for it's excellent ability to plot simple features, and `tidyverse` for pushing some columns around etc.
 
-```{r Load Libraries}
+```{r Load Libraries, message=FALSE}
 library(safeHavens)
 library(ggplot2)
 library(sf)
 library(terra)
 library(spData)
-suppressPackageStartupMessages(library(dplyr))
+library(dplyr)
 ```
 
 
@@ -102,6 +102,7 @@ files <- list.files(
 predictors <- terra::rast(files) # import the independent variables
 
 ```
+
 
 The goal of most SDM's is to create a model which most accurately predicts where a species will be located in environmental, and hence geographic space. 
 The goal of these models are rather to understand the degree to which various environmental features correlate with a species observed range. 
@@ -199,11 +200,12 @@ And 3) glmnet actually re-scales all variables before model generation, which I 
 In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
 
 ```{r Rescale Predictor Variables, eval = F}
-########### CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
+# CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
 # STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
 # FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
 # we will also write out the beta coefficients using writeSDMresults right after
 # this. 
+
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -251,7 +253,7 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
 We will play around with it as an example dataset to compare our buffered distance results to. 
 
-```{r Clean up SDM variables}
+```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
 rm(rr, predictors, files, sdModel, bp)
 ```
 
@@ -276,6 +278,9 @@ x_buff <- sf::st_transform(x, planar_proj) |>
   sf::st_union()
 
 plot(x_buff)
+```
+
+```{r echo = FALSE}
 rm(x)
 ```
 
@@ -296,13 +301,6 @@ While not necessary, we are going to add some context to our maps which should h
 We will use the `spData` package which uses naturalearth data for it's World data and is suitable for creating effective maps at a variety of resolutions. 
 
 ```{r Map themes}
-carto_theme <- function(){
-  theme(
-  legend.position = 'none', 
-  panel.background = element_rect(fill = "aliceblue"), 
-  panel.grid.minor.x = element_line(colour = "red", linetype = 3, size = 0.5)
-  )
-}
 
 x_extra_buff <- sf::st_buffer(x_buff, 100000) |>
   sf::st_transform(4326)
@@ -310,6 +308,15 @@ x_extra_buff <- sf::st_buffer(x_buff, 100000) |>
 americas <- world
 americas <- sf::st_crop(americas, sf::st_bbox(x_extra_buff)) |>
   dplyr::select(name_long)
+
+map <- ggplot() + 
+  geom_sf(data = americas) + 
+  theme(
+    legend.position = 'none', 
+    panel.background = element_rect(fill = "aliceblue"), 
+    panel.grid.minor.x = element_line(colour = "red", linetype = 3, linewidth  = 0.5))+ 
+  xlab('Longitude (x)') + 
+  ylab('Latitude (y)') +
 
 rm(x_extra_buff)
 ```
@@ -356,16 +363,15 @@ print(tgs)
 tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
-```{r Grid Based Samples, warning = FALSE}
+```{r Grid Based Samples, warning = FALSE, width="200%"}
 
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
-ggplot(data = grid_buff) + 
-  geom_sf(data = americas) + 
-  geom_sf( aes(fill = factor(Assigned))) + 
-  geom_sf_label(aes(label = Assigned), alpha = 0.4) + 
+map + 
+  geom_sf(data = grid_buff, aes(fill = factor(Assigned))) + 
+ # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   carto_theme()  + 
-  labs(title = 'Grid Based Sample')
+  labs(title = 'Grid Based Sample') 
 
 vector_sdm <- terra::as.polygons(sdm$Supplemented) |>
   sf::st_as_sf() |>
@@ -380,12 +386,9 @@ grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs)
 pbs <- PointBasedSample(x_buff)
 pbs.sf <- pbs$Geometry
 
-ggplot(data = pbs.sf) + 
-  geom_sf(data = americas) + 
-  carto_theme() + 
-  geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID), alpha = 0.4) + 
-  carto_theme() + 
+map + 
+  geom_sf(data = pbs.sf, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = pbs.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Point Based Sample')
 
 ```
@@ -402,11 +405,9 @@ This process will be ran a few times, defaulting to 100 `reps`, and the set of p
 eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
 eas.sf <- eas$Geometry
 
-ggplot(data = eas.sf) + 
-  geom_sf(data = americas) + 
-  geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID), alpha = 0.4) + 
-  carto_theme() + 
+map + 
+  geom_sf(data = eas.sf, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = eas.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Equal Area Sample')
 ```
 
@@ -427,15 +428,12 @@ exist_pts <- sf::st_sample(x_buff, size = 10) |>
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
 os.sf <- os$Geometry
 
-ggplot(data = os.sf) + 
-  geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID)) + 
+
+map + 
+  geom_sf(data = os.sf, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   geom_sf(data = exist_pts) + 
-  carto_theme() + 
-  xlab('Longitude (x)') + 
-  ylab('Latitude (y)') +
   labs(title = 'Opporunistic Sample / Point Based')
-  
 
 ```
 
@@ -443,7 +441,7 @@ ggplot(data = os.sf) +
 ### Isolation by Distance Based Sample
 
 
-```{r Isolatation by Distance Example}
+```{r Isolatation by Distance Example, warning=FALSE}
 files <- list.files( # note that for this process we need a raster rather than 
   path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
   pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
@@ -461,13 +459,12 @@ v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 
-ggplot(data = ibdbs) +
-  geom_sf(aes(fill = factor(ID))) + 
-  geom_sf_label(aes(label = ID)) + 
-  carto_theme() + 
-  xlab('Longitude (x)') + 
-  ylab('Latitude (y)') +
+
+map + 
+  geom_sf(data = ibdbs, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Isolation by Distance')
+
 
 rm(predictors, files, v, x_buff.sf)
 ```
@@ -495,12 +492,11 @@ head(neo_eco[,c(1, 3, 4, 6, 11)])
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
 
-ggplot() + 
-  geom_sf(data = ebs.sf, aes(fill = n))  + 
-  carto_theme() + 
-  xlab('Longitude (x)') + 
-  ylab('Latitude (y)') +
-  labs(title = 'Sampling by Ecoregion (Largest)')
+
+map + 
+  geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
+#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
+  labs(title = 'Ecoregion Sample (Largest)')
 
 rm(neo_eco)
 ```
@@ -508,10 +504,19 @@ rm(neo_eco)
 ### Environmental Based Sample 
 
 The environmental based sample can only be conducted if you have the species distribution model data. 
-```{r Environmental Based Sample}
+```{r Environmental Based Sample, eval = F}
 
 setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
-getwd()
+
+x <- readRDS(system.file(package="safeHavens", sdModel))
+
+system.file(sdModel,package = 'safeHavens')
+
+rr <- RescaleRasters(
+  model = sdModel$Model,
+  predictors = sdModel$Predictors, 
+  training_data = sdModel$TrainData, 
+  pred_mat = sdModel$PredictMatrix)
 
 wm <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 

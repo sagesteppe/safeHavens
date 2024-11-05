@@ -6,7 +6,7 @@
 #' @param predictors the raster stack to use for the process from `elasticSDM`
 #' @param training_data the same data that went into the glmnet model, this is used
 #' for calculating variance which is required for the scaling process. From `elasticSDM`
-#' @param the Prediction matrix from `elasticSDM`
+#' @param pred_mat the Prediction matrix from `elasticSDM`
 #' @return A list with two objects. 1) The rescaled raster stack. 
 #' 2) A table of both standardized and unstandardized coefficients from the glmnet model. 
 #' @export 
