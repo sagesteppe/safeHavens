@@ -7,12 +7,13 @@
 EnvironmentalBasedSample(
   pred_rescale,
   f_rasts,
+  lyr,
   taxon,
   path,
   n,
   fixedClusters,
   n_pts,
-  planar_proj,
+  planar_projection,
   coord_wt,
   buffer_d,
   prop_split
@@ -22,6 +23,8 @@ EnvironmentalBasedSample(
 \item{pred_rescale}{a rasterstack of predictor layers which have been rescaled to represent the beta coefficients from the elastic net (glmnet::glmnet) modelling process. See ?RescaleRasters for an implementation of this functionality.}
 
 \item{f_rasts}{The rasters output from the SDM workflow.}
+
+\item{lyr}{Character. The name of the layer you want to use for the analysis one of: 'Threshold', 'Clipped', or Supplemented'. If missing defaults to 'Supplemented'.}
 
 \item{taxon}{Character. the name of the taxonomic entity for which the models were created. The final raster of clusters, the results from both KNN classifier trainings, and details of the clustering procedure (if fixedClusters=TRUE).}
 
@@ -33,7 +36,7 @@ EnvironmentalBasedSample(
 
 \item{n_pts}{Numeric. the number of points to use for generating the clusters, these will be randomly sampled within the mask area \code{mask}. Defaults to 500.}
 
-\item{planar_proj}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
+\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 
 \item{coord_wt}{Numeric. The amount to weigh coordinates by for the distance matrix relative to the most important variable identified by elastic net regression. Defaults to 2.5, setting at 1 would make this value equivalent to environmental and PCNM variables. This metric increases the spatial contiguity of the clusters identified.}
 
