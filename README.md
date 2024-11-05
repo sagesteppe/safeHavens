@@ -36,3 +36,6 @@ This package helps germplasm curators communicate areas of interest to collectio
 | `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
 | `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
 | `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
+
+
+The species distribution modelling section has a couple functions which are essential for achieving the `EnvironmentalBasedSample` design, these are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and `writeSDMresults`.
