@@ -1,8 +1,8 @@
 ---
-title: "Showcasing Sampling Schemas with Sloths"
+title: "Showcasing Sampling Schemes with Sloths"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Showcasing Sampling Schemas with Sloths}
+  %\VignetteIndexEntry{Showcasing Sampling Schemes with Sloths}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -36,6 +36,7 @@ library(sf)
 library(terra)
 library(spData)
 library(dplyr)
+set.seed(23)
 ```
 
 
@@ -47,7 +48,7 @@ It also allows for easy integration into existing workflows and will put out the
 
 Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics. 
 They have various trade offs in terms of computational and environmental complexity. 
-The table below presents the currently implemented sampling schema and the user facing function associated with them. 
+The table below presents the currently implemented sampling scheme and the user facing function associated with them. 
 In my mind the first four functions are really flavors of the same process, one whereby we try and partition the species range into chunks of similar sizes. 
 However, as is often the case four things which seem very similar to me may have enormously different results in implementation. 
 The fifth method `IBDBasedSample` is largely in a class of it's own, in lieu of using the *continuity* of geographic space as it's primary method, it focuses on the discontinuity of space and using distance matrices and clustering to determine which patches of range are more close to each than other patches. 
@@ -89,7 +90,7 @@ These days you can get good results out of essentially entirely automated pipeli
 
 # Species Distribution Modelling (skip me your first few read throughs?!)
 
-If you are interested in visualizing what a sampling schema under safeHavens most complex function `EnvironmentalBasedSample` requires, you can explore this section to understand the costs required to achieve this process. 
+If you are interested in visualizing what a sampling scheme under safeHavens most complex function `EnvironmentalBasedSample` requires, you can explore this section to understand the costs required to achieve this process. 
 It goes on for a while, so I almost recommend checking this section last. 
 In the meantime, if you still want to see the results from `EnvironmentalBasedSample` compared to the other functions, you can load the results from disk, they are distributed with the package. 
 
@@ -209,9 +210,6 @@ In this way our raster stack becomes representative of our model, we can then us
 # we will also write out the beta coefficients using writeSDMresults right after
 # this. 
 
-terra::writeRaster(sdModel$Predictors, '../data/Predictors.tif')
-saveRDS(sdModel, '../data/sdModel.rds')
-
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -232,7 +230,7 @@ We can also look at the beta coefficients for each variable.
 glmnet returns the 'untransformed' variables, i.e. the coefficients on the same scale as the input rasters, we calculate the BC right afterwards. 
 
 `safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
-Given then one of these sampling schema may be followed for quite some time, I think it is best practice to save many of these objects. 
+Given then one of these sampling scheme may be followed for quite some time, I think it is best practice to save many of these objects. 
 Yes they will take up some storage space, but storage is virtually free these days anyways. 
 So why not write out all of the following items? 
 I test write them in a directory which exists for the project associated with the creation of this R package, just save them somewhere and delete them after this. 
@@ -316,14 +314,20 @@ americas <- world
 americas <- sf::st_crop(americas, sf::st_bbox(x_extra_buff)) |>
   dplyr::select(name_long)
 
+bb <- sf::st_bbox(x_extra_buff)
+
 map <- ggplot() + 
   geom_sf(data = americas) + 
   theme(
     legend.position = 'none', 
     panel.background = element_rect(fill = "aliceblue"), 
-    panel.grid.minor.x = element_line(colour = "red", linetype = 3, linewidth  = 0.5))+ 
-  xlab('Longitude (x)') + 
-  ylab('Latitude (y)') +
+    panel.grid.minor.x = element_line(colour = "red", linetype = 3, linewidth  = 0.5), 
+    axis.ticks=element_blank(),
+    axis.text=element_blank(),
+    plot.background=element_rect(colour="steelblue"),
+    plot.margin=grid::unit(c(0,0,0,0),"cm"),
+    axis.ticks.length = unit(0, "pt"))+ 
+  coord_sf(xlim = c(bb[1], bb[3]), ylim = c(bb[2], bb[4]), expand = FALSE)
 
 rm(x_extra_buff)
 ```
@@ -374,11 +378,11 @@ tgs <- tgs[tgs$Name=='Smaller',]
 
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
-map + 
+gbs.p <- map + 
   geom_sf(data = grid_buff, aes(fill = factor(Assigned))) + 
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
-  carto_theme()  + 
-  labs(title = 'Grid Based Sample') 
+  labs(title = 'Grids')  + 
+  coord_sf(expand = F)
 
 vector_sdm <- terra::as.polygons(sdm$Supplemented) |>
   sf::st_as_sf() |>
@@ -388,15 +392,16 @@ grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs)
 ```
 
 
-```{r Point Based Sample, warning=FALSE}
+```{r Point Based Sample, warning=FALSE, message = FALSE}
 
 pbs <- PointBasedSample(x_buff)
 pbs.sf <- pbs$Geometry
 
-map + 
+pbs.p <- map + 
   geom_sf(data = pbs.sf, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = pbs.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Point Based Sample')
+  labs(title = 'Point') + 
+  coord_sf(expand = F)
 
 ```
 
@@ -408,14 +413,15 @@ It simply creates many points, `pts` defaults to 5000, within our target polygon
 The individual points then assigned to these groups have polygons which 'take' up all of the map space developed, and are intersected back to the species range, and the area of each polygon is then measured. 
 This process will be ran a few times, defaulting to 100 `reps`, and the set of polygons which was created during these reps with the smallest variance in polygon size will be selected to be returned from the function. 
 
-```{r Equal Area Sample}
+```{r Equal Area Sample, message = FALSE}
 eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
 eas.sf <- eas$Geometry
 
-map + 
+eas.p <- map + 
   geom_sf(data = eas.sf, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = eas.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Equal Area Sample')
+  labs(title = 'Equal Area') + 
+  coord_sf(expand = F)
 ```
 
 ### Opportunistic Sample
@@ -426,7 +432,7 @@ The function `OpportunisticSample` makes a few very minor modifications to the p
 It doesn't always work exceptionally, especially when a couple collections are very close to each other, but it may be a beneficial tool in the belt. 
 
 Essentially 
-```{r Opportunistic Sample}
+```{r Opportunistic Sample, message = FALSE}
 
 exist_pts <- sf::st_sample(x_buff, size = 10) |>
    sf::st_as_sf() |>
@@ -435,12 +441,12 @@ exist_pts <- sf::st_sample(x_buff, size = 10) |>
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
 os.sf <- os$Geometry
 
-
-map + 
+os.p <- map + 
   geom_sf(data = os.sf, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   geom_sf(data = exist_pts) + 
-  labs(title = 'Opporunistic Sample / Point Based')
+  labs(title = 'Opportunistic') + 
+  coord_sf(expand = F)
 
 ```
 
@@ -448,7 +454,7 @@ map +
 ### Isolation by Distance Based Sample
 
 
-```{r Isolatation by Distance Example, warning=FALSE}
+```{r Isolatation by Distance Example, warning=FALSE, message = FALSE}
 files <- list.files( # note that for this process we need a raster rather than 
   path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
   pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
@@ -466,12 +472,11 @@ v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 
-
-map + 
+ibdbs.p <- map + 
   geom_sf(data = ibdbs, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Isolation by Distance')
-
+  labs(title = 'IBD') + 
+  coord_sf(expand = F)
 
 rm(predictors, files, v, x_buff.sf)
 ```
@@ -489,7 +494,7 @@ Two additional arguments relate to whether we are using Omernik Level 4 ecoregio
 These are `OmernikEPA`, and `ecoregion_col`, if you are using the official EPA release of ecoregions then both of these are optional, however if you are not using the EPA product than both *should* be supplied - but only the `ecoregion_col` argument is totally necessary. 
 This column should contain unique names for the highest resolution level ecoregion you want to use from the data set, for many data sets, such as our example we call 'neo_eco' this may be the only field with ecolevel information!
 
-```{r Ecoregion Based Sample}
+```{r Ecoregion Based Sample, message = F}
 neo_eco <- sf::st_read(
   system.file("data/NeoTropicsEcoregions.gpkg", package="safeHavens"), 
   quiet = TRUE) |>
@@ -499,13 +504,39 @@ head(neo_eco[,c(1, 3, 4, 6, 11)])
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
 
-map + 
+# for plotting let's crop it to the other objects
+ebs.sf <- st_crop(ebs.sf, bb)
+
+ebs.p <- map + 
   geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
-#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Ecoregion Sample (Largest)')
+  labs(title = 'Ecoregion') + 
+  coord_sf(expand = F)
 
 rm(neo_eco)
 ```
+
+The data which are output by this function differ drastically than the data output by all the other functions. 
+It simply represents a count of targeted accession by ecoregion. 
+For some reason I am convinced this is a product many people will prefer relative to the 'post-processed' object which we will return below. 
+```{r Post-process Ecoregion Based Sample, eval = F}
+
+neo_eco <- select(neo_eco, Provincias)
+step1 <- st_difference(neo_eco, sf::st_union(x_buff))
+plot(step1)
+
+intersects <- sf::st_intersection(ebs.sf,neo_eco )
+
+areas <- st_erase(ebs.sf, x_buff)
+plot(intersects)
+
+obby <- sf::st_intersection(neo_eco, ebs.sf)
+plot(obby)
+
+map + 
+  geom_sf(data = areas) + 
+  labs(title = 'Ecoregion Sample (Largest)')
+```
+
 
 ### Environmental Based Sample 
 
@@ -554,19 +585,37 @@ ENVIbs <- EnvironmentalBasedSample(
     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs',
   buffer_d = 3, prop_split = 0.8)
 
-map + 
+ENVIbs.p <- map + 
   geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
-  geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Environmental Based Sample')
+  #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
+  labs(title = 'Environmental') + 
+  coord_sf(expand = FALSE)
 
 ```
 
-# Comparision of different sampling schema
+# Comparision of different sampling schemes
 
 So, we've made got some maps for you to look at!
 They all look relatively similar to me when plotted one after another, let's plot them all simultaneously and see if that's still the case. 
 
-```{r Plot all Sampling Schemas together}
+
+|        Function           |              Description               | Comp.| Envi.|
+|---------------------------|----------------------------------------|------|------|
+| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
+| `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
+| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
+| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
+| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
+| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
+| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
+
+```{r Plot all Sampling Schemes together}
+library(patchwork)
+
+
+gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
+  plot_layout(ncol = 2)
+ 
 
 ```
 
