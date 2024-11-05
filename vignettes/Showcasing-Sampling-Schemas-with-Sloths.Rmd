@@ -324,7 +324,7 @@ map <- ggplot() +
     axis.ticks.length = unit(0, "pt"))+ 
   coord_sf(xlim = c(bb[1], bb[3]), ylim = c(bb[2], bb[4]), expand = FALSE)
 
-rm(x_extra_buff)
+rm(x_extra_buff, americas)
 ```
 
 # Running the Various Sample Design Algorithms
@@ -369,7 +369,7 @@ print(tgs)
 tgs <- tgs[tgs$Name=='Smaller',]
 ```
 
-```{r Grid Based Samples, warning = FALSE, width="200%", message = FALSE}
+```{r Grid Based Samples, warning = FALSE, message = FALSE}
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 gbs.p <- map + 
@@ -377,13 +377,8 @@ gbs.p <- map +
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   labs(title = 'Grids')  + 
   coord_sf(expand = F)
-
-vector_sdm <- terra::as.polygons(sdm$Supplemented) |>
-  sf::st_as_sf() |>
-  sf::st_make_valid()
-
-grid_buff <- GridBasedSample(vector_sdm, planar_proj, gridDimensions = tgs) 
 ```
+
 
 
 ```{r Point Based Sample, warning=FALSE, message = FALSE}
@@ -407,16 +402,19 @@ This process will be ran a few times, defaulting to 100 `reps`, and the set of p
 
 ```{r Equal Area Sample, message = FALSE}
 eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
-eas.sf <- eas$Geometry
 
 eas.p <- map + 
-  geom_sf(data = eas.sf, aes(fill = factor(ID))) + 
+  geom_sf(data = eas$Geometry, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = eas.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Equal Area') + 
   coord_sf(expand = F)
 eas.p
 ```
 
+
+```{r, echo = F}
+rm(eas, pbs, pbs.sf, tgs, grid_buff)
+```
 ### Opportunistic Sample
 
 To be blunt, while there are many new players to the germplasm conservation table (and we are thrilled to have you here!), many existing collections have largely grown out of opportunity (which we are still very happy about). 
@@ -424,21 +422,22 @@ Many Curators may be interested in how much they can embed their existing collec
 The function `OpportunisticSample` makes a few very minor modifications to the point based sample to try and maximize an existing collection. 
 It doesn't always work exceptionally, especially when a couple collections are very close to each other, but it may be a beneficial tool in the belt. 
 
-Essentially 
+Essentially this combines the approach of point based sampling, but forces that the clusters are based around the existing accesions. 
+It attempts to 'center' the existing collections within clusters, but this can be nearly impossible for a variety of reasons. 
 ```{r Opportunistic Sample, message = FALSE}
 exist_pts <- sf::st_sample(x_buff, size = 10) |>
    sf::st_as_sf() |>
    dplyr::rename(geometry = x)
 
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
-os.sf <- os$Geometry
 
 os.p <- map + 
-  geom_sf(data = os.sf, aes(fill = factor(ID))) + 
+  geom_sf(data = os$Geometry, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   geom_sf(data = exist_pts, alpha = 0.4) + 
   labs(title = 'Opportunistic') + 
   coord_sf(expand = F)
+
 os.p
 ```
 
@@ -473,7 +472,7 @@ ibdbs.p <- map +
   coord_sf(expand = F)
 ibdbs.p
 
-rm(predictors, files, v, x_buff.sf)
+rm(predictors, files, v, x_buff.sf, exist_pts, os)
 ```
 
 Because these data were processed from a raster, they have these sharp edges, representing raster tiles. 
@@ -510,13 +509,12 @@ ebs.p <- map +
   labs(title = 'Ecoregion') + 
   coord_sf(expand = F)
 ebs.p
-
-rm(neo_eco)
 ```
 
 The data which are output by this function differ drastically than the data output by all the other functions. 
 It simply represents a count of targeted accession by ecoregion. 
 For some reason I am convinced this is a product many people will prefer relative to the 'post-processed' object which we will return below. 
+
 
 ```{r Post-process Ecoregion Based Sample, eval = F}
 neo_eco <- select(neo_eco, Provincias)
@@ -536,6 +534,10 @@ map +
   labs(title = 'Ecoregion Sample (Largest)')
 ```
 
+
+```{r, echo = FALSE}
+rm(bb, neo_eco, x_buff)
+```
 
 ### Environmental Based Sample 
 
@@ -632,6 +634,7 @@ ENVIbs.p.supp <- map +
 
 ENVIbs.p.thresh + ENVIbs.p.clipped + ENVIbs.p.supp + 
   plot_layout(ncol = 3)
+
 ```
 
 These plots are able to showcase the difference in results depending on which of the three input rasters are utilized. 
@@ -643,7 +646,7 @@ Accordingly, the surface used for a species should match some evaluation criteri
 Using the threshold raster surface is a very good option if we do not want to 'miss' too many areas, whereas the clipped and supplemented options may be better suited for scenarios where we do not want to draw up clusters, which lack any populations which can be collected from.  
 
 ```{r echo = FALSE}
-rm(ENVIbs_thresh, ENVIbs_clipped, ENVIbs.p.thresh, ENVIbs.p.clipped, p, ENVIbs, rr, ENVIbs.p.supp)
+rm(ENVIbs_thresh, ENVIbs_clipped, ENVIbs.p.thresh, ENVIbs.p.clipped, p, ENVIbs, rr, ENVIbs.p.supp, sdm, map, sdModel)
 ```
 
 
@@ -655,6 +658,10 @@ They all look relatively similar to me when plotted one after another, let's plo
 ```{r Plot all Sampling Schemes together}
 gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
   plot_layout(ncol = 3)
+```
+
+```{r echo = F}
+rm(gbs.p, pbs.p, eas.p, os.p, ibdbs.p, ebs.p, ENVIbs.p, planar_proj)
 ```
 
 

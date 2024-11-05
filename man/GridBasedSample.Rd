@@ -20,9 +20,14 @@ An simple features (sf) object containing the final grids for saving to computer
 This function creates 20 grid cells over a geographic area (\code{x}), typically a species range.
 }
 \examples{
-target <- spData::us_states |> 
-  dplyr::filter(NAME == 'Rhode Island') |>
+ri <- spData::us_states |> 
+dplyr::filter(NAME == 'Rhode Island') |>
   sf::st_transform(32615)
-output <- GridBasedSample(target, 5070)
-plot(output)
+
+sizeOptions <- TestGridSizes(ri)
+head(sizeOptions) # in this case let's shoot for 33 and see what happens
+sizeOptions <- sizeOptions[sizeOptions$Name == 'Smaller',]
+
+output <- GridBasedSample(target, 5070, gridDimensions = sizeOptions)
+plot(output$Geometry)
 }

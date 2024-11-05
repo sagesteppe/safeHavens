@@ -11,7 +11,7 @@
 #' measured using their variance of areas will be selected. Defaults to 100. 
 #' @param BS.reps number of bootstrap replicates for evaluating results. 
 #' @examples 
-#' nc <- sf::st_read(system.file("shape/nc.shp", package="sf")) |>
+#' nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
 #' dplyr::select(NAME)
 #'
 #' set.seed(1)

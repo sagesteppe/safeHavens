@@ -31,7 +31,7 @@ This function creates \code{n} geographic clusters over a geographic area (\code
 range, using kmeans clustering.
 }
 \examples{
-nc <- sf::st_read(system.file("shape/nc.shp", package="sf")) |>
+nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
 dplyr::select(NAME)
 
 set.seed(1)

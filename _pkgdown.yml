@@ -14,7 +14,7 @@ reference:
       - EcoregionBasedSample
       - EnvironmentalBasedSample
   - title: "Environmental Sampling Prep"
-    desc: "Preparation for Environmental Based Sampling""
+    desc: "Preparation for Environmental Based Sampling"
     contents:
       - elasticSDM
       - PostProcessSDM
@@ -23,4 +23,4 @@ reference:
   - title: "Miscellaneous"
     desc: "Data prep functions"
     contents:
-      - TestGridSizes
+      - TestGridSizes 

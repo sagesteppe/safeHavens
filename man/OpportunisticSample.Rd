@@ -40,6 +40,6 @@ system.time(
 # 7 seconds per species so not much concern on the speed end of things.
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
-   ggplot2::geom_sf(data = existing_collections) 
+  ggplot2::geom_sf(data = existing_collections) 
  
 }
