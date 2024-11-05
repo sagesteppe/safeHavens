@@ -37,5 +37,38 @@ IBDBasedSample(
 An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
-Create n seed collection areas based on the distance geographic (great circle) distance between points.
+Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
+}
+\examples{
+\dontrun{
+planar_proj =
+'+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+
+x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+x <- x[,c('lon', 'lat')]
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+x_buff <- sf::st_transform(x, planar_proj) |>
+ sf::st_buffer(125000) |> # we are working in planar metric coordinates, we are
+ sf::st_as_sfc() |> # buffer by this many / 1000 kilometers. 
+ sf::st_union()
+
+files <- list.files( # note that for this process we need a raster rather than 
+  path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
+  pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
+predictors <- terra::rast(files)
+# this can also be done using 'fasterize'. Whenever
+# we rasterize a product, we will need to provide a template raster that our vector
+# will inherit the cell size, coordinate system, etc. from 
+
+x_buff.sf <- sf::st_as_sf(x_buff) |> 
+  dplyr::mutate(Range = 1) |> 
+  sf::st_transform(terra::crs(predictors))
+
+# and here we specify the field/column with our variable we want to become an attribute of our raster
+v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
+
+# now we run the function demanding 20 areas to make accessions from, 
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
+plot(ibdbs)
+}
 }

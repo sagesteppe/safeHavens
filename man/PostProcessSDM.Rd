@@ -4,7 +4,14 @@
 \alias{PostProcessSDM}
 \title{Modify the output rasters from the SDM process to better match target goals}
 \usage{
-PostProcessSDM(rast_cont, test, train, thresh_metric, quant_amt, planar_proj)
+PostProcessSDM(
+  rast_cont,
+  test,
+  train,
+  thresh_metric,
+  quant_amt,
+  planar_projection
+)
 }
 \arguments{
 \item{rast_cont}{the raw unaltered (except masked) raster predictions (x$RasterPredictions).}
@@ -15,7 +22,7 @@ PostProcessSDM(rast_cont, test, train, thresh_metric, quant_amt, planar_proj)
 
 \item{thresh_metric}{?dismo::threshold for all options, defaults to 'sensitivity'}
 
-\item{planar_proj}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
+\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 
 \item{quan_amt}{the quantile of nearest neighbors distance to use for steps 2 and 3.
 defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping replicates for

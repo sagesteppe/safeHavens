@@ -4,14 +4,14 @@
 \alias{elasticSDM}
 \title{Create a quick SDM using elastic net regression}
 \usage{
-elasticSDM(x, predictors, planar_proj, domain, quantile_v)
+elasticSDM(x, predictors, planar_projection, domain, quantile_v)
 }
 \arguments{
 \item{x}{A (simple feature) sf data set of occurrence data for the species.}
 
 \item{predictors}{a terra 'rasterstack' of variables to serve as indepedent predictors.}
 
-\item{planar_proj}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
+\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 
 \item{domain}{Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in \code{x}.}
 
@@ -46,7 +46,7 @@ prohibited by older model selection frameworks.
 
 sdModel <- elasticSDM(
    x = x, predictors = predictors, quantile_v = 0.025,
-   planar_proj =
+   planar_projection =
      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
      
  terra::plot(sdModel$RasterPredictions)

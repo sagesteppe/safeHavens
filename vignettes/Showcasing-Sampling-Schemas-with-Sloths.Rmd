@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 `safeHavens` can be installed directly from github, no plans are made to release the package to CRAN as it's user base is relatively niche relative to a typical R package. 
 
-```{r Install Package, message=FALSE}
+```{r Install Package, message=FALSE, eval = F}
 # `devtools`, or a similar package, is required to install packages from github
 # install.packages('devtools') 
 # devtools::install_github('sagesteppe/safeHavens')

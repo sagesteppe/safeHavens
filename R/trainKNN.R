@@ -3,6 +3,7 @@
 #' Simply use this to partition your test data and quickly train a simple model
 #' @param x the weighted matrix including a class ID in the column 'ID'
 #' @param split prop for the data partitions. 
+#' @export
 trainKNN <- function(x, split_prop){
   
   # partition data to ensure no leakage. 
