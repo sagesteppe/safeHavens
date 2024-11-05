@@ -206,6 +206,9 @@ In this way our raster stack becomes representative of our model, we can then us
 # we will also write out the beta coefficients using writeSDMresults right after
 # this. 
 
+terra::writeRaster(sdModel$Predictors, '../data/Predictors.tif')
+saveRDS(sdModel, '../data/sdModel.rds')
+
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -506,11 +509,13 @@ rm(neo_eco)
 The environmental based sample can only be conducted if you have the species distribution model data. 
 ```{r Environmental Based Sample, eval = F}
 
-setwd('~/Documents/assoRted/StrategizingGermplasmCollections')
+sdModel <- readRDS(
+  file.path(system.file(package="safeHavens"), 'data', 'sdModel.rds')
+  )
 
-x <- readRDS(system.file(package="safeHavens", sdModel))
-
-system.file(sdModel,package = 'safeHavens')
+sdModel$Predictors <- terra::rast(
+  file.path(system.file(package="safeHavens"), 'data', 'Predictors.tif')
+)
 
 rr <- RescaleRasters(
   model = sdModel$Model,
