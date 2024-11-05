@@ -21,7 +21,7 @@ snapGrids <- function(x, neighb_grid, focal_grid){
   x <- x |>
     dplyr::group_by(Assigned) |> 
     dplyr::summarise(geometry = sf::st_combine(geometry)) |> 
-    geos::geos_concave_hull(ratio = 0.01) |> 
+    sf::st_concave_hull(ratio = 0.01) |> 
     sf::st_difference() |> 
     sf::st_make_valid() |>
     sf::st_intersection(focal_grid)
