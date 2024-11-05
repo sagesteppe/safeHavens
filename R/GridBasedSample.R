@@ -13,7 +13,7 @@
 #' head(sizeOptions) # in this case let's shoot for 33 and see what happens
 #' sizeOptions <- sizeOptions[sizeOptions$Name == 'Smaller',]
 #' 
-#' output <- GridBasedSample(target, 5070, gridDimensions = sizeOptions)
+#' output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
 #' plot(output$Geometry)
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
