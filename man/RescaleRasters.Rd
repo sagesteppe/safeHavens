@@ -14,7 +14,7 @@ RescaleRasters(model, predictors, training_data, sdModel, pred_mat)
 \item{training_data}{the same data that went into the glmnet model, this is used
 for calculating variance which is required for the scaling process. From \code{elasticSDM}}
 
-\item{the}{Prediction matrix from \code{elasticSDM}}
+\item{pred_mat}{the Prediction matrix from \code{elasticSDM}}
 }
 \value{
 A list with two objects. 1) The rescaled raster stack.
