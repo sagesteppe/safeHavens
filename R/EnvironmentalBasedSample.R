@@ -153,13 +153,13 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
   
   spatialClusters <- terra::predict(pred_rescale, model = fit.knn, na.rm = TRUE)
   spatialClusters <- terra::mask(spatialClusters, f_rasts[['Supplemented']])
-  
+  names(spatialClusters) <- 'ID'
   #Clean up products for distribution
   ClusterVectors <- terra::as.polygons(spatialClusters) |>
     sf::st_as_sf() |>
     sf::st_make_valid() |>
-    dplyr::mutate(class = as.numeric(class)) |>
-    dplyr::arrange(class)
+    dplyr::mutate(ID = as.numeric(ID)) |>
+    dplyr::arrange(ID)
   
   dir.create(file.path(path, 'ClusterRasters'), showWarnings = FALSE)
   dir.create(file.path(path, 'ClusterVectors'), showWarnings = FALSE)
@@ -172,7 +172,7 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
     final.fit, 
     file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalKNN.rds'))
   )
-  saveRDS( # save the final fitted model.
+  saveRDS( # save the confusion matrix. 
     confusionMatrix, 
     file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalCM.rds'))
   )
