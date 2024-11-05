@@ -15,12 +15,12 @@ EqualAreaSample(x, n, pts, planar_projection, returnProjected, reps, BS.reps)
 
 \item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 
+\item{returnProjected}{Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new \code{projection} (TRUE). Defaults to FALSE.}
+
 \item{reps}{Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 measured using their variance of areas will be selected. Defaults to 100.}
 
 \item{BS.reps}{number of bootstrap replicates for evaluating results.}
-
-\item{returnProjected.}{Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new \code{projection} (TRUE). Defaults to FALSE.}
 }
 \value{
 A list containing two objects, the first the results of bootstrap simulations.

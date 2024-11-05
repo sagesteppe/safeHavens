@@ -10,7 +10,7 @@
 #' @return A list with two objects. 1) The rescaled raster stack. 
 #' 2) A table of both standardized and unstandardized coefficients from the glmnet model. 
 #' @export 
-RescaleRasters <- function(model, predictors, training_data, sdModel, pred_mat){
+RescaleRasters <- function(model, predictors, training_data, pred_mat){
   
   sdN <- function(x){sigma=sqrt((1/length(x)) * sum((x-mean(x))^2))}
   

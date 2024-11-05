@@ -9,7 +9,7 @@ trainKNN(x, split_prop)
 \arguments{
 \item{x}{the weighted matrix including a class ID in the column 'ID'}
 
-\item{split}{prop for the data partitions.}
+\item{split_prop}{prop for the data partitions.}
 }
 \description{
 Simply use this to partition your test data and quickly train a simple model

@@ -22,12 +22,12 @@ PostProcessSDM(
 
 \item{thresh_metric}{?dismo::threshold for all options, defaults to 'sensitivity'}
 
-\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
-
-\item{quan_amt}{the quantile of nearest neighbors distance to use for steps 2 and 3.
+\item{quant_amt}{the quantile of nearest neighbors distance to use for steps 2 and 3.
 defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping replicates for
 estimating a buffer to restrict the SDM surface too, and the minimum of the 10 bootstrap reps
 for adding surface to presence points which were not placed in binary suitable habitat.}
+
+\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 }
 \value{
 A list containing two options. 1) A spatraster with 4 layers, A) the continuous probabilities of suitable habitat feed in from \code{elasticSDM}, B) this raster in binary format based on the specified thresholding statistic, C) the binary raster from B + with habitat clipped to the buffer distances determined by measuring nearest neighbor distances and thresholding at a quantile D) the binary raster from C, adding the same distance to points which were initially in cells classified by thresholding as not having suitable habitat.

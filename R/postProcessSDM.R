@@ -14,7 +14,7 @@
 #' @param test the test data partition from the `elasticSDM` function (x$TestData).
 #' @param train the train data partition from the `elasticSDM` function (x$TrainData).
 #' @param thresh_metric ?dismo::threshold for all options, defaults to 'sensitivity'
-#' @param quan_amt the quantile of nearest neighbors distance to use for steps 2 and 3. 
+#' @param quant_amt the quantile of nearest neighbors distance to use for steps 2 and 3. 
 #' defaults to 0.25, using the median nearest neighbor distance of 10 bootstrapping replicates for
 #' estimating a buffer to restrict the SDM surface too, and the minimum of the 10 bootstrap reps
 #' for adding surface to presence points which were not placed in binary suitable habitat.

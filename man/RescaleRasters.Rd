@@ -4,7 +4,7 @@
 \alias{RescaleRasters}
 \title{Rescale a raster stack to reflect the beta coefficients from a glmnet model}
 \usage{
-RescaleRasters(model, predictors, training_data, sdModel, pred_mat)
+RescaleRasters(model, predictors, training_data, pred_mat)
 }
 \arguments{
 \item{model}{the final output model from glmnet from \code{elasticSDM}}
