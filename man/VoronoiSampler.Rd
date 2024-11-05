@@ -27,3 +27,4 @@ Split an area up into n polygons of roughly equal area, optionally removing
 some of the default points and replacing them with existing collections to
 build the future collections around.
 }
+\keyword{internal}

@@ -21,7 +21,7 @@
 #' plot(out$Geometry)
 #' }
 #' @return A list containing two objects, the first the results of bootstrap simulations.
-#' The second an sf dataframe containing the polygons with the smallest amount of variance in size.  
+#' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
 PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
   
@@ -115,6 +115,7 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
 #' Recursively grab a named component of a list. 
 #' @param x a list of lists
 #' @param element the quoted name of the list element to extract. 
+#' @keywords internal
 get_elements <- function(x, element) { # @ StackOverflow Allan Cameron 
   if(is.list(x))
   {
@@ -134,6 +135,7 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
 #' @param collections an sf point geometry data set of where existing collections have been made.
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 150, which may accomplish around 100 succesful iterations.  
+#' @keywords internal
 VoronoiSampler <- function(polygon, n, collections, reps){
   
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 

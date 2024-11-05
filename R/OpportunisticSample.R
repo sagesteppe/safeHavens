@@ -120,6 +120,7 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
 #' @param collections an sf point geometry data set of where existing collections have been made.
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 150, which may accomplish around 100 succesful iterations.  
+#' @keywords internal
 VoronoiSampler <- function(polygon, n, collections, reps){
   
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
@@ -147,9 +148,10 @@ VoronoiSampler <- function(polygon, n, collections, reps){
     ))
 }
 
-# Recursively grab a named component of a list. 
-# @param x a list of lists
-# @param element the quoted name of the list element to extract. 
+#' Recursively grab a named component of a list. 
+#' @param x a list of lists
+#' @param element the quoted name of the list element to extract.
+#' @keywords internal
 get_elements <- function(x, element) { # @ StackOverflow Allan Cameron 
   if(is.list(x))
   {
