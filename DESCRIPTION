@@ -20,6 +20,7 @@ Imports:
     dplyr,
     fields,
     gdistance,
+    geos,
     ggplot2,
     glmnet,
     lattice,
