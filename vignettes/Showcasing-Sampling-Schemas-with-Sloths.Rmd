@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 # devtools::install_github('sagesteppe/safeHavens')
 
 # lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
-# install.packages('remotes') 
+# install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
 remotes::install_github('sagesteppe/safeHavens') # blah even same function name!
 ```
 
@@ -292,6 +292,7 @@ rm(x)
 
 Voila! That's the whole process. Just play around with the distances until you get something which looks OK. 
 How do I define 'OK' a feeling in that gut that your boots are tingling. 
+Note that while the buffered polygons make look a little nebulous now, we'll have them on maps with some more context in just a couple steps. 
 
 # Just load the SDM!
  
@@ -498,7 +499,6 @@ head(neo_eco[,c(1, 3, 4, 6, 11)])
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
 
-
 map + 
   geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
@@ -545,7 +545,7 @@ p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real qui
 # Linux and Mac, but I don't think Windows? 
 dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
 
-wm <- EnvironmentalBasedSample(
+ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
   path = file.path(p, 'safeHavens-Vignette'),
   taxon = 'Bradypus_test', 
@@ -555,9 +555,9 @@ wm <- EnvironmentalBasedSample(
   buffer_d = 3, prop_split = 0.8)
 
 map + 
-  geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
-#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'Ecoregion Sample (Largest)')
+  geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
+  geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
+  labs(title = 'Environmental Based Sample')
 
 ```
 

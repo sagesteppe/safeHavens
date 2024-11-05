@@ -153,14 +153,28 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, taxon, path, n, fixe
   
   spatialClusters <- terra::predict(pred_rescale, model = fit.knn, na.rm = TRUE)
   spatialClusters <- terra::mask(spatialClusters, f_rasts[['Supplemented']])
-  names(spatialClusters) <- 'ID'
-  #Clean up products for distribution
+  
+  # Order the polygons relatively by geographic area. 
   ClusterVectors <- terra::as.polygons(spatialClusters) |>
     sf::st_as_sf() |>
-    sf::st_make_valid() |>
-    dplyr::mutate(ID = as.numeric(ID)) |>
-    dplyr::arrange(ID)
+    sf::st_make_valid() 
   
+  sf::st_agr(ClusterVectors) = "constant"
+  cents <- sf::st_point_on_surface(ClusterVectors)
+  ClusterVectors <- cents |>
+    dplyr::mutate(
+      X = sf::st_coordinates(cents)[,1],
+      Y = sf::st_coordinates(cents)[,2]
+    ) |>
+    dplyr::arrange(-Y, X) |>
+    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::arrange(ID) |>
+    dplyr::select(ID, geometry)
+  
+  # convert the polygons back into a raster, allowing the raster to match the ID
+  # numbers. 
+  spatialClusters <- terra::rasterize(ClusterVectors, spatialClusters, field = 'ID')
+
   dir.create(file.path(path, 'ClusterRasters'), showWarnings = FALSE)
   dir.create(file.path(path, 'ClusterVectors'), showWarnings = FALSE)
   
