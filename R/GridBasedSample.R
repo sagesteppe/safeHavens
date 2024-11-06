@@ -11,7 +11,7 @@
 #'
 #' sizeOptions <- TestGridSizes(ri)
 #' head(sizeOptions) # in this case let's shoot for 33 and see what happens
-#' sizeOptions <- sizeOptions[sizeOptions$Name == 'Smaller',]
+#' sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 #' 
 #' output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
 #' plot(output$Geometry)
@@ -215,14 +215,14 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     dplyr::select(Assigned, NEWID)
   
   final_grids <- dplyr::left_join(final_grids, cents, by = 'Assigned') |>
-    dplyr::select(-Assigned, Assigned = NEWID)
+    dplyr::select(-Assigned, ID = NEWID)
   
-  if(max(final_grids$Assigned)>20){
+  if(max(final_grids$ID)>20){
     final_grids <- reduceFinalGrids(final_grids)
-    if(max(final_grids$Assigned)>20){
+    if(max(final_grids$ID)>20){
       final_grids <- reduceFinalGrids(final_grids)}
   }
+  final_grids <- dplyr::arrange(final_grids, ID)
   
   return(final_grids)
 }
-  

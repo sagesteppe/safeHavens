@@ -12,6 +12,7 @@ RoxygenNote: 7.3.2
 Suggests: 
     ggplot2,
     knitr,
+    lattice,
     patchwork,
     rmarkdown,
     spData
@@ -23,7 +24,6 @@ Imports:
     dplyr,
     fields,
     glmnet,
-    lattice,
     magrittr,
     NbClust,
     nngeo,
