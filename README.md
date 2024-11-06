@@ -1,4 +1,4 @@
-# safeHavens <img src="inst/man/figures/logo.png" align="right" height="138" />
+# safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
 An R package for applying standardized file naming, directory structure, mapping, and metadata conventions to empirical Seed Transfer Zones (eSTZs). 
 
 ## Overview
