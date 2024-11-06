@@ -43,5 +43,5 @@ URL: https://sagesteppe.github.io/safeHavens/
 SystemRequirements: GDAL (>= 2.0.1), GEOS (>= 3.4.0), PROJ (>= 4.8.0),
         sqlite3
 Depends: 
-    R (>= 2.10)
+    R (>= 4.4.1)
 LazyData: true

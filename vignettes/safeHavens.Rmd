@@ -377,6 +377,8 @@ gbs.p <- map +
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   labs(title = 'Grids')  + 
   coord_sf(expand = F)
+
+gbs.p
 ```
 
 
