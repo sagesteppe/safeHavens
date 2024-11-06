@@ -40,7 +40,7 @@ Imports:
     units,
     vegan
 URL: https://sagesteppe.github.io/safeHavens/
-SystemRequirements: GDAL (>= 2.0.1), GEOS (>= 3.4.0), PROJ (>= 4.8.0),
+SystemRequirements: GDAL (>= 2.0.1), GEOS (>= 3.11.0), PROJ (>= 4.8.0),
         sqlite3
 Depends: 
     R (>= 4.4.1)
