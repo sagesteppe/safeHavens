@@ -52,6 +52,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     )
   
   # Determine neighboring polygons
+  sf::st_agr(gr) <- 'constant'
   neighbors <- spdep::poly2nb(gr, queen = FALSE)[21:nrow(gr)]
   
   full_sized_neighbors <- which( # consider these to be full sized grids
@@ -184,7 +185,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   final_grids <- dplyr::bind_rows(final)
   
   groups <- split(final_grids, f = final_grids$Assigned)
-  final_grids <- lapply(groups, snapR) |> bind_rows()
+  final_grids <- lapply(groups, snapR) |> dplyr::bind_rows()
   final_grids <- sf::st_make_valid(final_grids)
   sf::st_agr(final_grids) <- 'constant'
   
