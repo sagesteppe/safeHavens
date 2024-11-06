@@ -77,9 +77,9 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   indices_knndm <- CAST::knndm(pres, predictors, k=10)
   
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
-  dists <- unlist(list(lapply(nn_dist, quantile, quant_amt))) 
+  dists <- unlist(list(lapply(nn_dist, stats::quantile, quant_amt))) 
   
-  within_dist <- sf::st_buffer(pres, median(dists)) |>
+  within_dist <- sf::st_buffer(pres, stats::median(dists)) |>
     dplyr::summarize(geometry = sf::st_union(geometry)) |>
     sf::st_simplify() |>
     sf::st_transform(terra::crs(rast_binary)) |>

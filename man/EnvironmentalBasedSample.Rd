@@ -16,7 +16,8 @@ EnvironmentalBasedSample(
   planar_projection,
   coord_wt,
   buffer_d,
-  prop_split
+  prop_split,
+  ...
 )
 }
 \arguments{

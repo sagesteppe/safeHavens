@@ -44,7 +44,9 @@
 #'    dplyr::filter(NAME == 'California') |>
 #'    sf::st_transform(4326)
 #'    
-#' Weco <- sf::st_read(file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'))
+#' Weco <- sf::st_read(
+#'   file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'), 
+#'   quiet = TRUE)
 #' head(Weco)
 #' 
 #' out <- EcoregionBasedSample(polygon, Weco)
@@ -61,7 +63,9 @@
 #' # Essentially we showcase how a user can maintain this functions utility
 #' # while catering to data in a format differing from the Omernik L4 distribution. 
 #' 
-#' neo_eco <- sf::st_read(system.file("shape/NeoTropicsEcoregions.gpkg", package="safeHavens"))
+#' neo_eco <- sf::st_read(
+#'    file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'),
+#'     quiet = TRUE)
 #'sp_range <- sf::st_polygon( # complete
 #'  list(
 #'    rbind(
@@ -76,8 +80,8 @@
 #'  dplyr::rename(geometry = x) |>
 #'  dplyr::mutate(Species = 'Da species')
 #'
-#'out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
-#'sum(out$n)
+#' out <- EcoregionBasedSample(sp_range, neo_eco, ecoregion_col = 'Provincias')
+#' sum(out$n)
 #'
 #'ggplot2::ggplot() + 
 #'  ggplot2::geom_sf(data = neo_eco) + 
@@ -119,7 +123,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   ecoregions_sub <- ecoregions_sub[sf::st_geometry_type(ecoregions_sub) %in% c('POLYGON', 'MULTIPOLYGON'),]
   
   area <- dplyr::mutate(
-    ecoregions_sub, Area = units::set_units(sf::st_area(ecoregions_sub), ha), .before = geometry)
+    ecoregions_sub, Area = units::set_units(sf::st_area(ecoregions_sub), ha), .before = last_col())
   
   area_summaries <- area |> 
     sf::st_drop_geometry() |> 
@@ -232,16 +236,13 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   out_assigned <- out[!is.na(out$n),]
   ids <- unique(dplyr::pull(out_assigned, ID))
   
-  
   out <- ecoregions |>
     dplyr::mutate(n = dplyr::if_else(ID %in% ids, 1, 0)) |>
     dplyr::arrange(ID) |>
-    dplyr::select(dplyr::all_of(cols)) |>
-    dplyr::select(-ID) |>
-    sf::st_make_valid()
+    dplyr::select(dplyr::any_of(cols)) |>
+    dplyr::select(-dplyr::any_of('ID')) |>
+    sf::st_make_valid() |>
+    dplyr::rename(dplyr::any_of( c(geometry = 'geom')))
   
   return(out)
 }
-
-
-

@@ -25,7 +25,7 @@
 #'   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
 #'   ggplot2::geom_sf(data = existing_collections) 
 #'  
-#' @return A list containing two sublists, the first of which [['SummaryData']] details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second [[Geometry]], contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
+#' @return A list containing two sublists, the first of which 'SummaryData' details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second 'Geometry', contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
 OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
   

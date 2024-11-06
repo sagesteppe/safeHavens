@@ -70,7 +70,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
   
   sp.coords <- data.frame(Species = 'Species', data.frame(sf::st_coordinates(x)))
   dists <- sf::st_distance(x[sf::st_nearest_feature(x), ], x, by_element = TRUE)
-  thinD <- as.numeric(quantile(dists, c(quantile_v), na.rm = TRUE) / 1000) # ARGUMENT TO FN @PARAM 
+  thinD <- as.numeric(stats::quantile(dists, c(quantile_v), na.rm = TRUE) / 1000) # ARGUMENT TO FN @PARAM 
   
   # Step 2 thin points to ensure there are not too many too close to each other. 
   # at worst these points are total duplicates 
@@ -161,7 +161,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
   predictors <- c(predictors, pcnm) 
   # get the variables to extract from the rasters for creating a matrix for 
   # predictions, glmnet predict is kind of wonky and needs exact matrix dimensions. 
-  vars <- rownames(coef(mod)); vars <- vars[2:length(vars)] 
+  vars <- rownames(stats::coef(mod)); vars <- vars[2:length(vars)] 
   
   # now we need just the COORDINATES FOR TEST and will extract the data from
   # this set of predictors to them... 
@@ -171,7 +171,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
   )
   
   cm <- caret::confusionMatrix(
-    data = as.factor(predict(mod, newx = predict_mat, type = 'class')), 
+    data = as.factor(stats::predict(mod, newx = predict_mat, type = 'class')), 
     reference = test$occurrence,
     positive = "1")
   
@@ -179,7 +179,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
   # use with the rest of the safeHavens workflow. 
   preds <- predictors[[vars]]
   predfun <- function(model, data, ...){
-    predict(model, newx=as.matrix(data), type = 'response')
+    stats::predict(model, newx=as.matrix(data), type = 'response')
   }
   
   rast_cont <- terra::predict(preds, model = mod, fun=predfun, na.rm=TRUE)

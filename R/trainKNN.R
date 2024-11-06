@@ -21,7 +21,7 @@ trainKNN <- function(x, split_prop){
                           trControl = trainControl, metric = 'Accuracy')
   
   # run the model and calculate results on the test data. 
-  predicted <- predict(fit.knn, newdata = test)
+  predicted <- stats::predict(fit.knn, newdata = test)
   cm <- confusionMatrix(predicted, test$ID)
   
   return(

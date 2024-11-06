@@ -110,11 +110,11 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
   # the sdm output to vectors and masking the STZ to this area. 
   pts_n <- sf::st_sample(x, size = pts, type = 'regular', by_polygon = F)
   
-  kmeans_res <- kmeans(sf::st_coordinates(pts_n), centers = n)
+  kmeans_res <- stats::kmeans(sf::st_coordinates(pts_n), centers = n)
   pts_n$ID <- kmeans_res$cluster
   
   # gather the geographic centers of the polygons. 
-  kmeans_centers <- setNames(
+  kmeans_centers <- stats::setNames(
     data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
     # use the centers as voronoi cores ... ?
     c('X', 'Y', 'ID'))

@@ -42,7 +42,7 @@ writeSDMresults <- function(path, taxon, cv_model, pcnm, model, cm, coef_tab, f_
   
   if(!missing(coef_tab)){ # Model coefficients 
     dir.create(file.path(path, 'Model'), showWarnings = FALSE)
-    write.csv( # save the model coefficients
+    utils::write.csv( # save the model coefficients
       coef_tab,  row.names = FALSE,
       file = file.path(path, 'Model', paste0(taxon, '-Coefficients.csv'))
     )
@@ -52,12 +52,12 @@ writeSDMresults <- function(path, taxon, cv_model, pcnm, model, cm, coef_tab, f_
     
     dir.create(file.path(path, 'Evaluation'), showWarnings = FALSE)
     
-    write.csv( #  save confusion matrix from old school split. 
+    utils::write.csv( #  save confusion matrix from old school split. 
       data.frame(t(cm$table)), row.names = FALSE, 
       file = file.path(path, 'Evaluation', paste0(taxon, '-CMatrix.csv'))
     )
       
-    write.csv( # save the calculated evaluation metrics. 
+    utils::write.csv( # save the calculated evaluation metrics. 
       data.frame(
         Variable = names(cm$byClass),
         Value = as.numeric(cm$byClass)
@@ -68,7 +68,7 @@ writeSDMresults <- function(path, taxon, cv_model, pcnm, model, cm, coef_tab, f_
   
   if(!missing(thresh)){
     dir.create(file.path(path, 'Threshold'), showWarnings = FALSE)
-    write.csv( # threshold information - make it tidy. 
+    utils::write.csv( # threshold information - make it tidy. 
       data.frame(
         Metric = colnames(thresh), 
         Value = as.numeric(t(thresh))

@@ -15,8 +15,8 @@ RescaleRasters <- function(model, predictors, training_data, pred_mat){
   sdN <- function(x){sigma=sqrt((1/length(x)) * sum((x-mean(x))^2))}
   
   coef_tab <- data.frame(
-    Variable = row.names(as.data.frame(as.matrix(coef(model)))), 
-    Coefficient = as.numeric(coef(model))
+    Variable = row.names(as.data.frame(as.matrix(stats::coef(model)))), 
+    Coefficient = as.numeric(stats::coef(model))
   )
   coef_tab <- coef_tab[2:nrow(coef_tab),]
   

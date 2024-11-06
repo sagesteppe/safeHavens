@@ -70,7 +70,9 @@ dplyr::select(NAME) |>
    dplyr::filter(NAME == 'California') |>
    sf::st_transform(4326)
    
-Weco <- sf::st_read(file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'))
+Weco <- sf::st_read(
+  file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'), 
+  quiet = TRUE)
 head(Weco)
 
 out <- EcoregionBasedSample(polygon, Weco)
@@ -87,7 +89,9 @@ ggplot2::ggplot() +
 # Essentially we showcase how a user can maintain this functions utility
 # while catering to data in a format differing from the Omernik L4 distribution. 
 
-neo_eco <- sf::st_read(system.file("shape/NeoTropicsEcoregions.gpkg", package="safeHavens"))
+neo_eco <- sf::st_read(
+   file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'),
+    quiet = TRUE)
 sp_range <- sf::st_polygon( # complete
  list(
    rbind(

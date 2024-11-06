@@ -81,7 +81,7 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
   }
   
   pts$ID <- factor(pts$ID)
-  pts <- pts[complete.cases(pts),]
+  pts <- pts[stats::complete.cases(pts),]
   
   KNN <- trainKNN(pts, split_prop = prop_split)
   fit.knn <- KNN$fit.knn

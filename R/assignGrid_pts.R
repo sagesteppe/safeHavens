@@ -21,7 +21,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
     if (nrow(pts) < 100) {
       pts <- sf::st_sample(focal_grid, size = samp, type = 'regular') |>
         sf::st_as_sf() |> 
-        dplyr::mutate(ID = 1:n())
+        dplyr::mutate(ID = 1:dplyr::n())
     }
     samp <- samp + 1
   } 

@@ -137,12 +137,12 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
       prop_target[[i]][!kp] <-prop_areas[[i]][!kp]
     }
     
-    nf_pct[[i]] <- setNames( # the existing cover for each grid. 
+    nf_pct[[i]] <- stats::setNames( # the existing cover for each grid. 
       prop_areas[[i]] * 100, 
       neighbors[[i]]
     )
     
-    props[[i]] <- setNames( # the desired cover for each grid 
+    props[[i]] <- stats::setNames( # the desired cover for each grid 
       prop_target[[i]] * 100, 
       neighbors[[i]]
     )

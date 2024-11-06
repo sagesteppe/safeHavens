@@ -18,7 +18,7 @@ OpportunisticSample(polygon, n, collections, reps, BS.reps)
 \item{BS.reps}{number of bootstrap replicates for evaluating results.}
 }
 \value{
-A list containing two sublists, the first of which [\link{'SummaryData'}] details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second [\link{Geometry}], contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
+A list containing two sublists, the first of which 'SummaryData' details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second 'Geometry', contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
 This function utilizes a regular, or nearly so in the case of existing collections, grid of points to develop a sampling scheme or n polygons.
