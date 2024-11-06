@@ -123,7 +123,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
   ecoregions_sub <- ecoregions_sub[sf::st_geometry_type(ecoregions_sub) %in% c('POLYGON', 'MULTIPOLYGON'),]
   
   area <- dplyr::mutate(
-    ecoregions_sub, Area = units::set_units(sf::st_area(ecoregions_sub), ha), .before = last_col())
+    ecoregions_sub, Area = units::set_units(sf::st_area(ecoregions_sub), ha), .before = dplyr::last_col())
   
   area_summaries <- area |> 
     sf::st_drop_geometry() |> 

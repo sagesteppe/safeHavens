@@ -215,14 +215,17 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     dplyr::select(Assigned, NEWID)
   
   final_grids <- dplyr::left_join(final_grids, cents, by = 'Assigned') |>
-    dplyr::select(-Assigned, ID = NEWID)
+    dplyr::select(-Assigned, Assigned = NEWID) 
   
-  if(max(final_grids$ID)>20){
+  if(max(final_grids$Assigned)>20){
     final_grids <- reduceFinalGrids(final_grids)
-    if(max(final_grids$ID)>20){
+    if(max(final_grids$Assigned)>20){
       final_grids <- reduceFinalGrids(final_grids)}
   }
-  final_grids <- dplyr::arrange(final_grids, ID)
+  final_grids <- sf::st_as_sf(final_grids) |>
+    dplyr::rename(dplyr::any_of( c(ID = 'Assigned'))) |>
+    dplyr::arrange(ID) |>
+    dplyr::relocate(ID)
   
   return(final_grids)
 }

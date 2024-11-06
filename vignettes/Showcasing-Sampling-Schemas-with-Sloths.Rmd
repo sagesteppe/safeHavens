@@ -373,7 +373,7 @@ tgs <- tgs[tgs$Name=='Smaller',]
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 gbs.p <- map + 
-  geom_sf(data = grid_buff, aes(fill = factor(Assigned))) + 
+  geom_sf(data = grid_buff, aes(fill = factor(ID))) + 
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   labs(title = 'Grids')  + 
   coord_sf(expand = F)
