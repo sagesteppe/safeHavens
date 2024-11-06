@@ -29,5 +29,5 @@ head(sizeOptions) # in this case let's shoot for 33 and see what happens
 sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 
 output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
-plot(output$Geometry)
+plot(output)
 }
