@@ -41,3 +41,7 @@ library(safeHavens)
 
 
 The species distribution modelling section has a couple functions which are essential for achieving the `EnvironmentalBasedSample` design, these are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and `writeSDMresults`.
+
+## Acknowledgements
+
+Edzer Pebesma, and Krzysztof Dyba for help with seamless installations on Ubuntu, and getting the pkgdown website running.
