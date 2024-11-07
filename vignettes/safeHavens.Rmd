@@ -47,7 +47,7 @@ This package helps germplasm curators communicate areas of interest to collectio
 It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process.
 It also allows for easy integration into existing workflows and will put out the required spatial data to share with collection teams.
 
-Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics, and Toblers first law of geoegraphy.
+Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics, and Toblers first law of geography.
 They have various trade offs in terms of computational and environmental complexity. 
 The table below presents the currently implemented sampling scheme and the user facing function associated with them. 
 In my mind the first four functions are really flavors of the same process, one whereby we try and partition the species range into chunks of similar sizes. 
@@ -84,7 +84,7 @@ However, to make it up to animal people, we will use a Sloth, which I think is [
 Beyond looking at the inspiration for most Jim Henson puppets above, we will treat *Bradypus* more like a plant species when we discuss these sampling schemes - that is we will assume we are focused on organisms which seldom move great distances in dispersal processes.
 
 We can access some data on *Bradypus* from the `dismo` package - presumably short for '*Dis*tribution *Mo*delling', which was created by Robert Hijman and others. 
-We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. If you want to read more about `dismo` and distribution modelling in general here an awesome bookdown resource written by [Hijman and Elith](https://rspatial.org/raster/sdm/) - aspects of this vignette are definitely based on it. 
+We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. If you want to read more about `dismo` and distribution modelling in general here is an awesome bookdown resource written by [Hijman and Elith](https://rspatial.org/raster/sdm/) - aspects of this vignette are definitely based on it. 
 We will use Species Distribution Models (SDMs) as the input variable to many of the arguments in this function - don't get caught up in the details of making them. 
 These days you can get good results out of essentially entirely automated pipelines, we'll have the truncated process outlined here in a chunk, but I honestly argue you should ignore this section the first few times you read this document, and go back for the details (discussed in the link above) only if you decide to pursue the route of `EnvironmentalBasedSample`. 
 I may be too optimistic in thinking that any one of these schemes will give adequate results for sample design, but some may be better for certain species and projects. 
@@ -261,7 +261,7 @@ We will play around with it as an example data set to compare our buffered dista
 rm(rr, predictors, files, sdModel, bp)
 ```
 
-# Alternative to SDM, just buffer! (starting reading here your first few times!)
+# Alternative to SDM, just buffer! (start reading here your first few times!)
 
 Creating the SDMs is a whole process, and not all users may want to create them. 
 Here we provide an approach which will give us results we can work with, and is computationally cheap.  
