@@ -1,26 +1,25 @@
 url: https://sagesteppe.github.io/safeHavens/
 template:
   bootstrap: 5
-
 reference:
-  - title: "Sampling"
-    desc: "User facing functions for implementing the sampling schemes"
-    contents:
-      - GridBasedSample
-      - PointBasedSample
-      - EqualAreaSample
-      - OpportunisticSample
-      - IBDBasedSample
-      - EcoregionBasedSample
-      - EnvironmentalBasedSample
-  - title: "Environmental Sampling Prep"
-    desc: "Preparation for Environmental Based Sampling"
-    contents:
-      - elasticSDM
-      - PostProcessSDM
-      - RescaleRasters
-      - writeSDMresults
-  - title: "Miscellaneous"
-    desc: "Data prep functions"
-    contents:
-      - TestGridSizes 
+- title: Sampling
+  desc: User facing functions for implementing the sampling schemes
+  contents:
+  - GridBasedSample
+  - PointBasedSample
+  - EqualAreaSample
+  - OpportunisticSample
+  - IBDBasedSample
+  - EcoregionBasedSample
+  - EnvironmentalBasedSample
+- title: Environmental Sampling Prep
+  desc: Preparation for Environmental Based Sampling
+  contents:
+  - elasticSDM
+  - PostProcessSDM
+  - RescaleRasters
+  - writeSDMresults
+- title: Miscellaneous
+  desc: Data prep functions
+  contents: TestGridSizes
+
