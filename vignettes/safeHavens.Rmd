@@ -292,7 +292,7 @@ Note that while the buffered polygons make look a little nebulous now, we'll hav
  
 The package also has an SDM projection saved in the data we can just load that too. 
 ```{r}
-sdm <- terra::rast(file.path(system.file(package="safeHavens"),'extdata', 'Bradypus_test.tif'))
+sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'inst', 'extdata', 'Bradypus_test.tif'))
 terra::plot(sdm)
 ```
 
