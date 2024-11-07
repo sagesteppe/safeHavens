@@ -1,8 +1,13 @@
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-The goal of this package is to provide germplasm curators with easily referrable spatial data sets to help prioritze field collection efforts. 
+The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
 
 ## Overview
-The goal of this package is to provide germplasm curators with easily referrable spatial data sets to help prioritze field collection efforts.
+It provides functionality for seven sampling schemes which various curators are interested in, many of which are likely to outperform others for certain species or areas. 
+The package also creates species distribution models, but with the goal of germplasm sampling, rather than predicting ranges at fine resolutions, or making inference; if you are interested in this functionality R has several dozen other packages which are tailored for these purposes. 
+
+## Description
+This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process. 
+
 
 ## Installation
 `safeHavens` is available only on github. 
@@ -16,15 +21,12 @@ remotes::install_github('sagesteppe/safeHavens')
 ```
 
 Once installed it can be attached for use like any other package from github or CRAN
-
 ```
 library(safeHavens)
 ```
 
-## Description
-This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process. 
+## Usage
 
-## Usage  
 `safeHavens` has only seven user facing functions for generating the sampling schemes.  
 
 |        Function           |              Description               | Comp.| Envi.|

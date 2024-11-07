@@ -41,7 +41,6 @@ set.seed(23)
 planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 ```
 
-
 # Notes about `safeHavens`
 
 This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession.
@@ -292,7 +291,7 @@ Note that while the buffered polygons make look a little nebulous now, we'll hav
  
 The package also has an SDM projection saved in the data we can just load that too. 
 ```{r}
-sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'inst', 'extdata', 'Bradypus_test.tif'))
+sdm <- terra::rast(file.path(system.file(package="safeHavens"),  'extdata', 'Bradypus_test.tif'))
 terra::plot(sdm)
 ```
 
