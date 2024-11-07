@@ -50,3 +50,21 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+        
+        - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - name: Update GEOS
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install software-properties-common
+          sudo add-apt-repository ppa:ubuntugis/ppa
+          sudo apt-get update
+          sudo apt-get install libgeos-dev
+
+      - name: Commpile sf from source
+        if: runner.os == 'Linux'
+        run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
+        shell: Rscript {0}
