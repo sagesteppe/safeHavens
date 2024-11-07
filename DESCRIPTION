@@ -40,6 +40,4 @@ Imports:
     units,
     vegan
 URL: https://sagesteppe.github.io/safeHavens/
-Depends: 
-    R (>= 4.4.1)
 LazyData: true
