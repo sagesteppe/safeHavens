@@ -2,7 +2,7 @@
 % Please edit documentation in R/WriteSDMresults.R
 \name{writeSDMresults}
 \alias{writeSDMresults}
-\title{Save the results of SDMs from the 'fitPredictOperationalize' function in safeHavens}
+\title{Save the results of SDMs from the \code{elasticSDM}, \code{RescaleRasters} and \code{PostProcessSDM} function in safeHavens}
 \usage{
 writeSDMresults(
   path,
@@ -41,5 +41,5 @@ all the above objects, or all objects above specified, are written to disk.
 \description{
 This function is used to write out a wide range of values from the \code{fitPredictOperationalize} process.
 It will create multiple subdirectories within a user specified path.
-These include: 'Rasters' where a raster stack of the four final rasters will go, Fitting' where the details of model fitting from Caret will be placed, Models' where the final fit model will go, 'Evaluation' where all evaluation statistics will be placed, 'Threshold' where results form dismo::threshold will be placed.
+These include: 'Rasters' where a raster stack of the four final rasters will go, 'Fitting' where the details of model fitting from caret will be placed, 'Models' where the final fit model will go, 'Evaluation' where all evaluation statistics will be placed, 'Threshold' where results form dismo::threshold will be placed.
 }

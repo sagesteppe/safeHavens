@@ -606,7 +606,8 @@ dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory.
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
-  path = file.path(p, 'safeHavens-Vignette'),
+  write2disk = FALSE, 
+  path = file.path(p, 'safeHavens-Vignette'), # we are not writing, but showing how to provide argument
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   lyr = 'Supplemented',
@@ -631,7 +632,7 @@ Here we showcase the different results from using each of them.
 ```{r Compare Environmental Based Samples, echo = F, message = F, warning = F}
 ENVIbs_thresh <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
-  path = file.path(p, 'safeHavens-Vignette'),
+  write2disk = FALSE, 
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   planar_projection = planar_proj,
@@ -639,7 +640,7 @@ ENVIbs_thresh <- EnvironmentalBasedSample(
 
 ENVIbs_clipped <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
-  path = file.path(p, 'safeHavens-Vignette'),
+  write2disk = FALSE, 
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   planar_projection = planar_proj,

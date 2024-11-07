@@ -63,7 +63,8 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
   dplyr::mutate(Range = 1) |> 
   sf::st_transform(terra::crs(predictors))
 
-# and here we specify the field/column with our variable we want to become an attribute of our raster
+# and here we specify the field/column with our variable we want to become 
+# an attribute of our raster
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
