@@ -45,17 +45,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
-
-      - uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
-          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
-        
-        - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-
+          
       - name: Update GEOS
         if: runner.os == 'Linux'
         run: |
@@ -68,3 +58,9 @@ jobs:
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
         shell: Rscript {0}
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
