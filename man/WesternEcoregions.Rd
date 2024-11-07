@@ -33,3 +33,4 @@ simplified using mapshaper.
 }
 }
 \keyword{datasets}
+\keyword{internal}
