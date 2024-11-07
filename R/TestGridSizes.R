@@ -40,35 +40,35 @@ TestGridSizes <- function(target){
   gr <- sf::st_intersection(gr, target) 
   areas <- as.numeric(sf::st_area(gr))
   areas <- sort(areas / max(areas) * 100, decreasing = TRUE)[1:20]
-  var_Original <- var(areas,  na.rm = TRUE)
+  var_Original <- stats::var(areas,  na.rm = TRUE)
   
   # try with bigger grids
   gr_larger <- sf::st_make_grid(target, n = c(x_start-1, y_start-1), square = FALSE)
   gr_larger <- sf::st_intersection(gr_larger, target) 
   gr_larger_area <- as.numeric(sf::st_area(gr_larger))
   gr_larger_area <- sort(gr_larger_area / max(gr_larger_area) * 100, decreasing = TRUE)[1:20]
-  var_larger <- var(gr_larger_area, na.rm = TRUE)
+  var_larger <- stats::var(gr_larger_area, na.rm = TRUE)
   
   # try with biggest grids
   gr_largest <- sf::st_make_grid(target, n = c(x_start-2, y_start-2), square = FALSE)
   gr_largest <- sf::st_intersection(gr_largest, target) 
   gr_largest_area <- as.numeric(sf::st_area(gr_largest))
   gr_largest_area <- sort(gr_largest_area / max(gr_largest_area) * 100, decreasing = TRUE)[1:20]
-  var_largest <- var(gr_largest_area, na.rm = TRUE)
+  var_largest <- stats::var(gr_largest_area, na.rm = TRUE)
   
   # try with smaller grids
   gr_smaller <- sf::st_make_grid(target, n = c(x_start+1, y_start+1), square = FALSE)
   gr_smaller <- sf::st_intersection(gr_smaller, target) 
   gr_smaller_area <- as.numeric(sf::st_area(gr_smaller))
   gr_smaller_area <- sort(gr_smaller_area / max(gr_smaller_area) * 100, decreasing = TRUE)[1:20]
-  var_smaller <- var(gr_smaller_area, na.rm = TRUE)
+  var_smaller <- stats::var(gr_smaller_area, na.rm = TRUE)
   
   # try with smallest grids
   gr_smallest <- sf::st_make_grid(target, n = c(x_start+2, y_start+2), square = FALSE)
   gr_smallest <- sf::st_intersection(gr_smallest, target) 
   gr_smallest_area <- as.numeric(sf::st_area(gr_smallest))
   gr_smallest_area <- sort(gr_smallest_area / max(gr_smallest_area) * 100, decreasing = TRUE)[1:20]
-  var_smallest <- var(gr_smallest_area, na.rm = TRUE)
+  var_smallest <- stats::var(gr_smallest_area, na.rm = TRUE)
   
   # results for the user. 
   results <- data.frame(
