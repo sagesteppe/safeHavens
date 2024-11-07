@@ -212,6 +212,6 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr, taxon, path, n,
       append = FALSE, quiet = TRUE)
   }
   
-  return(spatialClusters)
+  return(ClusterVectors)
   
 }

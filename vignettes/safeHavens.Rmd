@@ -602,7 +602,7 @@ rr <- RescaleRasters( # you may have already done this!
 getwd() # this is where the folder is going to located IF YOU DON'T RUN the code below. 
 p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real quick, this should work on 
 # Linux and Mac, but I don't think Windows? 
-dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
+# dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
@@ -624,7 +624,6 @@ ENVIbs.p <- map +
 
 ENVIbs.p
 ```
-
 
 The function `EnvironmentalBasedSample` can take any of the three binary rasters created by `PostProcessSDM` as arguments for the template. 
 Here we showcase the different results from using each of them. 
