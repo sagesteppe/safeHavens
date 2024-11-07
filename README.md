@@ -1,5 +1,6 @@
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-# Description The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
+# Description 
+The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
 
 ## Overview
 It provides functionality for seven sampling schemes which various curators are interested in, many of which are likely to outperform others for certain species or areas. 
@@ -7,7 +8,6 @@ The package also creates species distribution models, but with the goal of germp
 
 ## Description
 This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process. 
-
 
 ## Installation
 `safeHavens` is available only on github. 

@@ -632,6 +632,7 @@ Here we showcase the different results from using each of them.
 ENVIbs_thresh <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
   write2disk = FALSE, 
+  path = file.path(p, 'safeHavens-Vignette'),
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   planar_projection = planar_proj,
@@ -640,6 +641,7 @@ ENVIbs_thresh <- EnvironmentalBasedSample(
 ENVIbs_clipped <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
   write2disk = FALSE, 
+  path = file.path(p, 'safeHavens-Vignette'),
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   planar_projection = planar_proj,
@@ -662,7 +664,6 @@ ENVIbs.p.supp <- map +
 
 ENVIbs.p.thresh + ENVIbs.p.clipped + ENVIbs.p.supp + 
   plot_layout(ncol = 3)
-
 ```
 
 These plots are able to showcase the difference in results depending on which of the three input rasters are utilized. 
