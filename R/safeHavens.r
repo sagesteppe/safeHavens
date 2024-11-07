@@ -14,6 +14,7 @@
 #' @keywords datasets
 #' @name WesternEcoregions
 #' @usage data(WesternEcoregions)
+#' @keywords internal
 #' @format A spatial vector data set. 
 NULL
 
