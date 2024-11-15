@@ -77,7 +77,7 @@ relatively niche relative to a typical R package.</p>
 <p>Once installed <code>safeHavens</code> can be loaded like any other
 package, whether they are installed from CRAN or github. We will also
 load <code>ggplot2</code> for it’s excellent ability to plot simple
-features, and <code>tidyverse</code> for pushing some columns around
+features, and <code>tidyverse</code> for pushing some fields around
 etc.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sagesteppe.github.io/safeHavens/">safeHavens</a></span><span class="op">)</span></span>
@@ -87,33 +87,33 @@ etc.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jakubnowosad.com/spData/" class="external-link">spData</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">23</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">23</span><span class="op">)</span> <span class="co"># MJ ;-)</span></span>
 <span><span class="va">planar_proj</span> <span class="op">&lt;-</span> <span class="st">'+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="notes-about-safehavens">Notes about <code>safeHavens</code><a class="anchor" aria-label="anchor" href="#notes-about-safehavens"></a>
 </h2>
 <p>This package helps germplasm curators communicate areas of interest
-to collection teams for them to collect new material for accession. It
-provides seven different sampling approaches for curators to choose from
-for each individual taxon they hope to process. It also allows for easy
+to collection teams for targeting new accessions. It provides seven
+different sampling approaches for curators to choose from, for each
+individual taxon they hope to process. It also allows for easy
 integration into existing workflows and will put out the required
 spatial data to share with collection teams.</p>
 <p>Each of the approaches are based on standard practices in ecology,
-and reflect very basic tenets of population genetics, and Toblers first
-law of geography. They have various trade offs in terms of computational
-and environmental complexity. The table below presents the currently
-implemented sampling scheme and the user facing function associated with
-them. In my mind the first four functions are really flavors of the same
-process, one whereby we try and partition the species range into chunks
-of similar sizes. However, as is often the case four things which seem
-very similar to me may have enormously different results in
-implementation. The fifth method <code>IBDBasedSample</code> is largely
-in a class of it’s own, in lieu of using the <em>continuity</em> of
-geographic space as it’s primary method, it focuses on the discontinuity
-of space and using distance matrices and clustering to determine which
-patches of range are more close to each than other patches. The impetus
-behind this method is of course Sewall Wrights Isolation by Distance
-(1943).</p>
+and reflect very basic tenets of population genetics, and Tobler’s first
+law of geography. The methods have various trade offs in terms of
+computational and environmental complexity. The table below presents the
+currently implemented sampling scheme and the user facing function
+associated with them. In my mind the first four functions are really
+flavors of the same process, one whereby we try and partition the
+species range into geographic chunks of similar sizes. However, as is
+often the case four things which seem very similar to me may have
+enormously different results in implementation. The fifth method
+<code>IBDBasedSample</code> is largely in a class of it’s own, in lieu
+of using the <em>continuity</em> of geographic space as it’s primary
+method, it focuses on the discontinuity of space and using distance
+matrices and clustering to determine which patches of range are more
+close to each than other patches. The impetus behind this method is of
+course Sewall Wrights Isolation by Distance (1943).</p>
 <p>The <code>EcoregionBasedSample</code> may be the most commonly
 encountered method in North America and in various formats is driving
 two major germplasm banking projects in both the Midwest and
@@ -204,12 +204,11 @@ medium to high.</p>
 <p>This package is strongly focused on plants, no disrespect to animals,
 they just never occurred to me during development. However, to make it
 up to animal people, we will use a Sloth, which I think is <a href="https://en.wikipedia.org/wiki/Brown-throated_sloth" class="external-link"><em>Bradypus
-variegatus</em></a> it’s both a maniacally and mischievous looking
-little thing. Beyond looking at the inspiration for most Jim Henson
-puppets above, we will treat <em>Bradypus</em> more like a plant species
-when we discuss these sampling schemes - that is we will assume we are
-focused on organisms which seldom move great distances in dispersal
-processes.</p>
+variegatus</em></a> it looks both maniacal and mischievous, and the like
+inspiration for many Jim Henson puppets. However, we will treat
+<em>Bradypus</em> more like a plant species when we discuss these
+sampling schemes - that is we will assume we are focused on organisms
+which seldom move great distances in dispersal processes.</p>
 <p>We can access some data on <em>Bradypus</em> from the
 <code>dismo</code> package - presumably short for ‘<em>Dis</em>tribution
 <em>Mo</em>delling’, which was created by Robert Hijman and others. We
@@ -221,7 +220,7 @@ written by <a href="https://rspatial.org/raster/sdm/" class="external-link">Hijm
 Elith</a> - aspects of this vignette are definitely based on it. We will
 use Species Distribution Models (SDMs) as the input variable to many of
 the arguments in this function - don’t get caught up in the details of
-making them. These days you can get good results out of essentially
+making them. These days you can get good SDM results out of essentially
 entirely automated pipelines, we’ll have the truncated process outlined
 here in a chunk, but I honestly argue you should ignore this section the
 first few times you read this document, and go back for the details
@@ -243,8 +242,8 @@ throughs?!)<a class="anchor" aria-label="anchor" href="#species-distribution-mod
 <code>safeHavens</code> most complex function
 <code>EnvironmentalBasedSample</code> requires, you can explore this
 section to understand the costs required to achieve this process. It
-goes on for a while, so I almost recommend checking this section last.
-In the meantime, if you still want to see the results from
+goes on for a while, so I recommend checking this section last. In the
+meantime, if you still want to see the results from
 <code>EnvironmentalBasedSample</code> compared to the other functions,
 you can load the results from disk, they are distributed with the
 package.</p>
@@ -454,11 +453,9 @@ buffered distance results to at the end.</p>
 times!)<a class="anchor" aria-label="anchor" href="#alternative-to-sdm-just-buffer-start-reading-here-your-first-few-times"></a>
 </h2>
 <p>Creating the SDMs is a whole process, and not all users may want to
-create them. Here we provide an approach which will give us results we
-can work with, and is computationally cheap.<br>
-As a minimalist that would probably just use the
-<code>IsolationByDistance</code> function, this would almost certainly
-be the route I took to indentifying collection areas.</p>
+go down that road.<br>
+Here we provide an approach which will give us results we can work with,
+and is computationally cheap.</p>
 <p>It relies on one input, the same occurrence data as above, and a
 simple process - drawing a circle at a specific radius around each
 observation point! Here we are showing the second of two major packages
@@ -467,8 +464,9 @@ on simple feature geometries and is now the workhorse of most all vector
 data analysis in R. It is very well documented and tested, if you are
 unfamiliar with it you should consider it to be the <code>dplyr</code>
 of the spatial data ecosystem in R. In this vignette I use
-<code>::</code> notation so you can get an idea of where the functions
-are coming from, and you’ll notice a lot of <code>sf::st_*</code>.</p>
+<code>::</code> notation so you can get an idea of where functions are
+coming from, and you’ll notice <em>a lot</em> of
+<code>sf::st_*</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">planar_proj</span> <span class="op">=</span></span>
 <span>    <span class="st">'+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'</span></span>
@@ -492,8 +490,8 @@ maps with some more context in just a couple steps.</p>
 <div class="section level2">
 <h2 id="just-load-the-sdm">Just load the SDM!<a class="anchor" aria-label="anchor" href="#just-load-the-sdm"></a>
 </h2>
-<p>The package also has an SDM projection saved in the data we can just
-load that too for a couple comparisions.</p>
+<p>The package also has an SDM prediction saved in the data we can just
+load that too for a couple comparisons.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdm</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>,  <span class="st">'extdata'</span>, <span class="st">'Bradypus_test.tif'</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdm</span><span class="op">)</span></span></code></pre></div>
@@ -505,8 +503,9 @@ load that too for a couple comparisions.</p>
 <p>While not necessary, we are going to add some context to our maps
 which should help you interpret the results of the various functions
 from the package. We will use the <code>spData</code> package which uses
-naturalearth data for it’s <code>world</code> data and is suitable for
-creating effective maps at a variety of resolutions.</p>
+<a href="https://www.naturalearthdata.com/" class="external-link">naturalearth</a> data for
+it’s <code>world</code> data and is suitable for creating effective maps
+at a variety of resolutions.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x_extra_buff</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_buffer</a></span><span class="op">(</span><span class="va">x_buff</span>, <span class="fl">100000</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># add a buffer to 'frame' the maps</span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="fl">4326</span><span class="op">)</span></span>
@@ -539,7 +538,7 @@ creating effective maps at a variety of resolutions.</p>
 </h2>
 <p>Now that we have some data which can represent species ranges, we can
 run the various sampling approaches. The table in the introduction is
-reproduced here for your leisure.</p>
+reproduced here.</p>
 <table class="table">
 <colgroup>
 <col width="34%">
@@ -605,24 +604,17 @@ medium to high.</em></p>
 <h4 id="grid-based-and-point-based-sample">Grid Based and Point Based Sample<a class="anchor" aria-label="anchor" href="#grid-based-and-point-based-sample"></a>
 </h4>
 <p>Ecologists love grids. All of us are taught to love grids for
-sampling. Grids are create for contiguous things. Species ranges are
-often not contiguous; curators and analysts in our geographically great
-ecosystems, e.g. the steppes, prairies, tundra, and taiga might find
-these useful.<br>
-Surprisingly coding the functions to create a grid based sample where
-the most difficult of anything in this whole package. So why did I do
-it, you ask? Because I too was trained tounequivocally love grids, I
-also was already loathe to hear the question after a talk <em>“Why
-didn’t you code grids? I love grids? I don’t think these comparisons are
-complete until we see grids. We gave you <em>hors d’oeuvres</em> and you
-gave us shit…”</em></p>
+sampling. Grids are very useful for sampling contiguous things. Species
+ranges are often not contiguous; curators and analysts in our
+geographically grand ecosystems, e.g. the steppes, prairies, tundra, and
+taiga might find these useful.</p>
 <p>You can look at the output below to see why grids are not great for
 <em>this</em> type of problem.</p>
 <p>The first step in grid sampling is determining an OK number of grids
 to try and draw as a starting point, if we want 20 collections we will
 need more than 20 grids, because several will be merged into the larger
 ones. Using the aspect ratio of a simple bounding box around the area
-will be analysing, the function will determine a default number of grids
+will be analyzing, the function will determine a default number of grids
 (‘Original’) for testing. Using these defaults it will create a few
 other sets of grids as well, by either removing one of two grids per
 direction. Theoretically you could automate grid selection by comparing
@@ -648,14 +640,14 @@ initial grids.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">tgs</span> <span class="op">&lt;-</span> <span class="va">tgs</span><span class="op">[</span><span class="va">tgs</span><span class="op">$</span><span class="va">Name</span><span class="op">==</span><span class="st">'Smaller'</span>,<span class="op">]</span></span></code></pre></div>
-<p>Essentially we need more than 20 grids, but realistically using more
-than 25 grids - depending on the complexity of the species range - tends
-to be an effective floor. In the table and plot above I opt for using
-the ‘Smaller’ option, with 28 grids generated by prompting
-<code><a href="https://r-spatial.github.io/sf/reference/st_make_grid.html" class="external-link">sf::st_make_grid</a></code> with 7 grids in the x direction and 5 in
-the y direction. You can <em>kind of</em> think about this like an elbow
-plot, but the samples are so few you won’t get the characteristic
-shape.</p>
+<p>Essentially we need more than 20 grids, but realistically (albeit
+from limited informal testing) using more than 25 grids - depending on
+the complexity of the species range - tends to be an effective floor. In
+the table and plot above I opt for using the ‘Smaller’ option, with 28
+grids generated by prompting <code><a href="https://r-spatial.github.io/sf/reference/st_make_grid.html" class="external-link">sf::st_make_grid</a></code> with 7 grids
+in the X direction and 5 in the Y direction. You can <em>kind of</em>
+think about this like an elbow plot, but the samples are so few you
+won’t get the characteristic shape.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">grid_buff</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GridBasedSample.html">GridBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span>, <span class="va">planar_proj</span>, gridDimensions <span class="op">=</span> <span class="va">tgs</span><span class="op">)</span> </span>
 <span></span>
@@ -670,12 +662,12 @@ shape.</p>
 <p>With the grids we drew the pre-specified number of grids across the
 species range, and then merged them together as required to get the
 results. We will essentially do the inverse in this step, rather than
-drawing boundaries - i.e. grid cells, we will draw points in the center
-of grid cells. Essentially allowing the features to ‘grow’ a little more
-naturally, to my thinking. I also think these results work a little bit
-better on a fragmented range, their is still some odd clipping, where
-minor portions of a section of range are assigned to a different grid,
-but a little bit better.</p>
+drawing boundaries - i.e. grid cells, we will draw the centers. This
+essentially allows the features to ‘grow’ a little more naturally. I
+also think these results work a little bit better on a fragmented range,
+their is still some odd clipping, where minor portions of a section of
+range are assigned to a different grid, but in general a little bit
+better.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PointBasedSample.html">PointBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span></span>
 <span><span class="va">pbs.sf</span> <span class="op">&lt;-</span> <span class="va">pbs</span><span class="op">$</span><span class="va">Geometry</span></span>
@@ -704,7 +696,7 @@ and the set of polygons which was created during these reps with the
 smallest variance in polygon size will be selected to be returned from
 the function.</p>
 <p>This differs from point based sampling in that the above instance, we
-start with a few regulary spaced points to grow from, here we take a
+start with a few regularly spaced points to grow from, here we take a
 step back and by using many points let the clusters grow themselves to
 similar sizes.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
@@ -718,7 +710,7 @@ similar sizes.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
 <span><span class="va">eas.p</span></span></code></pre></div>
 <p><img src="safeHavens_files/figure-html/Equal%20Area%20Sample-1.png" width="700">
-In my mind the results look quite similar to point based sample.</p>
+To me the results look quite similar to point based sample.</p>
 </div>
 <div class="section level4">
 <h4 id="opportunistic-sample">Opportunistic Sample<a class="anchor" aria-label="anchor" href="#opportunistic-sample"></a>
@@ -732,10 +724,10 @@ function <code>OpportunisticSample</code> makes a few very minor
 modifications to the point based sample to try and maximize an existing
 collection. It doesn’t always work exceptionally, especially when a
 couple collections are very close to each other, but it may be a
-beneficial tool in the belt. As we have observed, the three previous
-sampling schemes end of with somewhat similar results - so we took used
-the <code>PointBasedSample</code> as the framework we embedded this
-function into it - it was also the easiest function to work this
+beneficial tool to have in the belt. As we have observed, the three
+previous sampling schemes end of with somewhat similar results - so we
+took used the <code>PointBasedSample</code> as the framework we embedded
+this function into it - it was also the easiest function to work this
 into!</p>
 <p>Essentially this combines the approach of point based sampling, but
 forces that the clusters are based around the existing accessions. It
@@ -913,20 +905,20 @@ species. We will load them here.</p>
 <code>RescaleRasters</code>) which will serve as surfaces to predict
 from (this is also done above!), then we will run the algorithm
 (<code>EnvironmentalBasedSample</code>). However, before we run the
-algorithm we will need to create a directory (also called a folder), on
-our computers to save the results from the function
+algorithm we will need to create a directory (also called a ‘folder’),
+on our computers to save the results from the function
 <code>EnvironmentalBasedSample</code>. Whereas earlier in this vignette
 we showcased that the functions generated the species distribution
 model, and us saving the results were a two stage process (e.g. to
 create the SDM and associated products we used: <code>elasticSDM</code>,
 <code>PostProcessSDM</code>, and <code>RescaleRasters</code>, before
 finally saving relevant data with <code>writeSDMresults</code>), this
-function both produces the product and writes out ancillary data at the
-same time. This approach was chosen as this function is only writing out
-four objects: 1) the groups as vector data, 2) and the groups as raster
-data, 3) the k nearest neighbors (knn) model used to generate these
-clusters, and 4) the confusion matrix associated with testing the knn
-model.</p>
+function produces both the product and writes out ancillary data
+simultaneously.<br>
+This approach was chosen as this function is only writing out four
+objects: 1) the groups as vector data, 2) and the groups as raster data,
+3) the k-nearest neighbors (knn) model used to generate these clusters,
+and 4) the confusion matrix associated with testing the knn model.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span> <span class="co"># you may have already done this!</span></span>
 <span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
@@ -1006,7 +998,8 @@ my mind isolation by distance (IBD) show the biggest different, it seems
 to have made the most <em>sense</em> of the naturally occurring
 patchiness of the species range. Ecoregion SEEMS…. Environmental also
 seems to partition the feature space quite well. Notably drawing a
-couple clusters in the Pacfic lowlands and Northern Andes mountains.</p>
+couple clusters in the Pacific lowlands and Northern Andes
+mountains.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
