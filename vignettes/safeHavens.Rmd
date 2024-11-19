@@ -537,29 +537,8 @@ ebs.p <- map +
 ebs.p
 ```
 
-The data which are output by this function differ drastically than the data output by all the other functions. 
-It simply represents a count of targeted accession by ecoregion.
-In this case each ecoregion should contribute one collection. 
-For some reason I am convinced this is a product many people will prefer relative to the 'post-processed' object which we will work on delivering in the code just beneath here. 
-
-```{r Post-process Ecoregion Based Sample, eval = F}
-neo_eco <- select(neo_eco, Provincias)
-step1 <- st_difference(neo_eco, sf::st_union(x_buff))
-plot(step1)
-
-intersects <- sf::st_intersection(ebs.sf,neo_eco )
-
-areas <- st_erase(ebs.sf, x_buff)
-plot(intersects)
-
-obby <- sf::st_intersection(neo_eco, ebs.sf)
-plot(obby)
-
-map + 
-  geom_sf(data = areas) + 
-  labs(title = 'Ecoregion Sample (Largest)')
-```
-
+This output differs from the others we will see, here we have depicted the number of collections to be made per ecoregion. 
+Because the number of ecoregions is greater than our requested sample size, the return object can only take on two values - no collections, or one collection. 
 
 ```{r, echo = FALSE}
 rm(bb, neo_eco, x_buff)

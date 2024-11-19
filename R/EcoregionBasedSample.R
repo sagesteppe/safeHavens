@@ -244,5 +244,7 @@ EcoregionBasedSample <- function(x, ecoregions, OmernikEPA, n, ecoregion_col, in
     sf::st_make_valid() |>
     dplyr::rename(dplyr::any_of( c(geometry = 'geom')))
   
+  out <- sf::st_intersection(out, x)
+  
   return(out)
 }
