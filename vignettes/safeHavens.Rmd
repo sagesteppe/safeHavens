@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 # devtools::install_github('sagesteppe/safeHavens')
 
 # lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
-# install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
+# install.packages('remotes') # remotes is very similar and  a good alternative for this use case.
 remotes::install_github('sagesteppe/safeHavens') # blah even same function name!
 ```
 
