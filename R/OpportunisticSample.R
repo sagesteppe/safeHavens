@@ -72,9 +72,11 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
   
   # now assign the arranged notation to the data set overwriting the original 
   # randomly assigned ID's
+  
   SelectedSample <- dplyr::mutate(
     SelectedSample, 
-    ID = as.numeric(sf::st_intersects(SelectedSample, ss_cents)), .before = 1)
+    ID = as.numeric(sf::st_intersects(SelectedSample, ss_cents)), .before = 1) |>
+    dplyr::rename(dplyr::any_of(c(geometry = 'x', geometry = 'X', geometry = 'geom')))
 
   # Determining the 0.1% quantile for the variance in size of the sampling grids. 
   # Using non-parametric approaches, of bootstrap resampling (replicates = 9999) ,
