@@ -14,8 +14,8 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Showcasing Sampling Schemes with Sloths">
 </head>
 <body>
@@ -851,6 +851,8 @@ information!</p>
 <span><span class="va">ebs.sf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EcoregionBasedSample.html">EcoregionBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span>, <span class="va">neo_eco</span>, OmernikEPA <span class="op">=</span> <span class="cn">FALSE</span>, ecoregion_col <span class="op">=</span> <span class="st">'Provincias'</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
 <span><span class="co">#&gt; all geometries</span></span>
+<span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
+<span><span class="co">#&gt; all geometries</span></span>
 <span></span>
 <span><span class="co"># for plotting let's crop it to the other objects</span></span>
 <span><span class="va">ebs.sf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crop.html" class="external-link">st_crop</a></span><span class="op">(</span><span class="va">ebs.sf</span>, <span class="va">bb</span><span class="op">)</span></span>
@@ -863,28 +865,11 @@ information!</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
 <span><span class="va">ebs.p</span></span></code></pre></div>
 <p><img src="safeHavens_files/figure-html/Ecoregion%20Based%20Sample-1.png" width="700"></p>
-<p>The data which are output by this function differ drastically than
-the data output by all the other functions. It simply represents a count
-of targeted accession by ecoregion. In this case each ecoregion should
-contribute one collection. For some reason I am convinced this is a
-product many people will prefer relative to the ‘post-processed’ object
-which we will work on delivering in the code just beneath here.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">neo_eco</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">neo_eco</span>, <span class="va">Provincias</span><span class="op">)</span></span>
-<span><span class="va">step1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_difference</a></span><span class="op">(</span><span class="va">neo_eco</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">step1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">intersects</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_intersection</a></span><span class="op">(</span><span class="va">ebs.sf</span>,<span class="va">neo_eco</span> <span class="op">)</span></span>
-<span></span>
-<span><span class="va">areas</span> <span class="op">&lt;-</span> <span class="fu">st_erase</span><span class="op">(</span><span class="va">ebs.sf</span>, <span class="va">x_buff</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">intersects</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">obby</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_intersection</a></span><span class="op">(</span><span class="va">neo_eco</span>, <span class="va">ebs.sf</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obby</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">map</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">areas</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Ecoregion Sample (Largest)'</span><span class="op">)</span></span></code></pre></div>
+<p>This output differs from the others we will see, here we have
+depicted the number of collections to be made per ecoregion. Because the
+number of ecoregions is greater than our requested sample size, the
+return object can only take on two values - no collections, or one
+collection.</p>
 </div>
 <div class="section level4">
 <h4 id="environmental-based-sample">Environmental Based Sample<a class="anchor" aria-label="anchor" href="#environmental-based-sample"></a>
@@ -893,7 +878,7 @@ which we will work on delivering in the code just beneath here.</p>
 species distribution model data. Included in the data directory of the
 folder are all of the objects required to run this example for the
 species. We will load them here.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/serialize.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>,  <span class="st">'sdModel.rds'</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -919,7 +904,7 @@ This approach was chosen as this function is only writing out four
 objects: 1) the groups as vector data, 2) and the groups as raster data,
 3) the k-nearest neighbors (knn) model used to generate these clusters,
 and 4) the confusion matrix associated with testing the knn model.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span> <span class="co"># you may have already done this!</span></span>
 <span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
 <span>  predictors <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span>, </span>
@@ -988,7 +973,7 @@ up clusters, which lack any populations which can be collected from.</p>
 <p>So, we’ve made got some maps for you to look at! They all look
 relatively similar to me when plotted one after another, let’s plot them
 all simultaneously and see if that’s still the case.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gbs.p</span> <span class="op">+</span> <span class="va">pbs.p</span> <span class="op">+</span> <span class="va">eas.p</span> <span class="op">+</span> <span class="va">os.p</span>  <span class="op">+</span>  <span class="va">ibdbs.p</span> <span class="op">+</span> <span class="va">ebs.p</span> <span class="op">+</span> <span class="va">ENVIbs.p</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="safeHavens_files/figure-html/Plot%20all%20Sampling%20Schemes%20together-1.png" width="700"></p>
