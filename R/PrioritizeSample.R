@@ -3,29 +3,32 @@
 #' @description This function offers two ways to enforce some prioritization within the individual sample units returned by each *Sample function. 
 #' The goal of either method is to avoid having collectors teams 'cheat' the system by repeatedly collecting along the border between two or more grid cells. 
 #' While we understand that many teams may be collecting closely due to the species biology, land management, or other restrictions, the goal of this function is to try and guide them in dispersing there activity. 
-#' There are two implemented approaches for achieving these spatial guidelines. 
 #' 
-#' 'centered', where the geometric centroid of each region is computed, if the center falls outside of the grid, it is snapped back onto the nearest location by default. 
-#' Once the centers of each cell are calculated the remaining area of each grid has distances calculated between the centers and there locations.
-#' 'distance', where the variance in distance between all grid cells is attempted to be minimized. 
-#' This is accomplished by sampling each grid cell `rep` times, and computing the variance between all pairwise distances (e.g. with 1000 replicates and 20 samples desired, place one point in each of the 20 grids 100 times, and calculate the minimum variance in distance between all reps). 
-#' The rep with the lowest variance is then chosen for the next step, where the distance between the selected point and the rest of the cell are calculated. 
-#' Note that the 'distance' method is many magnitudes of order slower than the centered method. 
-#' Both methods end up feeding into the same final processing step. 
+#' THe method used computes the geometric centroid of each region is computed, if the center falls outside of the grid, it is snapped back onto the nearest location by default. 
+#' Once the centers of each cell are calculated the remaining area of each grid has distances calculated between the centers and there locations. 
 #' In final processing `n_breaks` are applied based on distances from the desired cell center to partition the space into different priority collection units. 
 #'
 #' Note that if you are submitting data from the ecoregion based sample, the column `n`, must be maintained. 
 #' @param x an sf/tibble/dataframe. a set of sample grids from any of the *Sample functions 
-#' @param method Character String. One of "centered" or "distance" to dispatch the supported methods. If missing defaults to "centered". 
-#' @param reps If using method "distance" the number of times to repeat the sampling procedure, defaults to 500. 
 #' @param n_breaks Numeric. The number of breaks to return from the function, defaults to 3. Values much higher than that are untested, and beyond 5 of questionable utility.  
-#' @param verbose Boolean. Whether to display a progress bar if implementing method distance. 
-#' @examples /dontrun{}
+#' @examples /dontrun{
+#' nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
+#' dplyr::select(NAME) |>
+#'   sf::st_transform(5070) # should be in planar coordinate system. 
+#' 
+#' set.seed(1)
+#' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+#' 
+#' # the function requires an input sampling strategy to create the prioritization areas
+#' ps <- PrioritizeSample(zones$Geometry, method = 'centered', n_breaks = 3)
+#' 
+#' ggplot2::ggplot() + 
+#'  ggplot2::geom_sf(data = ps,  aes(fill = factor(Level))) +
+#'  ggplot2::geom_sf(data = zones$Geometry, color = 'red', fill = NA, linewidth = 1) 
+#' }
 #' @export
 PrioritizeSample <- function(x, method, reps, n_breaks, verbose){
 
-	if(missing(method)){method <- 'centered'}
-	if(missing(reps) & method=='distance'){reps <- 500}
 	if(missing(n_breaks)){n_breaks <- 3}
 	
 	# Ecoregion based sample is the one method where rows which are not meant to be sampled 
@@ -36,23 +39,8 @@ PrioritizeSample <- function(x, method, reps, n_breaks, verbose){
     x <- x[x[,grep('^n$', colnames(x))]==1, ]
   }
 	
-	if(method=='centered'){
-	
 	  sf::st_agr(x) <- 'constant'
 	  POS <- sf::st_point_on_surface(x)
-	
-	} else {
-	  
-	  # sample each ecoregion reps times. 
-	  repetitions <- vector(mode = 'list', length = reps)
-	  message('Undergoing sampling repetitions. ')
-	  for (i in seq_along(1:reps)){ 
-	    repetitions[[i]] <- iter_sample(x)
-	    if(verbose ==TRUE){svMisc::progress(i, reps, progress.bar = TRUE)}
-	    }
-	  return(repetitions)
-	}
-
   # now we can create points in each row and measure the distance from these
   # points to the desired sample location. We can classify those distances
   # using breaks, creating discrete groups within each feature. 
@@ -68,7 +56,7 @@ PrioritizeSample <- function(x, method, reps, n_breaks, verbose){
     dists[[i]] <- as.numeric(sf::st_distance(ctrlPts[[i]], POS[i,]))
     ctrlPts[[i]] <- sf::st_as_sf(ctrlPts[[i]])
     ctrlPts[[i]] <-  cbind(
-      lvl = cut(dists[[i]], breaks = 4, labels = FALSE), 
+      lvl = cut(dists[[i]], breaks = n_breaks, labels = FALSE), 
       geometry = ctrlPts[[i]])
     
     # now chop up the sampling domain
@@ -80,19 +68,19 @@ PrioritizeSample <- function(x, method, reps, n_breaks, verbose){
     vorons[[i]] <- cbind(
       cP = unlist(sf::st_intersects(vorons[[i]], ctrlPts[[i]])), 
       sf::st_as_sf(vorons[[i]]) ) 
-    vorons[[i]]$lvl <- ctrlPts[[i]]$lvl[vorons[[i]]$cP]
+    vorons[[i]]$Level <- ctrlPts[[i]]$lvl[vorons[[i]]$cP]
     
   }
   
   melt <- function(x){
-    out <- dplyr::group_by(x, lvl) |>
+    out <- dplyr::group_by(x, Level) |>
       dplyr::summarise(geometry = sf::st_union(x))
   }
 
   sample_levels <- lapply(vorons, melt)
   sample_levels <- Map(cbind, sample_levels, ID = (1:length(sample_levels))) |>
     dplyr::bind_rows() |>
-    dplyr::select(ID, lvl, geometry)
+    dplyr::select(ID, Level, geometry)
   
   return(sample_levels)
 }
@@ -146,6 +134,3 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
   }
 }
 
-ggplot() + 
-  geom_sf(data = x) + 
-  geom_sf(data = out[[49]], aes(fill = lvl))
