@@ -1,47 +1,74 @@
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-# Description 
-The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
+
+# Description
+
+[![CRAN
+checks](https://badges.cranchecks.info/summary/badger.svg)](https://cran.r-project.org/web/checks/check_results_badger.html)
+[![R build
+status](https://github.com/sagesteppe/eSTZwritR/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/eSTZwritR/actions)
+[![CodeFactor](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR/badge)](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR)
+[![Project Status: Active - The project has reached a stable, usable
+state and is being actively
+developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+The goal of this package is to provide germplasm curators with easily
+referable spatial data sets to help prioritize field collection efforts.
 
 ## Overview
-It provides functionality for seven sampling schemes which various curators are interested in, many of which are likely to outperform others for certain species or areas. 
-The package also creates species distribution models, but with the goal of germplasm sampling, rather than predicting ranges at fine resolutions, or making inference; if you are interested in this functionality R has several dozen other packages which are tailored for these purposes. 
+
+It provides functionality for seven sampling schemes which various
+curators are interested in, many of which are likely to outperform
+others for certain species or areas. The package also creates species
+distribution models, but with the goal of germplasm sampling, rather
+than predicting ranges at fine resolutions, or making inference; if you
+are interested in this functionality R has several dozen other packages
+which are tailored for these purposes.
 
 ## Description
-This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process. 
+
+This package helps germplasm curators communicate areas of interest to
+collection teams for them to collect new material for accession. It
+provides seven different sampling approaches for curators to choose from
+for each individual taxon they hope to process.
 
 ## Installation
-`safeHavens` is available only on github. 
-It can be installed using `remotes` or `devtools` like so:
-```
-install.packages('devtools')
-devtools::install_github('sagesteppe/safeHavens')
 
-install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
-remotes::install_github('sagesteppe/safeHavens')
-```
+`safeHavens` is available only on github. It can be installed using
+`remotes` or `devtools` like so:
 
-Once installed it can be attached for use like any other package from github or CRAN
-```
-library(safeHavens)
-```
+    install.packages('devtools')
+    devtools::install_github('sagesteppe/safeHavens')
+
+    install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
+    remotes::install_github('sagesteppe/safeHavens')
+
+Once installed it can be attached for use like any other package from
+github or CRAN
+
+    library(safeHavens)
 
 ## Usage
 
-`safeHavens` has only seven user facing functions for generating the sampling schemes.  
+`safeHavens` has only seven user facing functions for generating the
+sampling schemes.
 
-|        Function           |              Description               | Comp.| Envi.|
-|---------------------------|----------------------------------------|------|------|
-| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
-| `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
-| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
-| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
-| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
-| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
-| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
+| Function | Description | Comp. | Envi. |
+|----|----|----|----|
+| `GridBasedSample` | Creates and merges *n* grids over area | L | L |
+| `PointBasedSample` | Creates points to make pieces over area | L | L |
+| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
+| `OpportunisticSample` | Using PBS with existing records | L | L |
+| `IBDBasedSample` | Breaks species range into clusters | H | M |
+| `EcoregionBasedSample` | Using existing ecoregions to sample | L | H |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
 
-
-The species distribution modelling section has a couple functions which are essential for achieving the `EnvironmentalBasedSample` design, these are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and `writeSDMresults`.
+The species distribution modelling section has a couple functions which
+are essential for achieving the `EnvironmentalBasedSample` design, these
+are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and
+`writeSDMresults`.
 
 ## Acknowledgements
 
-Edzer Pebesma, and Krzysztof Dyba for help with seamless installations on Ubuntu, and getting the pkgdown website running.
+Edzer Pebesma, and Krzysztof Dyba for help with seamless installations
+on Ubuntu, and getting the pkgdown website running.
