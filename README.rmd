@@ -7,16 +7,17 @@ html_preview: false
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-# Description 
 ```{r, echo = FALSE, results='asis'}
 cat(
-  badger::badge_cran_checks("badger"), 
 	badger::badge_github_actions('sagesteppe/eSTZwritR'), 
 	badger::badge_codefactor('sagesteppe/eSTZwritR'), 
 	badger::badge_repostatus("Active")
 )
 ```
+
+# safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
+# Description 
+
 The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
 
 ## Overview
