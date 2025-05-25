@@ -7,9 +7,10 @@ html_preview: false
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+[![R-CMD-check](https://github.com/sagesteppe/flyer/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml) 
+
 ```{r, echo = FALSE, results='asis'}
 cat(
-	badger::badge_github_actions('sagesteppe/eSTZwritR'), 
 	badger::badge_codefactor('sagesteppe/eSTZwritR'), 
 	badger::badge_repostatus("Active")
 )

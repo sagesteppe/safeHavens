@@ -1,7 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-[![R build
-status](https://github.com/sagesteppe/eSTZwritR/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/eSTZwritR/actions)
 [![CodeFactor](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR/badge)](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR)
 [![Project Status: Active - The project has reached a stable, usable
 state and is being actively
