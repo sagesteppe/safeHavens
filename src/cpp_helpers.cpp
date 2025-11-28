@@ -1,5 +1,6 @@
 // No Rcpp::export here; only internal helpers
 #include <Rcpp.h>
+#include "cpp_helpers.h" 
 using namespace Rcpp;
 
 // ---------- Helper non-exported functions ----------

@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include "cpp_helpers.h"  
 using namespace Rcpp;
 
 // Forward declare internal helpers
