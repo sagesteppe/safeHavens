@@ -20,7 +20,6 @@ library(ggplot2)
 ```
 
 ```{r}
-
 n_sites <- 30 # number of known populations
 df <- data.frame(
   site_id = seq_len(n_sites),
@@ -28,8 +27,9 @@ df <- data.frame(
   lon = runif(n_sites, -125, -120),
   required = FALSE,
   coord_uncertainty = 0
+)
 
-function relies on at least one required point. here arbitrarily place near geographic center
+# the function relies on at least one required point. here arbitrarily place near geographic center
 dists2c <- greatCircleDistance(
   median(df$lat), 
   median(df$lon), 
@@ -50,11 +50,12 @@ dist_mat <- sapply(1:nrow(df), function(i) {
     df$lat[i], df$lon[i],
     df$lat, df$lon
   )
-}
+})
 # the input data is a list, the distance matrix, and the df of actual point locations. 
 head(df)
 test_data <- list(distances = dist_mat, sites = df)
-rm(dist_mat, df, n_sites, uncertain_sites, dists2c
+rm(dist_mat, df, n_sites, uncertain_sites, dists2c)
+
 # small quick run (fast); timing for R package / CRAN status. 
   system.time( 
     res <- maximizeDispersion(  ## reduce some parameters for faster run. 
@@ -65,6 +66,7 @@ rm(dist_mat, df, n_sites, uncertain_sites, dists2c
       n_local_search_iter = 50,
       n_restarts = 2
     )
+  )
   
 ## first selected 
 ggplot(data = res$input_data, 
@@ -80,6 +82,7 @@ ggplot(data = res$input_data,
   ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
   theme_minimal() + 
   labs(main = 'Priority Selection Status of Sites')
+
 ## order of sampling priority ranking plot.
 ggplot(data = res$input_data, 
   aes(
