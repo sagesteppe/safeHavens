@@ -19,7 +19,24 @@ reference:
   - PostProcessSDM
   - RescaleRasters
   - writeSDMresults
+- title: Rare Plant Sampling
+  desc: Optimization based site selection for known populations
+  contents:
+  - greatCircleDistance
+  - maximizeDispersion
 - title: Miscellaneous
   desc: Data prep functions
   contents: TestGridSizes
 
+articles:
+  - title: "About the package and getting started"
+    desc: 
+    contents:
+    - About
+    - creating_labels
+    - SpeciesDistributionModels
+  - title: "Sampling schema for rare species"
+    desc: "A supplemental schema for rare species"
+    contents: 
+    - RareSpecies
+ 

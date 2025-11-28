@@ -31,6 +31,7 @@ healPolygons <- function(x){
 #' with the unioning of polygons
 #' @param x the output of healPolygons
 #' @keywords internal
+#' @noRd
 snapR <- function(x){
   sf::st_agr(x) = 'constant'
   Assigned <- sf::st_drop_geometry(x$Assigned)[1]

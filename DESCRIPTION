@@ -41,3 +41,6 @@ Imports:
     vegan
 URL: https://sagesteppe.github.io/safeHavens/
 LazyData: true
+LinkingTo: 
+    Rcpp
+SystemRequirements: C++11

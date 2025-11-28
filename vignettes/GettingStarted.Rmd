@@ -1,8 +1,8 @@
 ---
-title: "Showcasing Sampling Schemes with Sloths"
+title: "Getting Started"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Showcasing Sampling Schemes with Sloths}
+  %\VignetteIndexEntry{Getting Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,20 +14,11 @@ knitr::opts_chunk$set(
 )
 ```
 
-`safeHavens` can be installed directly from github, no plans are made to release the package to CRAN as it's user base is relatively niche relative to a typical R package. 
+`safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-# `devtools`, or a similar package, is required to install packages from github
-# install.packages('devtools') 
-# devtools::install_github('sagesteppe/safeHavens')
-
-# lot's of user have issues with devtools, on Windows I believe, but `remotes` tends to work well. 
-# install.packages('remotes') # remotes is very similar and  a good alternative for this use case.
-remotes::install_github('sagesteppe/safeHavens') # blah even same function name!
+remotes::install_github('sagesteppe/safeHavens') 
 ```
-
-Once installed `safeHavens` can be loaded like any other package, whether they are installed from CRAN or github. 
-We will also load `ggplot2` for it's excellent ability to plot simple features, and `tidyverse` for pushing some fields around etc.
 
 ```{r Load Libraries, message=FALSE}
 library(safeHavens)
@@ -39,227 +30,6 @@ library(dplyr)
 library(patchwork)
 set.seed(23) # MJ ;-)
 planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
-```
-
-# Notes about `safeHavens`
-
-This package helps germplasm curators communicate areas of interest to collection teams for targeting new accessions. 
-It provides seven different sampling approaches for curators to choose from, for each individual taxon they hope to process.
-It also allows for easy integration into existing workflows and will put out the required spatial data to share with collection teams.
-
-Each of the approaches are based on standard practices in ecology, and reflect very basic tenets of population genetics, and Tobler's first law of geography.
-The methods have various trade offs in terms of computational and environmental complexity. 
-The table below presents the currently implemented sampling scheme and the user facing function associated with them. 
-In my mind the first four functions are really flavors of the same process, one whereby we try and partition the species range into geographic chunks of similar sizes. 
-However, as is often the case four things which seem very similar to me may have enormously different results in implementation. 
-The fifth method `IBDBasedSample` is largely in a class of it's own, in lieu of using the *continuity* of geographic space as it's primary method, it focuses on the discontinuity of space and using distance matrices and clustering to determine which patches of range are more close to each than other patches. 
-The impetus behind this method is of course Sewall Wrights Isolation by Distance (1943). 
-
-The `EcoregionBasedSample` may be the most commonly encountered method in North America and in various formats is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
-This method using environmental variation as an implicit guide to targeting populations for seed collections, i.e. the different ecoregions serve as a stratification agent. 
-In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. 
-Given it's relative popularity in implementation, this function has more arguments than it's counterparts, which will be discussed below. 
-
-The final function `EnvironmentalBasedSample` is both the most computationally expensive, and the most environmentally explicit. 
-This function will rely on a Species Distribution Model, generated via a generalized linear model, supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
-On paper, this draws together all aspects of the above functions, however no testing of this approach has been implemented. 
-It will be discussed below in depth. 
-
-
-|        Function           |              Description               | Comp.| Envi.|
-|---------------------------|----------------------------------------|------|------|
-| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
-| `PointBasedSample`        | Creates points to make grids over area |  L   |   L  |
-| `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
-| `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
-| `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
-| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
-| `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
-Note in this table 'Comp.' and 'Envi.' refer to computational and environmental complexity respectively, and range from low (L) through medium to high. 
-
-# General notes about this vignette
-
-This package is strongly focused on plants, no disrespect to animals, they just never occurred to me during development. 
-However, to make it up to animal people, we will use a Sloth, which I think is [*Bradypus variegatus*](https://en.wikipedia.org/wiki/Brown-throated_sloth) it looks both maniacal and mischievous, and the like inspiration for many Jim Henson puppets. 
-However, we will treat *Bradypus* more like a plant species when we discuss these sampling schemes - that is we will assume we are focused on organisms which seldom move great distances in dispersal processes.
-
-We can access some data on *Bradypus* from the `dismo` package - presumably short for '*Dis*tribution *Mo*delling', which was created by Robert Hijman and others. 
-We will use a couple other `dismo` functions in this package, and we will utilize some spatial data from it, It's a good package to be familiar with. 
-If you want to read more about `dismo` and distribution modelling in general here is an awesome bookdown resource written by [Hijman and Elith](https://rspatial.org/raster/sdm/) - aspects of this vignette are definitely based on it. 
-We will use Species Distribution Models (SDMs) as the input variable to many of the arguments in this function - don't get caught up in the details of making them. 
-These days you can get good SDM results out of essentially entirely automated pipelines, we'll have the truncated process outlined here in a chunk, but I honestly argue you should ignore this section the first few times you read this document, and go back for the details (discussed in the link above) only if you decide to pursue the route of `EnvironmentalBasedSample`. 
-I may be too optimistic in thinking that any one of these schemes will give adequate results for sample design, but some may be better for certain species and projects. 
-
-Future users will need to obtain their own occurrence records for using with this package. 
-The r package `rbgif` is a fantastic way to do this, a well documented article linking to several vignettes for the package is [here](https://docs.ropensci.org/rgbif/articles/rgbif.html). 
-
-# Species Distribution Modelling (skip me your first few read throughs?!)
-
-If you are interested in visualizing what a sampling scheme under `safeHavens` most complex function `EnvironmentalBasedSample` requires, you can explore this section to understand the costs required to achieve this process. 
-It goes on for a while, so I recommend checking this section last. 
-In the meantime, if you still want to see the results from `EnvironmentalBasedSample` compared to the other functions, you can load the results from disk, they are distributed with the package. 
-
-```{r Prepare data for a Species Distribution Model}
-x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
-x <- x[,c('lon', 'lat')]
-x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
-
-files <- list.files(
-  path = file.path(system.file(package="dismo"), 'ex'), 
-  pattern = 'grd',  full.names=TRUE )
-predictors <- terra::rast(files) # import the independent variables
-```
-
-The goal of most SDM's is to create a model which most accurately predicts where a species will be located in environmental space, and hence geographic space. 
-The goal of these models are to understand the degree, and direction, to which various environmental features correlate with a species observed range. 
-Accordingly, they are not optimized for use in making the typical decisions associated with species distribution models, i.e. conservation area planning.
-Rather the models supported in this package are solely focused on estimating the *effects* of various environmental parameters on the species distribution. 
-
-```{r Create Species Distribution Model, message=F, warning=F, eval = F}
-sdModel <- elasticSDM(
-  x = x, predictors = predictors, quantile_v = 0.025,
-  planar_proj = planar_proj)
-```
-
-We use the `caret` package to help out with our `glmnet` modelling, it's unnecessary, but it provides output which is very easy to explore and interact with. 
-While much of `caret` functionality has been improved on in `tidymodels` and associated packages by Max Kuhn (also the lead `caret` author), `caret` is pretty stable and will serve our purposes fine.
-What makes an elastic net model interesting is that it is able to bridge the worlds of lasso and ridge regression by blending the alpha parameter. 
-Lasso has an alpha of 0, while Ridge has an alpha of 1. 
-Lasso regression will perform automated variable selection, and can actually drop (or 'shrink') them from a model, while Ridge regression will keep all variables and if correlated features are present give some contributions to each of them. 
-An elastic net blends this propensity to drop or retain variables whenever it is used. 
-`caret` will test a range of alphas to accomplish this. 
-
-Note that by using this we don't exactly get a feel for which variable is really correlated with a an event, but we do at least get a sense of how a set of variables affects the range. 
-Infer from this at your own risk!
-Inference from SDM's is something I do not recommend except in the most special of circumstances anyways. 
-
-```{r Explore SDM output - Different alpha, eval = F}
-sdModel$CVStructure
-```
-
-Here we can see how the elastic net decided which is the top model. 
-We used Accuracy rather than Kappa as the main criterion for model selection. 
-
-```{r Explore SDM output - Confusion Matrix, eval = F}
-sdModel$ConfusionMatrix
-```
-
-Here we can see how our selected model works on predicting the state of test data.
-Note these accuracy results are slightly higher than those from the CV folds. 
-This is not a bug, CV folds are testing on their own holdouts, while this is a brand new set of holdouts. 
-The main reason the confusion matrix results are likely to be higher is due to spatial auto-correlation which are not address in a typical 'random split' of test and train data.
-In order to minimize the effects of spatial-autocorrelation on our model we use `CAST` under the hood which allows for spatially informed cross validation. 
-
-Consider the output from CVStructure to be a bit more realistic. 
-
-```{r Explore SDM output - Map, eval = F}
-terra::plot(sdModel$RasterPredictions)
-```
-
-SDM's produce surfaces which display the probability of suitable habitat across a landscape. 
-Many people want a binary prediction surface from them, i.e. *is it more or less probable that suitable habitat for this taxon exists in this particular location (grid cell)?*. 
-Going from a continuous probability surface to a binary surface loses a lot of information, but in many use cases is essential to reduce computational complexity. 
-If you are interested in the caveats associated with this Frank Harrell has written extensively on the topic. 
-We will use binary surfaces for implementing our sampling procedures across a species range. 
-The function `PostProcessSDM` is used for this purpose. 
-
-Historically, when assessing probability output 0.5 probability was used as a threshold, probabilities beneath if being considered 'Not suitable', while probabilities above are classified as 'Suitable'. 
-This works well for many use cases, but I argue that thresholding is outside the domain of statistics and in the realm of practice. 
-My motto for implementing models, is a slight elaboration of George Box's aphorism, "*All models are wrong, some are useful - how do you want to be wrong?*". 
-Our goal of sampling for germplasm conservation is to maximize the representation of allelic diversity across the range of a species. 
-In order to do this, we need a good understanding of what the species actual range is, hence I am more happy to predict the species *is* present where it is not, than to predict it is absent where it actually grows. 
-Hence my preferred thresholding statistic is *Sensitivity*, over any metric which weighs false predicted presences. 
-This argument is free to vary and supports any of the threshold values calculated by `dismo::threshold`, explore it to better understand it's options. 
-
-Until now, you may be wondering why the function which achieves this is named `PostProcessSDM` rather `ThresholdSDM`, the reason for this perceived discontinuity is that the function does another process in it's second portion. 
-Using all initial occurrence data, both the sets that went into our training and test data for developing the statistical model, we create 'buffers' around these points to ensure that none of the known occurrence points are 'missing' from the output binary map. 
-This is a two edged sword, where we are again address the notion of dispersal limitation, and realize that not all suitable habitat is occupied habitat. 
-
-What the `PostProcessSDM` function does is it again creates cross validation folds, and selects all of our training data. 
-In each fold if then calculates the distance from each occurrence point to it's nearest neighbor. 
-We then summarize these distances and can understand the distribution of distances as a quantile. 
-We use a selected quantile, to then serve as a buffer. 
-Area with predicted suitable habitat outside of this buffer become 'cut off' (or masked) from the binary raster map, and areas within buffer distance from known occurrences which are currently masked are reassigned as probabilities. 
-The theory behind this process in underdeveloped and nascent, it does come down to the gut of an analyst. 
-With the *Bradypus* data set I use 0.25 as the quantile, which is saying "Neighbors are generally 100km apart, I am happy with the risk of saying that 25km within each occurrence is *occupied* suitable habitat".
-Increasing this value to say 1.0 will mean that no suitable habitat is removed, decreasing it makes maps more conservative. 
-The cost with increasing the distances greatly is that the sampling methods may then puts grids in many areas without populations to collect from. 
-
-```{r Threshold the SDM output, eval = F}
-threshold_rasts <- PostProcessSDM(
-  rast_cont = sdModel$RasterPredictions, 
-  test = sdModel$TestData,
-  planar_proj = planar_proj,
-  thresh_metric = 'sensitivity', quant_amt = 0.5)
-```
-
-We can compare the results of applying this function side by side using the output from the function. 
-```{r Compare Threshold Results, eval = F}
-terra::plot(threshold_rasts$FinalRasters)
-```
-
-`glmnet` is used for three main reasons, 
-1) it gives directional coefficients and so we have a feel for how each 1 unit increase in an independent variable predicts the response, In my mind this is a big improvement over 'Variable Importance Factors' where we just know that certain variables contributed more to the model than others.  
-2) It maintains some degree of automated selection reducing the work an analyst needs to do, i.e. you can process many species without spending too much time on any single one.  
-3) `glmnet` actually re-scales all variables before model generation, which I suppose can be implemented with other models, we will use the same re-scaling that `glmnet` does to transform our independent variables in the raster stack and then multiply them by their beta-coefficients.  
-In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
-
-```{r Rescale Predictor Variables, eval = F}
-# CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
-# STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
-# FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
-# we will also write out the beta coefficients using writeSDMresults right after
-# this. 
-
-rr <- RescaleRasters(
-  model = sdModel$Model,
-  predictors = sdModel$Predictors, 
-  training_data = sdModel$TrainData, 
-  pred_mat = sdModel$PredictMatrix)
-
-terra::plot(rr$RescaledPredictors)
-```
-
-We can see that the variables are 'close' to being on the same scale, this will work in a clustering algorithm. 
-If any of the layers are all the same color (maybe yellow?) that means they have no variance, that's a term that was shrunk from the model. 
-It will be dealt with internally in a future function. 
-The scales of the variables are not exact, because they are weighed by their \beta coefficients in the model
-
-```{r Show beta Coefficients from model, eval = F}
-print(rr$BetaCoefficients)
-```
-We can also look at the \beta coefficients for each variable. 
-`glmnet` returns the 'untransformed' variables, i.e. the coefficients on the same scale as the input rasters, we calculate the BC right afterwards. 
-
-`safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
-Given that one of these sampling scheme may be followed for quite some time, I think it is best practice to save many of these objects. 
-Yes, they will take up some storage space, but storage is virtually free these days anyways. 
-So why not write out all of the following items? 
-I test write them in a directory which exists for the project associated with the creation of this R package, just save them somewhere and delete them after this. 
-These test files are tiny anyways. 
-
-```{r Save SDM results, eval = F}
-bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
-
-writeSDMresults(
-  cv_model = sdModel$CVStructure, 
-  pcnm = sdModel$PCNM, 
-  model = sdModel$Model, 
-  cm = sdModel$ConfusionMatrix, 
-  coef_tab = rr$BetaCoefficients, 
-  f_rasts = threshold_rasts$FinalRasters,
-  thresh = threshold_rasts$Threshold,
-  file.path(bp, 'results', 'SDM'), 'Bradypus_test')
-
-# we can see that the files were placed here using this. 
-list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
-```
-
-And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
-We will play around with it as an example data set to compare our buffered distance results to at the end.
-
-```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
-rm(rr, predictors, files, sdModel, bp)
 ```
 
 # Alternative to SDM, just buffer! (start reading here your first few times!)
@@ -655,7 +425,6 @@ Using the threshold raster surface is a very good option if we do not want to 'm
 rm(ENVIbs_thresh, ENVIbs_clipped, ENVIbs.p.thresh, ENVIbs.p.clipped, p, ENVIbs, rr, ENVIbs.p.supp, sdm, map, sdModel)
 ```
 
-
 # Comparision of different sampling schemes
 
 So, we've made got some maps for you to look at!
@@ -674,5 +443,6 @@ Environmental also seems to partition the feature space quite well. Notably draw
 ```{r echo = F}
 rm(gbs.p, pbs.p, eas.p, os.p, ibdbs.p, ebs.p, ENVIbs.p, planar_proj)
 ```
+
 
 
