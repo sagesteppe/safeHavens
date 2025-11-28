@@ -25,11 +25,8 @@
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
-PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
+PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps = 9999){
   
-  if(missing(n)){n = 20}
-  if(missing(reps)){reps = 100}
-  if(missing(BS.reps)){BS.reps = 9999}
 
   # we apply the voronoi process a number of replicated times, defaults to 100
   if(missing(collections)){
@@ -118,6 +115,7 @@ PointBasedSample <- function(polygon, n, collections, reps, BS.reps){
 #' @param x a list of lists
 #' @param element the quoted name of the list element to extract. 
 #' @keywords internal
+#' @noRd
 get_elements <- function(x, element) { # @ StackOverflow Allan Cameron 
   if(is.list(x))
   {
@@ -138,11 +136,14 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 150, which may accomplish around 100 succesful iterations.  
 #' @keywords internal
+#' @noRd
 VoronoiSampler <- function(polygon, n, collections, reps){
   
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
     sf::st_as_sf() |> 
     dplyr::rename(geometry = x) 
+
+  polygon <- sf::st_make_valid(polygon)
   
   if(!missing(collections)){
     pts <- dplyr::bind_rows(

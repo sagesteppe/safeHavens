@@ -35,9 +35,7 @@
 #' The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the indepedent variables used in the final model are present in 'Predictors, and just the global PCNM/MEM raster surfaces are in 'PCNM'. 
 #' The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix. 
 #' @export
-elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v){
-  
-  if(missing(quantile_v)){quantile_v <- 0.025}
+elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v = 0.025){
   
   pts_plan <-   sf::st_transform(x, planar_projection)
   

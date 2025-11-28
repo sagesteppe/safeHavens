@@ -9,7 +9,7 @@
 #' @param from a point on surface of the grid which will be merged. POS will ensure it lands on a feature.
 #' @param destinations the set of kearneigh which are accepting polygon merges 
 #' @keywords internal
-#' @export
+#' @noRd
 first_neigh_directions <- function(from, destinations){
   
   dest_POS <- sf::st_point_on_surface(destinations)

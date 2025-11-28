@@ -4,7 +4,7 @@
 \alias{elasticSDM}
 \title{Create a quick SDM using elastic net regression}
 \usage{
-elasticSDM(x, predictors, planar_projection, domain, quantile_v)
+elasticSDM(x, predictors, planar_projection, domain, quantile_v = 0.025)
 }
 \arguments{
 \item{x}{A (simple feature) sf data set of occurrence data for the species.}
