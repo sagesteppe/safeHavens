@@ -3,7 +3,7 @@
 using namespace Rcpp;
 
 // ---------- Helper non-exported functions ----------
-static double calc_objective_sum_c(const NumericMatrix &dist, const IntegerVector &selected, double lambda_var = 0.0) {
+double calc_objective_sum_c(const NumericMatrix &dist, const IntegerVector &selected, double lambda_var = 0.0) {
     int n = selected.size();
     if(n < 2) return 0.0;
 
@@ -36,7 +36,7 @@ static double calc_objective_sum_c(const NumericMatrix &dist, const IntegerVecto
     return obj_disp + lambda_var * obj_var;
 }
 
-static double calc_objective_maxmin_c(const NumericMatrix &dist, const IntegerVector &selected) {
+double calc_objective_maxmin_c(const NumericMatrix &dist, const IntegerVector &selected) {
     int n = selected.size();
     if(n < 2) return 0.0;
 
