@@ -1,0 +1,96 @@
+---
+title: "Sampling Schema"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sampling Schema}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r}
+library(safeHavens)
+library(ggplot2)
+```
+
+```{r}
+
+n_sites <- 30 # number of known populations
+df <- data.frame(
+  site_id = seq_len(n_sites),
+  lat = runif(n_sites, 25, 30), # play with these to see elongated results. 
+  lon = runif(n_sites, -125, -120),
+  required = FALSE,
+  coord_uncertainty = 0
+
+function relies on at least one required point. here arbitrarily place near geographic center
+dists2c <- greatCircleDistance(
+  median(df$lat), 
+  median(df$lon), 
+  df$lat, 
+  df$lon
+)
+df[order(dists2c)[1],'required'] <- TRUE
+
+## we will simulate coordinate uncertainty on a number of sites.  
+uncertain_sites <- sample(setdiff(seq_len(n_sites), which(df$required)), size = min(6, n_sites-3))
+df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1000, 10000) # meters
+
+# the function can take up to take matrices. the first (required) is a geographic distance
+# matrix. calculate this with the `greatCircleDistance` fn from the package for consistency. 
+# (it will be recalculated during simulations). `sf` gives results in slightly diff units. 
+dist_mat <- sapply(1:nrow(df), function(i) {
+  greatCircleDistance(
+    df$lat[i], df$lon[i],
+    df$lat, df$lon
+  )
+}
+# the input data is a list, the distance matrix, and the df of actual point locations. 
+head(df)
+test_data <- list(distances = dist_mat, sites = df)
+rm(dist_mat, df, n_sites, uncertain_sites, dists2c
+# small quick run (fast); timing for R package / CRAN status. 
+  system.time( 
+    res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+      input_data = test_data,
+      lambda_var = 0.2,
+      n_bootstrap = 500,
+      objective = "maxmin",
+      n_local_search_iter = 50,
+      n_restarts = 2
+    )
+  
+## first selected 
+ggplot(data = res$input_data, 
+  aes(
+    x = lon, 
+    y = lat, 
+    shape = required, 
+    size = cooccur_strength,
+    color = selected
+    )
+  ) +
+  geom_point() + 
+  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+  theme_minimal() + 
+  labs(main = 'Priority Selection Status of Sites')
+## order of sampling priority ranking plot.
+ggplot(data = res$input_data, 
+  aes(
+    x = lon, 
+    y = lat, 
+    shape = required, 
+    size = -sample_rank,
+    color = sample_rank
+    )
+  ) +
+  geom_point() + 
+  ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
+  theme_minimal()   
+```
