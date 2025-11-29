@@ -40,6 +40,8 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
           simplify = FALSE)
       }
   
+  voronoiPolygons <- sf::st_make_valid(voronoiPolygons)
+  
   # sf oftentimes gives fewer points than asked for, we will keep only the objects 
   # which have the desired number of points
   voronoiPolygons <- voronoiPolygons[
@@ -54,7 +56,8 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
   SelectedSample <- voronoiPolygons[which.min(variance)][[1]]$Polygons 
   
   SelectedSample <- sf::st_as_sf(SelectedSample) |>
-    dplyr::rename(geometry = x)
+    dplyr::rename(geometry = x) |>
+    sf::st_make_valid()
   
   # Determining the 0.1% quantile for the variance in size of the sampling grids. 
   # Using non-parametric approaches, of bootstrap resampling (replicates = 9999) ,
