@@ -5,4 +5,3 @@
 ^docs$
 ^pkgdown$
 ^\.github$
-useDynLib(safeHavens, .registration=TRUE)
