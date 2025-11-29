@@ -126,7 +126,7 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
           for (j in seq_len(n)) {
             new_geo <- dist_boot[i, j, 1]
             # predict via the linear model (conditional expectation)
-            pred_env <- predict(fit, newdata = data.frame(geo_vec = new_geo))
+            pred_env <- stats::predict(fit, newdata = data.frame(geo_vec = new_geo))
             # make sure prediction is finite
             if (!is.finite(pred_env)) {
               pred_env <- dist_boot[i, j, k]  # fallback to original
@@ -138,7 +138,7 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
       } else {
         # small-n fallback: small multiplicative jitter (~2.5%)
         for (i in uncertain_idx) {
-          jitter_factor <- rnorm(1, mean = 1, sd = 0.025)
+          jitter_factor <- stats::rnorm(1, mean = 1, sd = 0.025)
           dist_boot[i, , k] <- dist_boot[i, , k] * jitter_factor
           dist_boot[, i, k] <- dist_boot[, i, k] * jitter_factor
         }
@@ -379,7 +379,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #'      )
 #'    ) +
 #'    geom_point() + 
-#'    ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+#'  #  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
 #'    theme_minimal() + 
 #'    labs(main = 'Priority Selection Status of Sites') 
 #'
@@ -394,7 +394,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #'      )
 #'    ) +
 #'    geom_point() + 
-#'    ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
+#' #   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
 #'    theme_minimal()   
 #' 
 #' @export
@@ -494,7 +494,7 @@ maximizeDispersion <- function(
     should_dropout <- (n_drop > 0 && length(droppable) >= n_drop)
   }
   
-  pb <- txtProgressBar(min = 0, max = n_bootstrap, style = 3)
+  pb <- utils::txtProgressBar(min = 0, max = n_bootstrap, style = 3)
   
   for (b in seq_len(n_bootstrap)) {
     ## bs begins.
@@ -539,7 +539,7 @@ maximizeDispersion <- function(
         extra <- setdiff(available_sites, current_solution)
         if (length(extra) > 0) {
           needed <- n_sites - length(current_solution)
-          current_solution <- c(current_solution, head(extra, needed))
+          current_solution <- c(current_solution, utils::head(extra, needed))
         }
       }
       
@@ -595,7 +595,7 @@ maximizeDispersion <- function(
       solution_counter <- solution_counter + 1
     }
     
-    setTxtProgressBar(pb, b)
+    utils::setTxtProgressBar(pb, b)
   } # end  bootstrap
   close(pb) # progress bar 
   

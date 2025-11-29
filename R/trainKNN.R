@@ -22,7 +22,7 @@ trainKNN <- function(x, split_prop){
   
   # run the model and calculate results on the test data. 
   predicted <- stats::predict(fit.knn, newdata = test)
-  cm <- confusionMatrix(predicted, test$ID)
+  cm <- caret::confusionMatrix(predicted, test$ID)
   
   return(
     list(

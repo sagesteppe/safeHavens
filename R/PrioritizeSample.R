@@ -14,7 +14,7 @@
 #' @param reps Numeric. The number of repetitions used in the sampling design. This is only used for messaging purposes at this time.
 #' @param n_breaks Numeric. The number of breaks to return from the function, defaults to 3. Values much higher than that are untested, and beyond 5 of questionable utility.  
 #' @param verbose Bool. Whether to print messages to console or not, defaults to TRUE. 
-#' @examples /dontrun{
+#' @examples \dontrun{
 #' nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
 #' dplyr::select(NAME) |>
 #'   sf::st_transform(5070) # should be in planar coordinate system. 

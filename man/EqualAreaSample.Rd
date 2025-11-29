@@ -4,7 +4,15 @@
 \alias{EqualAreaSample}
 \title{Create equal area polygons over a geographic range}
 \usage{
-EqualAreaSample(x, n, pts, planar_projection, returnProjected, reps, BS.reps)
+EqualAreaSample(
+  x,
+  n = 20,
+  pts = 5000,
+  planar_projection,
+  returnProjected,
+  reps = 100,
+  BS.reps = 9999
+)
 }
 \arguments{
 \item{x}{An SF object or terra spatraster. the range over which to generate the clusters.}
@@ -36,7 +44,7 @@ dplyr::select(NAME)
 
 set.seed(1)
 system.time(
-  zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+  zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_projection = 32617, reps = 50)
 )
 
 plot(nc, main = 'Counties of North Carolina')

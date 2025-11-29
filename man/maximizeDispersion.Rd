@@ -132,7 +132,7 @@ Select a subset of sites that maximize spatial dispersion using a bootstrapped l
      )
    ) +
    geom_point() + 
-   ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+ #  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
    theme_minimal() + 
    labs(main = 'Priority Selection Status of Sites') 
 
@@ -147,7 +147,7 @@ Select a subset of sites that maximize spatial dispersion using a bootstrapped l
      )
    ) +
    geom_point() + 
-   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
+#   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
    theme_minimal()   
 
 }

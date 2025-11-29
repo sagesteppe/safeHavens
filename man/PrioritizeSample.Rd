@@ -29,7 +29,7 @@ In final processing \code{n_breaks} are applied based on distances from the desi
 Note that if you are submitting data from the ecoregion based sample, the column \code{n}, must be maintained.
 }
 \examples{
-/dontrun{
+\dontrun{
 nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
 dplyr::select(NAME) |>
   sf::st_transform(5070) # should be in planar coordinate system. 

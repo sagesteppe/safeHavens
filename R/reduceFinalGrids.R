@@ -24,7 +24,7 @@ reduceFinalGrids <- function(final_grids){
   
   final_grids <- final_grids |>
     dplyr::ungroup() |>
-    mutate(
+    dplyr::mutate(
       X = sf::st_coordinates(sf::st_point_on_surface(final_grids))[,1],
       Y = sf::st_coordinates(sf::st_point_on_surface(final_grids))[,2]
     ) |>

@@ -16,7 +16,7 @@
 #'
 #' set.seed(1)
 #' system.time(
-#'   zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+#'   zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_projection = 32617, reps = 50)
 #' )
 #' 
 #' plot(nc, main = 'Counties of North Carolina')
@@ -26,17 +26,13 @@
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
-EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps, BS.reps){
+EqualAreaSample <- function(x, n = 20, pts = 5000, planar_projection, returnProjected, reps = 100, BS.reps = 9999){
   
-  if(missing(n)){n <- 20}; if(missing(pts)){pts <- 5000}
   if(missing(planar_projection)){
     message(
       'Argument to `planar_projection` is required. A suitable choice for all of North America is 5070.')
     }
-  if(missing(returnProjected)){returnProjected <- FALSE}
-  if(missing(BS.reps)){BS.reps = 9999}
-  if(missing(reps)){reps = 100}
-  
+  if(missing(returnProjected)){returnProjected <- FALSE}  
   
   if(returnProjected == TRUE){
     x <- sf::st_transform(x, planar_projection)
@@ -56,7 +52,7 @@ EqualAreaSample <- function(x, n, pts, planar_projection, returnProjected, reps,
   # we use variance to determine the configuration of voronoi polygons which have
   # the most equally sized polygons. 
   variance <- unlist(lapply(voronoiPolygons, 
-                             function(x){var(as.numeric(sf::st_area(x))/10000)}))
+                             function(x){stats::var(as.numeric(sf::st_area(x))/10000)}))
 
   # Determining the 0.1% quantile for the variance in size of the sampling grids. 
   # Using non-parametric approaches, of bootstrap resampling (replicates = 9999) ,
@@ -116,7 +112,7 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
   # gather the geographic centers of the polygons. 
   kmeans_centers <- stats::setNames(
     data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
-    # use the centers as voronoi cores ... ?
+    # use the centers as voronoi cores ... 
     c('X', 'Y', 'ID'))
   kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
   
@@ -140,6 +136,8 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
     dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
     sf::st_make_valid() |>
     sf::st_as_sf() |>
-    dplyr::rename(any_of(lkp))
+    dplyr::rename(tidyselect::any_of(lkp))
   
 }
+
+??any_of()

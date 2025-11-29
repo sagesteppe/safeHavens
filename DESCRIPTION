@@ -5,6 +5,8 @@ Authors@R:
     person("Reed", "Benkendorf", , "rbenkendorf@chicagobotanic.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-9178-3087"))
 Description: This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides six different sampling approaches for curators to choose from for each individual taxon they hope to process. It also allows for easy integration into existing workflows and will put out the required spatial data to share with collection teams. 
+Depends:
+   R (>= 4.1.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -38,6 +40,7 @@ Imports:
     spdep,
     spThin,
     stats,
+    tidyselect,
     terra,
     units,
     vegan
@@ -45,4 +48,4 @@ URL: https://sagesteppe.github.io/safeHavens/
 LazyData: true
 LinkingTo: 
     Rcpp
-SystemRequirements: C++11
+SystemRequirements: C++

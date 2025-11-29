@@ -76,7 +76,7 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr, taxon, path, n,
 
   if(fixedClusters==TRUE){ # run the clustering processes. 
     
-    w_dist <- dist(weighted_mat, method = 'euclidean')
+    w_dist <- stats::dist(weighted_mat, method = 'euclidean')
     clusters <- stats::hclust(w_dist, method = 'ward.D2')
     clusterCut <- stats::cutree(clusters, n)
     

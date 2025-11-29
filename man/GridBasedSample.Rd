@@ -20,6 +20,7 @@ An simple features (sf) object containing the final grids for saving to computer
 This function creates 20 grid cells over a geographic area (\code{x}), typically a species range.
 }
 \examples{
+\dontrun{ # not ran to bypass CRAN check time limits. ~6 seconds to treat Rhode Island. 
 ri <- spData::us_states |> 
 dplyr::filter(NAME == 'Rhode Island') |>
   sf::st_transform(32615)
@@ -30,4 +31,5 @@ sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 
 output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
 plot(output)
+}
 }
