@@ -35,7 +35,7 @@ articles:
     desc: "Background, installation, usage, and sampling schemas"
     contents:
     - About
-    - SamplingSchema
+    - GettingStarted
     - SpeciesDistributionModels
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"

@@ -1,5 +1,5 @@
 #' @useDynLib safeHavens, .registration=TRUE
 #' @importFrom Rcpp sourceCpp
-#` @keywords internal
+#' @keywords internal
 #' @noRd
 "_PACKAGE"
