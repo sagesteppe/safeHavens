@@ -1,0 +1,73 @@
+# Determine which areas of a sample unit should be prioritized
+
+This function offers two ways to enforce some prioritization within the
+individual sample units returned by each \*Sample function. The goal of
+either method is to avoid having collectors teams 'cheat' the system by
+repeatedly collecting along the border between two or more grid cells.
+While we understand that many teams may be collecting closely due to the
+species biology, land management, or other restrictions, the goal of
+this function is to try and guide them in dispersing there activity.
+
+The method used computes the geometric centroid of each region, if the
+center falls outside of the grid, it is snapped back onto the nearest
+location by default. Once the centers of each cell are calculated the
+remaining area of each grid has distances calculated between the centers
+and there locations. In final processing `n_breaks` are applied based on
+distances from the desired cell center to partition the space into
+different priority collection units.
+
+Note that if you are submitting data from the ecoregion based sample,
+the column `n`, must be maintained.
+
+## Usage
+
+``` r
+PrioritizeSample(x, method, reps, n_breaks, verbose = TRUE)
+```
+
+## Arguments
+
+- x:
+
+  an sf/tibble/dataframe. a set of sample grids from any of the \*Sample
+  functions
+
+- method:
+
+  Character. The method to use for prioritization. Currently only
+  'centered' is implemented.
+
+- reps:
+
+  Numeric. The number of repetitions used in the sampling design. This
+  is only used for messaging purposes at this time.
+
+- n_breaks:
+
+  Numeric. The number of breaks to return from the function, defaults
+  to 3. Values much higher than that are untested, and beyond 5 of
+  questionable utility.
+
+- verbose:
+
+  Bool. Whether to print messages to console or not, defaults to TRUE.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
+dplyr::select(NAME) |>
+  sf::st_transform(5070) # should be in planar coordinate system. 
+
+set.seed(1)
+zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+
+# the function requires an input sampling strategy to create the prioritization areas
+ps <- PrioritizeSample(zones$Geometry, method = 'centered', n_breaks = 3)
+
+ggplot2::ggplot() + 
+ ggplot2::geom_sf(data = ps,  aes(fill = factor(Level))) +
+ ggplot2::geom_sf(data = zones$Geometry, color = 'red', fill = NA, linewidth = 1) 
+} # }
+```

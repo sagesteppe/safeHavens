@@ -1,0 +1,86 @@
+# Create a quick SDM using elastic net regression
+
+This function quickly creates a SDM using elastic net regression, and it
+will properly format all data for downstream use with the `safeHavens`
+workflow. Note that elastic net models are used for a couple very
+important reasons: they rescale all input independent variables before
+modelling, allowing us to combine the raw data with the beta
+coefficients to use for clustering algorithms downstream. They also
+allowing for 'shrinking' of terms from models by shrinking terms from
+models we are able to get levels of ecological inference prohibited by
+older model selection frameworks.
+
+## Usage
+
+``` r
+elasticSDM(x, predictors, planar_projection, domain, quantile_v = 0.025)
+```
+
+## Arguments
+
+- x:
+
+  A (simple feature) sf data set of occurrence data for the species.
+
+- predictors:
+
+  a terra 'rasterstack' of variables to serve as indepedent predictors.
+
+- planar_projection:
+
+  Numeric, or character vector. An EPSG code, or a proj4 string, for a
+  planar coordinate projection, in meters, for use with the function.
+  For species with very narrow ranges a UTM zone may be best (e.g. 32611
+  for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise
+  a continental scale projection like 5070 See
+  https://projectionwizard.org/ for more information on CRS. The value
+  is simply passed to sf::st_transform if you need to experiment.
+
+- domain:
+
+  Numeric, how many times larger to make the entire domain of analysis
+  than a simple bounding box around the occurrence data in `x`.
+
+- quantile_v:
+
+  Numeric, this variable is used in thinning the input data, e.g.
+  quantile = 0.05 will remove records within the lowest 5% of distance
+  to each other iteratively, until all remaining records are further
+  apart than this distance from each other. If you want essentially no
+  thinning to happen just supply 0.01. Defaults to 0.025.
+
+## Value
+
+A list of 12 objects, each of these subsequently used in the downstream
+SDM Post processing sequence, or which we think are best written to
+disk. The actual model prediction on a raster surface are present in the
+first list 'RasterPredictions', the indepedent variables used in the
+final model are present in 'Predictors, and just the global PCNM/MEM
+raster surfaces are in 'PCNM'. The fit model is in 'Model', while the
+cross validation folds are stored in 'CVStructure', results from a
+single test/train partition in 'ConfusionMatrix', and the two data split
+in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used
+for classifying the test data for the confusion matrix.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+
+ x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+ x <- x[,c('lon', 'lat')]
+ x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+
+ files <- list.files(
+   path = file.path(system.file(package="dismo"), 'ex'), 
+   pattern = 'grd',  full.names=TRUE )
+ predictors <- terra::rast(files)
+
+sdModel <- elasticSDM(
+   x = x, predictors = predictors, quantile_v = 0.025,
+   planar_projection =
+     '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
+     
+ terra::plot(sdModel$RasterPredictions)
+} # }
+```

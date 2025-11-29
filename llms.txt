@@ -1,0 +1,149 @@
+# safeHavens
+
+# Description
+
+The goal of this package is to provide germplasm curators with easily
+referable spatial data sets to help prioritize field collection efforts.
+
+## Overview
+
+It provides functionality for seven sampling schemes which various
+curators are interested in, many of which are likely to outperform
+others for certain species or areas. The package also creates species
+distribution models, but with the goal of germplasm sampling, rather
+than predicting ranges at fine resolutions, or making inference; if you
+are interested in this functionality R has several dozen other packages
+which are tailored for these purposes.
+
+## Description
+
+This package helps germplasm curators communicate areas of interest to
+collection teams for them to collect new material for accession. It
+provides seven different sampling approaches for curators to choose from
+for each individual taxon they hope to process.
+
+## Installation
+
+`safeHavens` is available only on github. It can be installed using
+`remotes` or `devtools` like so:
+
+``` R
+install.packages('devtools')
+devtools::install_github('sagesteppe/safeHavens')
+
+install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
+remotes::install_github('sagesteppe/safeHavens')
+```
+
+Once installed it can be attached for use like any other package from
+github or CRAN
+
+``` R
+library(safeHavens)
+```
+
+## Usage
+
+`safeHavens` has only seven user facing functions for generating the
+sampling schemes.
+
+| Function                   | Description                             | Comp. | Envi. |
+|----------------------------|-----------------------------------------|-------|-------|
+| `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
+| `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
+| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
+| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
+| `EcoregionBasedSample`     | Using existing ecoregions to sample     | L     | H     |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
+
+The species distribution modelling section has a couple functions which
+are essential for achieving the `EnvironmentalBasedSample` design, these
+are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and
+`writeSDMresults`.
+
+## Acknowledgements
+
+Edzer Pebesma, and Krzysztof Dyba for help with seamless installations
+on Ubuntu, and getting the pkgdown website running.
+
+# Package index
+
+## Sampling
+
+User facing functions for implementing the sampling schemes
+
+- [`GridBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/GridBasedSample.md)
+  : Create hexagonal grid based polygons over a geographic range
+- [`PointBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/PointBasedSample.md)
+  : Generate a sampling grid based off of regularly sampled points
+  across the species range.
+- [`EqualAreaSample()`](https://sagesteppe.github.io/safeHavens/reference/EqualAreaSample.md)
+  : Create equal area polygons over a geographic range
+- [`OpportunisticSample()`](https://sagesteppe.github.io/safeHavens/reference/OpportunisticSample.md)
+  : Design additional collections around already existing collections
+- [`IBDBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/IBDBasedSample.md)
+  : Sample a species based on Isolation by Geographic Distance (IBD)
+- [`EcoregionBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EcoregionBasedSample.md)
+  : Determine the sample size for n ecoregions in an area
+- [`EnvironmentalBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EnvironmentalBasedSample.md)
+  : Create environmental and spatial clusters for targeting collection
+  areas
+- [`PrioritizeSample()`](https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.md)
+  : Determine which areas of a sample unit should be prioritized
+
+## Environmental Sampling Prep
+
+Preparation for Environmental Based Sampling
+
+- [`elasticSDM()`](https://sagesteppe.github.io/safeHavens/reference/elasticSDM.md)
+  : Create a quick SDM using elastic net regression
+
+- [`PostProcessSDM()`](https://sagesteppe.github.io/safeHavens/reference/PostProcessSDM.md)
+  : Modify the output rasters from the SDM process to better match
+  target goals
+
+- [`RescaleRasters()`](https://sagesteppe.github.io/safeHavens/reference/RescaleRasters.md)
+  : Rescale a raster stack to reflect the beta coefficients from a
+  glmnet model
+
+- [`writeSDMresults()`](https://sagesteppe.github.io/safeHavens/reference/writeSDMresults.md)
+  :
+
+  Save the results of SDMs from the `elasticSDM`, `RescaleRasters` and
+  `PostProcessSDM` function in safeHavens
+
+## Rare Plant Sampling
+
+Optimization based site selection for known populations
+
+- [`greatCircleDistance()`](https://sagesteppe.github.io/safeHavens/reference/greatCircleDistance.md)
+  : Haversine Distance Calculation
+- [`maximizeDispersion()`](https://sagesteppe.github.io/safeHavens/reference/maximizeDispersion.md)
+  : Maximize Dispersion Site Selection
+
+## Miscellaneous
+
+Data prep functions
+
+- [`TestGridSizes()`](https://sagesteppe.github.io/safeHavens/reference/TestGridSizes.md)
+  : Get an estimate for how many grids to draw over a species range
+
+# Articles
+
+### About the package and getting started
+
+Background, installation, usage, and sampling schemas
+
+- [About](https://sagesteppe.github.io/safeHavens/articles/About.md):
+- [Getting
+  Started](https://sagesteppe.github.io/safeHavens/articles/GettingStarted.md):
+- [Species Distribution
+  Models](https://sagesteppe.github.io/safeHavens/articles/SpeciesDistributionModels.md):
+
+### Sampling schema for rare species
+
+A supplemental schema for rare species
+
+- [Sampling
+  Schema](https://sagesteppe.github.io/safeHavens/articles/RareSpecies.md):
