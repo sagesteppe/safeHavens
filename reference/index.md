@@ -59,3 +59,5 @@ Data prep functions
 
 - [`TestGridSizes()`](https://sagesteppe.github.io/safeHavens/reference/TestGridSizes.md)
   : Get an estimate for how many grids to draw over a species range
+- [`WesternEcoregions`](https://sagesteppe.github.io/safeHavens/reference/WesternEcoregions.md)
+  : Omernik level 4 ecoregions of California and Oregon
