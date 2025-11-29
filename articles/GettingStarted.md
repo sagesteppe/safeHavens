@@ -1,5 +1,7 @@
 # Getting Started
 
+### set up
+
 `safeHavens` can be installed directly from github.
 
 ``` r
@@ -14,37 +16,33 @@ library(terra)
 library(spData)
 library(dplyr)
 library(patchwork)
-set.seed(23) # MJ ;-)
+set.seed(23) 
 planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 ```
 
-## Alternative to SDM, just buffer! (start reading here your first few times!)
+### Defining a Species Range or Domain for Sampling
 
-Creating the SDMs is a whole process, and not all users may want to go
-down that road.  
-Here we provide an approach which will give us results we can work with,
-and is computationally cheap.
+Central to the sampling schemes in `safeHavens` is a species range or
+domain for sampling. For example, depending on the goals of the
+collection, a curator may want to sample across the entire range of a
+species. Alternatively one may be interested in sampling only a portion
+of the range, e.g. a country, state, or ecoregion. Either of these
+scenarios can be accomplished with the package. Here we will show how to
+create a species range from occurrence data, and then use that range to
+run the various sampling schemes.
 
-It relies on one input, the same occurrence data as above, and a simple
-process - drawing a circle at a specific radius around each observation
-point! Here we are showing the second of two major packages which this
-package depends on, `sf`. `sf` relies on simple feature geometries and
-is now the workhorse of most all vector data analysis in R. It is very
-well documented and tested, if you are unfamiliar with it you should
-consider it to be the `dplyr` of the spatial data ecosystem in R. In
-this vignette I use `::` notation so you can get an idea of where
-functions are coming from, and you’ll notice *a lot* of `sf::st_*`.
+Below we will use `sf` to simply buffer occurrence points to create a
+species range across multiple South American nations.
 
 ``` r
-planar_proj =
-    '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
-
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 x_buff <- sf::st_transform(x, planar_proj) |>
-  sf::st_buffer(125000) |> # we are working in planar metric coordinates, we are
-  sf::st_as_sfc() |> # buffer by this many / 1000 kilometers. 
+  # we are working in planar metric coordinates, we are
+  # buffer by this many / 1000 kilometers. 
+  sf::st_buffer(125000) |> 
+  sf::st_as_sfc() |> 
   sf::st_union()
 
 plot(x_buff)
@@ -52,29 +50,13 @@ plot(x_buff)
 
 ![](GettingStarted_files/figure-html/Just%20Buffer%20it!-1.png)
 
-Voila! That’s the whole process. Just play around with the distances
-until you get something which looks OK. How do I define ‘OK’?.. A
-feeling in the gut that your boots are tingling. Note that while the
-buffered polygons may look a little nebulous now, we’ll have them on
-maps with some more context in just a couple steps.
+Alternatives to this include a simple convex hull around a species, if
+it is widespread throughout an area, or masking a binary SDM surface as
+the domain.
 
-## Just load the SDM!
+## Prep a map background
 
-The package also has an SDM prediction saved in the data we can just
-load that too for a couple comparisons.
-
-``` r
-sdm <- terra::rast(file.path(system.file(package="safeHavens"),  'extdata', 'Bradypus_test.tif'))
-terra::plot(sdm)
-```
-
-![](GettingStarted_files/figure-html/unnamed-chunk-3-1.png)
-
-## Now prep some data for visualizing the results
-
-While not necessary, we are going to add some context to our maps which
-should help you interpret the results of the various functions from the
-package. We will use the `spData` package which uses
+We will use the `spData` package which uses
 [naturalearth](https://www.naturalearthdata.com/) data for it’s `world`
 data and is suitable for creating effective maps at a variety of
 resolutions.
@@ -127,13 +109,13 @@ reproduced here.
 environmental complexity respectively, and range from low (L) through
 medium to high.*
 
-#### Grid Based and Point Based Sample
+### Grid Based Sample
 
 Ecologists love grids. All of us are taught to love grids for sampling.
 Grids are very useful for sampling contiguous things. Species ranges are
-often not contiguous; curators and analysts in our geographically grand
-ecosystems, e.g. the steppes, prairies, tundra, and taiga might find
-these useful.
+often not contiguous; however curators and analysts in our
+geographically grand ecosystems, e.g. the steppes, prairies, tundra, and
+taiga might find these useful.
 
 You can look at the output below to see why grids are not great for
 *this* type of problem.
@@ -142,9 +124,9 @@ The first step in grid sampling is determining an OK number of grids to
 try and draw as a starting point, if we want 20 collections we will need
 more than 20 grids, because several will be merged into the larger ones.
 Using the aspect ratio of a simple bounding box around the area will be
-analyzing, the function will determine a default number of grids
-(‘Original’) for testing. Using these defaults it will create a few
-other sets of grids as well, by either removing one of two grids per
+analyzing, the `TestGridSizes` function will determine a default number
+of grids (‘Original’) for testing. Using these defaults it will create a
+few other sets of grids as well, by either removing one of two grids per
 direction. Theoretically you could automate grid selection by comparing
 the number of grids and the minimization of variance. To be safe I
 wouldn’t consider configurations which generate less than 25 of these
@@ -198,6 +180,8 @@ gbs.p
 
 ![](GettingStarted_files/figure-html/Grid%20Based%20Samples-1.png)
 
+### Point Based Sample
+
 With the grids we drew the pre-specified number of grids across the
 species range, and then merged them together as required to get the
 results. We will essentially do the inverse in this step, rather than
@@ -225,19 +209,18 @@ pbs.p
 
 ![](GettingStarted_files/figure-html/Point%20Based%20Sample-1.png)
 
-#### Equal Area Sample
+### Equal Area Sample
 
 Perhaps the simplest method which is offered in `safeHavens` is
-`EqualAreaSample`. It simply creates many points, `pts` defaults to
-5000, within our target polygon and then subjects them to k-means
-sampling where the groups are specified by `n` our target number of
-collections. The individual points then assigned to these groups have
-polygons which ‘take’ up all of the map space developed, and are
-intersected back to the species range, and the area of each polygon is
-then measured. This process will be ran a few times, defaulting to 100
-`reps`, and the set of polygons which was created during these reps with
-the smallest variance in polygon size will be selected to be returned
-from the function.
+`EqualAreaSample`. It simply creates many points, `pts` defaulting to
+5000, within our target domain and subjects them to k-means sampling
+where the groups are specified by `n`, our target number of collections.
+The individual points assigned to each group are merged into polygons
+which ‘take’ up all of the geographic space, and are intersected back to
+the species range, and the area of each polygon is then measured. This
+process will be ran a few times, defaulting to 100 `reps`, and the set
+of polygons which was created during these reps with the smallest
+variance in polygon size will be selected and returned.
 
 This differs from point based sampling in that the above instance, we
 start with a few regularly spaced points to grow from, here we take a
@@ -256,24 +239,21 @@ eas.p <- map +
 eas.p
 ```
 
-![](GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png) To me
-the results look quite similar to point based sample.
+![](GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png)
 
-#### Opportunistic Sample
+The results look quite similar to point based sample.
 
-To be blunt, while there are many new players to the germplasm
-conservation table (and we are thrilled to have you here!), many
-existing collections have largely grown out of opportunity (which we are
-still very happy about). Many Curators may be interested in how much
-they can embed their existing collections into a sampling framework. The
-function `OpportunisticSample` makes a few very minor modifications to
-the point based sample to try and maximize an existing collection. It
-doesn’t always work exceptionally, especially when a couple collections
-are very close to each other, but it may be a beneficial tool to have in
-the belt. As we have observed, the three previous sampling schemes end
-of with somewhat similar results - so we took used the
-`PointBasedSample` as the framework we embedded this function into it -
-it was also the easiest function to work this into!
+### Opportunistic Sample
+
+Many curators are interested in how much they can embed their existing
+collections into a sampling framework. The function
+`OpportunisticSample` makes a few minor modifications to the point based
+sample to maximize an existing collection. It doesn’t always work
+exceptionally, especially when a couple collections are very close to
+each other, but it may be a beneficial tool to have in the belt. As we
+have observed, the three previous sampling schemes end of with somewhat
+similar results - so we took used the `PointBasedSample` as the
+framework we embedded this function into it.
 
 Essentially this combines the approach of point based sampling, but
 forces that the clusters are based around the existing accessions. It
@@ -297,27 +277,25 @@ os.p <- map +
 os.p
 ```
 
-![](GettingStarted_files/figure-html/Opportunistic%20Sample-1.png) As
-you see here, the grids have been aligned around the points. This can
-lead to some funky clusters, but *a bird in hand is worth two in the
+![](GettingStarted_files/figure-html/Opportunistic%20Sample-1.png)
+
+Here, the grids have been aligned around the points. This can lead to
+some oddly shaped clusters, but *a bird in hand is worth two in the
 bush.*
 
-#### Isolation by Distance Based Sample
+### Isolation by Distance Based Sample
 
-Isolation by Distance, and to a much lesser extent Toblers first law of
-geography, are the fundamental ideas driving this package. While the
-above sampling schemes are implicitly based around the former idea, the
-latter is the most essential for germplasm conservation. This function
-explicitly uses IBD to develop a sampling scheme, and does not obfuscate
-it with any other parameters.
+Isolation by Distance is the fundamental idea behind this package. This
+function explicitly uses IBD to develop a sampling scheme, and does not
+obfuscate it with any other parameters.
+
+Note that this function requires a raster input, rather than a vector.
 
 ``` r
-files <- list.files( # note that for this process we need a raster rather than 
-  path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
-  pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
-predictors <- terra::rast(files) # this can also be done using 'fasterize'. Whenever
-# we rasterize a product, we will need to provide a template raster that our vector
-# will inherit the cell size, coordinate system, etc. from 
+files <- list.files( 
+  path = file.path(system.file(package="dismo"), 'ex'),
+  pattern = 'grd',  full.names=TRUE ) 
+predictors <- terra::rast(files) 
 
 x_buff.sf <- sf::st_as_sf(x_buff) |> 
   dplyr::mutate(Range = 1) |> 
@@ -344,15 +322,15 @@ ibdbs.p
 rm(predictors, files, v, x_buff.sf, exist_pts, os)
 ```
 
-Because these data were processed from a raster, they have these sharp
-edges, representing raster tiles. However, it should immediately be
-evident that the borders of the clusters are more natural looking than
-in the previous (and future) sampling schemes.
+Because these data were processed from a raster, they have lienar edges,
+representing raster tiles. However, it is evident that the borders of
+the clusters are more natural looking than in the previous (and future)
+sampling schemes.
 
-#### Ecoregion Based Sample
+### Ecoregion Based Sample
 
-As mentioned this is by far the most commonly implemented method for
-guiding native seed collection. However, I am not sure exactly how
+This is the most commonly implemented method for guiding native seed
+collection in North America. However, I am not sure exactly how
 practitioners all implement it, and whether the formats of application
 are consistent among practitioners! For these reasons a few different
 sets of options are supported for a user.
@@ -426,12 +404,24 @@ the number of collections to be made per ecoregion. Because the number
 of ecoregions is greater than our requested sample size, the return
 object can only take on two values - no collections, or one collection.
 
-#### Environmental Based Sample
+### Environmental Based Sample
 
 The environmental based sample can only be conducted if you have the
 species distribution model data. Included in the data directory of the
 folder are all of the objects required to run this example for the
 species. We will load them here.
+
+## load the SDM predictions
+
+The package also has an SDM prediction saved in the data we can just
+load that too for a couple comparisons.
+
+``` r
+sdm <- terra::rast(file.path(system.file(package="safeHavens"),  'extdata', 'Bradypus_test.tif'))
+terra::plot(sdm)
+```
+
+![](GettingStarted_files/figure-html/unnamed-chunk-5-1.png)
 
 ``` r
 sdModel <- readRDS(
