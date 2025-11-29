@@ -51,9 +51,7 @@ jobs:
 
       # --- add bindings for variables ---
       - name: Auto-generate / update R/globals.R
-        run: |
-          Rscript scripts/inst/update_globals.R
-        shell: Rscript {0}
+  	run: Rscript inst/update_globals.R
 
       #  spatial-libs install & sf build for Linux
       - name: Install spatial system libs (Ubuntu 24.04+)
