@@ -40,8 +40,6 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
           simplify = FALSE)
       }
   
-  voronoiPolygons <- sf::st_make_valid(voronoiPolygons)
-  
   # sf oftentimes gives fewer points than asked for, we will keep only the objects 
   # which have the desired number of points
   voronoiPolygons <- voronoiPolygons[
@@ -93,7 +91,8 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
   sf::st_agr(cents) = "constant"
   ints <- unlist(sf::st_intersects(SelectedSample, cents))
   SelectedSample <- SelectedSample |>
-    dplyr::mutate(ID = ints, .before = 1) 
+    dplyr::mutate(ID = ints, .before = 1) |>
+    dplyr::arrange(ID)
   
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
@@ -112,7 +111,6 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
   return(output)
   
 } 
-
 
 #' Recursively grab a named component of a list. 
 #' @param x a list of lists
@@ -142,11 +140,10 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
 #' @noRd
 VoronoiSampler <- function(polygon, n, collections, reps){
   
+  polygon <- sf::st_make_valid(polygon)
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
     sf::st_as_sf() |> 
     dplyr::rename(geometry = x) 
-
-  polygon <- sf::st_make_valid(polygon)
   
   if(!missing(collections)){
     pts <- dplyr::bind_rows(

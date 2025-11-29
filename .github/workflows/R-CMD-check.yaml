@@ -46,7 +46,6 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
           
-          
       - name: Install spatial system libs (Ubuntu 24.04+)
         if: runner.os == 'Linux'
         run: |

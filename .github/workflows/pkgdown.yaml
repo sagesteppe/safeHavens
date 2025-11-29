@@ -37,14 +37,19 @@ jobs:
           extra-packages: any::pkgdown, local::.
           needs: website
           
-      - name: Update GEOS
+      - name: Install spatial system libs (Ubuntu 24.04+)
         if: runner.os == 'Linux'
         run: |
-          sudo add-apt-repository ppa:ubuntugis/ppa
+          sudo rm -f /etc/apt/sources.list.d/*ubuntugis*.list \
+                     /etc/apt/sources.list.d/*ubuntugis*.sources || true
           sudo apt-get update
-          sudo apt-get install libgeos-dev
+          sudo apt-get install -y \
+            libgdal-dev gdal-bin \
+            libproj-dev proj-bin \
+            libgeos-dev \
+            libgeos++-dev
 
-      - name: Commpile sf from source
+      - name: Compile sf from source
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
         shell: Rscript {0}
