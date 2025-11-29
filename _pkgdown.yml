@@ -12,6 +12,7 @@ reference:
   - IBDBasedSample
   - EcoregionBasedSample
   - EnvironmentalBasedSample
+  - PrioritizeSample
 - title: Environmental Sampling Prep
   desc: Preparation for Environmental Based Sampling
   contents:
@@ -26,7 +27,8 @@ reference:
   - maximizeDispersion
 - title: Miscellaneous
   desc: Data prep functions
-  contents: TestGridSizes
+  contents: 
+  - TestGridSizes
 
 articles:
   - title: "About the package and getting started"
