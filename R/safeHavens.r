@@ -14,7 +14,8 @@
 #' @keywords datasets
 #' @name WesternEcoregions
 #' @usage data(WesternEcoregions)
-#' @keywords internal
+#' @keywords datasets, internal
+#' @noRd
 #' @format A spatial vector data set. 
 NULL
 
@@ -30,7 +31,8 @@ NULL
 #' }
 #'
 #' @docType data
-#' @keywords datasets
+#' @keywords datasets, internal
 #' @name WesternEcoregions
+#' @noRd
 #' @format A spatial vector data set. 
 NULL
