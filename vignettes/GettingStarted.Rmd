@@ -5,6 +5,9 @@ vignette: >
   %\VignetteIndexEntry{Getting Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+description: >
+  Running the main sampling schemes for common species. 
+
 ---
 
 ```{r, include = FALSE}

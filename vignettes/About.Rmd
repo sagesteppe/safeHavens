@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{About}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+description: >
+  An overview of the package. 
 ---
 
 # about `safeHavens`

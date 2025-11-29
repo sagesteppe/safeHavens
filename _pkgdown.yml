@@ -29,6 +29,7 @@ reference:
   desc: Data prep functions
   contents: 
   - TestGridSizes
+  - WesternEcoregions
 
 articles:
   - title: "About the package and getting started"

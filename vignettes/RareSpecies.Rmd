@@ -1,10 +1,12 @@
 ---
-title: "Sampling Schema"
+title: "Rare Species Sampling Schema"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Sampling Schema}
+  %\VignetteIndexEntry{Rare Species Sampling Schema}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+description: >
+  Running an additional sampling scheme for rare species. 
 ---
 
 ```{r, include = FALSE}

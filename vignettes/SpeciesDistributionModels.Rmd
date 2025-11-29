@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{Species Distribution Models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+description: >
+  Creating and understanding the Species Distribution Model required for EnvironmentalBasedSample.
 ---
 
 ```{r, include = FALSE}
