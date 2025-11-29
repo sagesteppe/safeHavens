@@ -15,7 +15,8 @@ Suggests:
     lattice,
     patchwork,
     rmarkdown,
-    spData
+    spData, 
+    ggrepel
 VignetteBuilder: knitr
 Imports: 
     caret,
