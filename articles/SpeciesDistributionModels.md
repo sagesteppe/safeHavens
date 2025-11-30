@@ -111,6 +111,8 @@ drop or retain variables whenever it is used. `caret` will test a range
 of alphas to determine how much ridge or lasso regression
 characteristics are best for the data at hand.
 
+MAKE A NOTE ABOUT THE PCNM MORAN EIGNENVECTORS HERE TOO.
+
 #### explore the output
 
 ``` r
@@ -139,6 +141,17 @@ sdModel$CVStructure
 #> 
 #> Accuracy was used to select the optimal model using the largest value.
 #> The final values used for the model were alpha = 1 and lambda = 0.0006204077.
+
+coef(sdModel$Model, s = "lambda.min")
+#> 7 x 1 sparse Matrix of class "dgCMatrix"
+#>              s=lambda.min
+#> (Intercept)  -4.138796551
+#> bio17        -0.007649011
+#> biome        -0.176893842
+#> bio1          0.023751253
+#> bio8         -0.005606085
+#> bio12         0.001275749
+#> PCNM1       -18.787653011
 ```
 
 Here we can see how the elastic net decided that is the top model. We

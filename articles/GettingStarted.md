@@ -111,7 +111,6 @@ medium to high.*
 
 ### Grid Based Sample
 
-Ecologists love grids. All of us are taught to love grids for sampling.
 Grids are very useful for sampling contiguous things. Species ranges are
 often not contiguous; however curators and analysts in our
 geographically grand ecosystems, e.g. the steppes, prairies, tundra, and
