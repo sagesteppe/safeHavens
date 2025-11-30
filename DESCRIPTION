@@ -18,7 +18,8 @@ Suggests:
     patchwork,
     rmarkdown,
     spData, 
-    ggrepel
+    ggrepel,
+    MASS
 VignetteBuilder: knitr
 Imports: 
     caret,

@@ -9,6 +9,8 @@ description: >
   Running an additional sampling scheme for rare species. 
 ---
 
+
+## prepare data
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -16,22 +18,58 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r}
+Load the required packages. 
+
+```{r required packages, message=FALSE}
 library(safeHavens)
 library(ggplot2)
 ```
 
-```{r}
-n_sites <- 30 # number of known populations
+Here we will use the Bradypus data included in the `dismo` package again. 
+
+```{r import bradypus data for testing}
+x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+x <- x[,c('lon', 'lat')]
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+```
+
+While all other functions in the package handle `sf` objects directly, this function will actually just use a simple data frame of sites, to simplfy handing data off to C++ for optimization routines. 
+
+The input to the `maximizeDispersion` function is a list with two elements: a distance matrix, and a data frame of site locations and attributes. 
+The data frame must contain the following columns. 
+
+```{r prep bradypus for sampling}
+n_sites <- nrow(x) 
 df <- data.frame(
   site_id = seq_len(n_sites),
-  lat = runif(n_sites, 25, 30), # play with these to see elongated results. 
-  lon = runif(n_sites, -125, -120),
   required = FALSE,
-  coord_uncertainty = 0
+  coord_uncertainty = 0, 
+  lon = sf::st_coordinates(x)[,1], 
+  lat = sf::st_coordinates(x)[,2]
 )
 
-# the function relies on at least one required point. here arbitrarily place near geographic center
+head(df)
+```
+
+The second required element, the distance matrix, can be calculated with the `greatCircleDistance` function in the package. 
+Please use this rather than st_distance from `sf` for consistency, as the units differ slightly. 
+If you want to use `sf::st_distance`, make sure to convert the units to match the scale of the `greatCircleDistance` function, otherwise the results will be incorrect.
+
+```{r calculate distance matrix}
+dist_mat <- sapply(1:nrow(df), function(i) {
+   greatCircleDistance(
+     df$lat[i], df$lon[i],
+     df$lat, df$lon
+   )
+ })
+```
+
+The optimization routine requires at least one 'required' site to be specified. 
+Here we will select the site closest to the geographic center of all sites as the required site.
+
+Normally this can refer to existing accessions, or administrative units, or preserves which are helping to implement the germplasm collection, and are fortunate enough to already have some samples or at least guaranteed access.
+
+```{r required points}
 dists2c <- greatCircleDistance(
   median(df$lat), 
   median(df$lon), 
@@ -39,39 +77,93 @@ dists2c <- greatCircleDistance(
   df$lon
 )
 df[order(dists2c)[1],'required'] <- TRUE
+```
 
-## we will simulate coordinate uncertainty on a number of sites.  
-uncertain_sites <- sample(setdiff(seq_len(n_sites), which(df$required)), size = min(6, n_sites-3))
-df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1000, 10000) # meters
+This function not only bootstraps sites to simulate the true distribution distribution of the species, but it also bootstraps coordinate uncertainty for each site. 
+Here we will randomly assign 20% of the sites to have coordinate uncertainty between 1 km and 40 km. 
+Note that he argument is always in meters. 
 
-# the function can take up to take matrices. the first (required) is a geographic distance
-# matrix. calculate this with the `greatCircleDistance` fn from the package for consistency. 
-# (it will be recalculated during simulations). `sf` gives results in slightly diff units. 
-dist_mat <- sapply(1:nrow(df), function(i) {
-  greatCircleDistance(
-    df$lat[i], df$lon[i],
-    df$lat, df$lon
+```{r simulating coordinate uncertainty}
+uncertain_sites <- sample(
+  setdiff(seq_len(n_sites), 
+  which(df$required)), 
+  size = round(n_sites*0.2, 0)
   )
-})
-# the input data is a list, the distance matrix, and the df of actual point locations. 
-head(df)
-test_data <- list(distances = dist_mat, sites = df)
-rm(dist_mat, df, n_sites, uncertain_sites, dists2c)
+df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1000, 40000) # meters
+```
 
-# small quick run (fast); timing for R package / CRAN status. 
-  system.time( 
-    res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+## Run dispersion maximization based only on geographic distances
+
+The input to the function is the distance matrix, and the site data. 
+
+```{r combine the input data}
+test_data <- list(
+  distances = dist_mat,
+  sites = df
+  )
+
+str(test_data)
+
+rm(x, n_sites, uncertain_sites, dists2c)
+```
+
+The funtion `maximizeDispersion` has several parameters to control the optimization routine.
+
+```{r run with geographic distances}
+st <- system.time( {
+    geo_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
       input_data = test_data,
-      lambda_var = 0.2,
+      n_sites = 10,
+      lambda_var = 0.05,
       n_bootstrap = 500,
-      objective = "maxmin",
+      objective = "sum",
       n_local_search_iter = 50,
       n_restarts = 2
     )
-  )
-  
-## first selected 
-ggplot(data = res$input_data, 
+  }
+)
+```
+
+The function operates relatively quick with few bootstraps and few sites, but will take considerably longer with more complex scenarios.
+We recommened using at least 999 bootstraps for real world applications. 
+
+```{r}
+st
+rm(st)
+```
+
+
+### return output structure
+Various elements are returned in the output list.
+```{r structure of output}
+str(geo_res)
+```
+
+The stability score shows how often the most frquently selected network of sites was selected from the bootstrapped runs. 
+```{r}
+head(geo_res$stability_score)
+```
+
+The stability data frame shows how often each site was selected across all bootstrap runs. 
+```{r}
+head(geo_res$stability)
+```
+
+Many users may find the combindation of their input data with a few columns, to be all they need to carry on after the results. 
+```{r}
+head(geo_res$input_data)
+```
+
+Run parameters are saved in the settings element.
+```{r}
+head(geo_res$settings)
+```
+
+
+### visualize the selection results
+
+```{r first selection of target sites}
+ggplot(data = geo_res$input_data, 
   aes(
     x = lon, 
     y = lat, 
@@ -81,12 +173,14 @@ ggplot(data = res$input_data,
     )
   ) +
   geom_point() + 
-  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+ # ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
   theme_minimal() + 
-  labs(main = 'Priority Selection Status of Sites')
+  labs(title = 'Priority Selection Status of Sites')
+```
 
-## order of sampling priority ranking plot.
-ggplot(data = res$input_data, 
+
+```{r priority ranking plot}
+ggplot(data = geo_res$input_data, 
   aes(
     x = lon, 
     y = lat, 
@@ -96,6 +190,195 @@ ggplot(data = res$input_data,
     )
   ) +
   geom_point() + 
-  ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
+ # ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
   theme_minimal()   
+```
+
+
+## run dispersion maximization with geographic and environmental distances
+
+### extract prep environmental distances 
+
+```{r prep environmental distance matrix}
+files <- list.files(
+  path = file.path(system.file(package="dismo"), 'ex'), 
+  pattern = 'grd',  full.names=TRUE )
+predictors <- terra::rast(files) # import the independent variables
+rm(files)
+```
+
+For our environmental distances, we will use a PCA transformation of the environmental variables.
+We will simply scrape 100 random points from the raster layers to calculate the PCA.
+Then predict the PCA raster layers across the entire study area.
+We will take the first two layers, and calculate environmental distances based on these two layers.
+
+```{r run with geographic and environmental distances}
+pts <- terra::spatSample(predictors, 100, na.rm = TRUE)
+pts <- pts[, names(pts)!='biome' ] # remove categorical variable for distance calc
+
+pca_results <- stats::prcomp(pts, scale = TRUE)
+round(pca_results$sdev^2 / sum(pca_results$sdev^2), 2) # variance explained
+pca_raster <- terra::predict(predictors, pca_results)
+
+terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a new raster
+rm(pts, predictors, pca_results)
+```
+
+we keep the first two PCA layers for environmental distance calculation.
+More layers will increase dimenstionality, and may lead to less useful results.
+Note that it's fine to use a euclidean distance calculation for these, as the values are truly in the position of the plot. 
+
+```{r extract environmental values and calculate distance matrix}
+env_values <- terra::extract(pca_raster, 
+  sf::st_coordinates(
+    sf::st_as_sf(
+      df, 
+      coords = c('lon', 'lat'), 
+      crs = 4326
+    )
+  )
+)[,1:2]
+plot(env_values, main = 'environmental distance of points from first two PCA axis')
+
+env_dist_mat <- as.matrix(
+    dist(env_values)
+  )
+
+rm(pca_raster)
+```
+
+```{r}
+test_data <- list(
+  distances = simplify2array(list(dist_mat, env_dist_mat)),
+  sites = df
+  )
+
+st <- system.time( 
+  {
+    env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+      input_data = test_data,
+      n_sites = 10,
+      lambda_var = 0.2,
+      weight_1 = 0.1, 
+      weight_2 = 0.9,
+      n_bootstrap = 99, # considerably slower function!!!
+      objective = "sum",
+      n_local_search_iter = 50,
+      n_restarts = 2
+    )
+  }
+)
+
+rm(dist_mat, env_dist_mat)
+```
+
+Adding the second distance matrix into the mix slows things down considerable. 
+
+Note that when this function has jittered points, not only is the point jittered randomly for the geographic component, the environmental distance matrix is also jittered. 
+The jitter for the latter matrix come from fitting a linear model where environmental distance is fit as a function of geographic distance. 
+The conditional mean is then used as a noise to alter the environmental distance to/from each record. 
+However, this is unrelated to the slowdown. 
+
+```{r}
+st
+rm(st)
+```
+
+```{r}
+head(env_res$stability_score)
+```
+
+```{r first selection of target sites}
+ggplot(data = env_res$input_data, 
+  aes(
+    x = lon, 
+    y = lat, 
+    shape = required, 
+    size = cooccur_strength,
+    color = selected
+    )
+  ) +
+  geom_point() + 
+ # ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+  theme_minimal() + 
+  labs(title = 'Priority Selection Status of Sites')
+```
+
+## show differences in lambda parameters
+
+
+## Bonus: altnerative methods for required central points
+
+In the example above we use a point at the median geographic center of the populations. 
+
+
+```{r required point method - population centroid - heat map}
+dens <- with(df, MASS::kde2d(lon, lat, n = 200))
+max_idx <- which(dens$z == max(dens$z), arr.ind = TRUE)[1,]
+max_point <- c(dens$x[max_idx[1]], dens$y[max_idx[2]])
+
+pops_centre <- sweep(df[c('lon', 'lat')], 2, max_point, "-")
+pop_centered_id <- which.min(rowSums(abs(pops_centre^2)))
+
+rm(dens, max_idx, max_point, pops_centre)
+```
+
+
+```{r required point method - environmental centroid}
+env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
+env_centered_id <- which.min(rowSums(abs(env_centered^2)))
+
+rm(env_values)
+```
+
+All three of these options can be combined to feed in three center points for required sampling locations, providing a robust set of 'core' diversity for the species. 
+Personally I would consider the 'pop centered' population to be the most important required site to center a design off of. 
+
+Here we will just showcase their positions
+
+```{r}
+# geographic centroid was pt 47
+centers <- df[ c(env_centered_id, pop_centered_id, 47), ] 
+centers$type <- c('Environmental', 'Population', 'Geographic')
+
+ggplot(data = df, aes(x = lon, y = lat)) +
+  geom_point() + 
+  geom_point(data = centers,  col = '#FF1493', size = 4) + 
+  ggrepel::geom_label_repel(data = centers, aes(label = type)) + 
+  theme_minimal() + 
+  labs(title = 'Possbilities for required centers')
+
+rm(env_centered_id, env_centered, pop_centered_id)
+```
+
+and this would give results like
+```{r}
+test_data$sites$required[centers$site_id] <- TRUE
+
+env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+  input_data = test_data,
+  n_sites = 10,
+  lambda_var = 0.1,
+  weight_1 = 0.5, 
+  weight_2 = 0.5,
+  n_bootstrap = 99, # considerably slower function!!!
+  objective = "sum",
+  n_local_search_iter = 50,
+  n_restarts = 2
+)
+
+ggplot(data = env_res$input_data, 
+  aes(
+    x = lon, 
+    y = lat, 
+    shape = required, 
+    size = cooccur_strength,
+    color = selected
+    )
+  ) +
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = 'Priority Selection Status of Sites')
+
+rm(centers)
 ```

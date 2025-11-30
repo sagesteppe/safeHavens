@@ -94,10 +94,14 @@ Lasso regression will perform automated variable selection, and can drop (or 'sh
 An elastic net blends this propensity to drop or retain variables whenever it is used. 
 `caret` will test a range of alphas to determine how much ridge or lasso regression characteristics are best for the data at hand. 
 
+MAKE A NOTE ABOUT THE PCNM MORAN EIGNENVECTORS HERE TOO. 
+
 ### explore the output
 
 ```{r Explore SDM output - Different alpha}
 sdModel$CVStructure
+
+coef(sdModel$Model, s = "lambda.min")
 ```
 
 Here we can see how the elastic net decided that is the top model. 
