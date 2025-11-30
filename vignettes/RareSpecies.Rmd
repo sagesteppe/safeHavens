@@ -23,6 +23,8 @@ Load the required packages.
 ```{r required packages, message=FALSE}
 library(safeHavens)
 library(ggplot2)
+library(patchwork)
+set.seed(99)
 ```
 
 Here we will use the Bradypus data included in the `dismo` package again. 
@@ -31,6 +33,44 @@ Here we will use the Bradypus data included in the `dismo` package again.
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+```
+
+And we will create the same base map used in `GettingStarted`. 
+
+```{r create map for visualizing results, echo = F}
+planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+
+americas <- spData::world
+
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+x_buff <- sf::st_transform(x, planar_proj) |>
+  sf::st_buffer(125000) |> 
+  sf::st_as_sfc() |> 
+  sf::st_union() |>
+  sf::st_transform(4326) |>
+  sf::st_buffer(100000) |>
+  sf::st_bbox()
+
+americas <- spData::world 
+americas <- sf::st_crop(americas, x_buff) |>
+  dplyr::select(name_long)
+
+bb <- sf::st_bbox(x_buff)
+
+map <- ggplot() + 
+  geom_sf(data = americas) + 
+  theme(
+    legend.position = 'none', 
+    panel.background = element_rect(fill = "aliceblue"), 
+    panel.grid.minor.x = element_line(colour = "red", linetype = 3, linewidth  = 0.5), 
+    axis.ticks=element_blank(),
+    axis.text=element_blank(),
+    plot.background=element_rect(colour="steelblue"),
+    plot.margin=grid::unit(c(0,0,0,0),"cm"),
+    axis.ticks.length = unit(0, "pt"))+ 
+  coord_sf(xlim = c(bb[1], bb[3]), ylim = c(bb[2], bb[4]), expand = FALSE)
+
+rm(americas, bb, planar_proj, x_buff)
 ```
 
 While all other functions in the package handle `sf` objects directly, this function will actually just use a simple data frame of sites, to simplfy handing data off to C++ for optimization routines. 
@@ -163,7 +203,8 @@ head(geo_res$settings)
 ### visualize the selection results
 
 ```{r first selection of target sites}
-ggplot(data = geo_res$input_data, 
+map + 
+  geom_point(data = geo_res$input_data, 
   aes(
     x = lon, 
     y = lat, 
@@ -172,24 +213,23 @@ ggplot(data = geo_res$input_data,
     color = selected
     )
   ) +
-  geom_point() + 
  # ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
   theme_minimal() + 
-  labs(title = 'Priority Selection Status of Sites')
+  labs(title = 'Priority Selection Status of Sites; Geographic Distances')
 ```
 
 
 ```{r priority ranking plot}
-ggplot(data = geo_res$input_data, 
-  aes(
-    x = lon, 
-    y = lat, 
-    shape = required, 
-    size = -sample_rank,
-    color = sample_rank
-    )
-  ) +
-  geom_point() + 
+map + 
+  geom_point(data = geo_res$input_data, 
+    aes(
+      x = lon, 
+      y = lat, 
+      shape = required, 
+      size = -sample_rank,
+      color = sample_rank
+      )
+    ) +
  # ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
   theme_minimal()   
 ```
@@ -258,7 +298,7 @@ st <- system.time(
     env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
       input_data = test_data,
       n_sites = 10,
-      lambda_var = 0.2,
+      lambda_var = 0.1,
       weight_1 = 0.1, 
       weight_2 = 0.9,
       n_bootstrap = 99, # considerably slower function!!!
@@ -289,25 +329,22 @@ head(env_res$stability_score)
 ```
 
 ```{r }
-ggplot(data = env_res$input_data, 
-  aes(
-    x = lon, 
-    y = lat, 
-    shape = required, 
-    size = cooccur_strength,
-    color = selected
-    )
-  ) +
-  geom_point() + 
+map + 
+  geom_point(data = env_res$input_data, 
+    aes(
+      x = lon, 
+      y = lat, 
+      shape = required, 
+      size = cooccur_strength,
+      color = selected
+      )
+    ) +
  # ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
   theme_minimal() + 
-  labs(title = 'Priority Selection Status of Sites')
+  labs(title = 'Priority Selection Status of Sites; Environmental')
 ```
 
-## show differences in lambda parameters
-
-
-## Bonus: altnerative methods for required central points
+## alternative methods for required central points
 
 In the example above we use a point at the median geographic center of the populations. 
 
@@ -341,17 +378,28 @@ Here we will just showcase their positions
 centers <- df[ c(env_centered_id, pop_centered_id, 47), ] 
 centers$type <- c('Environmental', 'Population', 'Geographic')
 
-ggplot(data = df, aes(x = lon, y = lat)) +
-  geom_point() + 
-  geom_point(data = centers,  col = '#FF1493', size = 4) + 
-  ggrepel::geom_label_repel(data = centers, aes(label = type)) + 
+map +
+  geom_point(
+    data = df, 
+    aes(x = lon, y = lat)
+    ) + 
+  geom_point(
+    data = centers,  
+    aes(x = lon, y = lat),
+    col = '#FF1493', size = 4
+    ) + 
+  ggrepel::geom_label_repel(
+    data = centers, 
+    aes(label = type, x = lon, y = lat)
+    ) + 
   theme_minimal() + 
   labs(title = 'Possbilities for required centers')
 
 rm(env_centered_id, env_centered, pop_centered_id)
 ```
 
-and this would give results like
+Using these three centers will give results like below 
+
 ```{r run multi required sites and plot}
 test_data$sites$required[centers$site_id] <- TRUE
 
@@ -359,26 +407,68 @@ env_res <- maximizeDispersion(  ## reduce some parameters for faster run.
   input_data = test_data,
   n_sites = 10,
   lambda_var = 0.1,
-  weight_1 = 0.5, 
-  weight_2 = 0.5,
+  weight_1 = 0.3, 
+  weight_2 = 0.7,
   n_bootstrap = 99, 
   objective = "sum",
   n_local_search_iter = 50,
   n_restarts = 2
 )
 
-ggplot(data = env_res$input_data, 
-  aes(
-    x = lon, 
-    y = lat, 
-    shape = required, 
-    size = cooccur_strength,
-    color = selected
-    )
-  ) +
-  geom_point() + 
+map + 
+  geom_point(data = env_res$input_data, 
+    aes(
+      x = lon, 
+      y = lat, 
+      shape = required, 
+      size = cooccur_strength,
+      color = selected
+      )
+    ) +
   theme_minimal() + 
-  labs(title = 'Priority Selection Status of Sites')
+  labs(title = 'Priority Selection Status of Sites with 3 required sites')
 
 rm(centers)
+```
+
+
+## show differences in lambda parameters
+
+```{r}
+lambda_viewer <- function(lambda_val){
+
+  env_res <- maximizeDispersion(   
+    input_data = test_data,
+    n_sites = 10,
+    lambda_var = lambda_val,
+    n_bootstrap = 50, 
+    objective = "sum",
+    n_local_search_iter = 50,
+    n_restarts = 2, 
+    verbose = FALSE
+  )
+
+  m <- map + 
+    geom_point(data = env_res$input_data, 
+      aes(
+        x = lon, 
+        y = lat, 
+        shape = required, 
+        size = cooccur_strength,
+        color = selected
+        )
+      ) +
+    labs(title = paste('lambda: ', lambda_val))
+
+}
+
+lambda_view <- lapply(c(0, 0.025, 0.05, 0.075, 0.1, 0.15), lambda_viewer)
+
+lambda_view[[1]] + lambda_view[[2]] + lambda_view[[3]] + 
+  lambda_view[[4]]  +  lambda_view[[5]] + lambda_view[[6]] + 
+  plot_layout(ncol = 3)
+```
+
+```{r}
+
 ```

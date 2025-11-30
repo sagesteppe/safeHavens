@@ -47,7 +47,7 @@
 #' Weco <- sf::st_read(
 #'   file.path(system.file(package="safeHavens"), 'extdata', 'WesternEcoregions.gpkg'), 
 #'   quiet = TRUE)
-#' head(Weco)
+#' colnames(Weco)
 #' 
 #' out <- EcoregionBasedSample(polygon, Weco)
 #' sum(out$n)

@@ -299,7 +299,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #' @param input_data A list with two elements: 'distances' (distance matrix or array) and 'sites' (data frame of site metadata).
 #' @param lambda_var Essentially a smoothing parameter that controls the trade-off between maximizing dispersion and minimizing variance in pairwise distances among selected sites.
 #' higher values prioritize variance reduction more strongly.
-#' We recommend checking stops between 0.05 and 0.3 to see what works best for your data.
+#' We recommend checking stops between 0.01 and 0.15 to see what works best for your data.
 #' Also check up at 0.5+, when getting started, to get a feel for how strong the variance reduction penalization can become. 
 #' @param n_sites The number of sites which you want to select for priority collection.
 #' Note that the results will return a rank of prioritization for all sites in the data.
@@ -360,7 +360,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #'    system.time( 
 #'      res <- maximizeDispersion(  ## reduce some parameters for faster run. 
 #'        input_data = test_data,
-#'        lambda_var = 0.2,
+#'        lambda_var = 0.025,
 #'        n_bootstrap = 500,
 #'        objective = "maxmin",
 #'        n_local_search_iter = 50,
