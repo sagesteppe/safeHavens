@@ -109,7 +109,7 @@ rm(x, n_sites, uncertain_sites, dists2c)
 
 The funtion `maximizeDispersion` has several parameters to control the optimization routine.
 
-```{r run with geographic distances}
+```{r run with geograpihc distances}
 st <- system.time( {
     geo_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
       input_data = test_data,
@@ -247,7 +247,7 @@ env_dist_mat <- as.matrix(
 rm(pca_raster)
 ```
 
-```{r}
+```{r run with environmental distance}
 test_data <- list(
   distances = simplify2array(list(dist_mat, env_dist_mat)),
   sites = df
@@ -288,7 +288,7 @@ rm(st)
 head(env_res$stability_score)
 ```
 
-```{r first selection of target sites}
+```{r }
 ggplot(data = env_res$input_data, 
   aes(
     x = lon, 
@@ -336,7 +336,7 @@ Personally I would consider the 'pop centered' population to be the most importa
 
 Here we will just showcase their positions
 
-```{r}
+```{r plot alternative centroids}
 # geographic centroid was pt 47
 centers <- df[ c(env_centered_id, pop_centered_id, 47), ] 
 centers$type <- c('Environmental', 'Population', 'Geographic')
@@ -352,7 +352,7 @@ rm(env_centered_id, env_centered, pop_centered_id)
 ```
 
 and this would give results like
-```{r}
+```{r run multi required sites and plot}
 test_data$sites$required[centers$site_id] <- TRUE
 
 env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
@@ -361,7 +361,7 @@ env_res <- maximizeDispersion(  ## reduce some parameters for faster run.
   lambda_var = 0.1,
   weight_1 = 0.5, 
   weight_2 = 0.5,
-  n_bootstrap = 99, # considerably slower function!!!
+  n_bootstrap = 99, 
   objective = "sum",
   n_local_search_iter = 50,
   n_restarts = 2
