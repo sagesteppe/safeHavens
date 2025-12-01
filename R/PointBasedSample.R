@@ -26,7 +26,6 @@
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
 PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps = 9999){
-  
 
   # we apply the voronoi process a number of replicated times, defaults to 100
   if(missing(collections)){
@@ -157,7 +156,6 @@ VoronoiSampler <- function(polygon, n, collections, reps){
   variance <- var(as.numeric(sf::st_area(vorons))/10000)
   
   # need to define two slots, one for the variance numeric results, and one for the polygons
-  
   return(
     list(
       'Variance' = variance,
