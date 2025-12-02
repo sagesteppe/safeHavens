@@ -75,59 +75,11 @@ jitter_coords <- function(lat, lon, uncertainty_m) {
   )
 }
 
-#' Rescale each distance layer to its original min/max range
-#'
-#' @param Darr 3D array of distances, shape n x n x K
-#' @param layer_ranges List of length K, each an object with named elements "min" and "max"
-#'
-#' @return Same array, with each layer rescaled
-#' @keyword internal
-#' @noRd
-rescale_distance_layers <- function(Darr, layer_ranges) {
-  if (is.null(layer_ranges))
-    return(Darr)
-
-  K <- dim(Darr)[3]
-  n <- dim(Darr)[1]
-
-  # helper: scale a matrix using provided min/max
-  minmax_scale_with_range <- function(M, rng) {
-    lo <- rng["min"]
-    hi <- rng["max"]
-
-    # invalid or constant layer
-    if (is.na(lo) || is.na(hi)) return(M)
-    if (hi == lo) return(matrix(0, n, n))
-
-    # scale to 0–1 relative to original range
-    (M - lo) / (hi - lo)
-  }
-
-  # process each layer
-  for (k in 1:K) {
-    if (length(layer_ranges) >= k &&
-        !is.null(layer_ranges[[k]]) &&
-        all(c("min", "max") %in% names(layer_ranges[[k]]))) {
-
-      Darr[,,k] <- minmax_scale_with_range(Darr[,,k], layer_ranges[[k]])
-
-    } else {
-      # no range available → leave unscaled
-      message(sprintf("Warning: No valid layer_range for layer %d; leaving unscaled.", k))
-    }
-  }
-
-  return(Darr)
-}
-
 
 #' Jitter coordinates of uncertain sites and update distance matrices
 #' @keywords internal
 #' @noRd
-#' Jitter coordinates of uncertain sites and update distance matrices
-#' @keywords internal
-#' @noRd
-update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_models = NULL, use_model = FALSE, layer_ranges = NULL) {
+update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_models = NULL, use_model = FALSE) {
   n <- nrow(sites_df)
   dist_arr <- coerce_to_3d_array(distances, n)
   K <- dim(dist_arr)[3]
@@ -144,27 +96,28 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
       uncertainty_m = sites_df$coord_uncertainty[uncertain_idx]
     )
 
+    # only replace if jitter returned non-empty output
     if (length(j$lat) > 0) {
       coords_boot$lat[uncertain_idx] <- j$lat
       coords_boot$lon[uncertain_idx] <- j$lon
     }
   }
 
-  # recompute primary distance matrix (layer 1)
-  for (i in uncertain_idx) {
-    for (j in seq_len(n)) {
-      d <- greatCircleDistance(
-        coords_boot$lat[i],
-        coords_boot$lon[i],
-        coords_boot$lat[j],
-        coords_boot$lon[j]
-      )
-      dist_boot[i, j, 1] <- d
-      dist_boot[j, i, 1] <- d
+    # recompute primary distance matrix
+    for (i in uncertain_idx) {
+      for (j in seq_len(n)) {
+        d <- greatCircleDistance(
+          coords_boot$lat[i],
+          coords_boot$lon[i],
+          coords_boot$lat[j],
+          coords_boot$lon[j]
+        )
+        dist_boot[i, j, 1] <- d
+        dist_boot[j, i, 1] <- d
+      }
     }
-  }
-
-  # update other layers conditionally
+  
+      # update other layers conditionally
   if (K >= 2 && length(uncertain_idx) > 0) {
     for (k in 2:K) {
       if (use_model && !is.null(env_models) && !is.null(env_models[[k]])) {
@@ -172,16 +125,18 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
         for (i in uncertain_idx) {
           for (j in seq_len(n)) {
             new_geo <- dist_boot[i, j, 1]
+            # predict via the linear model (conditional expectation)
             pred_env <- stats::predict(fit, newdata = data.frame(geo_vec = new_geo))
+            # make sure prediction is finite
             if (!is.finite(pred_env)) {
-              pred_env <- dist_boot[i, j, k]  # fallback
+              pred_env <- dist_boot[i, j, k]  # fallback to original
             }
             dist_boot[i, j, k] <- pred_env
             dist_boot[j, i, k] <- pred_env
           }
         }
       } else {
-        # small-n fallback: multiplicative jitter (~2.5%)
+        # small-n fallback: small multiplicative jitter (~2.5%)
         for (i in uncertain_idx) {
           jitter_factor <- stats::rnorm(1, mean = 1, sd = 0.025)
           dist_boot[i, , k] <- dist_boot[i, , k] * jitter_factor
@@ -190,21 +145,8 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
       }
     }
   }
-
-  # AFTER modifying numerical values, rescale each layer to its recorded layer_ranges (if provided)
-  if (!is.null(layer_ranges)) {
-    for (k in seq_len(K)) {
-      rng <- layer_ranges[[k]]
-      # only rescale if rng is not NA
-      if (!is.null(rng) && !any(is.na(rng))) {
-        dist_boot[,,k] <- minmax_scale_with_range(dist_boot[,,k], rng)
-      }
-    }
-  }
-
   dist_boot
 }
-
 
 # Greedy initialization
 #' @keywords internal
@@ -290,33 +232,6 @@ greedy_initialize_var <- function(dist_matrix, n_sites, seeds, lambda_var) {
   }
   
   return(as.integer(selected))
-}
-
-
-## both functions used for rescaling distance matrices. 
-minmax_scale_with_range <- function(M, rng) {
-  if (is.null(rng) || any(is.na(rng))) return(M)
-  if (rng["max"] == rng["min"]) {
-    return(matrix(0, nrow = nrow(M), ncol = ncol(M)))
-  }
-  (M - rng["min"]) / (rng["max"] - rng["min"])
-}
-
-# get ranges for updaing the jittered bootstrap matrices. 
-compute_layer_ranges <- function(dist_arr) {
-  K <- dim(dist_arr)[3]
-  ranges <- vector("list", K)
-  for (k in seq_len(K)) {
-    vec <- dist_arr[,,k][lower.tri(dist_arr[,,k])]
-    vec <- vec[is.finite(vec)]
-    if (length(vec) == 0) {
-      ranges[[k]] <- c(min = NA_real_, max = NA_real_)
-    } else {
-      rng <- range(vec, na.rm = TRUE)
-      ranges[[k]] <- c(min = rng[1], max = rng[2])
-    }
-  }
-  ranges
 }
 
 #' Haversine Distance Calculation
@@ -515,14 +430,11 @@ maximizeDispersion <- function(
   distances <- coerce_to_3d_array(distances, n_total)
   K <- dim(distances)[3]
 
-  layer_ranges <- compute_layer_ranges(distances)
-
+  
   # combine first two matrices by weights
-  # combine first two matrices by weights but first min-max scale each layer to its recorded range
-  dist_combined <- minmax_scale_with_range(distances[,,1], layer_ranges[[1]]) * weight_1
-
-  if (K >= 2 && weight_2 > 0) {
-    dist_combined <- dist_combined + minmax_scale_with_range(distances[,,2], layer_ranges[[2]]) * weight_2
+  dist_combined <- distances[,, 1] * weight_1
+  if (dim(distances)[3] >= 2 && weight_2 > 0) {
+    dist_combined <- dist_combined + distances[,, 2] * weight_2
   }
   
   # set up matrix so that only non-required sites can be dropped from the permutations.
@@ -582,13 +494,7 @@ maximizeDispersion <- function(
     should_dropout <- (n_drop > 0 && length(droppable) >= n_drop)
   }
   
-  if(verbose){
-     pb <- utils::txtProgressBar(min = 0, max = n_bootstrap, style = 3)
-  }
-  
- # cl <- parallel::makeCluster(cores) 
- # doParallel::registerDoParallel(cl)
- # foreach::foreach()
+  pb <- utils::txtProgressBar(min = 0, max = n_bootstrap, style = 3)
   
   for (b in seq_len(n_bootstrap)) {
     ## bs begins.
@@ -607,12 +513,11 @@ maximizeDispersion <- function(
         sites_df,
         uncertain_idx, 
         env_models, 
-        use_model, 
-        layer_range = layer_ranges
+        use_model
       )
-      dist_boot <- minmax_scale_with_range(dist_boot_array[,,1], layer_ranges[[1]]) * weight_1
+      dist_boot <- dist_boot_array[,, 1] * weight_1
       if (K >= 2 && weight_2 > 0) {
-        dist_boot <- dist_boot + minmax_scale_with_range(dist_boot_array[,,2], layer_ranges[[2]]) * weight_2
+        dist_boot <- dist_boot + dist_boot_array[,,2] * weight_2
       }
     } else {
       dist_boot <- dist_combined
@@ -690,12 +595,9 @@ maximizeDispersion <- function(
       solution_counter <- solution_counter + 1
     }
     
-    if(verbose){
-      utils::setTxtProgressBar(pb, b)
-    }
+    utils::setTxtProgressBar(pb, b)
   } # end  bootstrap
-
-  if(verbose){close(pb)}
+  close(pb) # progress bar 
   
   
   ###########################################
