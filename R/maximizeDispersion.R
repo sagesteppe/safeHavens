@@ -25,6 +25,7 @@ coerce_to_3d_array <- function(distances, n_sites) {
       ))
     }
   }
+  
   # matrix
   if (is.matrix(distances)) {
     if (nrow(distances) != n_sites || ncol(distances) != n_sites) {
@@ -314,7 +315,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #' @param n_restarts Number of random restarts per bootstrap replicate.
 #' @param seed Random seed for reproducibility.
 #' @param verbose Whether to print progress information. Will print a message on run settings, and a progress bar for the bootstraps.
-#' @examples
+#' @examples \dontrun{
 #' 
 #'  library(ggplot2)
 #'
@@ -396,7 +397,7 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #'    geom_point() + 
 #' #   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
 #'    theme_minimal()   
-#' 
+#' }
 #' @export
 maximizeDispersion <- function(
     input_data,

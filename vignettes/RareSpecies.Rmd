@@ -9,7 +9,6 @@ description: >
   Running an additional sampling scheme for rare species. 
 ---
 
-
 ## prepare data
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -21,6 +20,7 @@ knitr::opts_chunk$set(
 Load the required packages. 
 
 ```{r required packages, message=FALSE}
+#remotes::install_github('sagesteppe/safeHavens')
 library(safeHavens)
 library(ggplot2)
 library(patchwork)
@@ -199,7 +199,6 @@ Run parameters are saved in the settings element.
 head(geo_res$settings)
 ```
 
-
 ### visualize the selection results
 
 ```{r first selection of target sites}
@@ -295,10 +294,10 @@ test_data <- list(
 
 st <- system.time( 
   {
-    env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+    env_res <- maximizeDispersion(  ## reduce some parameters for shorter run time.
       input_data = test_data,
       n_sites = 10,
-      lambda_var = 0.1,
+      lambda_var = 0.05,
       weight_1 = 0.1, 
       weight_2 = 0.9,
       n_bootstrap = 99, # considerably slower function!!!
@@ -348,6 +347,8 @@ map +
 
 In the example above we use a point at the median geographic center of the populations. 
 
+We can also identify the population which is *most* near the highest density of populations. 
+Intuitively, this would be suggested as a population with a very high genetic diversity.  
 
 ```{r required point method - population centroid - heat map}
 dens <- with(df, MASS::kde2d(lon, lat, n = 200))
@@ -360,6 +361,7 @@ pop_centered_id <- which.min(rowSums(abs(pops_centre^2)))
 rm(dens, max_idx, max_point, pops_centre)
 ```
 
+Likewise we can identify the *population* which is most near the 'center' of the environmental variable space. 
 
 ```{r required point method - environmental centroid}
 env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
@@ -398,7 +400,7 @@ map +
 rm(env_centered_id, env_centered, pop_centered_id)
 ```
 
-Using these three centers will give results like below 
+Using these three centers will give results as below 
 
 ```{r run multi required sites and plot}
 test_data$sites$required[centers$site_id] <- TRUE
@@ -431,8 +433,21 @@ map +
 rm(centers)
 ```
 
-
 ## show differences in lambda parameters
+
+`maximizeDispersion` optimizes on two parameters. 
+The first if seeking to maximize the distance between selected populations. 
+If this optimizer runs alone ($\lambda$ = 0.0), it results in *only* drawing a set of populations along the margin of the species. 
+By introducting a regularization term ($\lambda$), a balance of optimizing distance, with also decreasing the variance between points is achieved. 
+
+Theoretically maintaining a low $\lambda$ helps maximize the geographic coverage of populations at a small sample size. 
+However, we find that the best selection of populations are likely to come from a two-stage approach. 
+One where a user specifies the:
+  - 1) required sites, 
+  - 2) runs the algorithm to indentify 'fringing' sites, which may have more allelic diversity, 
+  - 3) subjectively placing a couple sites across the range as they see fit. 
+
+However, I believe that grid-based approaches may still be the most suitable for most practicioners situations. 
 
 ```{r}
 lambda_viewer <- function(lambda_val){
@@ -458,17 +473,21 @@ lambda_viewer <- function(lambda_val){
         color = selected
         )
       ) +
-    labs(title = paste('lambda: ', lambda_val))
+    labs(title = paste('lambda: ', lambda_val), x = NULL, y = NULL)
 
 }
 
-lambda_view <- lapply(c(0, 0.025, 0.05, 0.075, 0.1, 0.15), lambda_viewer)
+lambda_view <- lapply(c(0, 0.025, 0.05, 0.075, 0.1, 100), lambda_viewer)
 
 lambda_view[[1]] + lambda_view[[2]] + lambda_view[[3]] + 
   lambda_view[[4]]  +  lambda_view[[5]] + lambda_view[[6]] + 
   plot_layout(ncol = 3)
+
+rm(lambda_view, lambda_viewer, map)
 ```
 
-```{r}
+## closing thoughts
 
-```
+This approach is highly experimental. 
+Small permutations in lambda may lead to large differences in the nature of results. 
+Further, results are often 'ring like', a consequence of both maximizing distance between sites while minimizing variance. 
