@@ -1,58 +1,3 @@
-#' Ensure that both geographic and climatic distances are in 3D array format
-#' @keywords internal
-#' @noRd
-coerce_to_3d_array <- function(distances, n_sites) {
-  if (is.null(distances)) {
-    stop("'distances' is NULL")
-  }
-  # vector
-  if (
-    is.atomic(distances) &&
-    is.vector(distances) &&
-    !is.list(distances) &&
-    !is.matrix(distances) &&
-    !is.array(distances)
-  ) {
-    if (length(distances) == n_sites * n_sites) {
-      mat <- matrix(as.numeric(distances), nrow = n_sites, ncol = n_sites)
-      return(array(mat, dim = c(n_sites, n_sites, 1)))
-    } else {
-      stop(sprintf(
-        "distance vector length %d doesn't match %d sites (expected %d)",
-        length(distances),
-        n_sites,
-        n_sites * n_sites
-      ))
-    }
-  }
-  
-  # matrix
-  if (is.matrix(distances)) {
-    if (nrow(distances) != n_sites || ncol(distances) != n_sites) {
-      stop("distance matrix dims != n_sites")
-    }
-    return(array(as.numeric(distances), dim = c(n_sites, n_sites, 1)))
-  }
-  # array
-  if (is.array(distances)) {
-    dims <- dim(distances)
-    if (length(dims) == 2) {
-      if (dims[1] != n_sites || dims[2] != n_sites) {
-        stop("2D array dims mismatch")
-      }
-      return(array(as.numeric(distances), dim = c(n_sites, n_sites, 1)))
-    } else if (length(dims) == 3) {
-      if (dims[1] != n_sites || dims[2] != n_sites) {
-        stop("3D array dims mismatch")
-      }
-      return(distances)
-    } else {
-      stop("distances array must be 2D or 3D")
-    }
-  }
-  stop("Unsupported 'distances' type")
-}
-
 #' Jitter coordinates based on uncertainty (in meters)
 #' @keywords internal
 #' @noRd
@@ -81,14 +26,9 @@ jitter_coords <- function(lat, lon, uncertainty_m) {
 #' @keywords internal
 #' @noRd
 update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_models = NULL, use_model = FALSE) {
-  n <- nrow(sites_df)
-  dist_arr <- coerce_to_3d_array(distances, n)
-  K <- dim(dist_arr)[3]
-  dist_boot <- array(dist_arr, dim = c(n, n, K))
-  coords_boot <- data.frame(
-    lat = sites_df$lat,
-    lon = sites_df$lon
-  )
+
+  dist_boot <- distances
+  coords_boot <- sites_df[c('lat', 'lon')]
   
   if (length(uncertain_idx) > 0) {
     j <- jitter_coords(
@@ -98,141 +38,26 @@ update_distances_jitter <- function(distances, sites_df, uncertain_idx, env_mode
     )
 
     # only replace if jitter returned non-empty output
-    if (length(j$lat) > 0) {
+  if (length(j$lat) > 0) {
       coords_boot$lat[uncertain_idx] <- j$lat
       coords_boot$lon[uncertain_idx] <- j$lon
     }
   }
-
     # recompute primary distance matrix
     for (i in uncertain_idx) {
-      for (j in seq_len(n)) {
+      for (j in seq_len(nrow(sites_df))) {
         d <- greatCircleDistance(
           coords_boot$lat[i],
           coords_boot$lon[i],
           coords_boot$lat[j],
           coords_boot$lon[j]
         )
-        dist_boot[i, j, 1] <- d
-        dist_boot[j, i, 1] <- d
+        dist_boot[i, j] <- d
+        dist_boot[j, i] <- d
       }
     }
   
-      # update other layers conditionally
-  if (K >= 2 && length(uncertain_idx) > 0) {
-    for (k in 2:K) {
-      if (use_model && !is.null(env_models) && !is.null(env_models[[k]])) {
-        fit <- env_models[[k]]
-        for (i in uncertain_idx) {
-          for (j in seq_len(n)) {
-            new_geo <- dist_boot[i, j, 1]
-            # predict via the linear model (conditional expectation)
-            pred_env <- stats::predict(fit, newdata = data.frame(geo_vec = new_geo))
-            # make sure prediction is finite
-            if (!is.finite(pred_env)) {
-              pred_env <- dist_boot[i, j, k]  # fallback to original
-            }
-            dist_boot[i, j, k] <- pred_env
-            dist_boot[j, i, k] <- pred_env
-          }
-        }
-      } else {
-        # small-n fallback: small multiplicative jitter (~2.5%)
-        for (i in uncertain_idx) {
-          jitter_factor <- stats::rnorm(1, mean = 1, sd = 0.025)
-          dist_boot[i, , k] <- dist_boot[i, , k] * jitter_factor
-          dist_boot[, i, k] <- dist_boot[, i, k] * jitter_factor
-        }
-      }
-    }
-  }
   dist_boot
-}
-
-# Greedy initialization
-#' @keywords internal
-#' @noRd
-greedy_initialize <- function(
-    dist_matrix,
-    n_sites,
-    seeds = integer(0),
-    objective = "sum"
-) {
-  n_total <- nrow(dist_matrix)
-  selected <- as.integer(seeds)
-  if (length(selected) > n_sites) {
-    selected <- selected[1:n_sites]
-  }
-  candidates <- setdiff(seq_len(n_total), selected)
-  
-  while (length(selected) < n_sites && length(candidates) > 0) {
-    best_site <- NULL
-    best_obj <- -Inf
-    for (site in candidates) {
-      test_selected <- c(selected, site)
-      if (objective == "sum") {
-        obj <- calc_objective_sum(dist_matrix, as.integer(test_selected))
-      } else {
-        obj <- calc_objective_maxmin(dist_matrix, as.integer(test_selected))
-      }
-      if (obj > best_obj) {
-        best_obj <- obj
-        best_site <- site
-      }
-    }
-    if (is.null(best_site)) {
-      break
-    }
-    selected <- c(selected, best_site)
-    candidates <- setdiff(candidates, best_site)
-  }
-  as.integer(selected)
-}
-
-# Variance-penalized sum objective
-#' @keywords internal
-#' @noRd
-calc_objective_sum_var <- function(dist_mat, selected, lambda_var) {
-  n <- length(selected)
-  if (n < 2) {
-    return(0)
-  }
-  
-  dists <- dist_mat[selected, selected]
-  dists <- dists[lower.tri(dists)]
-  
-  obj_disp <- sum(dists)
-  obj_var <- if (length(dists) >= 2) -var(dists) else 0
-  
-  return(obj_disp + lambda_var * obj_var)
-}
-
-# Wrapper for greedy initialization using new objective
-#' @keywords internal
-#' @noRd
-greedy_initialize_var <- function(dist_matrix, n_sites, seeds, lambda_var) {
-  n_total <- nrow(dist_matrix)
-  selected <- seeds
-  candidates <- setdiff(1:n_total, seeds)
-  
-  while (length(selected) < n_sites && length(candidates) > 0) {
-    best_site <- NULL
-    best_obj <- -Inf
-    
-    for (site in candidates) {
-      test_selected <- c(selected, site)
-      obj <- calc_objective_sum_var(dist_matrix, test_selected, lambda_var)
-      if (obj > best_obj) {
-        best_obj <- obj
-        best_site <- site
-      }
-    }
-    
-    selected <- c(selected, best_site)
-    candidates <- setdiff(candidates, best_site)
-  }
-  
-  return(as.integer(selected))
 }
 
 #' Haversine Distance Calculation
@@ -298,22 +123,13 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #'
 #'
 #' @param input_data A list with two elements: 'distances' (distance matrix or array) and 'sites' (data frame of site metadata).
-#' @param lambda_var Essentially a smoothing parameter that controls the trade-off between maximizing dispersion and minimizing variance in pairwise distances among selected sites.
-#' higher values prioritize variance reduction more strongly.
-#' We recommend checking stops between 0.01 and 0.15 to see what works best for your data.
-#' Also check up at 0.5+, when getting started, to get a feel for how strong the variance reduction penalization can become. 
 #' @param n_sites The number of sites which you want to select for priority collection.
 #' Note that the results will return a rank of prioritization for all sites in the data.
-#' @param weight_1 Weights for combining multiple distance matrices (if provided).
-#' weight_1 is for the *geographic distance* matrix
-#' @param weight_2 Weights for combining multiple distance matrices (if provided).
-#' weight_2 is for the *climatic distance* matrix (if provided).
 #' @param n_bootstrap Number of bootstrap replicates to perform.
 #' @param dropout_prob Probability of dropping non-seed sites in each bootstrap replicate.
 #' @param objective Objective function to optimize: "sum" (dispersion sum with variance penalty) or "maxmin" (maximize minimum distance).
 #' @param n_local_search_iter Number of local search iterations per restart.
 #' @param n_restarts Number of random restarts per bootstrap replicate.
-#' @param seed Random seed for reproducibility.
 #' @param verbose Whether to print progress information. Will print a message on run settings, and a progress bar for the bootstraps.
 #' @examples \dontrun{
 #' 
@@ -401,22 +217,14 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 #' @export
 maximizeDispersion <- function(
     input_data,
-    lambda_var = 0.15,
     n_sites = 5,
-    weight_1 = 1.0,
-    weight_2 = 0.0,
     n_bootstrap = 999,
     dropout_prob = 0.15,
-    objective = c("sum", "maxmin"),
     n_local_search_iter = 100,
     n_restarts = 3,
     seed = NULL,
     verbose = TRUE
 ) {
-  objective <- match.arg(objective)
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
   
   distances <- input_data$distances
   sites_df <- input_data$sites
@@ -425,17 +233,6 @@ maximizeDispersion <- function(
   
   if (n_total <= 0) {
     stop("No sites provided")
-  }
-  
-  # coerce to 3D
-  distances <- coerce_to_3d_array(distances, n_total)
-  K <- dim(distances)[3]
-
-  
-  # combine first two matrices by weights
-  dist_combined <- distances[,, 1] * weight_1
-  if (dim(distances)[3] >= 2 && weight_2 > 0) {
-    dist_combined <- dist_combined + distances[,, 2] * weight_2
   }
   
   # set up matrix so that only non-required sites can be dropped from the permutations.

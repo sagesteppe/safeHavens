@@ -25,13 +25,13 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
     }
     samp <- samp + 1
   } 
-  pts <- pts[sample(1:nrow(pts), size = 100, replace = F), ]
+  pts <- pts[sample(1:nrow(pts), size = 100, replace = FALSE), ]
   rm(samp)
   
   if(nrow(neighb_grid)==1){
     pts$Assigned <- sf::st_drop_geometry(neighb_grid$ID)} else {
       
-      # identify the nearest neighbor which the points can be assigned to. 
+      # identify the nearest neighbor that the points can be assigned to. 
       # we use these to determine what are the 'neediest' neighbors and assign them 
       # points first 
       pts$nf <- sf::st_nearest_feature(pts, neighb_grid) 
