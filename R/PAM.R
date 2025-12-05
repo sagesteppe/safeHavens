@@ -212,6 +212,7 @@ maximizeDispersion <- function(
   # Bootstrap loop
   pb <- utils::txtProgressBar(min = 0, max = n_bootstrap, style = 3)
   
+  
   for (b in seq_len(n_bootstrap)) {
     
     # sub-sample the data for the bootstrap. 
@@ -385,18 +386,6 @@ run_bootstrap_iteration <- function(
     dist_boot <- distances
   }
   
-# Single bootstrap iteration
-  run_bootstrap_iteration(
-    distances,
-    sites_df,
-    n_sites,
-    seeds,
-    available_sites,
-    uncertain_idx,
-    n_local_search_iter,
-    n_restarts
-) {
-  
   # Jitter distances if there are uncertain coordinates
   if (length(uncertain_idx) > 0) {
     dist_boot <- update_distances_jitter(
@@ -439,64 +428,7 @@ run_bootstrap_iteration <- function(
     solution = best_solution,
     objective = best_objective
   )
-}
-  best_solution <- NULL
-  best_objective <- -Inf
-  
-  # Multi-restart optimization
-  for (restart in seq_len(n_restarts)) {
 
-    # filter sites for opportunities.
-    available_idx <- available_sites
-    dist_boot_filtered <- dist_boot[available_idx, available_idx, drop = FALSE]
-
-    seeds_in_filtered <- which(available_idx %in% seeds)
-
-    pam_result <- pam_fixed(
-      dist_matrix = dist_boot_filtered,
-      k = n_sites,
-      fixed_ids = seeds_in_filtered
-    )
-    current_solution <- available_idx[pam_result$medoids]
-    current_objective <- -pam_result$total_cost 
-    
-    # Track best across restarts
-    if (current_objective > best_objective) {
-      best_solution <- current_solution
-      best_objective <- current_objective
-    }
-  }
-
-  list(
-    solution = best_solution,
-    objective = best_objective
-  )
-}
-
-
-
-function()
-    distances,
-    sites_df,
-    n_sites,
-    seeds,
-    available_sites,
-    uncertain_idx,
-    n_local_search_iter,
-    n_restarts
-) {
-  
-  # Jitter distances if there are uncertain coordinates
-  if (length(uncertain_idx) > 0) {
-    dist_boot <- update_distances_jitter(
-      distances,
-      sites_df,
-      uncertain_idx
-    )
-  } else {
-    dist_boot <- distances
-  }
-  
   best_solution <- NULL
   best_objective <- -Inf
   
