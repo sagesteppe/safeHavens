@@ -2,6 +2,14 @@
 set.seed(20)
 library(ggplot2)
 
+
+13 / sum(0.4, 0.3, 0.2, 0.1)
+
+sapply(c(0.4, 0.3, 0.2, 0.1), FUN = function(x){x*15})
+
+
+sapply(c(0.4, 0.3, 0.2, 0.1), function(x){ round(x * 13)})
+
 n_sites <- 50 # number of known populations
 df <- data.frame(
   site_id = seq_len(n_sites),
@@ -571,3 +579,4 @@ pam_fixed <- function(dist_matrix, k, fixed_ids) {
     total_cost = get_cost(medoids)
   )
 }
+

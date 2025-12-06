@@ -38,6 +38,7 @@ articles:
     - About
     - GettingStarted
     - SpeciesDistributionModels
+    - pSTZEcoregionSampling
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
     contents: 
