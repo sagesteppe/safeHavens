@@ -144,16 +144,19 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
   }
   
   if (n == n_zones) {
+
     # one sample per zone  ; pick the largest polygon in each zone
     result <- pstz_sub %>%
       dplyr::group_by(!!sym(pstz_key)) %>%
       dplyr::slice_max(order_by = poly_area, n = 1) %>%
-      dplyr::ungroup()
+      dplyr::ungroup() |> 
+      dplyr::mutate(allocation = 1, .before = 'geometry')
+
     return(result)
   }
   
   if (n < n_zones) {
-    # need to select a subset of zones (n of them), then one polygon per selected zone
+    
     ranked <- rank_zones(zone_summary, decrease_method)
     selected <- ranked[1:n, ][[pstz_key]]
     
@@ -161,40 +164,25 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
       dplyr::filter(.data[[pstz_key]] %in% selected) %>%
       dplyr::group_by(!!sym(pstz_key)) %>%
       dplyr::slice_max(order_by = poly_area, n = 1) %>%
+      dplyr::mutate(allocation = 1, .before = 'geometry') |> 
       dplyr::ungroup()
     
     return(result)
-  }
+  }  else  { # n > n_zones
   
-  # case: n > n_zones → assign multiple samples per zone
-  # strategy: assign one per zone, then assign the remainder to zones in descending polygon-size
-  base <- rep(1, n_zones)
-  remainder <- n - n_zones
-  
-  ranked <- rank_zones(zone_summary, increase_method)
-  # distribute extra: give +1 to top zones until remainder used up
-  extra <- rep(0, n_zones)
-  extra[1:remainder] <- 1
-  allocation <- tibble(
-    !!pstz_key := ranked[[pstz_key]],
-    n_alloc = base + extra
-  )
-  
-  # now for each zone, sample n_alloc polygons, selecting largest first (or fewer if zone has fewer)
-  out_list <- list()
-  for (i in seq_len(nrow(allocation))) {
-    zone_i <- allocation[[pstz_key]][i]
-    how_many <- allocation$n_alloc[i]
-    polys <- pstz_sub %>% filter(.data[[pstz_key]] == zone_i)
-    # if fewer polygons than allocate, just take them all (or sample duplicates? probably not)
-    take_n <- min(nrow(polys), how_many)
-    chosen <- polys %>%
-      dplyr::slice_max(order_by = poly_area, n = take_n)
-    out_list[[i]] <- chosen
-  }
-  
-  result <- do.call(rbind, out_list)
-  return(result)
+    # case: n > n_zones → assign multiple samples per zone
+    # strategy: assign one per zone, then assign the remainder to zones in descending polygon-size
+    result <- allocate_increase(
+      zone_summary = zone_summary,
+      pstz_sub = pstz_sub,
+      pstz_key = pstz_key,
+      requested = n,
+      method = increase_method,
+      warmest_col = warmest_col,
+      precip_col = precip_col
+    )
+    return(result)
+    }
 }
 
 
@@ -228,33 +216,185 @@ pstz = data.frame(
 
 bp <- ggplot2::ggplot(x) + 
   geom_sf(fill = NA, lwd = 2) + 
-  geom_sf(data = pstz, aes(fill = pstz_key))
+  geom_sf(data = pstz, aes(fill = pstz_key)) 
 
-bp
-
-# Example call #1: request number of samples == number of zones overlapping -> one per zone
-res1 <- sample_pstz(x = x, n = 10, pstz = pstz, pstz_key = "pstz_key",
-                    decrease_method = "Largest", increase_method = "Largest")
-print(res1) 
-
-bp + #  should pick the n largest zones overlapping species range
-  geom_sf(data = res1, alpha = 0.9)
-
-# Example call #2: request fewer samples than zones -> subset zones by method
-res2 <- sample_pstz(x = x, n = 5, pstz = pstz, pstz_key = "pstz_key",
-                    decrease_method = "Smallest", increase_method = "Largest")
-print(res2)  # picks the smallest overlapping zone
-
-bp + # picks, the two smallest zones. 
-  geom_sf(data = res2, alpha = 0.9)
-
-# Example call #3: request more samples than zones -> allocate extras
-res3 <- sample_pstz(x = x, n = 15, pstz = pstz, pstz_key = "pstz_key",
-                    decrease_method = "Largest", increase_method = "Largest")
-print(res3)  
+bp + 
+  geom_sf_label(data = pstz,aes(label = pstz_key))
 
 
+# Example call #1: request number of samples == number 
 
+###################################################################### --- SUCCESS 
+# example #1: request same numer of samples as zones - all zones returned. 
+res1 <- sample_pstz(
+  x = x, 
+  n = length(unique(pstz[['pstz_key']])), 
+  pstz = pstz, pstz_key = "pstz_key",
+  increase_method = "Most"
+)
+
+bp +
+  geom_sf(data = res1, alpha = 0.9) + 
+  geom_sf_label(data = pstz,aes(label = pstz_key)) 
+
+## note that we get the largest polygon from EACH group to sample from. 
+
+##################################################################### --- SUCCESS
+# Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
+
+res2 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
+
+res2 |>
+  group_by(pstz_key) |>
+  mutate(total_area = sum(poly_area)) |>
+  sf::st_drop_geometry() |>
+  arrange(-total_area)|>
+  knitr::kable()
+
+bp + # picks, the two largest ## BUT NEED OT INVERT THE MASK 
+  geom_sf(data = res2, alpha = 0.9) + 
+  geom_sf_label(data = pstz,aes(label = pstz_key))
+
+
+####################################################################### -- SUCCESS 
+# Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
+res3 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Smallest")
+
+res3 |>
+  group_by(pstz_key) |>
+  mutate(total_area = sum(poly_area)) |>
+  sf::st_drop_geometry() |>
+  arrange(total_area) |>
+  knitr::kable()
+
+## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
+
+bp + # picks, the n smallest
+  geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
+  geom_sf_label(data = pstz, aes(label = pstz_key)) 
+
+
+####################################################################
+# Example #4: request more samples than zones -> allocate extras to Largest pSTZs
+
+## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
+## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
+# the two will generally behave similarly on contrived examples. 
+res4 <- sample_pstz(x = x, n = 12, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
+  
+res4 |>
+  group_by(pstz_key) |>
+  summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
+  sf::st_drop_geometry() |>
+  arrange(-total_area) |>
+  knitr::kable()
+
+bp + 
+  theme(legend.position = 'none') + 
+  geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
+  geom_sf_label(data = res4, aes(label = allocation)) 
+
+
+####################################################################
+# Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
+res5 <- sample_pstz(x = x, n = 14, pstz = pstz, pstz_key = "pstz_key", increase_method = "Most")
+  
+res5 |>
+  group_by(pstz_key) |>
+  summarize(Count = n(), Total_Allocation = sum(allocation)) |>
+  sf::st_drop_geometry() |>
+  arrange(-Count) |>
+  knitr::kable()
+
+
+
+
+
+
+
+allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
+                              requested, method,
+                              warmest_col = NULL, precip_col = NULL) {
+
+  # ensure matching types
+  if (!identical(class(pstz_sub[[pstz_key]]), class(zone_summary[[pstz_key]]))) {
+    zone_summary[[pstz_key]] <- as.character(zone_summary[[pstz_key]])
+    pstz_sub[[pstz_key]] <- as.character(pstz_sub[[pstz_key]])
+  }
+
+  n_zones <- nrow(zone_summary)
+  if (n_zones == 0) return(NULL)
+
+  allocation_counts <- rep(1, n_zones)  # start with 1 per zone
+  remainder <- requested - n_zones      # remaining points to distribute
+
+  if (remainder > 0) {
+    if (method %in% c("Largest", "Smallest")) {
+
+      # compute proportional allocation based on total_area_m2
+      allocation_counts <- allocation_counts +
+        proportional_round(
+          values = zone_summary$total_area_m2,
+          target_sum = remainder,
+          method = ifelse(method == "Largest", "larger_up", "larger_down")
+        )
+    } else if (method == "Most") {
+      ranked <- dplyr::arrange(zone_summary, dplyr::desc(Polygon_ct))
+      allocation_counts <- allocation_counts + rep(0, n_zones)  # base 1 + distribute remainder by rank
+      allocation_counts[1:remainder] <- allocation_counts[1:remainder] + 1
+
+    } else if (method == "Assist-warm") {
+      ranked <- dplyr::arrange(zone_summary, dplyr::desc(!!sym(warmest_col)))
+      allocation_counts <- allocation_counts[order(zone_summary[[pstz_key]] %in% ranked[[pstz_key]])]
+      allocation_counts[1:remainder] <- allocation_counts[1:remainder] + 1
+
+    } else if (method == "Assist-drier") {
+      ranked <- dplyr::arrange(zone_summary, !!sym(precip_col))
+      allocation_counts[1:remainder] <- allocation_counts[1:remainder] + 1
+
+    } else {
+      stop("Unknown increase_method: ", method)
+    }
+  }
+
+  allocation <- tibble(
+    !!pstz_key := zone_summary[[pstz_key]],
+    n_alloc = allocation_counts
+  )
+
+  # distribute points across polygons per zone
+  out_list <- vector("list", n_zones)
+  for (i in seq_len(n_zones)) {
+    zone_i <- allocation[[pstz_key]][i]
+    points_to_assign <- allocation$n_alloc[i]
+
+    polys <- pstz_sub %>% dplyr::filter(.data[[pstz_key]] == zone_i)
+    n_polys <- nrow(polys)
+    if (n_polys == 0) next
+
+    base_poly <- points_to_assign %/% n_polys
+    remainder_poly <- points_to_assign %% n_polys
+    poly_alloc <- base_poly + c(rep(1, remainder_poly), rep(0, n_polys - remainder_poly))
+
+    polys <- polys %>% dplyr::mutate(allocation = poly_alloc)
+    out_list[[i]] <- polys
+  }
+
+  result <- do.call(rbind, out_list)
+  return(result)
+}
+
+
+
+
+
+
+
+
+
+
+
+library(magrittr)
 
 
 
@@ -327,15 +467,10 @@ split_cols <- function(dat, y, sep = '-'){
   )
 }
 
-temps <- unlist_cols(df, 'Tmin_class')
-moisure <- unlist_cols(df, 'AHM_class')
+temps <- split_cols(df, 'Tmin_class')
+moisure <- split_cols(df, 'AHM_class')
 
 
-
-## sort by temperature, or moisture, 
-order ( temps[['upper']] ) ## ascending , i.e. coolest to warmest
-order ( temps[['upper']], decreasing = TRUE) ## warmest to coolest. 
- 
 
 
 ## method for splitting points, when requested > zones. each stz gets one point + remainder
@@ -345,7 +480,7 @@ n_zones <- 8
 collections <- rep(0, n_zones)
 
 base_amount <- requested %/% n_zones  # 1 divide, each elements get at least these. 
-remainder <- requested %% n_zones      # these many accensions remain to be allocated. 
+remainder <- requested %% n_zones      # these many accessions remain to be allocated. 
 collections <- base_amount + # all get the base
   c(rep(1, remainder), rep(0, n_zones - remainder)) # the first few records get + 1, the others get no additional points
 
@@ -367,7 +502,7 @@ collections <- base_amount + # all get the base
 proportional_round <- function(values, target_sum, method = c("larger_up", "larger_down")) {
   method <- match.arg(method)
   
-  proportions <- values / sum(values)
+  proportions <- as.numeric( values / sum(values))
   ideal <- proportions * target_sum
   
   if (method == "larger_up") {
@@ -398,10 +533,6 @@ proportional_round <- function(values, target_sum, method = c("larger_up", "larg
 
 
 
-
-
-
-
 ## increase method - less points requested than regions exist... 
 requested = 4 
 v = c(0.4, 0.3, 0.2, 0.1, 0.1)
@@ -411,4 +542,4 @@ length(v)
 v [ order(v, decreasing = T)[seq_len(requested)] ]
 
 ## option 3, select from the smallest to largest, as possible
-  v [ order(v) [seq_len(requested)] ]
+v [ order(v) [seq_len(requested)] ]
