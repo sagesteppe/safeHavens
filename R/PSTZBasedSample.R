@@ -29,126 +29,128 @@
 #' @param warmest_col Character. Name of the variable with the information regarding WARMEST ... 
 #' @param precip_range Character. Name of the variable with the information regarding COLEST ... 
 #' @param group_col Character. Name of the grouping variable which identifies the unique pstzs. 
-#' @examples 
+#' @examples \dontrun{
+#' library(tidyverse)
+#'
+#' # define a square species-range
 #' 
-# define a square species-range
-
-set.seed(23)
-
-sr_mat <- rbind(
-  c(0,0), c(10,0), c(10,10), c(0,10), c(0,0)
-)
-sr_poly <- sf::st_polygon(list(sr_mat))
-x <- sf::st_sf(id = 1, geometry = sf::st_sfc(sr_poly))
-
-rm(sr_mat, sr_poly)
-
-pstz = data.frame(
-  x = runif(10, min = -2, max = 12),
-  y = runif(10, min = -2, max = 12)
-) |>
-  sf::st_as_sf(coords = c('x', 'y')) |>
-  sf::st_union() |>
-  sf::st_voronoi() |>
-  sf::st_collection_extract('POLYGON') |>
-  sf::st_as_sf() |>
-  dplyr::mutate(pstz_key = sample(LETTERS[1:7], size = 10, replace = T)) |>
-  dplyr::rename('geometry' = x) |>
-  sf::st_crop(x)
-
-bp <- ggplot2::ggplot(x) + 
-  geom_sf(fill = NA, lwd = 2) + 
-  geom_sf(data = pstz, aes(fill = pstz_key)) 
-
-bp + 
-  geom_sf_label(data = pstz,aes(label = pstz_key))
-
-
-# Example call #1: request number of samples == number 
-
-###################################################################### --- SUCCESS 
-# example #1: request same numer of samples as zones - all zones returned. 
-res1 <- sample_pstz(
-  x = x, 
-  n = length(unique(pstz[['pstz_key']])), 
-  pstz = pstz, pstz_key = "pstz_key",
-  increase_method = "Most"
-)
-
-bp +
-  geom_sf(data = res1, alpha = 0.9) + 
-  geom_sf_label(data = pstz,aes(label = pstz_key)) 
-
-
-## note that we get the largest polygon from EACH group to sample from. 
-
-##################################################################### --- SUCCESS
-# Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
-
-res2 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
-
-res2 |>
-  group_by(pstz_key) |>
-  mutate(total_area = sum(poly_area)) |>
-  sf::st_drop_geometry() |>
-  arrange(-total_area)|>
-  knitr::kable()
-
-bp + # picks, the two largest ## BUT NEED OT INVERT THE MASK 
-  geom_sf(data = res2, alpha = 0.9) + 
-  geom_sf_label(data = pstz,aes(label = pstz_key))
-
-
-####################################################################### -- SUCCESS 
-# Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
-res3 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Smallest")
-
-res3 |>
-  group_by(pstz_key) |>
-  mutate(total_area = sum(poly_area)) |>
-  sf::st_drop_geometry() |>
-  arrange(total_area) |>
-  knitr::kable()
-
-## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
-
-bp + # picks, the n smallest
-  geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
-  geom_sf_label(data = pstz, aes(label = pstz_key)) 
-
-
-####################################################################
-# Example #4: request more samples than zones -> allocate extras to Largest pSTZs
-
-## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
-## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
-# the two will generally behave similarly on contrived examples. 
-res4 <- sample_pstz(x = x, n = 12, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
-  
-res4 |>
-  group_by(pstz_key) |>
-  summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
-  sf::st_drop_geometry() |>
-  arrange(-total_area) |>
-  knitr::kable()
-
-bp + 
-  theme(legend.position = 'none') + 
-  geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
-  geom_sf_label(data = res4, aes(label = allocation)) 
-
-
+#' set.seed(23)
 #' 
+#' sr_mat <- rbind(
+#'   c(0,0), c(10,0), c(10,10), c(0,10), c(0,0)
+#' )
+#' sr_poly <- sf::st_polygon(list(sr_mat))
+#' x <- sf::st_sf(id = 1, geometry = sf::st_sfc(sr_poly))
+#' 
+#' rm(sr_mat, sr_poly)
+#' 
+#' pstz = data.frame(
+#'   x = runif(10, min = -2, max = 12),
+#'   y = runif(10, min = -2, max = 12)
+#' ) |>
+#'   sf::st_as_sf(coords = c('x', 'y')) |>
+#'   sf::st_union() |>
+#'   sf::st_voronoi() |>
+#'   sf::st_collection_extract('POLYGON') |>
+#'   sf::st_as_sf() |>
+#'   dplyr::mutate(pstz_key = sample(LETTERS[1:7], size = 10, replace = T)) |>
+#'   dplyr::rename('geometry' = x) |>
+#'   sf::st_crop(x)
+#' 
+#' bp <- ggplot2::ggplot(x) + 
+#'   geom_sf(fill = NA, lwd = 2) + 
+#'   geom_sf(data = pstz, aes(fill = pstz_key)) 
+#' 
+#' bp + 
+#'   geom_sf_label(data = pstz,aes(label = pstz_key))
+#' 
+#' 
+#' # Example call #1: request number of samples == number 
+#' 
+#' ###################################################################### --- SUCCESS 
+#' # example #1: request same numer of samples as zones - all zones returned. 
+#' res1 <- sample_pstz(
+#'   x = x, 
+#'   n = length(unique(pstz[['pstz_key']])), 
+#'   pstz = pstz, pstz_key = "pstz_key",
+#'   increase_method = "Most"
+#' )
+#' 
+#' bp +
+#'   geom_sf(data = res1, alpha = 0.9) + 
+#'   geom_sf_label(data = pstz,aes(label = pstz_key)) 
+#' 
+#' ## note that we get the largest polygon from EACH group to sample from. 
+#' 
+#' ##################################################################### --- SUCCESS
+#' # Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
+#' 
+#' res2 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
+#' 
+#' res2 |>
+#'   group_by(pstz_key) |>
+#'   mutate(total_area = sum(poly_area)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(-total_area)|>
+#'   knitr::kable()
+#' 
+#' bp + # picks, the two largest ## BUT NEED OT INVERT THE MASK 
+#'   geom_sf(data = res2, alpha = 0.9) + 
+#'   geom_sf_label(data = pstz,aes(label = pstz_key))
+#' 
+#' 
+#' ####################################################################### -- SUCCESS 
+#' # Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
+#' res3 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Smallest")
+#' 
+#' res3 |>
+#'   group_by(pstz_key) |>
+#'   mutate(total_area = sum(poly_area)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(total_area) |>
+#'   knitr::kable()
+#' 
+#' ## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
+#' 
+#' bp + # picks, the n smallest
+#'   geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
+#'   geom_sf_label(data = pstz, aes(label = pstz_key)) 
+#' 
+#' 
+#' ####################################################################
+#' # Example #4: request more samples than zones -> allocate extras to Largest pSTZs
+#' 
+#' ## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
+#' ## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
+#' # the two will generally behave similarly on contrived examples. 
+#' res4 <- sample_pstz(x = x, n = 12, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
+#'   
+#' res4 |>
+#'   group_by(pstz_key) |>
+#'   summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(-total_area) |>
+#'   knitr::kable()
+#' 
+#' bp + 
+#'   theme(legend.position = 'none') + 
+#'   geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
+#'   geom_sf_label(data = res4, aes(label = allocation)) 
+#' 
+#' 
+#' ####################################################################
+#' # Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
+#' res5 <- sample_pstz(x = x, n = 14, pstz = pstz, pstz_key = "pstz_key", increase_method = "Most")
+#'   
+#' res5 |>
+#'   group_by(pstz_key) |>
+#'   summarize(Count = n(), Total_Allocation = sum(allocation)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(-Count) |>
+#'   knitr::kable()
+#' 
+#' }
 #' @export
-#' 
-#' 
-#' 
-#' 
-#' 
-#' 
-#' 
-#' 
-#' 
 sample_pstz <- function(x, n = 20, pstz, pstz_key,
                         decrease_method = c("Largest","Smallest","Most","Assist-warm","Assist-drier"),
                         increase_method = c("Largest","Smallest","Most","Assist-warm","Assist-drier"),
@@ -198,7 +200,7 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
     return(NULL)
   }
   
-  # compute area for each polygon 
+  # compute area for each polygon (units: e.g. m^2 by default; convert to hectares or keep as is)
   pstz_sub <- pstz_sub %>%
     dplyr::mutate(poly_area = units::set_units(sf::st_area(geometry), "m^2"))
   
@@ -239,24 +241,6 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
   if (n_zones == 0) {
     warning("No seed zones overlapping range after intersection.")
     return(NULL)
-  }
-  
-  # Helper to rank zones based on method
-  rank_zones <- function(df, method) {
-    # df must contain total_area_m2, Polygon_ct, plus optionally climate columns
-    if (method == "Largest") {
-      dplyr::arrange(df, desc(total_area_m2))
-    } else if (method == "Smallest") {
-      dplyr::arrange(df, total_area_m2)
-    } else if (method == "Most") {
-      dplyr::arrange(df, desc(Polygon_ct))
-    } else if (method == "Assist-warm") {
-      dplyr::arrange(df, desc(.data[[warmest_col]]))
-    } else if (method == "Assist-drier") {
-      df %>% dplyr::arrange(.data[[precip_col]])  # assume smaller precip → drier
-    } else {
-      stop("Unknown method: ", method)
-    }
   }
   
   if (n == n_zones) {
@@ -301,54 +285,28 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
     }
 }
 
+# Helper to rank zones based on method
+#' @keywords internal
+#' @noRd
+rank_zones <- function(df, method) {
+  # df must contain total_area_m2, Polygon_ct, plus optionally climate columns
+  if (method == "Largest") {
+    dplyr::arrange(df, desc(total_area_m2))
+  } else if (method == "Smallest") {
+    dplyr::arrange(df, total_area_m2)
+  } else if (method == "Most") {
+    dplyr::arrange(df, desc(Polygon_ct))
+  } else if (method == "Assist-warm") {
+    dplyr::arrange(df, desc(.data[[warmest_col]]))
+  } else if (method == "Assist-drier") {
+    df %>% dplyr::arrange(.data[[precip_col]])  # assume smaller precip → drier
+  } else {
+    stop("Unknown method: ", method)
+  }
+}
 
-
-library(tidyverse)
-
-# define a square species-range
-
-set.seed(23)
-
-sr_mat <- rbind(
-  c(0,0), c(10,0), c(10,10), c(0,10), c(0,0)
-)
-sr_poly <- sf::st_polygon(list(sr_mat))
-x <- sf::st_sf(id = 1, geometry = sf::st_sfc(sr_poly))
-
-rm(sr_mat, sr_poly)
-
-pstz = data.frame(
-  x = runif(10, min = -2, max = 12),
-  y = runif(10, min = -2, max = 12)
-) |>
-  sf::st_as_sf(coords = c('x', 'y')) |>
-  sf::st_union() |>
-  sf::st_voronoi() |>
-  sf::st_collection_extract('POLYGON') |>
-  sf::st_as_sf() |>
-  dplyr::mutate(pstz_key = sample(LETTERS[1:7], size = 10, replace = T)) |>
-  dplyr::rename('geometry' = x) |>
-  sf::st_crop(x)
-
-bp <- ggplot2::ggplot(x) + 
-  geom_sf(fill = NA, lwd = 2) + 
-  geom_sf(data = pstz, aes(fill = pstz_key)) 
-
-bp + 
-  geom_sf_label(data = pstz,aes(label = pstz_key))
-
-####################################################################
-# Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
-res5 <- sample_pstz(x = x, n = 14, pstz = pstz, pstz_key = "pstz_key", increase_method = "Most")
-  
-res5 |>
-  group_by(pstz_key) |>
-  summarize(Count = n(), Total_Allocation = sum(allocation)) |>
-  sf::st_drop_geometry() |>
-  arrange(-Count) |>
-  knitr::kable()
-
-
+#' @keywords internal
+#' @noRd
 allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
                               requested, method,
                               warmest_col = NULL, precip_col = NULL) {
@@ -376,7 +334,6 @@ allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
           method = ifelse(method == "Largest", "larger_up", "larger_down")
         )
     } else if (method == "Most") {
-
       ranked <- dplyr::arrange(zone_summary, dplyr::desc(Polygon_ct))
       allocation_counts <- allocation_counts + rep(0, n_zones)  # base 1 + distribute remainder by rank
       allocation_counts[1:remainder] <- allocation_counts[1:remainder] + 1
@@ -421,20 +378,6 @@ allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
   result <- do.call(rbind, out_list)
   return(result)
 }
-
-
-
-
-clim_df <- split_cols(sf::st_drop_geometry(pstz), 'Tmin_class', sep = '-') %>%
-  dplyr::rename(Tmin_lower = lower, Tmin_upper = upper,
-                Tmin_median = median, Tmin_range = range)
-
-# (Optionally do the same for moisture / AHM / precip column.)
-
-# Then bind to pstz (or join by pstz_key):
-pstz2 <- pstz %>%
-  dplyr::bind_cols(clim_df)
-
 
 #' split and extract the temperature values from Tmin and AHM columns
 #' 
@@ -481,62 +424,6 @@ split_cols <- function(dat, y, sep = '-'){
     range = df[,2] - df[,1]
   )
 }
-
-
-
-
-
-
-most_sample <- function(zone_summary, requested, pstz_key){
-
-  ## need to get the no_zones in here. 
-  zs =  zone_summary %>%
-    dplyr::group_by(!!sym(pstz_key)) %>%
-    dplyr::arrange(desc(total_area_m2), .by_group = TRUE)
-
-  base_amount <- requested %/% n_zones  # 1 divide, each elements get at least these. 
-  remainder <- requested %% n_zones # these many accessions remain to be allocated. 
-  collections <- base_amount + # all get the base
-    c(rep(1, remainder), rep(0, n_zones - remainder)) 
-
-  names(collections) <- dplyr::distinct(zs, !!pstz_key)
-
-  zs <- zs |>
-    dplyr::mutate(
-      n_rows = dplyr::n(),
-      available = collections[zones[1]],
-      allocation = dplyr::case_when(
-        n_rows > available & row_number() <= available ~ 1,
-        n_rows > available & row_number() > available ~ 0,
-        n_rows <= available & row_number() == 1 ~ available - (n_rows - 1),
-        n_rows <= available & row_number() > 1 ~ 1
-      )
-    ) %>%
-    dplyr::ungroup() |>
-    dplyr::select(-n_rows, -available)
-
-}
-
-## method for splitting points, when requested > zones. each stz gets one point + remainder
-# this will result in the most even split between the number of points requested and the number of seed zones. 
-requested = 20
-n_zones <- 8
-
-needs_allocation <- data.frame(
-  zones = sample(LETTERS[1:8], size = 11, replace = T),
-  size = round(runif(11, min = 1, max  = 2), 3)
-) |>
-  group_by(zones) |>
-  arrange(desc(size), .by_group = TRUE)
-
-
-## function componenets. 
-base_amount <- requested %/% n_zones  # 1 divide, each elements get at least these. 
-remainder <- requested %% n_zones # these many accessions remain to be allocated. 
-collections <- base_amount + # all get the base
-  c(rep(1, remainder), rep(0, n_zones - remainder)) # the first few records get + 1, the others get no additional points
-
-names(collections) <- LETTERS[1:8]
 
 
 #' round values up or down, based on their relative size. 
