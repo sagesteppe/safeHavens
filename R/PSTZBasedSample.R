@@ -65,79 +65,6 @@
 #'   geom_sf_label(data = pstz,aes(label = pstz_key))
 #' 
 #' 
-#' # Example call #1: request number of samples == number 
-#' 
-#' ###################################################################### --- SUCCESS 
-#' # example #1: request same numer of samples as zones - all zones returned. 
-#' res1 <- sample_pstz(
-#'   x = x, 
-#'   n = length(unique(pstz[['pstz_key']])), 
-#'   pstz = pstz, pstz_key = "pstz_key",
-#'   increase_method = "Most"
-#' )
-#' 
-#' bp +
-#'   geom_sf(data = res1, alpha = 0.9) + 
-#'   geom_sf_label(data = pstz,aes(label = pstz_key)) 
-#' 
-#' ## note that we get the largest polygon from EACH group to sample from. 
-#' 
-#' ##################################################################### --- SUCCESS
-#' # Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
-#' 
-#' res2 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
-#' 
-#' res2 |>
-#'   group_by(pstz_key) |>
-#'   mutate(total_area = sum(poly_area)) |>
-#'   sf::st_drop_geometry() |>
-#'   arrange(-total_area)|>
-#'   knitr::kable()
-#' 
-#' bp + # picks, the two largest ## BUT NEED OT INVERT THE MASK 
-#'   geom_sf(data = res2, alpha = 0.9) + 
-#'   geom_sf_label(data = pstz,aes(label = pstz_key))
-#' 
-#' 
-#' ####################################################################### -- SUCCESS 
-#' # Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
-#' res3 <- sample_pstz(x = x, n = 3, pstz = pstz, pstz_key = "pstz_key", increase_method = "Smallest")
-#' 
-#' res3 |>
-#'   group_by(pstz_key) |>
-#'   mutate(total_area = sum(poly_area)) |>
-#'   sf::st_drop_geometry() |>
-#'   arrange(total_area) |>
-#'   knitr::kable()
-#' 
-#' ## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
-#' 
-#' bp + # picks, the n smallest
-#'   geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
-#'   geom_sf_label(data = pstz, aes(label = pstz_key)) 
-#' 
-#' 
-#' ####################################################################
-#' # Example #4: request more samples than zones -> allocate extras to Largest pSTZs
-#' 
-#' ## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
-#' ## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
-#' # the two will generally behave similarly on contrived examples. 
-#' res4 <- sample_pstz(x = x, n = 12, pstz = pstz, pstz_key = "pstz_key", increase_method = "Largest")
-#'   
-#' res4 |>
-#'   group_by(pstz_key) |>
-#'   summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
-#'   sf::st_drop_geometry() |>
-#'   arrange(-total_area) |>
-#'   knitr::kable()
-#' 
-#' bp + 
-#'   theme(legend.position = 'none') + 
-#'   geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
-#'   geom_sf_label(data = res4, aes(label = allocation)) 
-#' 
-#' 
 #' ####################################################################
 #' # Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
 #' res5 <- sample_pstz(x = x, n = 14, pstz = pstz, pstz_key = "pstz_key", increase_method = "Most")
@@ -270,7 +197,7 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
     return(result)
   }  else  { # n > n_zones
   
-    # case: n > n_zones → assign multiple samples per zone
+    # case: n > n_zones -> assign multiple samples per zone
     # strategy: assign one per zone, then assign the remainder to zones in descending polygon-size
     result <- allocate_increase(
       zone_summary = zone_summary,
@@ -285,21 +212,346 @@ sample_pstz <- function(x, n = 20, pstz, pstz_key,
     }
 }
 
+
+
+
+
+library(tidyverse)
+
+sr_mat <- rbind(
+  c(0,0), c(10,0), c(10,10), c(0,10), c(0,0)
+)
+sr_poly <- sf::st_polygon(list(sr_mat))
+x <- sf::st_sf(id = 1, geometry = sf::st_sfc(sr_poly))
+
+rm(sr_mat, sr_poly)
+
+zone_polys = data.frame(
+  ## randomly generate some points in XY space. 
+  x = runif(10, min = -2, max = 12),
+  y = runif(10, min = -2, max = 12)
+) |>
+  # conver to spatial points
+  sf::st_as_sf(coords = c('x', 'y')) |>
+  ## allocate XY space to it's nearest point
+  sf::st_union() |>
+  sf::st_voronoi() |>
+  ## extract the contiguous pieces of XY space around points
+  sf::st_collection_extract('POLYGON') |>
+  sf::st_as_sf() |>
+  ## make up seed zones on the fly, assign multiple polygons to some zones. 
+  dplyr::mutate(pstz_key = sample(LETTERS[1:7], size = 10, replace = T)) |>
+  dplyr::rename('geometry' = x) |>
+  sf::st_crop(x)
+
+bp <- ggplot2::ggplot(x) + 
+  ggplot2::geom_sf(fill = NA, lwd = 2) + 
+  ggplot2::geom_sf(data = zone_polys, ggplot2::aes(fill = pstz_key)) 
+
+bp + 
+  ggplot2::geom_sf_label(data = zone_polys, ggplot2::aes(label = pstz_key))
+
+
+####################################################################
+# Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
+res5 <- PolygonBasedSample(x = x, n = 14, zones = zone_polys, zone_key = "pstz_key", increase_method = "Most")
+  
+res5 |>
+  group_by(pstz_key) |>
+  summarize(Count = n(), Total_Allocation = sum(allocation)) |>
+  sf::st_drop_geometry() |>
+  arrange(-Count) |>
+  knitr::kable()
+
+
+#' ###################################################################### 
+#' # example #1: request same numer of samples as zones - all zones returned. 
+#'  res1 <- PolygonBasedSample(
+#'    x = x, 
+#'    n = length(unique(zone_polys[['pstz_key']])), 
+#'    zones = zone_polys, 
+#'    zone_key  = "pstz_key",
+#'    increase_method = "Most"
+#'  )
+#' 
+#' bp +
+#'   geom_sf(data = res1, alpha = 0.9) + 
+#'   geom_sf_label(data = pstz,aes(label = pstz_key)) 
+#' 
+#' ## note that we get the largest polygon from EACH group to sample from. 
+#' 
+##################################################################### --- SUCCESS
+#' # Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
+#' 
+#' res2 <- PolygonBasedSample(x = x, n = 3, zones = zone_polys, zone_key  = "pstz_key", increase_method = "Largest")
+#' 
+#' res2 |>
+#'   group_by(pstz_key) |>
+#'   mutate(total_area = sum(poly_area)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(-total_area)|>
+#'   knitr::kable()
+#' 
+#' bp + # picks, the three largest 
+#'   geom_sf(data = res2, alpha = 0.9) + 
+#'   geom_sf_label(data = zone_polys, aes(label = pstz_key))
+#' 
+#' ####################################################################### 
+#' # Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
+#' res3 <- PolygonBasedSample(x = x, n = 3, zones = zone_polys, zone_key = "pstz_key", increase_method = "Smallest")
+#' 
+#' res3 |>
+#'   group_by(pstz_key) |>
+#'   mutate(total_area = sum(poly_area)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(total_area) |>
+#'   knitr::kable()
+#' 
+#' ## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
+#' 
+#' bp + # picks, the n smallest - too small to see sometimes
+#'   geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
+#'   geom_sf_label(data = zone_polys, aes(label = pstz_key)) 
+#' 
+####################################################################
+# Example #4: request more samples than zones -> allocate extras to Largest pSTZs
+#'
+#' ## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
+#' ## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
+#' ## the two will generally behave similarly on contrived examples. 
+#' res4 <- PolygonBasedSample(x = x, n = 12, zones = zone_polys, zone_key = "pstz_key", increase_method = "Largest")
+#'   
+#' res4 |>
+#'   group_by(pstz_key) |>
+#'   summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
+#'   sf::st_drop_geometry() |>
+#'   arrange(-total_area) |>
+#'   knitr::kable()
+#' 
+#' bp + 
+#'   theme(legend.position = 'none') + 
+#'   geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
+#'   geom_sf_label(data = res4, aes(label = allocation)) 
+#' 
+#' Sample spatial zones within a species range
+#' 
+#' @description Intersect a vector data file of spatial zones (ecoregions, provisional 
+#' seed transfer zones, or other spatial partitions) with the range of a focal taxon 
+#' and select `n` zones to sample. If fewer than n zones exist, extra samples are 
+#' allocated using the specified method. If more than n zones exist, zones are selected 
+#' using the specified method.
+#' 
+#' @details
+#' Simple features can store polygon data as 'MULTIPOLYGON' (all polygons of a class 
+#' stored collectively) or 'POLYGON' (each individual polygon is a unique entry). 
+#' This function will cast MULTIPOLYGONS to POLYGONS as needed, but pre-casting 
+#' will improve performance.
+#' 
+#' Available methods for zone selection:
+#' - **Largest**: Select zones by total area (descending)
+#' - **Smallest**: Select zones by total area (ascending)  
+#' - **Most**: Select zones with most polygons (highest fragmentation)
+#' - **Assist-warm**: Select warmest zones (requires `warmest_col`)
+#' - **Assist-drier**: Select driest zones (requires `precip_col`)
+#'
+#' @param x sf object. Species range as a simple feature.
+#' @param zones sf object. Spatial zones vector data (ecoregions, PSTZs, etc.).
+#' @param zone_key Character. Column name identifying unique zones (required).
+#' @param n Numeric. Desired total number of samples. Default = 20.
+#' @param decrease_method Character. Method when n < number of zones. One of: 
+#'   "Largest", "Smallest", "Most", "Assist-warm", "Assist-drier". Default = "Largest".
+#' @param increase_method Character. Method when n > number of zones. One of:
+#'   "Largest", "Smallest", "Most", "Assist-warm", "Assist-drier". Default = "Largest".
+#' @param warmest_col Character. Column name for warmest temperature metric (required 
+#'   for "Assist-warm" method).
+#' @param precip_col Character. Column name for precipitation metric (required for 
+#'   "Assist-drier" method).
+#'   
+#' @returns sf object with selected zones/polygons and an `allocation` column 
+#'   indicating number of samples per polygon.
+#'   
+#' @examples
+#' \dontrun{
+#' library(tidyverse)
+#' 
+#' # Example 1: Ecoregions (L4)
+#' polygon <- spData::us_states |>
+#'   dplyr::filter(NAME == 'California') |>
+#'   sf::st_transform(4326)
+#'   
+#' ecoregions <- sf::st_read('path/to/ecoregions.gpkg')
+#' 
+#' result <- sample_zones(
+#'   x = polygon,
+#'   zones = ecoregions, 
+#'   zone_key = "L4_KEY",
+#'   n = 15,
+#'   decrease_method = "Largest"
+#' )
+#' 
+#' }
+#' 
+#' @export
+PolygonBasedSample <- function(
+    x, 
+    zones, 
+    zone_key,
+    n = 20,
+    decrease_method = c("Largest", "Smallest", "Most", "Assist-warm", "Assist-drier"),
+    increase_method = c("Largest", "Smallest", "Most", "Assist-warm", "Assist-drier"),
+    warmest_col = NULL,
+    precip_col = NULL
+) {
+  
+  # Input validation
+  decrease_method <- match.arg(decrease_method)
+  increase_method <- match.arg(increase_method)
+  
+  if (missing(x) || missing(zones) || missing(zone_key)) {
+    stop("Must supply `x` (species range), `zones` (spatial data for Ecoregions or STZs), and `zone_key` (grouping column).")
+  }
+  
+  if (!zone_key %in% names(zones)) {
+    stop("zone_key `", zone_key, "` not found in `zones` data.")
+  }
+  
+  # Validate climate columns for climate-based methods
+  climate_methods <- c("Assist-warm", "Assist-drier")
+  if (decrease_method %in% climate_methods || increase_method %in% climate_methods) {
+    if (decrease_method == "Assist-warm" || increase_method == "Assist-warm") {
+      if (is.null(warmest_col) || !warmest_col %in% names(zones)) {
+        stop("Assist-warm requires valid `warmest_col` variable in `zones` data.")
+      }
+    }
+    if (decrease_method == "Assist-drier" || increase_method == "Assist-drier") {
+      if (is.null(precip_col) || !precip_col %in% names(zones)) {
+        stop("Assist-drier requires valid `precip_col` variable in `zones` data.")
+      }
+    }
+  }
+  
+  # quelch warnings from s2 engine. 
+  sf::st_agr(x) <- "constant"
+  sf::st_agr(zones) <- "constant"
+  
+  # Ensure all geometries are polygons
+  zones_poly <- zones
+  if (!all(sf::st_geometry_type(zones_poly) == "POLYGON")) {
+    zones_poly <- sf::st_collection_extract(zones_poly, "POLYGON", warn = FALSE)
+  }
+  zones_poly <- sf::st_make_valid(zones_poly)
+  sf::st_agr(zones_poly) <- "constant"
+  
+  # Intersect zones with species range
+  zones_sub <- sf::st_intersection(zones_poly, x)
+  if (!all(sf::st_geometry_type(zones_sub) == "POLYGON")) {
+    zones_sub <- sf::st_collection_extract(zones_sub, "POLYGON", warn = FALSE)
+  }
+  zones_sub <- sf::st_make_valid(zones_sub)
+  
+  if (nrow(zones_sub) == 0) {
+    warning("No zone polygons intersect species range.")
+    return(NULL)
+  }
+  
+  # Compute polygon areas
+  zones_sub <- dplyr::mutate(zones_sub, poly_area = units::set_units(sf::st_area(geometry), "m^2"))
+  
+  # Compute zone-level summaries
+  zone_summary <- zones_sub %>%
+    sf::st_drop_geometry() %>%
+    dplyr::group_by(!!rlang::sym(zone_key)) %>%
+    dplyr::summarise(
+      polygon_ct = dplyr::n(),
+      total_area_m2 = sum(poly_area),
+      .groups = 'drop'
+    )
+  
+  
+  ## prep and add climate data as required. 
+  need_warm  <- "Assist-warm"  %in% c(decrease_method, increase_method)
+  need_drier <- "Assist-drier" %in% c(decrease_method, increase_method)
+  if (need_warm || need_drier) {
+
+    modifiers_reduced <- zones_sub %>%
+      sf::st_drop_geometry() %>%
+      dplyr::group_by(!!sym(zone_key)) %>%
+      dplyr::summarise(
+        warmest = if (need_warm) max(!!rlang::sym(warmest_col), na.rm = TRUE) else NA_real_,
+        precip  = if (need_drier) min(!!rlang::sym(precip_col),  na.rm = TRUE) else NA_real_,
+        .groups = "drop"
+      )
+    
+  zone_summary <- zone_summary %>%
+      dplyr::left_join(modifiers_reduced, by = zone_key)
+  }
+
+
+  
+  # Get unique zones
+  unique_zones <- zone_summary[[zone_key]]
+  n_zones <- length(unique_zones)
+  
+  if (n_zones == 0) {
+    warning("No zones overlapping range after intersection.")
+    return(NULL)
+  }
+  
+  # Case 1: n == n_zones (one sample per zone)
+  if (n == n_zones) {
+    result <- zones_sub %>%
+      dplyr::group_by(!!rlang::sym(zone_key)) %>%
+      dplyr::slice_max(order_by = poly_area, n = 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(allocation = 1, .before = geometry)
+    return(result)
+  }
+  
+  # Case 2: n < n_zones (select subset of zones)
+  if (n < n_zones) {
+    ranked <- rank_zones(zone_summary, decrease_method, total_area_m2, polygon_ct, warmest_col, precip_col)
+    selected <- ranked[1:n, ][[zone_key]]
+    
+    result <- zones_sub %>%
+      dplyr::filter(.data[[zone_key]] %in% selected) %>%
+      dplyr::group_by(!!rlang::sym(zone_key)) %>%
+      dplyr::slice_max(order_by = poly_area, n = 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(allocation = 1, .before = geometry)
+    
+    return(result)
+  }
+  
+  # Case 3: n > n_zones (allocate multiple samples per zone)
+  result <- allocate_increase(
+    zone_summary = zone_summary,
+    zones_sub = zones_sub,
+    zone_key = zone_key,
+    requested = n,
+    method = increase_method,
+    warmest_col = warmest_col,
+    precip_col = precip_col
+  )
+  
+  return(result)
+}
+
+
 # Helper to rank zones based on method
 #' @keywords internal
 #' @noRd
-rank_zones <- function(df, method) {
-  # df must contain total_area_m2, Polygon_ct, plus optionally climate columns
+rank_zones <- function(df, method, total_area_m2 = NULL, Pplygon_ct = NULL, warmest_col = NULL, precip_col = NULL){
+  # df must contain total_area_m2, polygon_ct, plus optionally climate columns
   if (method == "Largest") {
     dplyr::arrange(df, desc(total_area_m2))
   } else if (method == "Smallest") {
     dplyr::arrange(df, total_area_m2)
   } else if (method == "Most") {
-    dplyr::arrange(df, desc(Polygon_ct))
+    dplyr::arrange(df, desc(polygon_ct))
   } else if (method == "Assist-warm") {
     dplyr::arrange(df, desc(.data[[warmest_col]]))
   } else if (method == "Assist-drier") {
-    df %>% dplyr::arrange(.data[[precip_col]])  # assume smaller precip → drier
+    df %>% dplyr::arrange(.data[[precip_col]])  # assume lower precip = drier. not globally safe. 
   } else {
     stop("Unknown method: ", method)
   }
@@ -307,14 +559,12 @@ rank_zones <- function(df, method) {
 
 #' @keywords internal
 #' @noRd
-allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
-                              requested, method,
-                              warmest_col = NULL, precip_col = NULL) {
+allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, method, warmest_col = NULL, precip_col = NULL) {
 
   # ensure matching types
-  if (!identical(class(pstz_sub[[pstz_key]]), class(zone_summary[[pstz_key]]))) {
-    zone_summary[[pstz_key]] <- as.character(zone_summary[[pstz_key]])
-    pstz_sub[[pstz_key]] <- as.character(pstz_sub[[pstz_key]])
+  if (!identical(class(zones_sub[[zone_key]]), class(zone_summary[[zone_key]]))) {
+    zone_summary[[zone_key]] <- as.character(zone_summary[[zone_key]])
+    zones_sub[[zone_key]] <- as.character(zones_sub[[zone_key]])
   }
 
   n_zones <- nrow(zone_summary)
@@ -334,7 +584,7 @@ allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
           method = ifelse(method == "Largest", "larger_up", "larger_down")
         )
     } else if (method == "Most") {
-      ranked <- dplyr::arrange(zone_summary, dplyr::desc(Polygon_ct))
+      ranked <- dplyr::arrange(zone_summary, dplyr::desc(polygon_ct))
       allocation_counts <- allocation_counts + rep(0, n_zones)  # base 1 + distribute remainder by rank
       allocation_counts[1:remainder] <- allocation_counts[1:remainder] + 1
 
@@ -353,17 +603,17 @@ allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
   }
 
   allocation <- tibble(
-    !!pstz_key := zone_summary[[pstz_key]],
+    !!zone_key := zone_summary[[zone_key]],
     n_alloc = allocation_counts
   )
 
   # distribute points across polygons per zone
   out_list <- vector("list", n_zones)
   for (i in seq_len(n_zones)) {
-    zone_i <- allocation[[pstz_key]][i]
+    zone_i <- allocation[[zone_key]][i]
     points_to_assign <- allocation$n_alloc[i]
 
-    polys <- pstz_sub %>% dplyr::filter(.data[[pstz_key]] == zone_i)
+    polys <- zones_sub %>% dplyr::filter(.data[[zone_key]] == zone_i)
     n_polys <- nrow(polys)
     if (n_polys == 0) next
 
@@ -371,14 +621,15 @@ allocate_increase <- function(zone_summary, pstz_sub, pstz_key,
     remainder_poly <- points_to_assign %% n_polys
     poly_alloc <- base_poly + c(rep(1, remainder_poly), rep(0, n_polys - remainder_poly))
 
-    polys <- polys %>% dplyr::mutate(allocation = poly_alloc)
+    polys <- dplyr::mutate(polys, allocation = poly_alloc)
     out_list[[i]] <- polys
   }
 
   result <- do.call(rbind, out_list)
   return(result)
+  
 }
-
+  
 #' split and extract the temperature values from Tmin and AHM columns
 #' 
 #' @description Programmed for the Bower provisional seed zone products, a helper function for
@@ -405,7 +656,7 @@ split_cols <- function(dat, y, sep = '-'){
       c(x, rep(NA, max(sapply(ob, length)) - length(x)))
     }))))
     
-  } else { df <- data.frame(t(ob))} # else transform straight to df
+  } else { df <- data.frame(t(ob))} # else transform straight to data frame
 
   df = setNames( # convert from characters to numbers for math
     data.frame(apply(df, FUN = as.numeric, MARGIN = 2)), 
