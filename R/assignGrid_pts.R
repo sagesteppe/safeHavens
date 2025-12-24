@@ -76,7 +76,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
       if(exists('needAssigned')){
         nn <- spdep::knearneigh(pts, k=4)[['nn']][needAssigned$ID,]
         
-        for (i in 1:nrow(needAssigned)){
+        for (i in seq_len(nrow(needAssigned))){
           needAssigned[i, 'Assigned'] <- 
             names(
               which.max(

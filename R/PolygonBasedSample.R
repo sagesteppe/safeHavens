@@ -241,17 +241,16 @@ PolygonBasedSample <- function(
   need_drier <- "Assist-drier" %in% c(decrease_method, increase_method)
   if (need_warm || need_drier) {
 
-    modifiers_reduced <- zones_sub %>%
-      sf::st_drop_geometry() %>%
-      dplyr::group_by(!!sym(zone_key)) %>%
+    modifiers_reduced <- zones_sub |>
+      sf::st_drop_geometry()| >
+      dplyr::group_by(!!sym(zone_key)) |>
       dplyr::summarise(
         warmest = if (need_warm) max(!!rlang::sym(warmest_col), na.rm = TRUE) else NA_real_,
         precip  = if (need_drier) min(!!rlang::sym(precip_col),  na.rm = TRUE) else NA_real_,
         .groups = "drop"
       )
     
-  zone_summary <- zone_summary %>%
-      dplyr::left_join(modifiers_reduced, by = zone_key)
+  zone_summary <- dplyr::left_join(zone_summary, modifiers_reduced, by = zone_key)
   }
   
   # Get unique zones
@@ -265,10 +264,10 @@ PolygonBasedSample <- function(
   
   # Case 1: n == n_zones (one sample per zone)
   if (n == n_zones) {
-    result <- zones_sub %>%
-      dplyr::group_by(!!rlang::sym(zone_key)) %>%
-      dplyr::slice_max(order_by = poly_area, n = 1) %>%
-      dplyr::ungroup() %>%
+    result <- zones_sub |>
+      dplyr::group_by(!!rlang::sym(zone_key)) |>
+      dplyr::slice_max(order_by = poly_area, n = 1) |>
+      dplyr::ungroup() |>
       dplyr::mutate(allocation = 1, .before = geometry)
     return(result)
   }
@@ -278,11 +277,11 @@ PolygonBasedSample <- function(
     ranked <- rank_zones(zone_summary, decrease_method, total_area_m2, polygon_ct, warmest_col, precip_col)
     selected <- ranked[1:n, ][[zone_key]]
     
-    result <- zones_sub %>%
-      dplyr::filter(.data[[zone_key]] %in% selected) %>%
-      dplyr::group_by(!!rlang::sym(zone_key)) %>%
-      dplyr::slice_max(order_by = poly_area, n = 1) %>%
-      dplyr::ungroup() %>%
+    result <- zones_sub |>
+      dplyr::filter(.data[[zone_key]] %in% selected) |>
+      dplyr::group_by(!!rlang::sym(zone_key)) |>
+      dplyr::slice_max(order_by = poly_area, n = 1) |>
+      dplyr::ungroup() |>
       dplyr::mutate(allocation = 1, .before = geometry)
     
     return(result)
@@ -380,7 +379,7 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
     zone_i <- allocation[[zone_key]][i]
     points_to_assign <- allocation$n_alloc[i]
 
-    polys <- zones_sub %>% dplyr::filter(.data[[zone_key]] == zone_i)
+    polys <- dplyr::filter(zones_sub, .data[[zone_key]] == zone_i)
     n_polys <- nrow(polys)
     if (n_polys == 0) next
 
