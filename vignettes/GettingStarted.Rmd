@@ -108,8 +108,9 @@ The table in the introduction is reproduced here.
 | `PointBasedSample`        | Creates points to make pieces over area|  L   |   L  |
 | `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
 | `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
+| `KMedoidsBasedSample`     | Use ecoregions or STSz for sample      |  L   |   M  |
 | `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
-| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
+| `PolygonBasedSample`      | Using existing ecoregions to sample    |  L   |   H  |
 | `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
 *Note in this table 'Comp.' and 'Envi.' refer to computational and environmental complexity respectively, and range from low (L) through medium to high.*  
 
@@ -289,15 +290,16 @@ neo_eco <- sf::st_read(
 head(neo_eco[,c(1, 3, 4, 6, 11)])
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
-ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
+ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 10, zone_key = 'Provincias')
 
-# for plotting let's crop it to the other objects
+# crop it to the other objects for plotting
 ebs.sf <- st_crop(ebs.sf, bb)
 
 ebs.p <- map + 
-  geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
+  geom_sf(data = ebs.sf, aes(fill = factor(allocation))) + 
   labs(title = 'Ecoregion') + 
   coord_sf(expand = F)
+
 ebs.p
 ```
 
@@ -439,7 +441,6 @@ gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p +
 
 Again, the top three figures appear quite similar, with the `Opportunistic` method only deviating slightly form them. 
 In my mind isolation by distance (IBD) show the biggest different, it seems to have made the most *sense* of the naturally occurring patchiness of the species range. 
-Ecoregion SEEMS.... 
 Environmental also seems to partition the feature space quite well. Notably drawing a couple clusters in the Pacific lowlands and Northern Andes mountains. 
 
 ```{r echo = F}

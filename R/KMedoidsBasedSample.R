@@ -1,65 +1,3 @@
-# Example usage
-set.seed(20)
-library(ggplot2)
-
-
-13 / sum(0.4, 0.3, 0.2, 0.1)
-
-sapply(c(0.4, 0.3, 0.2, 0.1), FUN = function(x){x*15})
-
-
-sapply(c(0.4, 0.3, 0.2, 0.1), function(x){ round(x * 13)})
-
-n_sites <- 50 # number of known populations
-df <- data.frame(
-  site_id = seq_len(n_sites),
-  lat = runif(n_sites, 25, 30), # play with these to see elongated results. 
-  lon = runif(n_sites, -125, -120),
-  required = FALSE,
-  coord_uncertainty = 0
-)
-
-## we will simulate coordinate uncertainty on a number of sites.  
-uncertain_sites <- sample(setdiff(seq_len(n_sites), which(df$required)), size = min(6, n_sites-3))
-df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1e4, 1e5) # meters
-
-## assign a required point. 
-dists2c <- greatCircleDistance(
-  median(df$lat), 
-  median(df$lon), 
-  df$lat, 
-  df$lon
-)
-df[order(dists2c)[1],'required'] <- TRUE
-
-dist_mat <- sapply(1:nrow(df), function(i) {
-  greatCircleDistance(
-    df$lat[i], df$lon[i],
-    df$lat, df$lon
-  )
-})
-
-dat = list(
-  distances = as.matrix(dist_mat),
-  sites = df
-  )
-
-resin <- maximizeDispersion(dat, n_sites = 5,  n_bootstrap=99, dropout_prob = 0.1)
-resin$stability_score
-
-ggplot(data = resin$input_data, 
-  aes(
-    x = lon, 
-    y = lat, 
-    shape = required, 
-    size = cooccur_strength,
-    color = selected
-    )
-  ) +
-  geom_point() + 
-  theme_minimal() + 
-  labs(title = 'Priority Selection Status of Sites') 
-
 #' Maximize Dispersion Site Selection
 #'
 #' Select a subset of sites that maximize spatial dispersion of sites using k-medioids clustering. 
@@ -67,8 +5,7 @@ ggplot(data = resin$input_data,
 #' @description This function operates on individual points - representing populations, rather than drawing convex hulls or polygons around them to emulate a species range.
 #' It is designed for rare species, where individual populations are relatively scarce, e.g. < 100, and have decent location data.
 #' It will perform bootstrap re-sampling to better estimate the true range of the extent species, as well as coordinate jittering to better address geo-location quality.
-#' After running n of these simulations it will identify the individual networks of sites (co-location) which is the most resilient to these perturbations, and should be less affected by data quality issues.
-#' A particular point of this function, relative to the grid based approaches in the package, is that it treats populations as individuals, and allows curators to focus more on  'edges' of species ranges.
+#' After running `n_bootstrap` of these simulations it will identify the individual networks of sites (co-location) which is the most resilient to these perturbations, and should be less affected by data quality issues.
 #'
 #' As arguments it takes the known locations of populations, and will solve for n *priority* collection sites.
 #' Along this process it will also generate a priority ranking of all sites, indicating a naive possible order for prioritizing collections; although opportunity should never discard a site.
@@ -77,19 +14,25 @@ ggplot(data = resin$input_data,
 #' They can represent: existing collections, collections with a very strong chance of happenging due to a funding agency mechanism, or otherwise a single population closet to the geographic center of the species.
 #' Notably the solve will be 'around' this site, hence the solves are not purely theoretical, but linked to a pragmatic element.
 #'
-#' Theoretically one can substitute a *geographic* distance matrix for an *environmental* distance matrix. See vignette for example. 
+#' Theoretically one can substitute a *geographic* distance matrix for an *environmental* distance matrix. 
+#' However, the function will not internally recalculate distances between the bootstrapped points.
+#' See vignette for example of creating a quick environmental distance matrix using a simple PCA of bioclim variables.  
 #'
 #' @param input_data A list with two elements: 'distances' (distance matrix) and 'sites' (data frame of site metadata).
-#' @param n_sites The number of sites which you want to select for priority collection.
+#' @param n The number of sites which you want to select for priority collection.
 #' Note that the results will return a rank of prioritization for all sites in the data.
 #' @param n_bootstrap Number of bootstrap replicates to perform.
-#' @param dropout_prob Probability of dropping non-seed sites in each bootstrap replicate, give how few sites there are generally keep under 0.2. 
+#' @param dropout_prob Probability of dropping non-seed sites in each bootstrap replicate, give how few sites there are generally keep under 0.2. Set to 0 to disable dropout.
 #' @param n_local_search_iter Number of local search iterations per restart.
 #' @param n_restarts Number of random restarts per bootstrap replicate.
 #' @param verbose Whether to print progress information. Will print a message on run settings, and a progress bar for the bootstraps.
-#' @examples \dontrun{
-#'  library(ggplot2)
+#' @param distance_type Character. Defaults to 'geographic', otherwise 'environmental'. If geogra'phic and coordinates uncertainty is greater than `min_jitter_dist` then coordinate jittering will be performed.
+#' @param min_jitter_dist Minimum coordinate uncertainty (in meters) to initiate jittering of site coordinates.
+#' @examples 
+#' \dontrun{
+#' library(ggplot2)
 #'
+#'  ### create sample data 
 #'  n_sites <- 30 # number of known populations
 #'  df <- data.frame(
 #'    site_id = seq_len(n_sites),
@@ -99,7 +42,7 @@ ggplot(data = resin$input_data,
 #'    coord_uncertainty = 0
 #'  )
 #'
-#' #function relies on at least one required point. here arbitrarily place near geographic center
+#' #function can accept a required point, here arbitrarily place near geographic center
 #'  dists2c <- greatCircleDistance(
 #'    median(df$lat), 
 #'    median(df$lon), 
@@ -109,7 +52,7 @@ ggplot(data = resin$input_data,
 #'  df[order(dists2c)[1],'required'] <- TRUE
 #'  
 #'  ## we will simulate coordinate uncertainty on a number of sites.  
-#'  uncertain_sites <- sample(setdiff(seq_len(n_sites), which(df$required)), size = min(6, n_sites-3))
+#'  uncertain_sites <- sample(setdiff(seq_len(n), which(df$required)), size = min(6, n_sites-3))
 #'  df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 5000, 100000) # meters
 #'  
 #'  # the function can take up to take matrices. the first (required) is a geographic distance
@@ -126,7 +69,7 @@ ggplot(data = resin$input_data,
 #'  head(df)
 #' 
 #'  test_data <- list(distances = dist_mat, sites = df)
-#'  rm(dist_mat, df, n_sites, uncertain_sites, dists2c)
+#'  rm(dist_mat, df, n, uncertain_sites, dists2c)
 #'
 #'  # small quick run 
 #'    system.time( 
@@ -168,16 +111,18 @@ ggplot(data = resin$input_data,
 #'    theme_minimal()   
 #' }
 #' @export
-maximizeDispersion <- function(
+KMedoidsBasedSample <- function(
     input_data,
-    n_sites = 5,
+    n = 5,
     n_bootstrap = 999,
     dropout_prob = 0.1,
     n_local_search_iter = 100,
     n_restarts = 3,
-    verbose = TRUE
+    verbose = TRUE, 
+    distance_type = 'geographic',
+    min_jitter_dist = 10000
 ) {
-  
+
   distances <- input_data$distances
   sites_df <- input_data$sites
   n_total <- nrow(sites_df)
@@ -190,7 +135,7 @@ maximizeDispersion <- function(
 
   ## identify sites which can be jittered for coord uncertainty. 
   uncertain_idx <- which(   ### minimum distance to initiate this is 10 km
-    !is.na(sites_df$coord_uncertainty) & sites_df$coord_uncertainty > 10000
+    !is.na(sites_df$coord_uncertainty) & sites_df$coord_uncertainty > min_jitter_dist
   )
   
   # Initialize tracking matrices
@@ -203,7 +148,7 @@ maximizeDispersion <- function(
         "Sites: %d | Seeds: %d | Requested: %d | Coord. Uncertain: %d | BS Replicates: %d\n",
         n_total,
         length(seeds),
-        n_sites,
+        n,
         length(uncertain_idx),
         n_bootstrap
       )
@@ -220,7 +165,6 @@ maximizeDispersion <- function(
   # Bootstrap loop
   pb <- utils::txtProgressBar(min = 0, max = n_bootstrap, style = 3)
   
-  
   for (b in seq_len(n_bootstrap)) {
     
     # sub-sample the data for the bootstrap. 
@@ -231,12 +175,13 @@ maximizeDispersion <- function(
     result <- run_bootstrap_iteration(
       distances = distances,
       sites_df = sites_df,
-      n_sites = n_sites,
+      n = n,
       seeds = seeds,
       available_sites = available_sites,
       uncertain_idx = uncertain_idx,
       n_local_search_iter = n_local_search_iter,
-      n_restarts = n_restarts
+      n_restarts = n_restarts, 
+      distance_type = distance_type
     )
     
     # Update co-occurrence matrix
@@ -248,7 +193,6 @@ maximizeDispersion <- function(
         sites = sort(result$solution),
         objective = result$objective
       )
-
     }
     
     utils::setTxtProgressBar(pb, b)
@@ -276,7 +220,7 @@ maximizeDispersion <- function(
   most_stable_frequency <- max(tab) / n_bootstrap
   most_stable_solution <- as.integer(strsplit(best_combo_key, "-")[[1]])
   
-  ##########     Prepare output    ###########3
+  ##########     Prepare output    ###########
 
   ## summarize the main takeaways - sample these sites first back onto input data. 
   input_appended <- merge(sites_df, stability, by = 'site_id', all.x = TRUE)
@@ -316,14 +260,13 @@ maximizeDispersion <- function(
     stability_score = most_stable_frequency,
     stability = stability,
     settings = data.frame(
-      n_sites = n_sites,
+      n_sites = n,
       n_bootstrap = n_bootstrap,
       dropout_prob = dropout_prob,
       n_uncertain = length(uncertain_idx)
     )
   )
 }
-
 
 #' Haversine Distance Calculation
 #' 
@@ -375,27 +318,17 @@ greatCircleDistance <- function(lat1, lon1, lat2, lon2) {
 run_bootstrap_iteration <- function(
     distances,
     sites_df,
-    n_sites,
+    n,
     seeds,
     available_sites,
     uncertain_idx,
     n_local_search_iter,
-    n_restarts
+    n_restarts,
+    distance_type
 ) {
   
   # Jitter distances if there are uncertain coordinates
-  if (length(uncertain_idx) > 0) {
-    dist_boot <- update_distances_jitter(
-      distances,
-      sites_df,
-      uncertain_idx
-    )
-  } else {
-    dist_boot <- distances
-  }
-  
-  # Jitter distances if there are uncertain coordinates
-  if (length(uncertain_idx) > 0) {
+  if (length(uncertain_idx) > 0 && distance_type == 'geographic') {
     dist_boot <- update_distances_jitter(
       distances,
       sites_df,
@@ -419,7 +352,7 @@ run_bootstrap_iteration <- function(
 
     pam_result <- pam_fixed(
       dist_matrix = dist_boot_filtered,
-      k = n_sites,
+      k = n,
       fixed_ids = seeds_in_filtered
     )
     current_solution <- available_idx[pam_result$medoids]
@@ -451,7 +384,7 @@ run_bootstrap_iteration <- function(
 
     pam_result <- pam_fixed(
       dist_matrix = dist_boot_filtered,
-      k = n_sites,
+      k = n,
       fixed_ids = seeds_in_filtered
     )
     current_solution <- available_idx[pam_result$medoids]

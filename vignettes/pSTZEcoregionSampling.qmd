@@ -9,6 +9,8 @@ description: >
   Sampling provisional seed transfer zones and ecoregions 
 ---
 
+A variety of methods exist for implementing naive sampling schemes for polygon based products, such as provisional and empirical Seed Transfer Zones (pSTZs, and eSTZs), as well as Ecoregion (e.g. Omernik, or Baileys). 
+The sampling of these products are all implemented using a single function in safeHavens `PolygonBasedSample` which has functionality to consider some environmental traits of the ecoregions, and size and number of polygon patches of both ecoregions and STZs. 
 
 ```{mermaid}
 %%{init: {'theme':'dark', 'themeVariables': { 
@@ -62,3 +64,5 @@ flowchart LR
   class I,S,J,K,T,U climateColor
   class B,L decisionColor
 ```
+
+See `?PolygonBasedSample` for notes on implementation. 

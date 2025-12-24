@@ -179,12 +179,9 @@ terra::plot(threshold_rasts$FinalRasters)
 
 In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
 
+Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
+We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
 ```{r Rescale Predictor Variables}
-# CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE 
-# STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET
-# FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL
-# we will also write out the beta coefficients using writeSDMresults right after
-# this. 
 
 rr <- RescaleRasters(
   model = sdModel$Model,

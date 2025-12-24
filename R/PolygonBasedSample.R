@@ -91,7 +91,9 @@
 #' ##################################################################### 
 #' # Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
 #' 
-#' res2 <- PolygonBasedSample(x = x, n = 3, zones = zone_polys, zone_key  = "pstz_key", increase_method = "Largest")
+#' res2 <- PolygonBasedSample(
+#'    x = x, n = 3, zones = zone_polys, zone_key  = "pstz_key", increase_method = "Largest"
+#' )
 #' 
 #' res2 |>
 #'   group_by(pstz_key) |>
@@ -106,7 +108,8 @@
 #' 
 #' ####################################################################### 
 #' # Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
-#' res3 <- PolygonBasedSample(x = x, n = 3, zones = zone_polys, zone_key = "pstz_key", increase_method = "Smallest")
+#' res3 <- PolygonBasedSample(
+#'   x = x, n = 3, zones = zone_polys, zone_key = "pstz_key", increase_method = "Smallest")
 #' 
 #' res3 |>
 #'   group_by(pstz_key) |>
@@ -115,7 +118,7 @@
 #'   arrange(total_area) |>
 #'   knitr::kable()
 #' 
-#' ## note that we return the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
+#' ## returns the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
 #' 
 #' bp + # picks, the n smallest - too small to see sometimes
 #'   geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
@@ -124,10 +127,11 @@
 #' ####################################################################
 #' # Example #4: request more samples than zones -> allocate extras to Largest pSTZs
 #'
-#' ## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest polygons
-#' ## while 'smallest' favors giving them to smaller polygons. It is really mostly for edge cases, and
-#' ## the two will generally behave similarly on contrived examples. 
-#' res4 <- PolygonBasedSample(x = x, n = 12, zones = zone_polys, zone_key = "pstz_key", increase_method = "Largest")
+#' ## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest 
+#' ## polygons while 'smallest' favors giving them smaller polygons. It is really mostly for edge cases
+#' ## and the two will generally behave similarly on contrived examples. 
+#' res4 <- PolygonBasedSample(
+#'    x = x, n = 12, zones = zone_polys, zone_key = "pstz_key", increase_method = "Largest")
 #'   
 #' res4 |>
 #'   group_by(pstz_key) |>
@@ -143,7 +147,8 @@
 #' 
 #' ####################################################################
 #' # Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
-#' res5 <- PolygonBasedSample(x = x, n = 14, zones = zone_polys, zone_key = "pstz_key", increase_method = "Most")
+#' res5 <- PolygonBasedSample(
+#'    x = x, n = 14, zones = zone_polys, zone_key = "pstz_key", increase_method = "Most")
 #'   
 #' res5 |>
 #'   group_by(pstz_key) |>
@@ -176,6 +181,11 @@ PolygonBasedSample <- function(
     stop("zone_key `", zone_key, "` not found in `zones` data.")
   }
   
+   # Ensure all geometries are polygons
+   # quelch warnings from s2 engine. 
+  if(inherits(x, 'sf')){sf::st_agr(x) <- "constant"}
+  if(inherits(zones, 'sf')){sf::st_agr(zones) <- "constant"}
+
   # Validate climate columns for climate-based methods
   climate_methods <- c("Assist-warm", "Assist-drier")
   if (decrease_method %in% climate_methods || increase_method %in% climate_methods) {
@@ -191,16 +201,13 @@ PolygonBasedSample <- function(
     }
   }
   
-  # quelch warnings from s2 engine. 
-  sf::st_agr(x) <- "constant"
-  sf::st_agr(zones) <- "constant"
-  
-  # Ensure all geometries are polygons
+
   zones_poly <- zones
   if (!all(sf::st_geometry_type(zones_poly) == "POLYGON")) {
     zones_poly <- sf::st_collection_extract(zones_poly, "POLYGON", warn = FALSE)
   }
   zones_poly <- sf::st_make_valid(zones_poly)
+
   sf::st_agr(zones_poly) <- "constant"
   
   # Intersect zones with species range
@@ -362,7 +369,7 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
     }
   }
 
-  allocation <- tibble(
+  allocation <- tibble::tibble(
     !!zone_key := zone_summary[[zone_key]],
     n_alloc = allocation_counts
   )
@@ -393,8 +400,10 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
 #' split and extract the temperature values from Tmin and AHM columns
 #' 
 #' @description Programmed for the Bower provisional seed zone products, a helper function for
-#' separating and recovering the values from the columns in the data. Might be helpful on other data sets.  
-#' 
+#' separating and recovering the values from the columns in the data.
+#' @param dat data frame with the columns required to split.
+#' @param y character. column name to split.
+#' @param sep character. separator between the values to split on. Default is '-'.
 #' @examples
 #' df = data.frame(
 #'   'Tmin_class' = c('10 - 15 Deg. F.', '15 - 20 Deg. F.', '> 55 Deg. F.' ),
@@ -405,7 +414,6 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
 #' 
 #' @export
 ## unlisting this and collapse is super gross in base. but swollen on packages. 
-
 split_cols <- function(dat, y, sep = '-'){
 
   ob <- sapply(strsplit(dat[[y]], sep), \(x) gsub('\\D+','', x))
