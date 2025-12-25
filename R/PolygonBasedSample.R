@@ -226,9 +226,9 @@ PolygonBasedSample <- function(
   zones_sub <- dplyr::mutate(zones_sub, poly_area = units::set_units(sf::st_area(geometry), "m^2"))
   
   # Compute zone-level summaries
-  zone_summary <- zones_sub %>%
-    sf::st_drop_geometry() %>%
-    dplyr::group_by(!!rlang::sym(zone_key)) %>%
+  zone_summary <- zones_sub |>
+    sf::st_drop_geometry()  |>
+    dplyr::group_by(!!rlang::sym(zone_key)) |>
     dplyr::summarise(
       polygon_ct = dplyr::n(),
       total_area_m2 = sum(poly_area),
@@ -242,7 +242,7 @@ PolygonBasedSample <- function(
   if (need_warm || need_drier) {
 
     modifiers_reduced <- zones_sub |>
-      sf::st_drop_geometry()| >
+      sf::st_drop_geometry() |>
       dplyr::group_by(!!sym(zone_key)) |>
       dplyr::summarise(
         warmest = if (need_warm) max(!!rlang::sym(warmest_col), na.rm = TRUE) else NA_real_,

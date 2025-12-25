@@ -25,7 +25,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
     }
     samp <- samp + 1
   } 
-  pts <- pts[sample(1:nrow(pts), size = 100, replace = FALSE), ]
+  pts <- pts[sample(seq_len(nrow(pts)), size = 100, replace = FALSE), ]
   rm(samp)
   
   if(nrow(neighb_grid)==1){
@@ -86,7 +86,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
                       if(length(nn)==4){nn[1:4]} else {nn[i,1:4]}),
                     'Assigned'])
               )
-            ) 
+            )
         }
         
         pts <- dplyr::filter(pts, ! ID %in% needAssigned$ID) |>
