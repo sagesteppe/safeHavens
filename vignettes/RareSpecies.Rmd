@@ -9,7 +9,6 @@ description: >
   Running an additional sampling scheme for rare species. 
 ---
 
-
 ## prepare data
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -21,6 +20,7 @@ knitr::opts_chunk$set(
 Load the required packages. 
 
 ```{r required packages, message=FALSE}
+#remotes::install_github('sagesteppe/safeHavens')
 library(safeHavens)
 library(ggplot2)
 library(patchwork)
@@ -132,7 +132,7 @@ uncertain_sites <- sample(
 df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1000, 40000) # meters
 ```
 
-## Run dispersion maximization based only on geographic distances
+## Run KMedoidsBasedSample based only on geographic distances
 
 The input to the function is the distance matrix, and the site data. 
 
@@ -147,24 +147,23 @@ str(test_data)
 rm(x, n_sites, uncertain_sites, dists2c)
 ```
 
-The funtion `maximizeDispersion` has several parameters to control the optimization routine.
+The funtion `KMedoidsBasedSample` has several parameters to control run parameters.
 
 ```{r run with geograpihc distances}
 st <- system.time( {
-    geo_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+    geo_res <- KMedoidsBasedSample(  ## reduce some parameters for faster run. 
       input_data = test_data,
-      n_sites = 10,
-      lambda_var = 0.05,
-      n_bootstrap = 500,
-      objective = "sum",
-      n_local_search_iter = 50,
+      n = 5,
+      n_bootstrap = 10,
+      dropout_prob = 0.1,
+      n_local_search_iter = 10,
       n_restarts = 2
     )
   }
 )
 ```
 
-The function operates relatively quick with few bootstraps and few sites, but will take considerably longer with more complex scenarios.
+The function operates relatively quick with few bootstraps and few sites, but will take a smidge of time longer  with more complex scenarios.
 We recommened using at least 999 bootstraps for real world applications. 
 
 ```{r}
@@ -198,7 +197,6 @@ Run parameters are saved in the settings element.
 ```{r}
 head(geo_res$settings)
 ```
-
 
 ### visualize the selection results
 
@@ -235,7 +233,7 @@ map +
 ```
 
 
-## run dispersion maximization with geographic and environmental distances
+## run KMedoidsBasedSample with environmental distances
 
 ### extract prep environmental distances 
 
@@ -289,20 +287,17 @@ rm(pca_raster)
 
 ```{r run with environmental distance}
 test_data <- list(
-  distances = simplify2array(list(dist_mat, env_dist_mat)),
+  distances = env_dist_mat,
   sites = df
   )
 
 st <- system.time( 
   {
-    env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+    env_res <- KMedoidsBasedSample(  ## reduce some parameters for shorter run time.
       input_data = test_data,
-      n_sites = 10,
-      lambda_var = 0.1,
-      weight_1 = 0.1, 
-      weight_2 = 0.9,
-      n_bootstrap = 99, # considerably slower function!!!
-      objective = "sum",
+      n = 5,
+      n_bootstrap = 10,
+      dropout_prob = 0.1,
       n_local_search_iter = 50,
       n_restarts = 2
     )
@@ -311,13 +306,6 @@ st <- system.time(
 
 rm(dist_mat, env_dist_mat)
 ```
-
-Adding the second distance matrix into the mix slows things down considerable. 
-
-Note that when this function has jittered points, not only is the point jittered randomly for the geographic component, the environmental distance matrix is also jittered. 
-The jitter for the latter matrix come from fitting a linear model where environmental distance is fit as a function of geographic distance. 
-The conditional mean is then used as a noise to alter the environmental distance to/from each record. 
-However, this is unrelated to the slowdown. 
 
 ```{r}
 st
@@ -348,6 +336,8 @@ map +
 
 In the example above we use a point at the median geographic center of the populations. 
 
+We can also identify the population which is *most* near the highest density of populations. 
+Intuitively, this would be suggested as a population with a very high genetic diversity.  
 
 ```{r required point method - population centroid - heat map}
 dens <- with(df, MASS::kde2d(lon, lat, n = 200))
@@ -360,6 +350,7 @@ pop_centered_id <- which.min(rowSums(abs(pops_centre^2)))
 rm(dens, max_idx, max_point, pops_centre)
 ```
 
+Likewise we can identify the *population* which is most near the 'center' of the environmental variable space. 
 
 ```{r required point method - environmental centroid}
 env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
@@ -368,10 +359,7 @@ env_centered_id <- which.min(rowSums(abs(env_centered^2)))
 rm(env_values)
 ```
 
-All three of these options can be combined to feed in three center points for required sampling locations, providing a robust set of 'core' diversity for the species. 
 Personally I would consider the 'pop centered' population to be the most important required site to center a design off of. 
-
-Here we will just showcase their positions
 
 ```{r plot alternative centroids}
 # geographic centroid was pt 47
@@ -393,82 +381,7 @@ map +
     aes(label = type, x = lon, y = lat)
     ) + 
   theme_minimal() + 
-  labs(title = 'Possbilities for required centers')
+  labs(title = 'Possbilities for centers')
 
 rm(env_centered_id, env_centered, pop_centered_id)
-```
-
-Using these three centers will give results like below 
-
-```{r run multi required sites and plot}
-test_data$sites$required[centers$site_id] <- TRUE
-
-env_res <- maximizeDispersion(  ## reduce some parameters for faster run. 
-  input_data = test_data,
-  n_sites = 10,
-  lambda_var = 0.1,
-  weight_1 = 0.3, 
-  weight_2 = 0.7,
-  n_bootstrap = 99, 
-  objective = "sum",
-  n_local_search_iter = 50,
-  n_restarts = 2
-)
-
-map + 
-  geom_point(data = env_res$input_data, 
-    aes(
-      x = lon, 
-      y = lat, 
-      shape = required, 
-      size = cooccur_strength,
-      color = selected
-      )
-    ) +
-  theme_minimal() + 
-  labs(title = 'Priority Selection Status of Sites with 3 required sites')
-
-rm(centers)
-```
-
-
-## show differences in lambda parameters
-
-```{r}
-lambda_viewer <- function(lambda_val){
-
-  env_res <- maximizeDispersion(   
-    input_data = test_data,
-    n_sites = 10,
-    lambda_var = lambda_val,
-    n_bootstrap = 50, 
-    objective = "sum",
-    n_local_search_iter = 50,
-    n_restarts = 2, 
-    verbose = FALSE
-  )
-
-  m <- map + 
-    geom_point(data = env_res$input_data, 
-      aes(
-        x = lon, 
-        y = lat, 
-        shape = required, 
-        size = cooccur_strength,
-        color = selected
-        )
-      ) +
-    labs(title = paste('lambda: ', lambda_val))
-
-}
-
-lambda_view <- lapply(c(0, 0.025, 0.05, 0.075, 0.1, 0.15), lambda_viewer)
-
-lambda_view[[1]] + lambda_view[[2]] + lambda_view[[3]] + 
-  lambda_view[[4]]  +  lambda_view[[5]] + lambda_view[[6]] + 
-  plot_layout(ncol = 3)
-```
-
-```{r}
-
 ```

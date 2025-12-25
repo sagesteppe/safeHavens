@@ -40,6 +40,8 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
           simplify = FALSE)
       }
   
+  polygon <- sf::st_make_valid(polygon)
+  
   # sf oftentimes gives fewer points than asked for, we will keep only the objects 
   # which have the desired number of points
   voronoiPolygons <- voronoiPolygons[
@@ -59,7 +61,7 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
   
   # Determining the 0.1% quantile for the variance in size of the sampling grids. 
   # Using non-parametric approaches, of bootstrap resampling (replicates = 9999) ,
-  # with an 95% confidence level. 
+  # with a 95% confidence level. 
   
   # we can show that the polygon arrangement we have chosen is in the top 1000 of
   # options if npbs[["bca"]][["lower"]] > min(variance) == TRUE . 
@@ -140,7 +142,6 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
 #' @noRd
 VoronoiSampler <- function(polygon, n, collections, reps){
   
-  polygon <- sf::st_make_valid(polygon)
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
     sf::st_as_sf() |> 
     dplyr::rename(geometry = x) 
@@ -153,6 +154,7 @@ VoronoiSampler <- function(polygon, n, collections, reps){
   } else {pts <- dplyr::slice_head(pts, n=n)}
   
   vorons <- sf::st_voronoi(sf::st_union(pts), sf::st_as_sfc(sf::st_bbox(polygon)))
+  vorons <- sf::st_make_valid(vorons)
   vorons <- sf::st_intersection(sf::st_cast(vorons), sf::st_union(polygon))
   variance <- var(as.numeric(sf::st_area(vorons))/10000)
   

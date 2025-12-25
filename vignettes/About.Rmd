@@ -33,8 +33,9 @@ The table below presents the currently implemented sampling scheme and the user-
 | `PointBasedSample`        | Creates points to make grids over area |  L   |   L  |
 | `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
 | `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
+| `KMedoidsBasedSample`     | For rare species with known occurrences|  M   |   L  |
 | `IBDBasedSample`          | Breaks species range into clusters     |  H   |   M  |
-| `EcoregionBasedSample`    | Using existing ecoregions to sample    |  L   |   H  |
+| `PolygonBasedSample`      | Using existing ecoregions or STZs      |  L   |   H  |
 | `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
 
 
@@ -44,13 +45,14 @@ The fourth method, `OpportunisticSample`, is a special case of the first three, 
 `OpportunisticSample` uses the same underlying logic as `PointBasedSample`, but first 'removes' areas around existing collection records, and then fills in the remaining gaps with new sampling locations
 The first three functions would be used when *establishing* a new collection strategy for a species, while `OpportunisticSample` would be used when trying to *augment* an existing collection strategy.
 
-The fifth method, `IBDBasedSample`, is largely in a class of its own; in lieu of using the *continuity* of geographic space as its primary method, it focuses on the discontinuity of space and uses distance matrices and clustering to determine which patches of range are closer to each other than to other patches. 
+The sixth method, `IBDBasedSample`, is largely in a class of its own; in lieu of using the *continuity* of geographic space as its primary method, it focuses on the discontinuity of space and uses distance matrices and clustering to determine which patches of range are closer to each other than to other patches. 
 This method is more computationally expensive than the previous four, and while it incorporates some environmental information, it is not explicit in the way that the final two methods are.
 
-The `EcoregionBasedSample` may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
+The `PolygonBasedSample` may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
 This method uses environmental variation as an implicit guide to target populations for seed collections; that is, the different ecoregions serve as stratification agents. 
 In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. 
-However, it relies on existing ecoregion maps, which may or may not be relevant to the ecology of the species.
+It can be used with either ecoregion or seed transfer zone based data. 
+However, it relies on existing spatial data products, which may or may not be relevant to the ecology of the species.
 
 The final function, `EnvironmentalBasedSample`, is both the most computationally expensive and the most environmentally explicit. 
 This function fits a Species Distribution Model (SDM), generated via a generalized linear model (glmnet), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
@@ -62,7 +64,7 @@ All of the above methods are designed for common species, that is species with m
 Each method returns a polygon geometry that provides guidelines for the general regions where the species should be sampled. 
 However, for rare species, where the occurrence of individual populations is well tracked, and which are generally collected along maternal lines, requiring considerably more field effort to gather seed, a supplemental approach exists that suggests the priority in which individual populations (‘points’) can be sampled. 
 
-The `maximizeDispersion` method utilizes either geographic distances alone or geographic distances in conjunction with a distance matrix developed from a few key environmental variables to suggest which populations should be prioritized for seed collections. 
+The `KMedoidsBasedSample` method utilizes either geographic distances alone or geographic distances in conjunction with a distance matrix developed from a few key environmental variables to suggest which populations should be prioritized for seed collections. 
 This method is based on the concept of maximizing the dispersion of selected points in geographic and environmental spaces to best capture the overall variation present in the species range. 
 
 
@@ -73,7 +75,7 @@ Note that the software relies on a few other packages that may require additiona
 It also requires a working installation of `GDAL`, `PROJ`, and `GEOS` on your system, as well as Rcpp. 
 
 Generally, these installations go off without a hitch but may require additional attention from some users. 
-The tradeoff is that these are all *free* tools with enormous power and are quite commonly used in ecological and geographical modelling. 
+The trade off is that these are all *free* tools with enormous power and are quite commonly used in ecological and geographical modelling. 
 
 `safeHavens` can be installed from GitHub with `remotes` or `devtools`. 
 Some users have issues with devtools on windows, but remotes tends to work well.

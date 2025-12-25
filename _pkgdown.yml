@@ -9,8 +9,9 @@ reference:
   - PointBasedSample
   - EqualAreaSample
   - OpportunisticSample
+  - KMedoidsBasedSample
   - IBDBasedSample
-  - EcoregionBasedSample
+  - PolygonBasedSample
   - EnvironmentalBasedSample
   - PrioritizeSample
 - title: Environmental Sampling Prep
@@ -21,10 +22,10 @@ reference:
   - RescaleRasters
   - writeSDMresults
 - title: Rare Plant Sampling
-  desc: Optimization based site selection for known populations
+  desc: Optimization based site selection helpers for known populations
   contents:
   - greatCircleDistance
-  - maximizeDispersion
+  - splot_cols
 - title: Miscellaneous
   desc: Data prep functions
   contents: 
@@ -38,6 +39,7 @@ articles:
     - About
     - GettingStarted
     - SpeciesDistributionModels
+    - pSTZEcoregionSampling
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
     contents: 

@@ -34,7 +34,6 @@ Imports:
     nptest,
     raster,
     rlang,
-    Rcpp,
     rmapshaper,
     sdm,
     sf,
@@ -44,9 +43,8 @@ Imports:
     tidyselect,
     terra,
     units,
-    vegan
+    vegan,
+    cluster,
+    tibble
 URL: https://sagesteppe.github.io/safeHavens/
 LazyData: true
-LinkingTo: 
-    Rcpp
-SystemRequirements: C++
