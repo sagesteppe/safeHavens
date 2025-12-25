@@ -297,8 +297,6 @@ PolygonBasedSample <- function(
     warmest_col = warmest_col,
     precip_col = precip_col
   )
-  
-  return(result)
 }
 
 
@@ -316,7 +314,7 @@ rank_zones <- function(df, method, total_area_m2 = NULL, Pplygon_ct = NULL, warm
   } else if (method == "Assist-warm") {
     dplyr::arrange(df, desc(.data[[warmest_col]]))
   } else if (method == "Assist-drier") {
-    df %>% dplyr::arrange(.data[[precip_col]])  # assume lower precip = drier. not globally safe. 
+    dplyr::arrange(df, .data[[precip_col]])  # assume lower precip = drier. not globally safe. 
   } else {
     stop("Unknown method: ", method)
   }
@@ -392,8 +390,6 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
   }
 
   result <- do.call(rbind, out_list)
-  return(result)
-  
 }
   
 #' split and extract the temperature values from Tmin and AHM columns
@@ -480,5 +476,4 @@ proportional_round <- function(values, target_sum, method = c("larger_up", "larg
       result[indices_to_adjust] <- result[indices_to_adjust] - 1
     }
   }
-  return(result)
 }
