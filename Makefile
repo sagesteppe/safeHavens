@@ -1,3 +1,3 @@
 update-readme:
-	Rscript -e 'rmarkdown::render("README.Rmd", encoding="UTF8")'
+	Rscript -e 'rmarkdown::render("README.rmd", encoding="UTF8")'
 
