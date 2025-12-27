@@ -1,0 +1,138 @@
+---
+title: "Worked Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Worked Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+description: >
+  Downloading species occurrence data, creating hulls, sampling and writing out data for sample design. 
+---
+
+You will need to install `rgbif` to follow along with this example. 
+
+```{r load packages}
+library(tidyverse)
+library(sf)
+library(rgbif)
+library(spData)
+library(safeHavens)
+library(gstat)
+library(sp)
+```
+
+We will download occurrence data for a couple species, just so we have the code set up for `applying` through multiple species in a more realistic manner. 
+```{r download species occurrence data from gbif}
+## small subset of useful columns for example
+cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'acceptedScientificName', 'datasetName', 
+  'coordinateUncertaintyInMeters', 'basisOfRecord', 'institutionCode', 'catalogNumber')
+
+## download species data using scientificName, can use keys and lookup tables for automating many taxa. 
+cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
+
+### check to see what CRS are in here, these days usually standardized to wgs84 (epsg:4326)
+table( cymu[['data']]['geodeticDatum']) 
+
+## subset the data to relevant columns 
+cymu_cols <- cymu[['data']][,cols]
+
+## and repeat this again so a second set of data are on hand 
+bowa <- rgbif::occ_search(scientificName = "Bouteloua warnockii", limit = 1000)
+bowa_cols <- bowa[['data']][,cols]
+
+## contrived multispecies example. 
+spp <- bind_rows(bowa_cols, cymu_cols) |>
+  drop_na(decimalLatitude, decimalLongitude) |> # any missing coords need dropped. 
+  st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F)
+
+# rm(cymu, bowa, cols, cymu_cols, bowa_cols)
+```
+
+glimpse at the data
+```{r}
+western_states <- spData::us_states |>
+  dplyr::filter(REGION == 'West' & ! NAME %in% c('Montana', 'Washington', 'Idaho', 'Oregon', 'Wyoming') |
+   NAME == 'Texas') |>
+  dplyr::select(NAME, geometry)
+
+ggplot() +
+  geom_sf(data = western_states) +
+  geom_sf(data = spp, aes(color = acceptedScientificName, shape = acceptedScientificName)) +
+  theme_void() +
+  theme(legend.position = 'bottom')
+
+# clearly one points location is incorrected, it's latitude very great - likely approaching 90. 
+
+arrange(spp, by = decimalLatitude, desc=FALSE) |>
+  head(5)
+spp <- filter(spp, decimalLatitude <= 40)
+
+base <- ggplot() +
+  geom_sf(data = western_states) +
+  geom_sf(data = spp, aes(color = acceptedScientificName, fill = acceptedScientificName)) +
+  theme_void() +
+  theme(legend.position = 'bottom')
+```
+
+
+Three options for drawing out polygon distances. 
+
+
+```{r}
+sppL <- split(spp, f = spp$acceptedScientificName)
+function(x){st_union() |> st_concave_hull()}
+
+concavities <- function(x, d, rat){
+
+  out <- st_transform(x, 5070) |>
+    st_buffer(dist = d) |>
+    st_union() |> 
+    st_concave_hull(ratio = rat) |> 
+    st_sf()
+}
+
+spp_concave <- lapply(sppL, FUN = concavities, d = 10000, rat = 0.2)
+spp_convex  <- lapply(sppL, concavities, d = 10000, rat = 1.0)
+
+base +
+  geom_sf(data = spp_concave[[1]], fill = 'red', alpha = 0.2) +
+  geom_sf(data = spp_concave[[2]], fill = 'blue', alpha = 0.2) +
+  theme_void() +
+  theme(legend.position = 'bottom')
+
+base +
+  geom_sf(data = spp_convex[[1]], fill = 'red', alpha = 0.2) +
+  geom_sf(data = spp_convex[[2]], fill = 'blue', alpha = 0.2) +
+  theme_void() +
+  theme(legend.position = 'bottom')
+
+```
+
+```{r determine radius for buffering points}
+coordinates(pres) <- ~x+y
+vg <- variogram(presence ~ 1, pres)
+fit <- fit.variogram(vg, vgm("Sph"))
+
+h <- fit$range[2]
+```
+
+Perform two sampling methods
+```{r perform sampling}
+
+```
+
+Prioritize sampling areas
+```{r prioritize sample areas}
+
+```
+
+Write out the data for long term storage. 
+```{r write out data for storage}
+
+```
+
+Clean up environment etc. 
+```{r clean up environment}
+
+```
+
