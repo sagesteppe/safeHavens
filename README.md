@@ -1,6 +1,8 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-[![CodeFactor](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR/badge)](https://www.codefactor.io/repository/github/sagesteppe/eSTZwritR)
+[![R-CMD-check](https://github.com/sagesteppe/flyer/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml)
+
+[![CodeFactor](https://www.codefactor.io/repository/github/sagesteppe/safeHavens/badge)](https://www.codefactor.io/repository/github/sagesteppe/safeHavens)
 [![Project Status: Active - The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
@@ -36,7 +38,7 @@ for each individual taxon they hope to process.
 
     install.packages('devtools')
     devtools::install_github('sagesteppe/safeHavens')
-
+    
     install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
     remotes::install_github('sagesteppe/safeHavens')
 
@@ -50,15 +52,16 @@ github or CRAN
 `safeHavens` has only seven user facing functions for generating the
 sampling schemes.
 
-| Function | Description | Comp. | Envi. |
-|----|----|----|----|
-| `GridBasedSample` | Creates and merges *n* grids over area | L | L |
-| `PointBasedSample` | Creates points to make pieces over area | L | L |
-| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
-| `OpportunisticSample` | Using PBS with existing records | L | L |
-| `IBDBasedSample` | Breaks species range into clusters | H | M |
-| `EcoregionBasedSample` | Using existing ecoregions to sample | L | H |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
+| Function                   | Description                             | Comp. | Envi. |
+| -------------------------- | --------------------------------------- | ----- | ----- |
+| `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
+| `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
+| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
+| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
+| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
+| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 
 The species distribution modelling section has a couple functions which
 are essential for achieving the `EnvironmentalBasedSample` design, these
