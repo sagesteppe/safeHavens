@@ -7,12 +7,13 @@
 IBDBasedSample(
   x,
   n,
-  fixedClusters,
-  n_pts,
+  fixedClusters = TRUE,
+  n_pts = 1000,
   template,
-  prop_split,
-  min.nc,
-  max.nc
+  prop_split = 0.8,
+  min.nc = 5,
+  max.nc = 20,
+  planar_proj = NULL
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ IBDBasedSample(
 \item{min.nc}{Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5.}
 
 \item{max.nc}{Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20.}
+
+\item{planar_proj}{Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.}
 }
 \value{
 An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
@@ -40,8 +43,7 @@ An simple features (sf) object containing the final grids for saving to computer
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
 }
 \examples{
-planar_proj =
-'+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+planar_proj ='+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
@@ -68,7 +70,8 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
-plot(ibdbs)
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, 
+   template = predictors, planar_proj = planar_proj)
+plot(ibdbs[['Geometry']])
 
 }

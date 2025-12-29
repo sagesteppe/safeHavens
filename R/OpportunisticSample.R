@@ -95,7 +95,7 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
   
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
-  output <- list(
+  list(
     'SummaryData' = data.frame(
       'Metric' = c(
         'variance.observed', 'quantile.0.001', 'lwr.95.CI',
@@ -106,58 +106,4 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
     ),
   'Geometry' = SelectedSample) # and of course the spatial data!
   
-  return(output)
-  
 } 
-
-
-#' Make a voronoi sample of an area n times
-#' 
-#' Split an area up into n polygons of roughly equal area, optionally removing 
-#' some of the default points and replacing them with existing collections to 
-#' build the future collections around. 
-#' 
-#' @param polygon the input sf polygon, i.e. species range or administrative unit, where sampling is desired. 
-#' @param n Numeric. The total number of desired collections. Defaults to 20.
-#' @param collections an sf point geometry data set of where existing collections have been made.
-#' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
-#' measured using their variance of areas will be selected. Defaults to 150, which may accomplish around 100 succesful iterations.  
-#' @keywords internal
-VoronoiSampler <- function(polygon, n, collections, reps){
-  
-  pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
-    sf::st_as_sf() |> 
-    dplyr::rename(geometry = x) 
-  
-  #  if(!missing(collections)){
-  #    pts <- dplyr::bind_rows(
-  #      collections, 
-  #      pts[-sf::st_nearest_feature(collections, pts),], ) |>
-  #      dplyr::slice_head(n=n)
-  # } else {pts <- dplyr::slice_head(pts, n=n)}
-  
-  pts <- dplyr::slice_head(pts, n=n)
-  vorons <- sf::st_voronoi(sf::st_union(pts), sf::st_as_sfc(sf::st_bbox(polygon)))
-  vorons <- sf::st_intersection(sf::st_cast(vorons), sf::st_union(polygon))
-  variance <- var(as.numeric(sf::st_area(vorons))/10000)
-  
-  # need to define two slots, one for the variance numeric results, and one for the polygons
-  
-  return(
-    list(
-      'Variance' = variance,
-      'Polygons' = vorons
-    ))
-}
-
-#' Recursively grab a named component of a list. 
-#' @param x a list of lists
-#' @param element the quoted name of the list element to extract.
-#' @keywords internal
-get_elements <- function(x, element) { # @ StackOverflow Allan Cameron 
-  if(is.list(x))
-  {
-    if(element %in% names(x)) x[[element]]
-    else lapply(x, get_elements, element = element)
-  }
-}

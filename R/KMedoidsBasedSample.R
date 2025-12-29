@@ -473,7 +473,7 @@ pam_fixed <- function(dist_matrix, k, fixed_ids) {
   n <- nrow(dist_matrix)
   
   # Initialize with PAM, then ensure fixed sites are included
-  init_pam <- cluster::pam(as.dist(dist_matrix), k)$medoids
+  init_pam <- cluster::pam(stats::as.dist(dist_matrix), k)$medoids
   init <- setdiff(as.integer(init_pam), fixed_ids)
   init <- head(init, k - length(fixed_ids))
   

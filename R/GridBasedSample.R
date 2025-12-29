@@ -14,7 +14,7 @@
 #' sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 #' 
 #' output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
-#' plot(output)
+#' plot(output$geometry)
 #' }
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
@@ -228,5 +228,5 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     dplyr::arrange(ID) |>
     dplyr::relocate(ID)
   
-  return(final_grids)
+  return(list(Geometry = final_grids))
 }

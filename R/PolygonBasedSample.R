@@ -421,7 +421,7 @@ split_cols <- function(dat, y, sep = '-'){
     
   } else { df <- data.frame(t(ob))} # else transform straight to data frame
 
-  df = setNames( # convert from characters to numbers for math
+  df = stats::setNames( # convert from characters to numbers for math
     data.frame(apply(df, FUN = as.numeric, MARGIN = 2)), 
     nm = c('lower', 'upper')
   )
@@ -434,7 +434,7 @@ split_cols <- function(dat, y, sep = '-'){
 
   data.frame( ## return object
     df,
-    median = apply(df, MARGIN = 1, FUN = function(x){median(x, na.rm = TRUE)}), 
+    median = apply(df, MARGIN = 1, FUN = function(x){stats::median(x, na.rm = TRUE)}), 
     range = df[,2] - df[,1]
   )
 }

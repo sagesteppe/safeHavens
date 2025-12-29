@@ -64,12 +64,13 @@ zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps
 ps <- PrioritizeSample(zones$Geometry, method = 'centered', n_breaks = 3, metric = 'energy')
 
 ggplot2::ggplot() + 
-  ggplot2::geom_sf(data = ps, ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
+  ggplot2::geom_sf(data = ps[['Geometry']],
+    ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
   ggplot2::theme_void() + 
   ggplot2::labs(fill = 'Within Zone Priority:', title = 'Focal areas to center sampling within') +
   ggplot2::theme(legend.position= 'bottom')
 
-ps |> ### to visualize without the priority zones within. 
+ps[['Geometry']] |> ### to visualize without the priority zones within. 
   dplyr::group_by(SampleOrder) |> 
   dplyr::summarize(geometry = sf::st_union(geometry)) |>
 

@@ -148,7 +148,7 @@ You can *kind of* think about this like an elbow plot, but the samples are so fe
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 gbs.p <- map + 
-  geom_sf(data = grid_buff, aes(fill = factor(ID))) + 
+  geom_sf(data = grid_buff[['Geometry']], aes(fill = factor(ID))) + 
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   labs(title = 'Grids')  + 
   coord_sf(expand = F)
@@ -165,7 +165,7 @@ I also think these results work a little bit better on a fragmented range, their
 
 ```{r Point Based Sample, warning=FALSE, message = FALSE}
 pbs <- PointBasedSample(x_buff)
-pbs.sf <- pbs$Geometry
+pbs.sf <- pbs[['Geometry']]
 
 st_is_valid(x_buff)
 
@@ -190,7 +190,7 @@ This differs from point based sampling in that the above instance, we start with
 eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
 
 eas.p <- map + 
-  geom_sf(data = eas$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(data = eas[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = eas.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Equal Area') + 
   coord_sf(expand = F)
@@ -221,7 +221,7 @@ exist_pts <- sf::st_sample(x_buff, size = 10) |>
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
 
 os.p <- map + 
-  geom_sf(data = os$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(data = os[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   geom_sf(data = exist_pts, alpha = 0.4) + 
   labs(title = 'Opportunistic') + 
@@ -257,7 +257,7 @@ v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
 
 ibdbs.p <- map + 
-  geom_sf(data = ibdbs, aes(fill = factor(ID))) + 
+  geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'IBD') + 
   coord_sf(expand = F)
@@ -296,11 +296,9 @@ ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 10, zone_key = 'Provin
 ebs.sf <- st_crop(ebs.sf, bb)
 
 ebs.p <- map + 
-  geom_sf(data = ebs.sf, aes(fill = factor(allocation))) + 
+  geom_sf(data = ebs.sf , aes(fill = factor(allocation))) + 
   labs(title = 'Ecoregion') + 
   coord_sf(expand = F)
-
-ebs.p
 ```
 
 This output differs from the others we will see, here we have depicted the number of collections to be made per ecoregion. 
@@ -354,6 +352,7 @@ getwd() # this is where the folder is going to located IF YOU DON'T RUN the code
 p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real quick, this should work on 
 # Linux and Mac, but I don't think Windows? 
 # dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
+planar_proj = '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
@@ -364,11 +363,11 @@ ENVIbs <- EnvironmentalBasedSample(
   lyr = 'Supplemented',
   fixedClusters = TRUE, 
   n_pts = 500, 
-  planar_projection = planar_proj,
+  planar_proj = planar_proj,
   buffer_d = 3, prop_split = 0.8)
 
 ENVIbs.p <- map + 
-  geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
@@ -386,7 +385,7 @@ ENVIbs_thresh <- EnvironmentalBasedSample(
   path = file.path(p, 'safeHavens-Vignette'),
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
-  planar_projection = planar_proj,
+  planar_proj = planar_proj,
   lyr = 'Threshold')
 
 ENVIbs_clipped <- EnvironmentalBasedSample(
@@ -395,21 +394,21 @@ ENVIbs_clipped <- EnvironmentalBasedSample(
   path = file.path(p, 'safeHavens-Vignette'),
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
-  planar_projection = planar_proj,
+  planar_proj = planar_proj,
   lyr = 'Clipped')
 
 ENVIbs.p.thresh <- map + 
-  geom_sf(data = ENVIbs_thresh, aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs_thresh[['Geometry']], aes(fill = factor(ID))) + 
   labs(title = 'Threshold') + 
   coord_sf(expand = FALSE)
 
 ENVIbs.p.clipped <- map + 
-  geom_sf(data = ENVIbs_clipped, aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs_clipped[['Geometry']], aes(fill = factor(ID))) + 
   labs(title = 'Clipped') + 
   coord_sf(expand = FALSE)
 
 ENVIbs.p.supp <- map + 
-  geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
   labs(title = 'Supplemented') + 
   coord_sf(expand = FALSE)
 

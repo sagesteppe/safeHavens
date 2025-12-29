@@ -19,7 +19,13 @@ Suggests:
     rmarkdown,
     spData, 
     ggrepel,
-    MASS
+    MASS,
+    lwgeom,
+    gstat,
+    rgbif, 
+    purrr,
+    sp,
+    tidyr
 VignetteBuilder: knitr
 Imports: 
     caret,
