@@ -163,8 +163,10 @@ concavities <- function(x, d, rat){
 
 }
 
-spp_concave <- lapply(sppL, FUN = concavities, d = 20000, rat = 0.4)
-spp_convex  <- lapply(sppL, concavities, d = 20000, rat = 1.0)
+spp_concave <- sppL |>
+  purrr::map(~ concavities(.x, d = 20000, rat = 0.4))
+spp_convex <- sppL |>
+  purrr::map(~ concavities(.x, d = 20000, rat = 1.0))
 
 rm(concavities)
 ```
@@ -174,18 +176,14 @@ Concave hulls
 ```{r plot concave hulls}
 base +
   geom_sf(data = spp_concave[[1]], aes(fill = acceptedScientificName), alpha = 0.2) +
-  geom_sf(data = spp_concave[[2]],  aes(fill = acceptedScientificName), alpha = 0.2) +
-  theme_void() +
-  theme(legend.position = 'bottom')
+  geom_sf(data = spp_concave[[2]],  aes(fill = acceptedScientificName), alpha = 0.2) 
 ```
 
 Convex hulls 
 ```{r plot convex hulls}
 base +
   geom_sf(data = spp_convex[[1]],  aes(fill = acceptedScientificName), alpha = 0.2) +
-  geom_sf(data = spp_convex[[2]], aes(fill = acceptedScientificName), alpha = 0.2) +
-  theme_void() +
-  theme(legend.position = 'bottom')
+  geom_sf(data = spp_convex[[2]], aes(fill = acceptedScientificName), alpha = 0.2) 
 
 rm(spp_convex)
 ```
@@ -193,17 +191,23 @@ rm(spp_convex)
 For the sake of the example we will only use the concave ranges going forward. 
 
 ```{r determine radius for buffering points}
-lapply(sppL, vario_estimate, bb_dist = 50000)
+buffered <- sppL |>
+  purrr::map(~ vario_estimate(.x, bb_dist = 50000))
 
-#base +
-#  geom_sf(data = dat2, fill = 'red', alpha = 0.2) 
+lapply(buffered, `[[`, 'range')
+
+buffered +
+  geom_sf(data = buffered[[1]],  aes(fill = acceptedScientificName), alpha = 0.2) +
+  geom_sf(data = buffered[[2]], aes(fill = acceptedScientificName), alpha = 0.2) 
 ```
 
 ## Sampling the polygon hulls 
 
 Perform equal area sampling
 ```{r perform sampling}
-eas <- lapply(spp_concave, FUN = EqualAreaSample, n = 10, pts = 250, planar_projection = 5070, reps = 25)
+eas <- spp_concave |>
+  purrr::map(~ EqualAreaSample(.x, n = 10, pts = 250, planar_projection = 5070, reps = 25))
+
 base +
   geom_sf(data = eas[[2]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
 ```
@@ -216,18 +220,15 @@ Perform isolation by distance (IBD) based sampling.
 template <- terra::rast(terra::ext(bb), crs = "epsg:4326", resolution = c(0.1, 0.1))
 
 # the species range now gets 'burned' into the raster template. 
-spp_concave <- lapply(spp_concave, FUN = function(x){ 
+spp_concave <- purrr::map(spp_concave, \(x) {
   st_as_sf(x) |> 
-    mutate(Range = 1, .before = geometry) |> ## this `field` is rasterized
+    mutate(Range = 1, .before = geometry) |>
     st_transform(4326) |> 
     terra::rasterize(template, field = 'Range') 
-    }
-  )
+})
 
-ibd_samples <- lapply(
-  spp_concave, 
-  FUN = IBDBasedSample, 
-  n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070)
+ibd_samples <- spp_concave |>
+  purrr::map(~ IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template))
 
 base + 
   geom_sf(data = ibd_samples[[1]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
@@ -248,10 +249,19 @@ base +
 
 Write out the data for long term storage. 
 ```{r write out data for storage}
+## create a directory to hold the outputs
+p2Collections <- file.path('~', 'Documents', 'WorkedExample_Output')
+dir.create(p2Collections, showWarnings = FALSE)
 
-## write out the template for future use. 
+## write out the raster template for future use. 
+dir.create(file.path(p2Collections, 'IBD_raster_template'), showWarnings = FALSE)
+terra::writeRaster(template, 
+  filename = file.path(p2Collections, 'IBD_raster_template', 'IBD_template.tif'), 
+  overwrite = TRUE)
 
-## save each species as geopackage. ## 1) points, 2) hull, 3) zones, 4) prioritized samples. 
+## save each species as geopackage. ## 1) points, 2) hull 3) zones, 4) prioritized samples. 
+
+
 ```
 
 Clean up environment etc. 
