@@ -136,8 +136,6 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
     dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
     sf::st_make_valid() |>
     sf::st_as_sf() |>
-    dplyr::rename(tidyselect::any_of(lkp))
+    dplyr::rename(dplyr::any_of(lkp))
   
 }
-
-??any_of()

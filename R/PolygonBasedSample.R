@@ -223,12 +223,12 @@ PolygonBasedSample <- function(
   }
   
   # Compute polygon areas
-  zones_sub <- dplyr::mutate(zones_sub, poly_area = units::set_units(sf::st_area(geometry), "m^2"))
+  zones_sub <- dplyr::mutate(zones_sub, poly_area = as.numeric(sf::st_area(geometry))) # in m^2
   
   # Compute zone-level summaries
   zone_summary <- zones_sub |>
     sf::st_drop_geometry()  |>
-    dplyr::group_by(!!rlang::sym(zone_key)) |>
+    dplyr::group_by(.data[[zone_key]]) |>
     dplyr::summarise(
       polygon_ct = dplyr::n(),
       total_area_m2 = sum(poly_area),
@@ -243,10 +243,10 @@ PolygonBasedSample <- function(
 
     modifiers_reduced <- zones_sub |>
       sf::st_drop_geometry() |>
-      dplyr::group_by(!!sym(zone_key)) |>
+      dplyr::group_by(.data[[zone_key]]) |>
       dplyr::summarise(
-        warmest = if (need_warm) max(!!rlang::sym(warmest_col), na.rm = TRUE) else NA_real_,
-        precip  = if (need_drier) min(!!rlang::sym(precip_col),  na.rm = TRUE) else NA_real_,
+        warmest = if (need_warm) max(.data[[warmest_col]], na.rm = TRUE) else NA_real_,
+        precip  = if (need_drier) min(.data[[precip_col]],  na.rm = TRUE) else NA_real_,
         .groups = "drop"
       )
     
@@ -265,7 +265,7 @@ PolygonBasedSample <- function(
   # Case 1: n == n_zones (one sample per zone)
   if (n == n_zones) {
     result <- zones_sub |>
-      dplyr::group_by(!!rlang::sym(zone_key)) |>
+      dplyr::group_by(.data[[zone_key]]) |>
       dplyr::slice_max(order_by = poly_area, n = 1) |>
       dplyr::ungroup() |>
       dplyr::mutate(allocation = 1, .before = geometry)
@@ -279,7 +279,7 @@ PolygonBasedSample <- function(
     
     result <- zones_sub |>
       dplyr::filter(.data[[zone_key]] %in% selected) |>
-      dplyr::group_by(!!rlang::sym(zone_key)) |>
+      dplyr::group_by(.data[[zone_key]]) |>
       dplyr::slice_max(order_by = poly_area, n = 1) |>
       dplyr::ungroup() |>
       dplyr::mutate(allocation = 1, .before = geometry)
@@ -306,13 +306,13 @@ PolygonBasedSample <- function(
 rank_zones <- function(df, method, total_area_m2 = NULL, Pplygon_ct = NULL, warmest_col = NULL, precip_col = NULL){
   # df must contain total_area_m2, polygon_ct, plus optionally climate columns
   if (method == "Largest") {
-    dplyr::arrange(df, desc(total_area_m2))
+    dplyr::arrange(df, dplyr::desc(total_area_m2))
   } else if (method == "Smallest") {
     dplyr::arrange(df, total_area_m2)
   } else if (method == "Most") {
-    dplyr::arrange(df, desc(polygon_ct))
+    dplyr::arrange(df, dplyr::desc(polygon_ct))
   } else if (method == "Assist-warm") {
-    dplyr::arrange(df, desc(.data[[warmest_col]]))
+    dplyr::arrange(df, dplyr::desc(.data[[warmest_col]]))
   } else if (method == "Assist-drier") {
     dplyr::arrange(df, .data[[precip_col]])  # assume lower precip = drier. not globally safe. 
   } else {
@@ -366,10 +366,12 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
     }
   }
 
-  allocation <- tibble::tibble(
-    !!zone_key := zone_summary[[zone_key]],
-    n_alloc = allocation_counts
+  allocation <- data.frame(
+    n_alloc = allocation_counts,
+    stringsAsFactors = FALSE
   )
+  allocation[[zone_key]] <- zone_summary[[zone_key]]
+
 
   # distribute points across polygons per zone
   out_list <- vector("list", n_zones)

@@ -54,8 +54,17 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
     sf::st_coordinates() |>
     as.matrix()
 
+  pts_sf <- sf::st_as_sf(
+    data.frame(pts),
+    coords = c("X", "Y"),
+    crs = sf::st_crs(x)
+  )
+
   # calculate great circle distances between locations
-  geoDist <- raster::pointDistance(pts, lonlat = TRUE) 
+  #geoDist <- raster::pointDistance(pts, lonlat = TRUE) 
+  geoDist <- matrix(as.numeric(sf::st_distance(pts_sf, pts_sf)), 
+       nrow = nrow(pts_sf), 
+       ncol = nrow(pts_sf))
 
   pts <- as.data.frame(pts)
   if(fixedClusters==TRUE){ # run the clustering processes. 

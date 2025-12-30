@@ -38,19 +38,14 @@ Imports:
     NbClust,
     nngeo,
     nptest,
-    raster,
-    rlang,
     rmapshaper,
     sdm,
     sf,
     spdep,
     spThin,
     stats,
-    tidyselect,
     terra,
-    units,
     vegan,
-    cluster,
-    tibble
+    cluster
 URL: https://sagesteppe.github.io/safeHavens/
 LazyData: true

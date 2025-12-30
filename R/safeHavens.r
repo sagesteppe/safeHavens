@@ -34,3 +34,5 @@ NULL
 #' @name WesternEcoregions
 #' @format A spatial vector data set. 
 NULL
+
+utils::globalVariables(".data")
