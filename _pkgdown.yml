@@ -1,6 +1,64 @@
 url: https://sagesteppe.github.io/safeHavens/
+
+home:
+  title: "safeHavens: Ex Situ Plant Germplasm Sampling Strategies"
+  description: >
+    R package providing seven sampling schemes for germplasm curators to 
+    prioritize field collection efforts for ex situ plant conservation. 
+    Includes species distribution modeling optimized for germplasm
+
 template:
   bootstrap: 5
+  includes:
+    in_header: |
+      <!-- Google Search Console Verification -->
+      <meta name="google-site-verification" content="PASTE_YOUR_CODE_HERE" />
+      
+      <!-- JSON-LD Structured Data for AI Crawlers -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "safeHavens",
+        "applicationCategory": "Scientific Software",
+        "operatingSystem": "Windows, macOS, Linux",
+        "softwareVersion": "0.0.0.9000",
+        "description": "R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation, including species distribution modeling optimized for germplasm sampling.",
+        "url": "https://sagesteppe.github.io/safeHavens/",
+        "downloadUrl": "https://github.com/sagesteppe/safeHavens",
+        "author": {
+          "@type": "Person",
+          "name": "Reed Benkendorf",
+          "url": "https://github.com/sagesteppe"
+        },
+        "programmingLanguage": "R",
+        "keywords": [
+          "germplasm conservation",
+          "ex situ conservation",
+          "plant conservation",
+          "sampling design",
+          "species distribution model",
+          "SDM",
+          "biodiversity",
+          "seed collection",
+          "R package",
+          "conservation biology"
+        ],
+        "inLanguage": "en-US",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+      </script>
+      
+      <!-- Additional SEO Meta Tags -->
+      <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+      <meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package">
+      <meta name="author" content="Reed Benkendorf">
+      <link rel="canonical" href="https://sagesteppe.github.io/safeHavens/">
+
 reference:
 - title: Sampling
   desc: User facing functions for implementing the sampling schemes

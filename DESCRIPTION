@@ -47,5 +47,7 @@ Imports:
     terra,
     vegan,
     cluster
-URL: https://sagesteppe.github.io/safeHavens/
+URL: https://sagesteppe.github.io/safeHavens/, 
+     https://github.com/sagesteppe/safeHavens
+BugReports: https://github.com/sagesteppe/safeHavens/issues
 LazyData: true
