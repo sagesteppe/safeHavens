@@ -1,15 +1,13 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-[![R-CMD-check](https://github.com/sagesteppe/flyer/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml)
-
+[![R build
+status](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/safeHavens/actions)
 [![CodeFactor](https://www.codefactor.io/repository/github/sagesteppe/safeHavens/badge)](https://www.codefactor.io/repository/github/sagesteppe/safeHavens)
 [![Project Status: Active - The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-
-# Description
 
 The goal of this package is to provide germplasm curators with easily
 referable spatial data sets to help prioritize field collection efforts.
@@ -51,6 +49,12 @@ github or CRAN
 
 `safeHavens` has only seven user facing functions for generating the
 sampling schemes.
+
+### Available Sampling Schemes
+
+The following table shows the seven sampling approaches available in
+safeHavens, with their computational complexity (Comp.) and
+environmental data requirements (Envi.): L = Low, M = Medium, H = High.
 
 | Function                   | Description                             | Comp. | Envi. |
 | -------------------------- | --------------------------------------- | ----- | ----- |
