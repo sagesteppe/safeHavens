@@ -12,7 +12,7 @@ template:
   includes:
     in_header: |
       <!-- Google Search Console Verification -->
-      <meta name="google-site-verification" content="PASTE_YOUR_CODE_HERE" />
+      <meta name="google-site-verification" content="viUZcwXk_Fi5hsfdB7m6GgrFgGMJ-xVe1BcMTezGJII" />
       
       <!-- JSON-LD Structured Data for AI Crawlers -->
       <script type="application/ld+json">

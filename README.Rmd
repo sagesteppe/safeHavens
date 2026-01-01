@@ -11,9 +11,10 @@ description: "R package providing seven sampling schemes for germplasm curators 
 
 ```{r, echo = FALSE, results='asis'}
 cat(
-  badger::badge_github_actions('sagesteppe/safeHavens'), ' ',
-	badger::badge_codefactor('sagesteppe/safeHavens'), 
-	badger::badge_repostatus("Active")
+  badger::badge_github_actions('sagesteppe/safeHavens'), '\n',
+	badger::badge_codefactor('sagesteppe/safeHavens'), '\n',
+	badger::badge_repostatus("Active"), '\n',
+  badger::badge_github_actions("sagesteppe/safeHavens", "R-CMD-check"), "\n"
 )
 ```
 
