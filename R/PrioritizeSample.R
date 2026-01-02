@@ -19,7 +19,6 @@
 #'
 #' Note that if you are submitting data from the `PolygonBasedSample`, the column `n`, must be maintained. 
 #' @param x an sf/tibble/dataframe. a set of sample grids from any of the *Sample functions 
-#' @param method Character. The method to use for prioritization. Currently only 'centered' is implemented.
 #' @param reps Numeric. The number of repetitions used in the sampling design. This is only used for messaging purposes at this time.
 #' @param n_breaks Numeric. The number of breaks to return from the function, defaults to 3. Values beyond 5 of are questionable utility.  
 #' @param verbose Bool. Whether to print messages to console or not, defaults to TRUE. 
@@ -37,7 +36,7 @@
 #' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
 #' 
 #' # the function requires an input sampling strategy to create the prioritization areas
-#' ps <- PrioritizeSample(zones$Geometry, method = 'centered', n_breaks = 3, metric = 'energy')
+#' ps <- PrioritizeSample(zones$Geometry, n_breaks = 3, metric = 'energy')
 #' 
 #' ggplot2::ggplot() + 
 #'   ggplot2::geom_sf(data = ps[['Geometry']],
@@ -58,7 +57,7 @@
 #'   ggplot2::theme(legend.position= 'bottom')
 #' }
 #' @export
-PrioritizeSample <- function(x, method, reps, n_breaks = 3, verbose=TRUE, 
+PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE, 
   metric = c("var", "sd", "energy", "cv")){
 
 	# Ecoregion based sample is the one method where rows which are not meant to be sampled 

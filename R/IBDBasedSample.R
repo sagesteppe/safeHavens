@@ -46,7 +46,7 @@
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export 
 IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, prop_split = 0.8, 
-  min.nc = 5, max.nc = 20){
+  min.nc = 5, max.nc = 20, planar_proj){
   
   pts <- sf::st_sample(
     sf::st_as_sf(terra::as.polygons(x)), size = n_pts) |>
@@ -61,10 +61,12 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
   )
 
   # calculate great circle distances between locations
-  #geoDist <- raster::pointDistance(pts, lonlat = TRUE) 
-  geoDist <- matrix(as.numeric(sf::st_distance(pts_sf, pts_sf)), 
+  geoDist <- matrix(
+    as.numeric(
+      sf::st_distance(pts_sf, pts_sf)), 
        nrow = nrow(pts_sf), 
-       ncol = nrow(pts_sf))
+       ncol = nrow(pts_sf)
+      )
 
   pts <- as.data.frame(pts)
   if(fixedClusters==TRUE){ # run the clustering processes. 

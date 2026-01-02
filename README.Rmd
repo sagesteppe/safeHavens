@@ -14,7 +14,7 @@ cat(
   badger::badge_github_actions('sagesteppe/safeHavens'), '\n',
 	badger::badge_codefactor('sagesteppe/safeHavens'), '\n',
 	badger::badge_repostatus("Active"), '\n',
-  badger::badge_github_actions("sagesteppe/safeHavens", "R-CMD-check"), "\n"
+  "[![R-CMD-check](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml)", "\n"
 )
 ```
 
