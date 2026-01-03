@@ -12,7 +12,7 @@
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
 #' @param planar_proj Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.
 #' @examples 
-#' planar_proj ='+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+#' planar_proj = 'EPSG:102015'
 #' 
 #' x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 #' x <- x[,c('lon', 'lat')]

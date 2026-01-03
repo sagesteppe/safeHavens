@@ -254,7 +254,7 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = 102015)
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = 'EPSG:102015')
 
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
