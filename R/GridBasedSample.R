@@ -93,22 +93,6 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
     prop_areas[[i]] <- areas[[i]] / (sum(areas[[i]]) + area2be_reassigned[i]) 
   }
   
-  area2be_reassigned <- vector(length = length(neighbors))
-  areas <- vector(mode = 'list', length = length(neighbors))
-  prop_areas <- vector(mode = 'list', length = length(neighbors))
-  prop_donor <- numeric(length = length(neighbors))
-  
-  for (i in seq_along(neighbors)){
-    
-    area2be_reassigned[i] <- sf::st_area(to_merge_sf[i,])
-    areas[[i]] <- as.numeric(sf::st_area(gr[neighbors[[i]],]))
-    
-    prop_donor[i] <- area2be_reassigned[i] / (sum(areas[[i]]) + area2be_reassigned[i]) 
-    prop_areas[[i]] <- areas[[i]] / (sum(areas[[i]]) + area2be_reassigned[i]) 
-  }
-  
-  rm(area2be_reassigned)
-  
   prop_target <- vector(mode = 'list', length = length(prop_areas))
   area_sort <- vector(mode = 'list', length = length(prop_areas))
   area_des <- vector(mode = 'list', length = length(prop_areas))
@@ -116,38 +100,29 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   props <- vector(mode = 'list', length = length(prop_areas))
   # Using the polygons which will be merged, try to make the following polygons
   # as equally sized as possible - without ever removing area from an existing grid. 
-  for (i in seq_along(area_sort)){
-    
-    area_des <- (sum(prop_areas[[i]]) + prop_donor[i]) / length(prop_areas[[i]])
-    
-    if(all(prop_areas[[i]] < area_des)==TRUE){
-      
-      # these polygons will all be the same size!... roughly... 
-      prop_target[[i]] <- rep(area_des, times = length(prop_areas[[i]]))
-      
-    } else if(any(prop_areas[[i]] > area_des)==TRUE){
-      
-      prop_target[[i]] <- numeric(length(prop_areas[[i]]))
-      kp <- prop_areas[[i]] < area_des # determine which grids are to big
-      area_des <- (sum(prop_areas[[i]][kp]) + prop_donor[i]) / 
-        length(prop_areas[[i]][kp])
-      
-      # make grids smaller than the goal threshold size the threshold, 
-      # return grids larger than the threshold size as they are. 
-      prop_target[[i]][kp] <- area_des
-      prop_target[[i]][!kp] <-prop_areas[[i]][!kp]
+  for (i in seq_along(neighbors)) {
+
+    nb <- neighbors[[i]]
+
+    areas_i <- as.numeric(sf::st_area(gr[nb, ]))
+    donor   <- as.numeric(sf::st_area(to_merge_sf[i, ]))
+
+    prop_existing <- areas_i / (sum(areas_i) + donor)
+
+    area_des <- (sum(prop_existing) + donor / (sum(areas_i) + donor)) / length(prop_existing)
+
+    prop_target <- if (all(prop_existing < area_des)) {
+      rep(area_des, length(prop_existing))
+    } else {
+      kp <- prop_existing < area_des
+      area_des <- (sum(prop_existing[kp]) + donor / (sum(areas_i) + donor)) / sum(kp)
+      replace(prop_existing, kp, area_des)
     }
-    
-    nf_pct[[i]] <- stats::setNames( # the existing cover for each grid. 
-      prop_areas[[i]] * 100, 
-      neighbors[[i]]
-    )
-    
-    props[[i]] <- stats::setNames( # the desired cover for each grid 
-      prop_target[[i]] * 100, 
-      neighbors[[i]]
-    )
+
+    nf_pct[[i]] <- setNames(prop_existing * 100, nb)
+    props[[i]]  <- setNames(prop_target   * 100, nb)
   }
+
 
   rm(area_des, area_sort, i, prop_donor, prop_target, areas)
   
