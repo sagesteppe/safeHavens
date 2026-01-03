@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ```{r Install Package, message=FALSE, eval = F}
 #remotes::install_github('sagesteppe/safeHavens') 
-remotes::install_github('sagesteppe/safeHavens@WorkedExamples') 
+remotes::install_github('sagesteppe/safeHavens@WorkedExample') 
 ```
 
 ```{r Load Libraries, message=FALSE}
