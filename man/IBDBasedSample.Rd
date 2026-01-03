@@ -13,7 +13,7 @@ IBDBasedSample(
   prop_split = 0.8,
   min.nc = 5,
   max.nc = 20,
-  planar_proj = NULL
+  planar_proj
 )
 }
 \arguments{
@@ -43,7 +43,7 @@ An simple features (sf) object containing the final grids for saving to computer
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
 }
 \examples{
-planar_proj ='+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+planar_proj = 102015
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]

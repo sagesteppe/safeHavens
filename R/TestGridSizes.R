@@ -80,5 +80,5 @@ TestGridSizes <- function(target){
     GridNOx = c(x_start+2, x_start+1, x_start, x_start-1, x_start-2), 
     GridNOy = c(y_start+2, y_start+1, y_start, y_start-1, y_start-2)
   )
-  return(results)
+  results
 }

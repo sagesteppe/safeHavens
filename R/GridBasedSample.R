@@ -2,9 +2,10 @@
 #' 
 #' @description This function creates 20 grid cells over a geographic area (`x`), typically a species range.  
 #' @param x An SF object or terra spatraster. the range over which to generate the clusters.
-#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
+#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param gridDimensions A single row form the ouput of `TestGridSizes` with the optimal number of grids to generate. 
-#' @examples \dontrun{ # not ran to bypass CRAN check time limits. ~6 seconds to treat Rhode Island. 
+#' @examples 
+#' \dontrun{ # not ran to bypass CRAN check time limits. ~6 seconds to treat Rhode Island. 
 #' ri <- spData::us_states |> 
 #' dplyr::filter(NAME == 'Rhode Island') |>
 #'   sf::st_transform(32615)
@@ -14,14 +15,14 @@
 #' sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 #' 
 #' output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
-#' plot(output$geometry)
+#' plot(output$Geometry)
 #' }
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
-GridBasedSample <- function(x, planar_projection, gridDimensions){
+GridBasedSample <- function(x, planar_proj, gridDimensions){
   
-  if(missing(planar_projection)){planar_projection = 5070}
-  if(sf::st_crs(x) != planar_projection){x <-  sf::st_transform(x, planar_projection)}
+  if(missing(planar_proj)){planar_proj = 5070}
+  if(sf::st_crs(x) != planar_proj){x <-  sf::st_transform(x, planar_proj)}
   
   # Determine the size of each grid. 
   gr <- sf::st_make_grid(x, n = c(gridDimensions$GridNOx, gridDimensions$GridNOy), square = FALSE) 
@@ -47,10 +48,8 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   gr <- to_merge_sf |> 
     sf::st_union() |> 
     sf::st_cast('POLYGON') |> 
-    sf::st_as_sf()  %>% # gotta use pipe to set position of tibbles 
-    dplyr::bind_rows(
-      gr[indices,] |> sf::st_as_sf(), .
-    )
+    sf::st_as_sf() |>
+    (\(new_data) dplyr::bind_rows(gr[indices,] |> sf::st_as_sf(), new_data))()
   
   # Determine neighboring polygons
   sf::st_agr(gr) <- 'constant'

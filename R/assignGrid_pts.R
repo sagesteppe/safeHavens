@@ -135,5 +135,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
     dplyr::rename(dplyr::any_of(lkup)) |>
     dplyr::select(Assigned, geometry) |>
     dplyr::mutate(Assigned = as.numeric(Assigned))
-  return(pts)
+
+  pts
 }
+

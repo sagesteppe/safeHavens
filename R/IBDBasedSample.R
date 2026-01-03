@@ -108,6 +108,7 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
   if(!is.null(planar_proj)){ ## optional planar proj use for safety
     spatialClusters <- sf::st_transform(spatialClusters, planar_proj)
   }
+  
   sf::st_agr(spatialClusters) = "constant"
   cents <- sf::st_point_on_surface(spatialClusters)
 

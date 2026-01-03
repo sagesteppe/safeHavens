@@ -22,7 +22,8 @@ knitr::opts_chunk$set(
 `safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-remotes::install_github('sagesteppe/safeHavens') 
+#remotes::install_github('sagesteppe/safeHavens') 
+remotes::install_github('sagesteppe/safeHavens@WorkedExamples') 
 ```
 
 ```{r Load Libraries, message=FALSE}
@@ -34,7 +35,8 @@ library(spData)
 library(dplyr)
 library(patchwork)
 set.seed(23) 
-planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 ```
 
 ## Defining a Species Range or Domain for Sampling
@@ -187,7 +189,7 @@ This process will be ran a few times, defaulting to 100 `reps`, and the set of p
 This differs from point based sampling in that the above instance, we start with a few regularly spaced points to grow from, here we take a step back and by using many points let the clusters grow themselves to similar sizes. 
 
 ```{r Equal Area Sample, message = FALSE}
-eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
+eas <- EqualAreaSample(x_buff, planar_proj = planar_proj) 
 
 eas.p <- map + 
   geom_sf(data = eas[['Geometry']], aes(fill = factor(ID))) + 
@@ -254,7 +256,7 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = 102015)
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = planar_proj)
 
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 

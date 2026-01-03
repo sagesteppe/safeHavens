@@ -239,7 +239,7 @@ lapply(buffered, `[[`, 'range')
 First we will perform equal area sampling with a relatively low amount of points and repetitions. 
 ```{r perform sampling}
 eas <- spp_concave |>
-  purrr::map(~ EqualAreaSample(.x, n = 10, pts = 250, planar_projection = 5070, reps = 25))
+  purrr::map(~ EqualAreaSample(.x, n = 10, pts = 250, planar_proj = 5070, reps = 25))
 
 base +
   geom_sf(data = eas[[2]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)

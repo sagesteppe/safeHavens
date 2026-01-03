@@ -8,7 +8,7 @@ EqualAreaSample(
   x,
   n = 20,
   pts = 5000,
-  planar_projection,
+  planar_proj,
   returnProjected,
   reps = 100,
   BS.reps = 9999
@@ -21,7 +21,7 @@ EqualAreaSample(
 
 \item{pts}{Numeric. the number of points to use for generating the clusters, these will be placed in a grid like fashion across \code{x}. The exact number of points used may deviate slightly from the user submitted value to allow for equidistant spacing across \code{x}. Defaults to 5,000.}
 
-\item{planar_projection}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
+\item{planar_proj}{Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.}
 
 \item{returnProjected}{Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new \code{projection} (TRUE). Defaults to FALSE.}
 
@@ -44,7 +44,7 @@ dplyr::select(NAME)
 
 set.seed(1)
 system.time(
-  zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_projection = 32617, reps = 50)
+  zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_proj = 32617, reps = 50)
 )
 
 plot(nc, main = 'Counties of North Carolina')

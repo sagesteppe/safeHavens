@@ -33,7 +33,7 @@
 #'   sf::st_transform(5070) # should be in planar coordinate system. 
 #' 
 #' set.seed(1)
-#' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+#' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_proj = 32617, reps = 100)
 #' 
 #' # the function requires an input sampling strategy to create the prioritization areas
 #' ps <- PrioritizeSample(zones$Geometry, n_breaks = 3, metric = 'energy')
