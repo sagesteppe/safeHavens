@@ -162,7 +162,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   # place points throughout the grids which need to be merged to determine
   # how they will be reallocated into larger grids. 
   to_merge_sf <- dplyr::rename(to_merge_sf, geometry = x)
-  to_merge_sf <- split(to_merge_sf, f = seq_len(:nrow(to_merge_sf)))
+  to_merge_sf <- split(to_merge_sf, f = seq_len(nrow(to_merge_sf)))
   
   out <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(out)){
