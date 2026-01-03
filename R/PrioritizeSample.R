@@ -118,7 +118,7 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
     dplyr::mutate(SampleOrder = SampleOrder) |>
     dplyr::select(ID, SampleOrder, Level, geometry) 
 
-  return(list(Geometry = sample_levels))
+  list(Geometry = sample_levels)
 }
 
 #' Order zones by minimizing distance variance
