@@ -254,7 +254,7 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = 102015)
 
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
@@ -352,7 +352,7 @@ getwd() # this is where the folder is going to located IF YOU DON'T RUN the code
 p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real quick, this should work on 
 # Linux and Mac, but I don't think Windows? 
 # dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
-planar_proj = '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+planar_proj = 'EPSG:102015'
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 

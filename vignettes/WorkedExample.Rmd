@@ -344,7 +344,7 @@ rm(p2Collections, fp, i)
 
 Clean up environment
 
-```{r clean up environmentm eval = F}
+```{r clean up environment, eval = F}
 rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base, vario_estimate, template)
 #rm(vario_estimate, buffered)
 ```
