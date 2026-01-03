@@ -131,14 +131,14 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr = 'Supplemented'
   
   concentrated_pts <- concentrated_pts[stats::complete.cases(concentrated_pts),]
   concentrated_pts <- unique(concentrated_pts)
-  concentrated_pts$ID <- 1:nrow(concentrated_pts)
+  concentrated_pts$ID <- seq_len(nrow(concentrated_pts))
   
   # now we see if any points from the first data set are repeated in the second
   duplicated <- dplyr::inner_join( # obviously we remove them... 
     concentrated_pts[,c('ID', 'x', 'y')], weighted_mat[,c('x', 'y')])
   concentrated_pts <- concentrated_pts[ 
     ! concentrated_pts$ID %in% duplicated$ID, 
-    1:ncol(concentrated_pts)-1]
+    seq_len(ncol(concentrated_pts))-1]
   
   ######## NOW APPLY A K NEAREST NEIGHBORS ALGORITHM TO THESE POINTS AND SEE
   # WHICH GROUPS THEY BELONG ##
@@ -172,7 +172,7 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr = 'Supplemented'
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::mutate(ID = seq_len(dplyr::n())) |>
     dplyr::arrange(ID) |>
     dplyr::select(ID, geometry)
   
@@ -210,6 +210,6 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr = 'Supplemented'
       append = FALSE, quiet = TRUE)
   }
   
-  return(list(Geometry = ClusterVectors))
+  list(Geometry = ClusterVectors)
   
 }

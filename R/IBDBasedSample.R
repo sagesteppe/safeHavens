@@ -131,5 +131,5 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
     dplyr::select(-class) |>
     dplyr::arrange(ID)
   
-  return(list(Geometry = spatialClusters))
+  list(Geometry = spatialClusters)
 }

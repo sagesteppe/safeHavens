@@ -32,7 +32,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   grid_areas <- sf::st_as_sf(gr) |> 
     sf::st_make_valid() |>
     dplyr::mutate(
-      ID   = 1:dplyr::n(),
+      ID   = seq_len(dplyr::n()),
       Area = as.numeric(sf::st_area(gr))
     )
   
@@ -152,7 +152,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
 
   rm(area_des, area_sort, i, prop_donor, prop_target, areas)
   
-  gr <- dplyr::mutate(gr, ID = 1:dplyr::n(),  .before = x) |>
+  gr <- dplyr::mutate(gr, ID = seq_len(dplyr::n()),  .before = x) |>
     dplyr::rename(geometry = x)
   neighb_grid <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(neighbors)){
@@ -162,7 +162,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   # place points throughout the grids which need to be merged to determine
   # how they will be reallocated into larger grids. 
   to_merge_sf <- dplyr::rename(to_merge_sf, geometry = x)
-  to_merge_sf <- split(to_merge_sf, f = 1:nrow(to_merge_sf))
+  to_merge_sf <- split(to_merge_sf, f = seq_len(:nrow(to_merge_sf)))
   
   out <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(out)){
@@ -211,7 +211,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(NEWID = 1:dplyr::n()) |>
+    dplyr::mutate(NEWID = seq_len(dplyr::n())) |>
     sf::st_drop_geometry() |>
     dplyr::select(Assigned, NEWID)
   
@@ -228,5 +228,5 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     dplyr::arrange(ID) |>
     dplyr::relocate(ID)
   
-  return(list(Geometry = final_grids))
+  list(Geometry = final_grids)
 }

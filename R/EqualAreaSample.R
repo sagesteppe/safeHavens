@@ -67,7 +67,7 @@ EqualAreaSample <- function(x, n = 20, pts = 5000, planar_projection, returnProj
     statistic = quantile, 
     R = BS.reps, 
     na.rm = TRUE, 
-    probs = c(0.001), 
+    probs = 0.001, 
     level = 0.95) 
   
   # but we only select sets of records which actually meet the sample size requirements, 
@@ -111,7 +111,7 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
   
   # gather the geographic centers of the polygons. 
   kmeans_centers <- stats::setNames(
-    data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
+    data.frame(kmeans_res['centers'], seq_len(nrow(kmeans_res['centers'][[1]]))), 
     # use the centers as voronoi cores ... 
     c('X', 'Y', 'ID'))
   kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
@@ -133,7 +133,7 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
                        sf::st_crs(voronoi_poly)))
   ) |>  
     # we can assign an arbitrary number. 
-    dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
+    dplyr::mutate(ID = seq_len(nrow(voronoi_poly))) |>
     sf::st_make_valid() |>
     sf::st_as_sf() |>
     dplyr::rename(dplyr::any_of(lkp))

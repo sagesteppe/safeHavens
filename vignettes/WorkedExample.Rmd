@@ -165,7 +165,7 @@ base <- ggplot() +
   theme(legend.position = 'bottom')
 
 base
-rm(bb, western_states)
+rm(western_states)
 ```
 
 
@@ -265,11 +265,12 @@ spp_concave <- purrr::map(spp_concave, \(x) {
 
 ## the actual sampling happens here within `map`
 ibd_samples <- spp_concave |>
-  purrr::map(~ list(IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070)))
+  purrr::map(~ IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070))
 
 base + ## visualize for a single taxon. 
   geom_sf(data = ibd_samples[[1]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
 
+rm(spp_concave)
 ```
 
 The above plot for the isolation-by-distance sampling shows the individual sample areas. 
@@ -293,6 +294,8 @@ ibd_samples_priority <- ibd_samples %>%
 
 base + 
   geom_sf(data = ibd_samples_priority[[2]][['Geometry']], aes(fill = factor(Level)), alpha = 0.2)
+
+rm(bb)
 ```
 
 The map above shows a possible general order to guide the prioritization of individual sample areas, and simplified visuals of where within sample areas to attempt to target. 
@@ -303,7 +306,7 @@ Upon completion of runs results for species can be written to individual geopack
 A strong benefit of a geopackage is it's ability to hold multiple geometry types (polygons, points, rasters, etc.), which can sometimes be lost when they are kept in separate directories. 
 
 Write out the data for long term storage. 
-```{r write out data for storage}
+```{r write out data for storage, eval = F}
 ## create a directory to hold the outputs
 p2Collections <- file.path('~', 'Documents', 'WorkedExample_Output')
 dir.create(p2Collections, showWarnings = FALSE)
@@ -313,7 +316,8 @@ dir.create(file.path(p2Collections, 'IBD_raster_template'), showWarnings = FALSE
 
 ## to save template cells need to have values... 
 terra::values(template) <- 0 # set to abritary value
-terra::writeRaster(template, filename = file.path(p2Collections, 'IBD_raster_template', 'IBD_template.tif'))
+terra::writeRaster(template, 
+  filename = file.path(p2Collections, 'IBD_raster_template', 'IBD_template.tif'), overwrite = FALSE)
 
 ## save each species as geopackage. 
 for(i in seq_along(sppL)){
@@ -324,23 +328,23 @@ for(i in seq_along(sppL)){
   st_write(sppL[[i]], dsn = fp, layer =  'occurrence_points', quiet = TRUE)
 
   ### results of equal area sampling  
-  st_write(eas[[i]]$Geometry,  dsn = fp, layer =  'equal_area_samples', quiet = TRUE)
+  st_write(eas[[i]]$Geometry,  dsn = fp, layer =  'equal_area_samples', quiet = TRUE, append = TRUE)
 
   ### ibd based sample (note can be reconstruced from the hulls of ibd samples priority)
- # st_write(ibd_samples[[i]]$Geometry, dsn = fp, layer =  'ibd_samples')
+  st_write(ibd_samples[[i]]$Geometry, dsn = fp, layer =  'ibd_samples', quiet = TRUE, append = TRUE)
 
   ### prioritized information for the IBD samples. 
-  st_write(ibd_samples_priority[[i]]$Geometry, dsn = fp, layer =  'ibd_sampling_priority', quiet = TRUE)
+  st_write(ibd_samples_priority[[i]]$Geometry, dsn = fp, layer =  'ibd_sampling_priority', quiet = TRUE, append = TRUE)
 
   message(format(object.size(fp), standard = "IEC", units = "MiB", digits = 4))
 }
 
-rm(p2collections, fp, i)
+rm(p2Collections, fp, i)
 ```
 
 Clean up environment
 
 ```{r clean up environmentm eval = F}
-rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base, vario_estimate)
-#rm(vario_estimate)
+rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base, vario_estimate, template)
+#rm(vario_estimate, buffered)
 ```
