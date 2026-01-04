@@ -30,7 +30,7 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   gr <- sf::st_intersection(gr, x) 
   gr <- sf::st_collection_extract(gr, 'POLYGON')
   
-  grid_areas <- sf::st_as_sf(gr) |> 
+  grid_areas <- sf::st_as_sf(gr) |>
     sf::st_make_valid() |>
     dplyr::mutate(
       ID   = seq_len(dplyr::n()),
@@ -48,8 +48,10 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   gr <- to_merge_sf |> 
     sf::st_union() |> 
     sf::st_cast('POLYGON') |> 
-    sf::st_as_sf() |>
-    (\(new_data) dplyr::bind_rows(gr[indices,] |> sf::st_as_sf(), new_data))()
+    sf::st_as_sf()  %>% # gotta use pipe to set position of tibbles 
+    dplyr::bind_rows(
+      gr[indices,] |> sf::st_as_sf(), .
+    )
   
   # Determine neighboring polygons
   sf::st_agr(gr) <- 'constant'
@@ -65,20 +67,24 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   # if their are no neighbors, this implies that the focal grid area is isolated, e.g. an island
   # we will use distance based neighbors for that focal area.  
   for (i in seq_along(neighbors)){
-    if(sum(neighbors[[i]])==0){
-      need_distance_neighbs <- which(sum(neighbors[[i]])==0)
-    #  sf::st_agr(need_distance_neighbs) <- 'constant'
+    if (length(neighbors[[i]]) == 0) {
+  
+      need_distance_neighbs <- i
+
       gr_pos <- sf::st_point_on_surface(gr)
-      ob <- spdep::knearneigh(gr_pos, k=4)[['nn']]
-      neighbors[[i]] <- ob[20+need_distance_neighbs,]
-      neighbors[[i]] <- neighbors[[i]][neighbors[[i]]<=20] # remove neighbors which will be dropped. 
-      
-      from <- sf::st_point_on_surface(to_merge_sf[need_distance_neighbs,])
-      destinations <- merge_into_sf[neighbors[[i]],]
-      neighbors[[i]] <- neighbors[[i]][first_neigh_directions(from, destinations = destinations)]
-      
+      ob <- spdep::knearneigh(gr_pos, k = 4)$nn
+
+      neighbors[[i]] <- ob[20 + need_distance_neighbs, ]
+      neighbors[[i]] <- neighbors[[i]][neighbors[[i]] <= 20]
+
+      from <- sf::st_point_on_surface(to_merge_sf[need_distance_neighbs, ])
+      destinations <- merge_into_sf[neighbors[[i]], ]
+
+      neighbors[[i]] <- neighbors[[i]][
+        first_neigh_directions(from, destinations = destinations)
+      ]
+      }
     }
-  }
   
   area2be_reassigned <- vector(length = length(neighbors))
   areas <- vector(mode = 'list', length = length(neighbors))
@@ -94,42 +100,53 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   }
   
   prop_target <- vector(mode = 'list', length = length(prop_areas))
-  area_sort <- vector(mode = 'list', length = length(prop_areas))
   area_des <- vector(mode = 'list', length = length(prop_areas))
   nf_pct <- vector(mode = 'list', length = length(prop_areas))
   props <- vector(mode = 'list', length = length(prop_areas))
   # Using the polygons which will be merged, try to make the following polygons
   # as equally sized as possible - without ever removing area from an existing grid. 
-  for (i in seq_along(neighbors)) {
+    for (i in seq_along(prop_areas)) {
 
-    nb <- neighbors[[i]]
+    if (length(prop_areas[[i]]) == 0) next
 
-    areas_i <- as.numeric(sf::st_area(gr[nb, ]))
-    donor   <- as.numeric(sf::st_area(to_merge_sf[i, ]))
+    target_prop <-
+      (sum(prop_areas[[i]]) + prop_donor[i]) /
+      length(prop_areas[[i]])
 
-    prop_existing <- areas_i / (sum(areas_i) + donor)
+    if (all(prop_areas[[i]] < target_prop)) {
 
-    area_des <- (sum(prop_existing) + donor / (sum(areas_i) + donor)) / length(prop_existing)
+      prop_target <- rep(target_prop, length(prop_areas[[i]]))
 
-    prop_target <- if (all(prop_existing < area_des)) {
-      rep(area_des, length(prop_existing))
     } else {
-      kp <- prop_existing < area_des
-      area_des <- (sum(prop_existing[kp]) + donor / (sum(areas_i) + donor)) / sum(kp)
-      replace(prop_existing, kp, area_des)
+
+      kp <- prop_areas[[i]] < target_prop
+      target_prop <-
+        (sum(prop_areas[[i]][kp]) + prop_donor[i]) /
+        sum(kp)
+
+      prop_target <- prop_areas[[i]]
+      prop_target[kp] <- target_prop
     }
 
-    nf_pct[[i]] <- setNames(prop_existing * 100, nb)
-    props[[i]]  <- setNames(prop_target   * 100, nb)
+    stopifnot(length(prop_target) == length(neighbors[[i]]))
+
+    nf_pct[[i]] <- stats::setNames(
+      prop_areas[[i]] * 100,
+      neighbors[[i]]
+    )
+
+    props[[i]] <- stats::setNames(
+      prop_target * 100,
+      neighbors[[i]]
+    )
   }
 
-
-  rm(area_des, area_sort, i, prop_donor, prop_target, areas)
-  
   gr <- dplyr::mutate(gr, ID = seq_len(dplyr::n()),  .before = x) |>
     dplyr::rename(geometry = x)
   neighb_grid <- vector(mode = 'list', length = length(prop_areas))
+
   for (i in seq_along(neighbors)){
+    if (length(neighbors[[i]]) == 0) next
     neighb_grid[[i]] <- gr[neighbors[[i]], ]
   }
 
@@ -140,6 +157,7 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   
   out <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(out)){
+    if (length(neighbors[[i]]) == 0) next
     out[[i]] <- assignGrid_pts(
       neighb_grid =  neighb_grid[[i]], 
       focal_grid = to_merge_sf[[i]], 
@@ -151,12 +169,13 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
   # finally create polygons from the point samples
   final <- vector(mode = 'list', length = length(out))
   for (i in seq_along(final)){
+    if (is.null(out[[i]])) next
     final[[i]] <- snapGrids(
       x = out[[i]],
       neighb_grid =  neighb_grid[[i]], 
       focal_grid = to_merge_sf[[i]]
     )
-  } 
+  }
   final_grids <- dplyr::bind_rows(final)
   
   groups <- split(final_grids, f = final_grids$Assigned)
@@ -170,7 +189,9 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
     gr,  sf::st_make_valid(sf::st_union(sf::st_combine(final_grids)))
   ) |>
     sf::st_make_valid()
+
   gr2 <- gr2[as.numeric(sf::st_area(gr2))/1000 > 10,]
+
   final_grids <- gr2 |>
     dplyr::rename(Assigned = ID) |>
     dplyr::bind_rows(final_grids)  |>
@@ -197,8 +218,9 @@ GridBasedSample <- function(x, planar_proj, gridDimensions){
     if(max(final_grids$Assigned)>20){
       final_grids <- reduceFinalGrids(final_grids)}
   }
+  
   final_grids <- sf::st_as_sf(final_grids) |>
-    dplyr::rename(dplyr::any_of( c(ID = 'Assigned'))) |>
+    dplyr::rename(dplyr::any_of(c(ID = 'Assigned'))) |>
     dplyr::arrange(ID) |>
     dplyr::relocate(ID)
   

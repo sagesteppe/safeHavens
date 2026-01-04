@@ -34,7 +34,7 @@ IBDBasedSample(
 
 \item{max.nc}{Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20.}
 
-\item{planar_proj}{Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.}
+\item{planar_proj}{Numeric or proj4string. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.}
 }
 \value{
 An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
@@ -43,7 +43,7 @@ An simple features (sf) object containing the final grids for saving to computer
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
 }
 \examples{
-planar_proj = 102015
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]

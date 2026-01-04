@@ -10,9 +10,9 @@
 #' 0.8 to use 80% of records for training and 20% for the independent test sample.  
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
-#' @param planar_proj Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.
+#' @param planar_proj Numeric or proj4string. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.
 #' @examples 
-#' planar_proj = 102015
+#' planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 #' 
 #' x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 #' x <- x[,c('lon', 'lat')]
