@@ -251,9 +251,9 @@ The above plot equal area sampling shows ...
 Below we perform isolation by distance (IBD) based sampling.
 
 ```{r ibd sampling}
-# create arbitrary template for example - best to do this over your real range of all species collections
+# create an arbitrary template for example - best to do this over your real range of all species collections
 # so that it can be recycled across species. 
-template <- terra::rast(terra::ext(bb), terra::crs(pts) resolution = c(0.1, 0.1))
+template <- terra::rast(terra::ext(bb), terra::crs(pts), resolution = c(0.1, 0.1))
 terra::values(template) <- 0
 
 # the species range now gets 'burned' into the raster template. 
@@ -266,7 +266,6 @@ spp_concave <- purrr::map(spp_concave, \(x) {
 ```
 
 ```{r ibd sampling continued}
-
 ## the actual sampling happens here within `map`
 ibd_samples <- spp_concave |>
   purrr::map(~ IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070))

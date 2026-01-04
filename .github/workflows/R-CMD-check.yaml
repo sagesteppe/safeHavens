@@ -61,11 +61,18 @@ jobs:
             libproj-dev proj-bin \
             libgeos-dev \
             libgeos++-dev
-
+      
       - name: Compile sf from source
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
         shell: Rscript {0}
+
+      # configure proj for macOS
+      - name: Configure PROJ (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install proj
+          echo "PROJ_LIB=$(brew --prefix)/share/proj" >> $GITHUB_ENV
 
       - uses: r-lib/actions/check-r-package@v2
         with:
