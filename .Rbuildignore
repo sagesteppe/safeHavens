@@ -8,4 +8,4 @@
 ^README\.Rmd$
 ^data-raw$
 ^update-readme\.sh$
-
+robots.txt

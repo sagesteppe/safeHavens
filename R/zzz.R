@@ -1,4 +1,8 @@
 utils::globalVariables(c(
+
+  # data for nse
+  ".data", 
+
   # common spatial / tidy columns
   "X", "Y", "ID", "geometry",
 
@@ -26,4 +30,3 @@ utils::globalVariables(c(
   # dplyr placeholder (rare but legit)
   "."
 ))
-

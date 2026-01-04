@@ -43,7 +43,7 @@ An simple features (sf) object containing the final grids for saving to computer
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.
 }
 \examples{
-planar_proj = 102015
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
