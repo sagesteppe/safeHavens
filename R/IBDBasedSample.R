@@ -105,7 +105,7 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
     sf::st_as_sf()
   
   # now number the grids in a uniform fashion
-  if(!is.null(planar_proj)){ ## optional planar proj use for safety
+  if(!missing(planar_proj)){
     spatialClusters <- sf::st_transform(spatialClusters, planar_proj)
   }
   

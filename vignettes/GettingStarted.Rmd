@@ -262,6 +262,7 @@ ibdbs.p <- map +
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'IBD') + 
   coord_sf(expand = F)
+
 ibdbs.p
 
 rm(predictors, files, v, x_buff.sf, exist_pts, os)

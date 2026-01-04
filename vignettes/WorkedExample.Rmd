@@ -253,7 +253,7 @@ Below we perform isolation by distance (IBD) based sampling.
 ```{r ibd sampling}
 # create arbitrary template for example - best to do this over your real range of all species collections
 # so that it can be recycled across species. 
-template <- terra::rast(terra::ext(bb), crs = "epsg:4326", resolution = c(0.1, 0.1))
+template <- terra::rast(terra::ext(bb), crs = "EPSG:4326", resolution = c(0.1, 0.1))
 terra::values(template) <- 0
 
 # the species range now gets 'burned' into the raster template. 
