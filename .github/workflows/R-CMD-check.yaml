@@ -49,10 +49,6 @@ jobs:
           extra-packages: any::rcmdcheck, checkhelper
           needs: check
 
-      # --- add bindings for variables ---
-     # - name: Auto-generate / update R/globals.R
-  #	run: Rscript inst/update_globals.R
-
       #  spatial-libs install & sf build for Linux
       - name: Install spatial system libs (Ubuntu 24.04+)
         if: runner.os == 'Linux'

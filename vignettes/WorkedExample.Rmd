@@ -254,6 +254,7 @@ Below we perform isolation by distance (IBD) based sampling.
 # create arbitrary template for example - best to do this over your real range of all species collections
 # so that it can be recycled across species. 
 template <- terra::rast(terra::ext(bb), crs = "epsg:4326", resolution = c(0.1, 0.1))
+terra::values(template) <- 0
 
 # the species range now gets 'burned' into the raster template. 
 spp_concave <- purrr::map(spp_concave, \(x) {
@@ -315,7 +316,6 @@ dir.create(p2Collections, showWarnings = FALSE)
 dir.create(file.path(p2Collections, 'IBD_raster_template'), showWarnings = FALSE)
 
 ## to save template cells need to have values... 
-terra::values(template) <- 0 # set to abritary value
 terra::writeRaster(template, 
   filename = file.path(p2Collections, 'IBD_raster_template', 'IBD_template.tif'), overwrite = FALSE)
 

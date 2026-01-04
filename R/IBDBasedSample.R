@@ -57,7 +57,7 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
   pts_sf <- sf::st_as_sf(
     data.frame(pts),
     coords = c("X", "Y"),
-    crs = sf::st_crs(x)
+    crs = terra::crs(x)
   )
 
   # calculate great circle distances between locations
