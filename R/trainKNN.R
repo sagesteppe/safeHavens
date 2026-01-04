@@ -30,5 +30,4 @@ trainKNN <- function(x, split_prop){
       confusionMatrix = cm
       )
     )
-  
 }

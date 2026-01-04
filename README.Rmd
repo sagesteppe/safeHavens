@@ -3,21 +3,22 @@ output:
   md_document:
     variant: gfm
 html_preview: false
+title: "safeHavens: Ex Situ Plant Germplasm Sampling Strategies"
+description: "R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation"
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-[![R-CMD-check](https://github.com/sagesteppe/flyer/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml) 
-
 ```{r, echo = FALSE, results='asis'}
 cat(
-	badger::badge_codefactor('sagesteppe/safeHavens'), 
-	badger::badge_repostatus("Active")
+  badger::badge_github_actions('sagesteppe/safeHavens'), '\n',
+	badger::badge_codefactor('sagesteppe/safeHavens'), '\n',
+	badger::badge_repostatus("Active"), '\n',
+  "[![R-CMD-check](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml)", "\n"
 )
 ```
 
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
-# Description 
 
 The goal of this package is to provide germplasm curators with easily referable spatial data sets to help prioritize field collection efforts. 
 
@@ -47,6 +48,10 @@ library(safeHavens)
 ## Usage
 
 `safeHavens` has only seven user facing functions for generating the sampling schemes.  
+
+### Available Sampling Schemes
+
+The following table shows the seven sampling approaches available in safeHavens, with their computational complexity (Comp.) and environmental data requirements (Envi.): L = Low, M = Medium, H = High.
 
 |        Function           |              Description               | Comp.| Envi.|
 |---------------------------|----------------------------------------|------|------|

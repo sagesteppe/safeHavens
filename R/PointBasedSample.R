@@ -99,7 +99,7 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
 
-  output <- list(
+  list(
     'SummaryData' = data.frame(
       'Metric' = c(
         'variance.observed', 'quantile.0.001', 'lwr.95.CI',
@@ -109,8 +109,6 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
         npbs[['bca']][['upper']], reps, length(variance),  BS.reps)
     ),
   'Geometry' = SelectedSample)
-  
-  return(output)
   
 } 
 
