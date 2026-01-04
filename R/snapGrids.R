@@ -22,6 +22,7 @@ snapGrids <- function(x, neighb_grid, focal_grid){
     dplyr::group_by(Assigned) |> 
     dplyr::summarise(geometry = sf::st_combine(geometry)) |> 
     sf::st_concave_hull(ratio = 0.01) |> 
+    sf::st_difference() |> 
     sf::st_make_valid() |>
     sf::st_intersection(focal_grid)
   
@@ -43,8 +44,8 @@ snapGrids <- function(x, neighb_grid, focal_grid){
   all_pts_surface <- sf::st_difference(pts)
   sf::st_agr(all_pts_surface) = "constant"
   
-  # we will determine snap and interval distances by drawing points which should land into the remaining slivers.
-  #  This will remove any major holes left by the above process. 
+  # we will determine snap and interval distances by drawing points which should land into the remaining slivers. This will remove any major
+  # holes left by the above process. 
   slivers <- rmapshaper::ms_erase(focal_grid, all_pts_surface)
   sliver_pts <- sf::st_sample(slivers, size = 250)
   snap_dist <- ceiling(
@@ -58,35 +59,22 @@ snapGrids <- function(x, neighb_grid, focal_grid){
       )
     )
   ) + 1
-
-  all_pts_surface <- sf::st_as_sf(
-    sf::st_cast(
-      sf::st_make_valid(
-        sf::st_union(
-          sf::st_combine(all_pts_surface)
-        )
-      ),
-      "POLYGON",
-      warn = FALSE
-    )
-  )
-
-  sf::st_agr(all_pts_surface) <- "constant"
   
   # now fill in the gaps across the spatial data set. 
   all_pts_surface <- rmapshaper::ms_simplify(
       all_pts_surface,  keep_shapes = TRUE, snap = TRUE,
       keep = 1, weighting = 0, snap_interval = snap_dist) |>
     sf::st_make_valid() |>
-    sf::st_buffer(snap_dist) 
+    sf::st_difference() |>
+    sf::st_buffer(snap_dist) |>
+    sf::st_difference()
   
   sf::st_agr(all_pts_surface) <- 'constant'
   
   all_pts_surface <- sf::st_difference(
     all_pts_surface,  sf::st_make_valid(sf::st_union(sf::st_combine(neighb_grid)))
     ) |>
-    sf::st_make_valid() |>
-    sf::st_collection_extract('POLYGON')
+    sf::st_make_valid()
   
   # join the target grids onto this output. 
   final_grids <- neighb_grid |> 
@@ -100,10 +88,9 @@ snapGrids <- function(x, neighb_grid, focal_grid){
   # created geometries were joined back to the original grid cells. 
   final_grids <- nngeo::st_remove_holes(final_grids, max_area = 1000)
 
-  # now we determine which MULTIPOLYGONS are touching - if two polygons are contiguous, than convert them to a single 
+  # now we determine which MULTIPOLYGONS are touching - if two polygons are contiguous, than we want to convert them to a single 
   # polygon. These exist because of very minor/short distance between
   # the existing polygons. 
   
   final_grids <- healPolygons(final_grids)
-  final_grids
 }

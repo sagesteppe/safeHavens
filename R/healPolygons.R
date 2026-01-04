@@ -16,14 +16,13 @@ healPolygons <- function(x){
       sf::st_as_sf() |> 
       dplyr::mutate(Assigned = Assigned) |> 
       dplyr::rename(geometry = x) 
-    
-    x
+    return(x)
   }
   
   rows <- split(x, f = 1:nrow(x))
   rows <- lapply(rows, healR)
   rows <- dplyr::bind_rows(rows)
-  rows
+  
 } 
 
 #' Clean up unioned geometries - part 2

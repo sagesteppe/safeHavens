@@ -32,5 +32,5 @@ reduceFinalGrids <- function(final_grids){
     dplyr::mutate(Assigned = 1:dplyr::n()) |>
     dplyr::select(-X, -Y)
   
-  final_grids
+  return(final_grids)
 }
