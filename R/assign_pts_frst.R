@@ -14,7 +14,7 @@ assign_pts_frst <- function(x, props, nf_pct){
   props <- props[need_most2least]
   x <- x[,need_most2least]
   
-  x$Assignment  <- NA; x$ID <- 1:nrow(x)
+  x$Assignment  <- NA; x$ID <- seq_len(nrow(x))
   for(i in seq_along(length(props))){
     
     # we assign the grids to the neediest grids first, and then work back 

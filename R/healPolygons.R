@@ -19,7 +19,7 @@ healPolygons <- function(x){
     x
   }
   
-  rows <- split(x, f = 1:nrow(x))
+  rows <- split(x, f = seq_len(nrow(x)))
   rows <- lapply(rows, healR)
   rows <- dplyr::bind_rows(rows)
   
