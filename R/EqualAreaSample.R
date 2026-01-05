@@ -5,7 +5,7 @@
 #' @param x An SF object or terra spatraster. the range over which to generate the clusters.
 #' @param n Numeric. the number of clusters desired. Defaults to 20. 
 #' @param pts Numeric. the number of points to use for generating the clusters, these will be placed in a grid like fashion across `x`. The exact number of points used may deviate slightly from the user submitted value to allow for equidistant spacing across `x`. Defaults to 5,000.
-#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
+#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param returnProjected Boolean. Whether to return the data set in the original input CRS (FALSE), or in the new `projection` (TRUE). Defaults to FALSE. 
 #' @param reps Numeric. The number of times to rerun the voronoi algorithm, the set of polygons with the most similar sizes, as
 #' measured using their variance of areas will be selected. Defaults to 100. 
@@ -16,7 +16,7 @@
 #'
 #' set.seed(1)
 #' system.time(
-#'   zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_projection = 32617, reps = 50)
+#'   zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_proj = 32617, reps = 50)
 #' )
 #' 
 #' plot(nc, main = 'Counties of North Carolina')
@@ -26,27 +26,27 @@
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
-EqualAreaSample <- function(x, n = 20, pts = 5000, planar_projection, returnProjected, reps = 100, BS.reps = 9999){
+EqualAreaSample <- function(x, n = 20, pts = 5000, planar_proj, returnProjected, reps = 100, BS.reps = 9999){
   
-  if(missing(planar_projection)){
+  if(missing(planar_proj)){
     message(
-      'Argument to `planar_projection` is required. A suitable choice for all of North America is 5070.')
+      'Argument to `planar_proj` is required. A suitable choice for all of North America is 5070.')
     }
   if(missing(returnProjected)){returnProjected <- FALSE}  
   
   if(returnProjected == TRUE){
-    x <- sf::st_transform(x, planar_projection)
+    x <- sf::st_transform(x, planar_proj)
     # return the object in the original projection
   } else {
     orig_proj <- sf::st_crs(x)
-    x <- sf::st_transform(x, planar_projection)
+    x <- sf::st_transform(x, planar_proj)
   }
   
   # now run the request numbed of iterations. 
   voronoiPolygons <- replicate(
     reps, 
     VoronoiSamplerEAS(x = x, kmeans_centers = kmeans_centers, reps = reps, 
-                      pts = 100, n = n, planar_projection = planar_projection), 
+                      pts = 100, n = n, planar_proj = planar_proj), 
     simplify = FALSE)
   
   # we use variance to determine the configuration of voronoi polygons which have
@@ -67,7 +67,7 @@ EqualAreaSample <- function(x, n = 20, pts = 5000, planar_projection, returnProj
     statistic = quantile, 
     R = BS.reps, 
     na.rm = TRUE, 
-    probs = c(0.001), 
+    probs = 0.001, 
     level = 0.95) 
   
   # but we only select sets of records which actually meet the sample size requirements, 
@@ -100,7 +100,7 @@ EqualAreaSample <- function(x, n = 20, pts = 5000, planar_projection, returnProj
 #### Voronoi polygons can be formed many times in many ways, We want to run
 ## a number of iterations, and then determine the configuration which has #
 ## the smallest amount of variance in the geographic size of each cluster. #
-VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection){
+VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_proj){
   
   # determine which portions of the STZ are likely to be populated by converting
   # the sdm output to vectors and masking the STZ to this area. 
@@ -111,13 +111,13 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
   
   # gather the geographic centers of the polygons. 
   kmeans_centers <- stats::setNames(
-    data.frame(kmeans_res['centers'], 1:nrow(kmeans_res['centers'][[1]])), 
+    data.frame(kmeans_res['centers'], seq_len(nrow(kmeans_res['centers'][[1]]))), 
     # use the centers as voronoi cores ... 
     c('X', 'Y', 'ID'))
-  kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_projection)
+  kmeans_centers <- sf::st_as_sf(kmeans_centers, coords = c('X', 'Y'), crs = planar_proj)
   
   voronoi_poly <- kmeans_centers |> # create polygons surrounding the 
-    sf::st_transform(planar_projection) |> # clusters using voronoi polygons
+    sf::st_transform(planar_proj) |> # clusters using voronoi polygons
     sf::st_union() |>  
     sf::st_voronoi() |>  
     sf::st_cast() |>  
@@ -133,11 +133,9 @@ VoronoiSamplerEAS <- function(x, kmeans_centers, reps, pts, n, planar_projection
                        sf::st_crs(voronoi_poly)))
   ) |>  
     # we can assign an arbitrary number. 
-    dplyr::mutate(ID = 1:nrow(voronoi_poly)) |>
+    dplyr::mutate(ID = seq_len(nrow(voronoi_poly))) |>
     sf::st_make_valid() |>
     sf::st_as_sf() |>
-    dplyr::rename(tidyselect::any_of(lkp))
+    dplyr::rename(dplyr::any_of(lkp))
   
 }
-
-??any_of()

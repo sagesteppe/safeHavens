@@ -19,7 +19,13 @@ Suggests:
     rmarkdown,
     spData, 
     ggrepel,
-    MASS
+    MASS,
+    lwgeom,
+    gstat,
+    rgbif, 
+    purrr,
+    sp,
+    tidyr
 VignetteBuilder: knitr
 Imports: 
     caret,
@@ -32,19 +38,16 @@ Imports:
     NbClust,
     nngeo,
     nptest,
-    raster,
-    rlang,
     rmapshaper,
     sdm,
     sf,
     spdep,
     spThin,
     stats,
-    tidyselect,
     terra,
-    units,
     vegan,
-    cluster,
-    tibble
-URL: https://sagesteppe.github.io/safeHavens/
+    cluster
+URL: https://sagesteppe.github.io/safeHavens/, 
+     https://github.com/sagesteppe/safeHavens
+BugReports: https://github.com/sagesteppe/safeHavens/issues
 LazyData: true

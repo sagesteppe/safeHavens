@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'README.md'  # Only trigger when README.md changes
+      - 'README.Rmd'  # Only trigger when README.md changes
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,4 +13,4 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Verify README exists
-        run: ls -la README.md
+        run: ./update_readme.sh

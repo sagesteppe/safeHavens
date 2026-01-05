@@ -10,9 +10,9 @@
 #' 0.8 to use 80% of records for training and 20% for the independent test sample.  
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
+#' @param planar_proj Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.
 #' @examples 
-#' planar_proj =
-#' '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+#' planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 #' 
 #' x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 #' x <- x[,c('lon', 'lat')]
@@ -39,40 +39,45 @@
 #' v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 #' 
 #' # now we run the function demanding 20 areas to make accessions from, 
-#' ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
-#' plot(ibdbs)
+#' ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, 
+#'    template = predictors, planar_proj = planar_proj)
+#' plot(ibdbs[['Geometry']])
 #' 
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export 
-IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min.nc, max.nc){
-  
-  if(missing(fixedClusters)){fixedClusters <- TRUE}
-  if(missing(prop_split)){prop_split <- 0.8}
-  if(missing(n_pts)){n_pts <- 1000}
+IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, prop_split = 0.8, 
+  min.nc = 5, max.nc = 20, planar_proj){
   
   pts <- sf::st_sample(
     sf::st_as_sf(terra::as.polygons(x)), size = n_pts) |>
     sf::st_as_sf() |>
     sf::st_coordinates() |>
     as.matrix()
-  
-  geoDist <- raster::pointDistance(
-    pts, 
-    longlat = TRUE) # calculate great circle distances between locations
-  
+
+  pts_sf <- sf::st_as_sf(
+    data.frame(pts),
+    coords = c("X", "Y"),
+    crs = terra::crs(x)
+  )
+
+  # calculate great circle distances between locations
+  geoDist <- matrix(
+    as.numeric(
+      sf::st_distance(pts_sf, pts_sf)), 
+       nrow = nrow(pts_sf), 
+       ncol = nrow(pts_sf)
+      )
+
   pts <- as.data.frame(pts)
   if(fixedClusters==TRUE){ # run the clustering processes. 
     
-    geoDist_scaled <- stats::dist(scale(geoDist), method = 'euclidean') # scale variables
+    geoDist_scaled <- stats::dist(base::scale(geoDist), method = 'euclidean') # scale variables
     clusters <- stats::hclust(geoDist_scaled, method = 'ward.D2')
     pts$ID <- stats::cutree(clusters, n)
     
   } else {
-    
-    if(missing(min.nc)){min.nc <- 5}
-    if(missing(max.nc)){max.nc <- 5}
-    
-    geoDist_scaled <- stats::dist(scale(geoDist), method = 'euclidean') # scale variables
+
+    geoDist_scaled <- stats::dist(base::scale(geoDist), method = 'euclidean') # scale variables
     NoClusters <- NbClust::NbClust(
       data = stats::as.dist(geoDist), diss = geoDist_scaled, 
       distance = NULL, min.nc = min.nc, max.nc = max.nc, 
@@ -100,8 +105,16 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
     sf::st_as_sf()
   
   # now number the grids in a uniform fashion
+  if(!missing(planar_proj)){
+    spatialClusters <- sf::st_transform(spatialClusters, planar_proj)
+  }
+  
   sf::st_agr(spatialClusters) = "constant"
   cents <- sf::st_point_on_surface(spatialClusters)
+
+  cents <- sf::st_transform(cents, sf::st_crs(x))
+  spatialClusters <- sf::st_transform(spatialClusters, sf::st_crs(x))
+
   cents <- cents |>
     dplyr::mutate(
       X = sf::st_coordinates(cents)[,1],
@@ -119,5 +132,5 @@ IBDBasedSample <- function(x, n, fixedClusters, n_pts, template, prop_split, min
     dplyr::select(-class) |>
     dplyr::arrange(ID)
   
-  return(spatialClusters)
+  list(Geometry = spatialClusters)
 }

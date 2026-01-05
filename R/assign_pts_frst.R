@@ -23,5 +23,6 @@ assign_pts_frst <- function(x, props, nf_pct){
     indices <- x_sub[sort(x_sub[,i], index.return = TRUE)$ix [1:props[i]],'ID']
     x[indices, 'Assignment'] <- names(props)[i]
   }
-  return(x)
+  
+  x
 }

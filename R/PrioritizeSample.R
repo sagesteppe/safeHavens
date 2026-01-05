@@ -19,7 +19,6 @@
 #'
 #' Note that if you are submitting data from the `PolygonBasedSample`, the column `n`, must be maintained. 
 #' @param x an sf/tibble/dataframe. a set of sample grids from any of the *Sample functions 
-#' @param method Character. The method to use for prioritization. Currently only 'centered' is implemented.
 #' @param reps Numeric. The number of repetitions used in the sampling design. This is only used for messaging purposes at this time.
 #' @param n_breaks Numeric. The number of breaks to return from the function, defaults to 3. Values beyond 5 of are questionable utility.  
 #' @param verbose Bool. Whether to print messages to console or not, defaults to TRUE. 
@@ -34,18 +33,19 @@
 #'   sf::st_transform(5070) # should be in planar coordinate system. 
 #' 
 #' set.seed(1)
-#' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_projection = 32617, reps = 100)
+#' zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_proj = 32617, reps = 100)
 #' 
 #' # the function requires an input sampling strategy to create the prioritization areas
-#' ps <- PrioritizeSample(zones$Geometry, method = 'centered', n_breaks = 3, metric = 'energy')
+#' ps <- PrioritizeSample(zones$Geometry, n_breaks = 3, metric = 'energy')
 #' 
 #' ggplot2::ggplot() + 
-#'   ggplot2::geom_sf(data = ps, ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
+#'   ggplot2::geom_sf(data = ps[['Geometry']],
+#'     ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
 #'   ggplot2::theme_void() + 
 #'   ggplot2::labs(fill = 'Within Zone Priority:', title = 'Focal areas to center sampling within') +
 #'   ggplot2::theme(legend.position= 'bottom')
 #' 
-#' ps |> ### to visualize without the priority zones within. 
+#' ps[['Geometry']] |> ### to visualize without the priority zones within. 
 #'   dplyr::group_by(SampleOrder) |> 
 #'   dplyr::summarize(geometry = sf::st_union(geometry)) |>
 #' 
@@ -57,7 +57,7 @@
 #'   ggplot2::theme(legend.position= 'bottom')
 #' }
 #' @export
-PrioritizeSample <- function(x, method, reps, n_breaks = 3, verbose=TRUE, 
+PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE, 
   metric = c("var", "sd", "energy", "cv")){
 
 	# Ecoregion based sample is the one method where rows which are not meant to be sampled 
@@ -69,7 +69,7 @@ PrioritizeSample <- function(x, method, reps, n_breaks = 3, verbose=TRUE,
   }
 	
 	sf::st_agr(x) <- 'constant'
-	POS <- sf::st_point_on_surface(x)
+  POS <- sf::st_point_on_surface(x)
   
   # now we can create points in each row and measure the distance from these
   # points to the desired sample location. We can classify those distances
@@ -110,7 +110,7 @@ PrioritizeSample <- function(x, method, reps, n_breaks = 3, verbose=TRUE,
 
   ### now perform the prioritization ordering of each seed zone. 
   polygon_orders <- order_by_distance_variance(x, metric = metric)
-  SampleOrder = rep( polygon_orders [ zones[['Geometry']][['ID']] ], each = n_breaks)
+  SampleOrder = rep( polygon_orders [ x[['ID']] ], each = n_breaks)
   
     ## df, and geometry containing the rough positions to sample in
   sample_levels <- Map(cbind, sample_levels, ID = (1:length(sample_levels))) |>
@@ -118,9 +118,8 @@ PrioritizeSample <- function(x, method, reps, n_breaks = 3, verbose=TRUE,
     dplyr::mutate(SampleOrder = SampleOrder) |>
     dplyr::select(ID, SampleOrder, Level, geometry) 
 
-  return(sample_levels)
+  list(Geometry = sample_levels)
 }
-
 
 #' Order zones by minimizing distance variance
 #' 
@@ -145,9 +144,9 @@ order_by_distance_variance <- function(x, metric = c("var", "sd", "energy", "cv"
   d <- dist_mat[, seed]
 
   score_fn <- switch(metric,
-    var = function(x) var(x),
-    sd  = function(x) sd(x),
-    cv  = function(x) sd(x) / mean(x),
+    var = function(x) stats::var(x),
+    sd  = function(x) stats::sd(x),
+    cv  = function(x) stats::sd(x) / mean(x),
     energy = function(x) sum(x^2)
   )
 

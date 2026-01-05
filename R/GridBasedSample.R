@@ -2,9 +2,10 @@
 #' 
 #' @description This function creates 20 grid cells over a geographic area (`x`), typically a species range.  
 #' @param x An SF object or terra spatraster. the range over which to generate the clusters.
-#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
+#' @param planar_proj Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
 #' @param gridDimensions A single row form the ouput of `TestGridSizes` with the optimal number of grids to generate. 
-#' @examples \dontrun{ # not ran to bypass CRAN check time limits. ~6 seconds to treat Rhode Island. 
+#' @examples 
+#' \dontrun{ # not ran to bypass CRAN check time limits. ~6 seconds to treat Rhode Island. 
 #' ri <- spData::us_states |> 
 #' dplyr::filter(NAME == 'Rhode Island') |>
 #'   sf::st_transform(32615)
@@ -14,14 +15,14 @@
 #' sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 #' 
 #' output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
-#' plot(output)
+#' plot(output$Geometry)
 #' }
 #' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
-GridBasedSample <- function(x, planar_projection, gridDimensions){
+GridBasedSample <- function(x, planar_proj, gridDimensions){
   
-  if(missing(planar_projection)){planar_projection = 5070}
-  if(sf::st_crs(x) != planar_projection){x <-  sf::st_transform(x, planar_projection)}
+  if(missing(planar_proj)){planar_proj = 5070}
+  if(sf::st_crs(x) != planar_proj){x <-  sf::st_transform(x, planar_proj)}
   
   # Determine the size of each grid. 
   gr <- sf::st_make_grid(x, n = c(gridDimensions$GridNOx, gridDimensions$GridNOy), square = FALSE) 
@@ -32,7 +33,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   grid_areas <- sf::st_as_sf(gr) |> 
     sf::st_make_valid() |>
     dplyr::mutate(
-      ID   = 1:dplyr::n(),
+      ID   = seq_len(dplyr::n()),
       Area = as.numeric(sf::st_area(gr))
     )
   
@@ -47,10 +48,8 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   gr <- to_merge_sf |> 
     sf::st_union() |> 
     sf::st_cast('POLYGON') |> 
-    sf::st_as_sf()  %>% # gotta use pipe to set position of tibbles 
-    dplyr::bind_rows(
-      gr[indices,] |> sf::st_as_sf(), .
-    )
+    sf::st_as_sf() |>
+    (\(new_data) dplyr::bind_rows(gr[indices,] |> sf::st_as_sf(), new_data))()
   
   # Determine neighboring polygons
   sf::st_agr(gr) <- 'constant'
@@ -94,22 +93,6 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     prop_areas[[i]] <- areas[[i]] / (sum(areas[[i]]) + area2be_reassigned[i]) 
   }
   
-  area2be_reassigned <- vector(length = length(neighbors))
-  areas <- vector(mode = 'list', length = length(neighbors))
-  prop_areas <- vector(mode = 'list', length = length(neighbors))
-  prop_donor <- numeric(length = length(neighbors))
-  
-  for (i in seq_along(neighbors)){
-    
-    area2be_reassigned[i] <- sf::st_area(to_merge_sf[i,])
-    areas[[i]] <- as.numeric(sf::st_area(gr[neighbors[[i]],]))
-    
-    prop_donor[i] <- area2be_reassigned[i] / (sum(areas[[i]]) + area2be_reassigned[i]) 
-    prop_areas[[i]] <- areas[[i]] / (sum(areas[[i]]) + area2be_reassigned[i]) 
-  }
-  
-  rm(area2be_reassigned)
-  
   prop_target <- vector(mode = 'list', length = length(prop_areas))
   area_sort <- vector(mode = 'list', length = length(prop_areas))
   area_des <- vector(mode = 'list', length = length(prop_areas))
@@ -117,42 +100,33 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   props <- vector(mode = 'list', length = length(prop_areas))
   # Using the polygons which will be merged, try to make the following polygons
   # as equally sized as possible - without ever removing area from an existing grid. 
-  for (i in seq_along(area_sort)){
-    
-    area_des <- (sum(prop_areas[[i]]) + prop_donor[i]) / length(prop_areas[[i]])
-    
-    if(all(prop_areas[[i]] < area_des)==TRUE){
-      
-      # these polygons will all be the same size!... roughly... 
-      prop_target[[i]] <- rep(area_des, times = length(prop_areas[[i]]))
-      
-    } else if(any(prop_areas[[i]] > area_des)==TRUE){
-      
-      prop_target[[i]] <- numeric(length(prop_areas[[i]]))
-      kp <- prop_areas[[i]] < area_des # determine which grids are to big
-      area_des <- (sum(prop_areas[[i]][kp]) + prop_donor[i]) / 
-        length(prop_areas[[i]][kp])
-      
-      # make grids smaller than the goal threshold size the threshold, 
-      # return grids larger than the threshold size as they are. 
-      prop_target[[i]][kp] <- area_des
-      prop_target[[i]][!kp] <-prop_areas[[i]][!kp]
+  for (i in seq_along(neighbors)) {
+
+    nb <- neighbors[[i]]
+
+    areas_i <- as.numeric(sf::st_area(gr[nb, ]))
+    donor   <- as.numeric(sf::st_area(to_merge_sf[i, ]))
+
+    prop_existing <- areas_i / (sum(areas_i) + donor)
+
+    area_des <- (sum(prop_existing) + donor / (sum(areas_i) + donor)) / length(prop_existing)
+
+    prop_target <- if (all(prop_existing < area_des)) {
+      rep(area_des, length(prop_existing))
+    } else {
+      kp <- prop_existing < area_des
+      area_des <- (sum(prop_existing[kp]) + donor / (sum(areas_i) + donor)) / sum(kp)
+      replace(prop_existing, kp, area_des)
     }
-    
-    nf_pct[[i]] <- stats::setNames( # the existing cover for each grid. 
-      prop_areas[[i]] * 100, 
-      neighbors[[i]]
-    )
-    
-    props[[i]] <- stats::setNames( # the desired cover for each grid 
-      prop_target[[i]] * 100, 
-      neighbors[[i]]
-    )
+
+    nf_pct[[i]] <- setNames(prop_existing * 100, nb)
+    props[[i]]  <- setNames(prop_target   * 100, nb)
   }
+
 
   rm(area_des, area_sort, i, prop_donor, prop_target, areas)
   
-  gr <- dplyr::mutate(gr, ID = 1:dplyr::n(),  .before = x) |>
+  gr <- dplyr::mutate(gr, ID = seq_len(dplyr::n()),  .before = x) |>
     dplyr::rename(geometry = x)
   neighb_grid <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(neighbors)){
@@ -162,7 +136,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
   # place points throughout the grids which need to be merged to determine
   # how they will be reallocated into larger grids. 
   to_merge_sf <- dplyr::rename(to_merge_sf, geometry = x)
-  to_merge_sf <- split(to_merge_sf, f = 1:nrow(to_merge_sf))
+  to_merge_sf <- split(to_merge_sf, f = seq_len(nrow(to_merge_sf)))
   
   out <- vector(mode = 'list', length = length(prop_areas))
   for (i in seq_along(out)){
@@ -211,7 +185,7 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(NEWID = 1:dplyr::n()) |>
+    dplyr::mutate(NEWID = seq_len(dplyr::n())) |>
     sf::st_drop_geometry() |>
     dplyr::select(Assigned, NEWID)
   
@@ -228,5 +202,5 @@ GridBasedSample <- function(x, planar_projection, gridDimensions){
     dplyr::arrange(ID) |>
     dplyr::relocate(ID)
   
-  return(final_grids)
+  list(Geometry = final_grids)
 }

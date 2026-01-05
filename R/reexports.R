@@ -17,6 +17,7 @@ dplyr::any_of
 #' @importFrom stats rnorm
 #' @importFrom stats runif
 #' @importFrom stats var
+#' @importFrom stats setNames
 #' @importFrom utils head
 #' @importFrom utils setTxtProgressBar
 #' @importFrom utils txtProgressBar
