@@ -263,9 +263,7 @@ spp_concave <- purrr::map(spp_concave, \(x) {
     st_transform(4326) |> 
     terra::rasterize(template, field = 'Range') 
 })
-```
 
-```{r ibd sampling continued}
 ## the actual sampling happens here within `map`
 ibd_samples <- spp_concave |>
   purrr::map(~ IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070))
