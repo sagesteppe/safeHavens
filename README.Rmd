@@ -51,7 +51,7 @@ library(safeHavens)
 
 ### Available Sampling Schemes
 
-The following table shows the seven sampling approaches available in safeHavens, with their computational complexity (Comp.) and environmental data requirements (Envi.): L = Low, M = Medium, H = High.
+The following table shows the eight sampling approaches available in safeHavens, with their computational complexity (Comp.) and environmental data requirements (Envi.): L = Low, M = Medium, H = High.
 
 |        Function           |              Description               | Comp.| Envi.|
 |---------------------------|----------------------------------------|------|------|
