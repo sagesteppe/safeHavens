@@ -82,19 +82,17 @@ EqualAreaSample <- function(x, n = 20, pts = 5000, planar_proj, returnProjected,
   # Create an output object containing the bootstrap estimates and the observed variance
   # for the grid, and write out the information on the number of replicates etc. 
   
-  output <- list(
-    'SummaryData' = data.frame(
-      'Metric' = c(
-        'variance.observed', 'quantile.0.001', 'lwr.95.CI',
-        'upr.95.CI', 'Voronoi.reps.asked', 'Voronoi.reps.received', 'BS.reps'), 
-      'Value' = c(
-        min(variance), npbs[['t0']], npbs[['bca']][['lower']], 
-        npbs[['bca']][['upper']], reps, length(variance),  BS.reps)
-    ),
-    'Geometry' = SelectedSample)
-  
-  return(output)
-  
+  list(
+   'SummaryData' = data.frame(
+     'Metric' = c(
+       'variance.observed', 'quantile.0.001', 'lwr.95.CI',
+       'upr.95.CI', 'Voronoi.reps.asked', 'Voronoi.reps.received', 'BS.reps'), 
+     'Value' = c(
+       min(variance), npbs[['t0']], npbs[['bca']][['lower']], 
+       npbs[['bca']][['upper']], reps, length(variance),  BS.reps)
+   ),
+   'Geometry' = SelectedSample)
+    
 }
 
 #### Voronoi polygons can be formed many times in many ways, We want to run

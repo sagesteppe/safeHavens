@@ -29,7 +29,7 @@ RescaleRasters <- function(model, predictors, training_data, pred_mat){
   # after this they still need to be multiplied by the beta coefficients 
   pred_rescale <- predictors
   pred_rescale <- pred_rescale[[ names(pred_rescale) %in% coef_tab$Variable ]]
-  for (i in seq_along(1:dim(pred_rescale)[3])){
+  for (i in seq_len(dim(pred_rescale)[3])){
     
     lyr_name <- names(pred_rescale)[[i]]
     vals <- pred_mat[,lyr_name]
@@ -39,9 +39,9 @@ RescaleRasters <- function(model, predictors, training_data, pred_mat){
     pred_rescale[[i]] <- pred_rescale[[i]] * abs(coef_tab[coef_tab$Variable==lyr_name,'BetaCoefficient'])
     names(pred_rescale[[i]]) <- lyr_name
   }
-  return(list(
+  list(
     RescaledPredictors = pred_rescale, 
-    BetaCoefficients = coef_tab)
-    )
+    BetaCoefficients = coef_tab
+  )
   
 }

@@ -24,10 +24,8 @@ trainKNN <- function(x, split_prop){
   predicted <- stats::predict(fit.knn, newdata = test)
   cm <- caret::confusionMatrix(predicted, test$ID)
   
-  return(
-    list(
-      fit.knn = fit.knn, 
-      confusionMatrix = cm
-      )
-    )
+  list(
+    fit.knn = fit.knn, 
+    confusionMatrix = cm
+  )
 }

@@ -113,10 +113,9 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
    f_rasts <- c(rast_cont, rast_binary, rast_clipped, rast_clipped_supplemented)
   names(f_rasts) <- c('Predictions', 'Threshold', 'Clipped', 'Supplemented')
   
-  return(
-    list(
-      FinalRasters = f_rasts,
-      Threshold = thresh)
-    )
+  list(
+    FinalRasters = f_rasts,
+    Threshold = thresh
+  )
   
 }

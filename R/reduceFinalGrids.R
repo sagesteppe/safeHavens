@@ -29,8 +29,8 @@ reduceFinalGrids <- function(final_grids){
       Y = sf::st_coordinates(sf::st_point_on_surface(final_grids))[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(Assigned = 1:dplyr::n()) |>
+    dplyr::mutate(Assigned = seq_len(dplyr::n())) |>
     dplyr::select(-X, -Y)
   
-  return(final_grids)
+  final_grids
 }

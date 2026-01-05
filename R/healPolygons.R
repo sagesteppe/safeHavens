@@ -16,7 +16,7 @@ healPolygons <- function(x){
       sf::st_as_sf() |> 
       dplyr::mutate(Assigned = Assigned) |> 
       dplyr::rename(geometry = x) 
-    return(x)
+    x
   }
   
   rows <- split(x, f = 1:nrow(x))

@@ -18,5 +18,5 @@ first_neigh_directions <- function(from, destinations){
     sf::st_intersects(destinations) |>
     lengths() == 1
   
-  return(positions)
+  positions
 }

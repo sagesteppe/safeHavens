@@ -78,7 +78,7 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
   ctrlPts <- vector(mode = 'list', length = nrow(x))
   vorons <- vector(mode = 'list', length = nrow(x))
   ints <- vector(mode = 'list', length = nrow(x))
-  for (i in seq_along(1:nrow(x))){
+  for (i in seq_len(nrow(x))){
     
     # sample points and place into the polygons
     ctrlPts[[i]] <- sf::st_sample(x[i,], 100, type = 'regular')
@@ -113,7 +113,7 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
   SampleOrder = rep( polygon_orders [ x[['ID']] ], each = n_breaks)
   
     ## df, and geometry containing the rough positions to sample in
-  sample_levels <- Map(cbind, sample_levels, ID = (1:length(sample_levels))) |>
+  sample_levels <- Map(cbind, sample_levels, ID = (seq_along(length(sample_levels)))) |>
     dplyr::bind_rows() |>
     dplyr::mutate(SampleOrder = SampleOrder) |>
     dplyr::select(ID, SampleOrder, Level, geometry) 
