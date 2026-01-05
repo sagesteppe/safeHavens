@@ -14,14 +14,14 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
   # Ensure that we are only working on a grid with 100 points
   pts <- sf::st_sample(focal_grid, size = 100, type = 'regular') |>
     sf::st_as_sf() |> 
-    dplyr::mutate(ID = 1:dplyr::n())
+    dplyr::mutate(ID = seq_len(dplyr::n()))
   
   samp <- 100
   while (nrow(pts) < 100) {
     if (nrow(pts) < 100) {
       pts <- sf::st_sample(focal_grid, size = samp, type = 'regular') |>
         sf::st_as_sf() |> 
-        dplyr::mutate(ID = 1:dplyr::n())
+        dplyr::mutate(ID = seq_len(dplyr::n()))
     }
     samp <- samp + 1
   } 
@@ -61,7 +61,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
         dist_final_pts$ID <- pts$ID
         
         ob <- vector(mode = 'list', length = ncol(dist_final_pts)-1)
-        for (i in 1:ncol(dist_final_pts)){
+        for (i in seq_len(ncol(dist_final_pts))){
           ob[[i]] <- dist_final_pts[order(dist_final_pts[,i]),  'ID']
         }
       }
@@ -103,7 +103,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
       neighs <- vector(mode = 'list', length = nrow(pts))
       focal <- vector(mode = 'list', length = nrow(pts))
       matches <- vector( length = nrow(pts))
-      for (i in 1:nrow(pts)){
+      for (i in seq_len(nrow(pts))){
         
         indices[[i]] <- nn[i,]
         neighs[[i]] <- 
@@ -123,7 +123,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
         props [!names(props) %in% names(realized)] <- 0 # if a small grid is missing say so
         diff <- realized - props # the first entry below will gain the point. 
         
-        for (i in 1:length(indices)){
+        for (i in seq_along(length(indices))){
           pts[i,'Assigned'] <-
             names(sort(diff[names(diff) %in% unlist(neighs[i])], decreasing = FALSE)[1])
         }

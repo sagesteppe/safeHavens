@@ -68,8 +68,8 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
       Y = sf::st_coordinates(ss_cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(ID = 1:dplyr::n()) 
-  
+    dplyr::mutate(ID = seq_lem(dplyr::n()))
+
   # now assign the arranged notation to the data set overwriting the original 
   # randomly assigned ID's
   
@@ -90,7 +90,7 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
     x = variance, 
     statistic = quantile, 
     R = BS.reps, 
-    probs = c(0.001), 
+    probs = 0.001, 
     level = 0.95) 
   
   # Create an output object containing the bootstrap estimates and the observed variance

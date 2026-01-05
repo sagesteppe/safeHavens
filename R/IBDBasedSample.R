@@ -121,7 +121,7 @@ IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, p
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::mutate(ID = seq_len(dplyr::n())) |>
     dplyr::arrange(ID) |>
     dplyr::select(ID, geometry)
   

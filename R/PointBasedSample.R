@@ -72,7 +72,7 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
     statistic = quantile, 
     R = BS.reps, 
     na.rm = TRUE, 
-    probs = c(0.001), 
+    probs = 0.001, 
     level = 0.95) 
   
   # Assign IDS to the ouput. 
@@ -86,7 +86,7 @@ PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps =
       Y = sf::st_coordinates(cents)[,2]
     ) |>
     dplyr::arrange(-Y, X) |>
-    dplyr::mutate(ID = 1:dplyr::n()) |>
+    dplyr::mutate(ID = seq_len(dplyr::n())) |>
     dplyr::arrange(ID) |>
     dplyr::select(ID, geometry)
   
@@ -158,9 +158,8 @@ VoronoiSampler <- function(polygon, n, collections, reps){
   
   # need to define two slots, one for the variance numeric results, and one for the polygons
   
-  return(
-    list(
+  list(
       'Variance' = variance,
       'Polygons' = vorons
-    ))
+  )
 }

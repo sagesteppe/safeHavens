@@ -78,7 +78,7 @@ createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, test){
       pcnm <- terra::interpolate(p, fit)
       pcnm <- terra::mask(pcnm, predictors[[1]])
       
-      return(pcnm)
+      pcnm ## reutrn the raster object
     }
     
     pcnm <- lapply(xypcnm.df, pcnm2raster)
@@ -98,11 +98,10 @@ createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, test){
   
   rm(pcnm2raster, pcnmProfile)
   
-  return(
-    list(
-      mod = mod,
-      pred_mat = preds,
-      cv_model = cv_model,
-      pcnm = pcnm)
-    )
+  list(
+    mod = mod,
+    pred_mat = preds,
+    cv_model = cv_model,
+    pcnm = pcnm
+  )
 }

@@ -100,7 +100,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v = 0.
   indices_knndm <- CAST::knndm(train, predictors, k=5)
   
   # Recursive feature elimination using CAST developed folds
-  train_dat <- sf::st_drop_geometry(train[, -which(names(train) %in% c("occurrence"))])
+  train_dat <- sf::st_drop_geometry(train[, -which(names(train) %in% "occurrence")])
   ctrl <- caret::rfeControl(
     method = "LG0CV",
     repeats = 5,
@@ -111,7 +111,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v = 0.
   
   lmProfile <- caret::rfe(
     method = 'glmnet',
-    sizes = c(3:ncol(train_dat)), 
+    sizes = 3:ncol(train_dat), 
     x = train_dat,
     y = sf::st_drop_geometry(train)$occurrence,
     rfeControl = ctrl)
@@ -182,19 +182,18 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v = 0.
   
   rast_cont <- terra::predict(preds, model = mod, fun=predfun, na.rm=TRUE)
   
-  return( # many objects were made in this function! Given that a sampling
-    # schema may have a very long lifetime, it is likely best to save all of them. 
-    list(
-      RasterPredictions = rast_cont, 
-      Predictors = predictors, 
-      PCNM = pcnm,
-      Model = mod,
-      CVStructure = obs$cv_model, 
-      ConfusionMatrix = cm, 
-      TrainData = train,
-      TestData = test,
-      PredictMatrix = obs$pred_mat
-    )
+  # many objects were made in this function! Given that a sampling
+  # schema may have a very long lifetime, it is likely best to save all of them. 
+  list(
+    RasterPredictions = rast_cont, 
+    Predictors = predictors, 
+    PCNM = pcnm,
+    Model = mod,
+    CVStructure = obs$cv_model, 
+    ConfusionMatrix = cm, 
+    TrainData = train,
+    TestData = test,
+    PredictMatrix = obs$pred_mat
   )
   
 }
