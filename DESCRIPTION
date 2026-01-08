@@ -25,7 +25,8 @@ Suggests:
     rgbif, 
     purrr,
     sp,
-    tidyr
+    tidyr,
+    testthat
 VignetteBuilder: knitr
 Imports: 
     caret,

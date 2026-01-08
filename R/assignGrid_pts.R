@@ -127,7 +127,7 @@ assignGrid_pts <- function(neighb_grid, focal_grid, props, nf_pct){
           pts[i,'Assigned'] <-
             names(sort(diff[names(diff) %in% unlist(neighs[i])], decreasing = FALSE)[1])
         }
-  }
+      }
     }
   lkup <- c(geometry = "x")
   

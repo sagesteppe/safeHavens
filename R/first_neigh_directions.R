@@ -12,6 +12,7 @@
 #' @noRd
 first_neigh_directions <- function(from, destinations){
   
+  sf::st_agr(destinations) <- 'constant'
   dest_POS <- sf::st_point_on_surface(destinations)
   positions <- sf::st_union(from, dest_POS) |> 
     sf::st_cast('LINESTRING') |>

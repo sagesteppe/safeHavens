@@ -40,7 +40,7 @@
 #' 
 #' ggplot2::ggplot() + 
 #'   ggplot2::geom_sf(data = ps[['Geometry']],
-#'     ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
+#'   ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
 #'   ggplot2::theme_void() + 
 #'   ggplot2::labs(fill = 'Within Zone Priority:', title = 'Focal areas to center sampling within') +
 #'   ggplot2::theme(legend.position= 'bottom')
@@ -57,8 +57,12 @@
 #'   ggplot2::theme(legend.position= 'bottom')
 #' }
 #' @export
-PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE, 
+PrioritizeSample <- function(x, n_breaks = 3, verbose=TRUE, 
   metric = c("var", "sd", "energy", "cv")){
+
+  if (sf::st_is_longlat(x)) {
+    stop("PrioritizeSample requires planar (projected) coordinates.")
+  }
 
 	# Ecoregion based sample is the one method where rows which are not meant to be sampled 
 	# can be submitted to the function. We can detect these samples by a unique column name
@@ -78,6 +82,7 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
   ctrlPts <- vector(mode = 'list', length = nrow(x))
   vorons <- vector(mode = 'list', length = nrow(x))
   ints <- vector(mode = 'list', length = nrow(x))
+  
   for (i in seq_len(nrow(x))){
     
     # sample points and place into the polygons
@@ -101,10 +106,13 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
     
   }
   
-  melt <- function(x){
-    out <- dplyr::group_by(x, Level) |>
-      dplyr::summarise(geometry = sf::st_union(x))
+  melt <- function(x) {
+    geom_name <- attr(x, "sf_column")
+    dplyr::group_by(x, Level) |>
+      dplyr::summarise(
+        geometry = sf::st_union(.data[[geom_name]]))
   }
+
 
   sample_levels <- lapply(vorons, melt)
 
@@ -117,6 +125,8 @@ PrioritizeSample <- function(x, reps, n_breaks = 3, verbose=TRUE,
     dplyr::bind_rows() |>
     dplyr::mutate(SampleOrder = SampleOrder) |>
     dplyr::select(ID, SampleOrder, Level, geometry) 
+
+
 
   list(Geometry = sample_levels)
 }
@@ -146,7 +156,7 @@ order_by_distance_variance <- function(x, metric = c("var", "sd", "energy", "cv"
   score_fn <- switch(metric,
     var = function(x) stats::var(x),
     sd  = function(x) stats::sd(x),
-    cv  = function(x) stats::sd(x) / mean(x),
+    cv  = function(x) {  m <- mean(x); if (m == 0) Inf else stats::sd(x) / m },
     energy = function(x) sum(x^2)
   )
 

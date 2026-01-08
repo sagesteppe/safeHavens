@@ -4,7 +4,7 @@ output:
     variant: gfm
 html_preview: false
 title: "safeHavens: Ex Situ Plant Germplasm Sampling Strategies"
-description: "R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation"
+description: "R package providing sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation"
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
