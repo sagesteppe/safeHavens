@@ -291,7 +291,7 @@ Keeping the number of rings low allows for some pragmatic communication of more 
 ```{r prioritize sample areas}
 ibd_samples_priority <- ibd_samples %>%
   purrr::map(~ st_transform(.x$Geometry, 5070)) |> 
-  purrr::map(~ list(PrioritizeSample(.x, reps = 99, n_breaks = 3)))
+  purrr::map(~ list(PrioritizeSample(.x, n_breaks = 3)))
 
 base + 
   geom_sf(data = ibd_samples_priority[[2]][[1]][['Geometry']], aes(fill = factor(Level)), alpha = 0.2)

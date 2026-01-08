@@ -108,7 +108,7 @@ elasticSDM <- function(x, predictors, planar_projection, domain, quantile_v = 0.
     functions = caret::lrFuncs,
     index = indices_knndm$indx_train,
     verbose = FALSE)
-  
+
   lmProfile <- caret::rfe(
     method = 'glmnet',
     sizes = 3:ncol(train_dat), 
