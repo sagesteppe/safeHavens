@@ -39,7 +39,7 @@ jobs:
         with:
           extra-packages: any::pkgdown, local::.
           needs: website
-  	
+
       - name: Install spatial system libs (Ubuntu 24.04+)
         if: runner.os == 'Linux'
         run: |
