@@ -57,13 +57,13 @@ existing_collections <- sf::st_sample(ri, size = 5) |>
 system.time(
   out <- OpportunisticSample(polygon = ri, BS.reps=4999) 
 ) # set very low for example
-#>    user  system elapsed 
-#>   6.736   0.029   6.766 
+#> Error in FUN(X[[i]], ...): argument "collections" is missing, with no default
+#> Timing stopped at: 0.041 0 0.041
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 7 seconds per species so not much concern on the speed end of things.
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
   ggplot2::geom_sf(data = existing_collections) 
-
+#> Error: object 'out' not found
  
 ```

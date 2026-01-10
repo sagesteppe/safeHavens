@@ -274,6 +274,8 @@ threshold_rasts <- PostProcessSDM(
   quant_amt = 0.5
   )
 #> 1000 prediction points are sampled from the modeldomain
+#> Warning in rm(nn_dist, indices_knndm, nn_distribution, within_dist): object
+#> 'nn_distribution' not found
 ```
 
 We can compare the results of applying this function side by side using
