@@ -58,7 +58,7 @@ system.time(
   out <- OpportunisticSample(polygon = ri, BS.reps=4999) 
 ) # set very low for example
 #>    user  system elapsed 
-#>   6.743   0.025   6.772 
+#>   6.736   0.029   6.766 
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 7 seconds per species so not much concern on the speed end of things.
 ggplot2::ggplot() + 
