@@ -10,7 +10,7 @@ test_that("assignGrid_pts handles disconnected focal grids", {
 
   # Split RI into disconnected parts for focal grid
   polys <- sf::st_cast(sf::st_geometry(ri), "POLYGON")
-  focal_grid <- sf::st_sf(polys, ID = seq_len(length(polys)))
+  focal_grid <- sf::st_sf(polys, ID = seq_along(polys))
 
   # Neighbor grid: slightly coarser (combine some polygons)
   neighb_grid <- focal_grid[1:3, ] # just first 3 polygons as neighbors

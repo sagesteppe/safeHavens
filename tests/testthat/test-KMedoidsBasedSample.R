@@ -12,7 +12,7 @@ test_that("KMedoidsBasedSample returns expected structure", {
     coord_uncertainty = 0
   )
 
-  dist_mat <- sapply(1:nrow(df), function(i) {
+  dist_mat <- sapply(seq_len(nrow(df)), function(i) {
     greatCircleDistance(df$lat[i], df$lon[i], df$lat, df$lon)
   })
 
@@ -36,7 +36,7 @@ test_that("KMedoidsBasedSample respects required sites", {
     coord_uncertainty = 0
   )
 
-  dist_mat <- sapply(1:nrow(df), function(i) {
+  dist_mat <- sapply(seq_len(nrow(df)), function(i) {
     greatCircleDistance(df$lat[i], df$lon[i], df$lat, df$lon)
   })
 
