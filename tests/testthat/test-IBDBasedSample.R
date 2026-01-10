@@ -110,6 +110,7 @@ test_that("IBDBasedSample respects planar_proj and returns CRS of x", {
 test_that("IBDBasedSample runs when fixedClusters = FALSE", {
 
   skip_if_not_installed("NbClust")
+  skip_if_not_installed("caret")
 
   set.seed(1)
 
@@ -117,14 +118,16 @@ test_that("IBDBasedSample runs when fixedClusters = FALSE", {
   terra::values(r) <- 1
 
   expect_no_error(
-    IBDBasedSample(
-      x = r,
-      n = 3,
-      fixedClusters = FALSE,
-      n_pts = 50,
-      template = r,
-      min.nc = 2,
-      max.nc = 4
+    suppressWarnings(
+      IBDBasedSample(
+        x = r,
+        n = 3,
+        fixedClusters = FALSE,
+        n_pts = 50,
+        template = r,
+        min.nc = 2,
+        max.nc = 4
+      )
     )
   )
 })
