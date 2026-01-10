@@ -17,7 +17,7 @@
 #'   dplyr::rename(geometry = x)
 #'
 #' system.time(
-#'   out <- OpportunisticSample(polygon = ri, BS.reps=4999) 
+#'   out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=4999) 
 #' ) # set very low for example
 #' # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 #' # 7 seconds per species so not much concern on the speed end of things.
@@ -27,28 +27,20 @@
 #'  
 #' @return A list containing two sublists, the first of which 'SummaryData' details the number of voronoi polygons generated, and the results of the bootstrap simulations. The second 'Geometry', contains the final spatial data products, which can be written out on your end. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export
-OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
-  
-  if(missing(n)){n = 20}
-  if(missing(reps)){reps = 100}
-  if(missing(BS.reps)){BS.reps = 9999}
+OpportunisticSample <- function(polygon, n = 20, collections, reps = 100, BS.reps = 9999){
   
   # we apply the voronoi process a number of replicated times, defaults to 100
   # this allows us to be confident that we get an OK set of results from the function
-  if(missing(collections)){
-    voronoiPolygons <- replicate(
-      reps, 
-      VoronoiSampler(polygon = polygon, n = n), 
-      simplify = FALSE)} else {
-        voronoiPolygons <- replicate(
+
+  voronoiPolygons <- replicate(
           reps, 
           VoronoiSampler(polygon = polygon, n = n, collections = collections), 
-          simplify = FALSE)
-      }
+          simplify = FALSE
+        )
   
   # sf oftentimes gives fewer points than asked for, we will keep only the objects 
   # which have the desired number of points
-  voronoiPolygons <- voronoiPolygons[lapply(get_elements(voronoiPolygons, 'Polygons'), length) >= 20]
+  voronoiPolygons <- voronoiPolygons[lapply(get_elements(voronoiPolygons, 'Polygons'), length) >= n]
   
   # we use variance to determine the configuration of voronoi polygons which have
   # the most equally sized polygons. 
@@ -72,11 +64,11 @@ OpportunisticSample <- function(polygon, n, collections, reps, BS.reps){
 
   # now assign the arranged notation to the data set overwriting the original 
   # randomly assigned ID's
-  
   SelectedSample <- dplyr::mutate(
     SelectedSample, 
     ID = as.numeric(sf::st_intersects(SelectedSample, ss_cents)), .before = 1) |>
-    dplyr::rename(dplyr::any_of(c(geometry = 'x', geometry = 'X', geometry = 'geom')))
+    dplyr::rename(dplyr::any_of(c(geometry = 'x', geometry = 'X', geometry = 'geom'))) |>
+    dplyr::arrange(ID)
 
   # Determining the 0.1% quantile for the variance in size of the sampling grids. 
   # Using non-parametric approaches, of bootstrap resampling (replicates = 9999) ,

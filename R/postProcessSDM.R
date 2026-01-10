@@ -60,16 +60,7 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   # Essentially, we will see how far the nearest neighbor is from each point in each
   # fold
   
-  nn_distribution <- function(x, y){
-    ob <- unlist(x)
-    
-    nf <- sf::st_distance(
-      y[sf::st_nearest_feature(y[ob, ]), ],
-      y[ob, ], by_element = TRUE
-    )
-  }
-  
- pres <-  dplyr::bind_rows(
+  pres <-  dplyr::bind_rows(
     sdModel$TrainingData, sdModel$TestData) |>
     dplyr::filter(occurrence == 1)
   pres <- sf::st_transform(pres, planar_projection)
@@ -118,4 +109,20 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
     Threshold = thresh
   )
   
+}
+
+#' test nearest features
+#' @param x indices_knndm[['indx_train']], cv folds
+#' @param y pres, presence records
+#' @keywords internal
+#' @noRd
+nn_distribution <- function(x, y){
+    ob <- unlist(x)
+
+    nf <- sf::st_distance(
+      y[sf::st_nearest_feature(y[ob, ]), ],
+      y[ob, ], by_element = TRUE
+  )
+
+  nf
 }

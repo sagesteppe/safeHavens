@@ -21,8 +21,9 @@ snapGrids <- function(x, neighb_grid, focal_grid){
     dplyr::summarise(geometry = sf::st_combine(geometry), .groups = "drop") |> 
     sf::st_concave_hull(ratio = 0.01) |> 
     sf::st_make_valid() |>
-    sf::st_intersection(focal_grid)
-  sf::st_agr(x) <- "constant"
+    sf::st_set_agr('constant') |>
+    sf::st_intersection(focal_grid) |>
+    sf::st_set_agr('constant') 
 
   # ---- sample points across focal grid ----
   pts <- sf::st_sample(focal_grid, 10000) |> sf::st_as_sf()

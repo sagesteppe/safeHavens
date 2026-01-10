@@ -138,7 +138,7 @@ get_elements <- function(x, element) { # @ StackOverflow Allan Cameron
 #' measured using their variance of areas will be selected. Defaults to 150, which may accomplish around 100 succesful iterations.  
 #' @keywords internal
 #' @noRd
-VoronoiSampler <- function(polygon, n, collections, reps){
+VoronoiSampler <- function(polygon, n = 20, collections, reps){
   
   pts <- sf::st_sample(polygon, size = n, type = 'regular') |> 
     sf::st_as_sf() |> 
