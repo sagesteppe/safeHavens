@@ -7,7 +7,6 @@ status](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![](https://img.shields.io/badge/doi-10.5281/zenodo.18149377-orange.svg)](https://doi.org/10.5281/zenodo.18149377)
-[![R-CMD-check](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg)](https://github.com/sagesteppe/safeHavens/actions/workflows/R-CMD-check.yaml)
 
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
 

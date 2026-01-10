@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages(c("pkgdown", "quarto"))
+          Rscript -e 'install.packages(c("pkgdown", "quarto"))'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
