@@ -34,8 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages("pkgdown")
-          install.packages("quarto") 
+          install.packages(c("pkgdown", "quarto"))
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
