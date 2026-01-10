@@ -83,7 +83,7 @@ reference:
   desc: Optimization based site selection helpers for known populations
   contents:
   - greatCircleDistance
-  - splot_cols
+  - split_cols
 - title: Miscellaneous
   desc: Data prep functions
   contents: 
