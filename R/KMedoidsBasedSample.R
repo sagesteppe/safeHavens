@@ -159,11 +159,7 @@ KMedoidsBasedSample <- function(
   if (dropout_prob > 0) {
     droppable <- which(!sites_df$required)
     n_drop <- floor(length(droppable) * dropout_prob)
-  } else {
-    droppable <- integer(0)
-    n_drop <- 0
   }
-
   
   all_solutions <- vector("list", n_bootstrap)
   # Bootstrap loop
@@ -191,7 +187,6 @@ KMedoidsBasedSample <- function(
     # Update co-occurrence matrix
     if (!is.null(result$solution)) {
       idx <- result$solution
-      # increment pairwise co-occurrence counts for this solution
       cooccur[idx, idx] <- cooccur[idx, idx] + 1
       
       all_solutions[[b]] <- list(
@@ -375,6 +370,38 @@ run_bootstrap_iteration <- function(
     solution = best_solution,
     objective = best_objective
   )
+
+  best_solution <- NULL
+  best_objective <- -Inf
+  
+  # Multi-restart optimization
+  for (restart in seq_len(n_restarts)) {
+
+    # filter sites for opportunities.
+    available_idx <- available_sites
+    dist_boot_filtered <- dist_boot[available_idx, available_idx, drop = FALSE]
+
+    seeds_in_filtered <- which(available_idx %in% seeds)
+
+    pam_result <- pam_fixed(
+      dist_matrix = dist_boot_filtered,
+      k = n,
+      fixed_ids = seeds_in_filtered
+    )
+    current_solution <- available_idx[pam_result$medoids]
+    current_objective <- -pam_result$total_cost 
+    
+    # Track best across restarts
+    if (current_objective > best_objective) {
+      best_solution <- current_solution
+      best_objective <- current_objective
+    }
+  }
+
+  list(
+    solution = best_solution,
+    objective = best_objective
+  )
 }
 
 #' Jitter coordinates based on uncertainty (in meters)
@@ -395,8 +422,8 @@ jitter_coords <- function(lat, lon, uncertainty_m) {
   dlon <- dx / (111320 * cos(lat * pi/180))
 
   list(
-    lat = lat + dlat,
-    lon = lon + dlon
+    jittered_lat = lat + dlat,
+    jittered_lon = lon + dlon
   )
 }
 
@@ -449,10 +476,6 @@ pam_fixed <- function(dist_matrix, k, fixed_ids) {
   init_pam <- cluster::pam(stats::as.dist(dist_matrix), k)$medoids
   init <- setdiff(as.integer(init_pam), fixed_ids)
   init <- head(init, k - length(fixed_ids))
-
-  if (length(fixed_ids) > k) {
-    stop("Number of required sites exceeds k.")
-  }
   
   medoids <- unique(c(fixed_ids, init))
   

@@ -19,7 +19,6 @@
 #'
 #' Note that if you are submitting data from the `PolygonBasedSample`, the column `n`, must be maintained. 
 #' @param x an sf/tibble/dataframe. a set of sample grids from any of the *Sample functions 
-#' @param reps Numeric. The number of repetitions used in the sampling design. This is only used for messaging purposes at this time.
 #' @param n_breaks Numeric. The number of breaks to return from the function, defaults to 3. Values beyond 5 of are questionable utility.  
 #' @param verbose Bool. Whether to print messages to console or not, defaults to TRUE. 
 #' @param metric character. The metric to minimize when ordering zones. Options are "var" (variance), "sd" (standard deviation), "energy" (sum of squared distances), and "cv" (coefficient of variation).

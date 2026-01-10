@@ -7,5 +7,5 @@
 ^\.github$
 ^README\.Rmd$
 ^data-raw$
-^update-readme\.sh$
 robots.txt
+^update_readme\.sh$

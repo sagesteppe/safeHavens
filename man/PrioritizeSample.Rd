@@ -6,7 +6,6 @@
 \usage{
 PrioritizeSample(
   x,
-  reps,
   n_breaks = 3,
   verbose = TRUE,
   metric = c("var", "sd", "energy", "cv")
@@ -14,8 +13,6 @@ PrioritizeSample(
 }
 \arguments{
 \item{x}{an sf/tibble/dataframe. a set of sample grids from any of the *Sample functions}
-
-\item{reps}{Numeric. The number of repetitions used in the sampling design. This is only used for messaging purposes at this time.}
 
 \item{n_breaks}{Numeric. The number of breaks to return from the function, defaults to 3. Values beyond 5 of are questionable utility.}
 
@@ -62,7 +59,7 @@ ps <- PrioritizeSample(zones$Geometry, n_breaks = 3, metric = 'energy')
 
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = ps[['Geometry']],
-    ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
+  ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
   ggplot2::theme_void() + 
   ggplot2::labs(fill = 'Within Zone Priority:', title = 'Focal areas to center sampling within') +
   ggplot2::theme(legend.position= 'bottom')
