@@ -47,14 +47,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-extdata-
 
-    # Run tests
-    - name: Run tests
-      run: R CMD check --no-manual --as-cran .
-
-    # upload results to codecov
-    - name: Upload coverage to Codecov
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Test coverage
       run: |
         Rscript -e 'covr::codecov()'
 
