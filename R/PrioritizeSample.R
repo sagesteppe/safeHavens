@@ -96,6 +96,7 @@ PrioritizeSample <- function(x, n_breaks = 3, verbose=TRUE,
     sf::st_agr(ctrlPts[[i]]) <- 'constant'
     vorons[[i]] <- sf::st_voronoi(sf::st_union(ctrlPts[[i]]))
     vorons[[i]] <- sf::st_intersection(sf::st_cast(vorons[[i]]), sf::st_union(x[i,]))
+    vorons[[i]] <- sf::st_make_valid(vorons[[i]])
     
     # and add the pt classifications to each polygon
     vorons[[i]] <- cbind(
