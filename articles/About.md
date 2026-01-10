@@ -38,15 +38,16 @@ species overnight is possible. The table below presents the currently
 implemented sampling scheme and the user-facing function associated with
 them.
 
-| Function                   | Description                            | Comp. | Envi. |
-|----------------------------|----------------------------------------|-------|-------|
-| `GridBasedSample`          | Creates and merges *n* grids over area | L     | L     |
-| `PointBasedSample`         | Creates points to make grids over area | L     | L     |
-| `EqualAreaSample`          | Breaks area into similar size pieces   | L     | L     |
-| `OpportunisticSample`      | Using PBS with existing records        | L     | L     |
-| `IBDBasedSample`           | Breaks species range into clusters     | H     | M     |
-| `EcoregionBasedSample`     | Using existing ecoregions to sample    | L     | H     |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample   | H     | H     |
+| Function                   | Description                             | Comp. | Envi. |
+|----------------------------|-----------------------------------------|-------|-------|
+| `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
+| `PointBasedSample`         | Creates points to make grids over area  | L     | L     |
+| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
+| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `KMedoidsBasedSample`      | For rare species with known occurrences | M     | L     |
+| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
+| `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 
 The first three functions, `GridBasedSample`, `PointBasedSample`, and
 `EqualAreaSample`, are flavors of the same process, where we try to
@@ -64,7 +65,7 @@ new sampling locations The first three functions would be used when
 `OpportunisticSample` would be used when trying to *augment* an existing
 collection strategy.
 
-The fifth method, `IBDBasedSample`, is largely in a class of its own; in
+The sixth method, `IBDBasedSample`, is largely in a class of its own; in
 lieu of using the *continuity* of geographic space as its primary
 method, it focuses on the discontinuity of space and uses distance
 matrices and clustering to determine which patches of range are closer
@@ -73,8 +74,8 @@ expensive than the previous four, and while it incorporates some
 environmental information, it is not explicit in the way that the final
 two methods are.
 
-The `EcoregionBasedSample` may be the most commonly encountered method
-in North America, and in various formats, is driving two major germplasm
+The `PolygonBasedSample` may be the most commonly encountered method in
+North America, and in various formats, is driving two major germplasm
 banking projects in both the Midwest and Southeastern United States, as
 well as at a high level, composing the way that numerous native seed
 collection coordinators are structured in the West. This method uses
@@ -83,8 +84,10 @@ seed collections; that is, the different ecoregions serve as
 stratification agents. In broad strokes, the general thinking is that
 these regions represent continuous transitions in the environment faced
 by the species, and populations across these ranges will be differently
-adapted to these environments. However, it relies on existing ecoregion
-maps, which may or may not be relevant to the ecology of the species.
+adapted to these environments. It can be used with either ecoregion or
+seed transfer zone based data. However, it relies on existing spatial
+data products, which may or may not be relevant to the ecology of the
+species.
 
 The final function, `EnvironmentalBasedSample`, is both the most
 computationally expensive and the most environmentally explicit. This
@@ -107,7 +110,7 @@ considerably more field effort to gather seed, a supplemental approach
 exists that suggests the priority in which individual populations
 (‘points’) can be sampled.
 
-The `maximizeDispersion` method utilizes either geographic distances
+The `KMedoidsBasedSample` method utilizes either geographic distances
 alone or geographic distances in conjunction with a distance matrix
 developed from a few key environmental variables to suggest which
 populations should be prioritized for seed collections. This method is
@@ -124,8 +127,8 @@ packages that may require additional system dependencies, such as
 `PROJ`, and `GEOS` on your system, as well as Rcpp.
 
 Generally, these installations go off without a hitch but may require
-additional attention from some users. The tradeoff is that these are all
-*free* tools with enormous power and are quite commonly used in
+additional attention from some users. The trade off is that these are
+all *free* tools with enormous power and are quite commonly used in
 ecological and geographical modelling.
 
 `safeHavens` can be installed from GitHub with `remotes` or `devtools`.

@@ -9,12 +9,13 @@ circle) distance between points.
 IBDBasedSample(
   x,
   n,
-  fixedClusters,
-  n_pts,
+  fixedClusters = TRUE,
+  n_pts = 1000,
   template,
-  prop_split,
-  min.nc,
-  max.nc
+  prop_split = 0.8,
+  min.nc = 5,
+  max.nc = 20,
+  planar_proj
 )
 ```
 
@@ -61,6 +62,11 @@ IBDBasedSample(
   Numeric. Maximum number of clusters to test if fixedClusters=FALSE,
   defaults to 20.
 
+- planar_proj:
+
+  Numeric. Optional. A planar projection to use for an
+  sf::st_point_on_surface to ensuare valid spatial operations.
+
 ## Value
 
 An simple features (sf) object containing the final grids for saving to
@@ -70,8 +76,7 @@ of spatial data models (vector - used here, and raster).
 ## Examples
 
 ``` r
-planar_proj =
-'+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
@@ -98,11 +103,10 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
-#> Warning: coordinate ranges not computed along great circles; install package lwgeom to get rid of this warning
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, 
+   template = predictors, planar_proj = planar_proj)
 #> Loading required package: ggplot2
 #> Loading required package: lattice
-#> Warning: st_point_on_surface may not give correct results for longitude/latitude data
-plot(ibdbs)
+plot(ibdbs[['Geometry']])
 
 ```

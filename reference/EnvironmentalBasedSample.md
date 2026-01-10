@@ -11,17 +11,17 @@ PCNM/MEM data and coordinates to implement some spatial contiguity.
 EnvironmentalBasedSample(
   pred_rescale,
   f_rasts,
-  lyr,
+  lyr = "Supplemented",
   taxon,
-  path,
-  n,
-  fixedClusters,
-  n_pts,
-  planar_projection,
-  coord_wt,
-  buffer_d,
-  prop_split,
-  write2disk,
+  path = ".",
+  n = 20,
+  fixedClusters = TRUE,
+  n_pts = 500,
+  planar_proj,
+  coord_wt = 2.5,
+  buffer_d = 3,
+  prop_split = 0.8,
+  write2disk = FALSE,
   ...
 )
 ```
@@ -73,7 +73,7 @@ EnvironmentalBasedSample(
   these will be randomly sampled within the mask area `mask`. Defaults
   to 500.
 
-- planar_projection:
+- planar_proj:
 
   Numeric, or character vector. An EPSG code, or a proj4 string, for a
   planar coordinate projection, in meters, for use with the function.

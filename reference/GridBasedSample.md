@@ -6,7 +6,7 @@ typically a species range.
 ## Usage
 
 ``` r
-GridBasedSample(x, planar_projection, gridDimensions)
+GridBasedSample(x, planar_proj, gridDimensions)
 ```
 
 ## Arguments
@@ -16,7 +16,7 @@ GridBasedSample(x, planar_projection, gridDimensions)
   An SF object or terra spatraster. the range over which to generate the
   clusters.
 
-- planar_projection:
+- planar_proj:
 
   Numeric, or character vector. An EPSG code, or a proj4 string, for a
   planar coordinate projection, in meters, for use with the function.
@@ -54,7 +54,7 @@ sizeOptions <- sizeOptions[sizeOptions$Name == 'Original',]
 
 output <- GridBasedSample(ri, 5070, gridDimensions = sizeOptions)
 #> Error: object 'ri' not found
-plot(output)
+plot(output$Geometry)
 #> Error: object 'output' not found
  # \dontrun{}
 ```

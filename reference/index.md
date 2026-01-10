@@ -13,15 +13,17 @@ User facing functions for implementing the sampling schemes
   : Create equal area polygons over a geographic range
 - [`OpportunisticSample()`](https://sagesteppe.github.io/safeHavens/reference/OpportunisticSample.md)
   : Design additional collections around already existing collections
+- [`KMedoidsBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/KMedoidsBasedSample.md)
+  : Maximize Dispersion Site Selection
 - [`IBDBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/IBDBasedSample.md)
   : Sample a species based on Isolation by Geographic Distance (IBD)
-- [`EcoregionBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EcoregionBasedSample.md)
-  : Determine the sample size for n ecoregions in an area
+- [`PolygonBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/PolygonBasedSample.md)
+  : Sample spatial zones within a species range
 - [`EnvironmentalBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EnvironmentalBasedSample.md)
   : Create environmental and spatial clusters for targeting collection
   areas
 - [`PrioritizeSample()`](https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.md)
-  : Determine which areas of a sample unit should be prioritized
+  : Determine which areas in a sample unit should be prioritized
 
 ## Environmental Sampling Prep
 
@@ -46,12 +48,12 @@ Preparation for Environmental Based Sampling
 
 ## Rare Plant Sampling
 
-Optimization based site selection for known populations
+Optimization based site selection helpers for known populations
 
 - [`greatCircleDistance()`](https://sagesteppe.github.io/safeHavens/reference/greatCircleDistance.md)
   : Haversine Distance Calculation
-- [`maximizeDispersion()`](https://sagesteppe.github.io/safeHavens/reference/maximizeDispersion.md)
-  : Maximize Dispersion Site Selection
+- [`split_cols()`](https://sagesteppe.github.io/safeHavens/reference/split_cols.md)
+  : split and extract the temperature values from Tmin and AHM columns
 
 ## Miscellaneous
 

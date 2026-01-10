@@ -19,6 +19,17 @@ Background, installation, usage, and sampling schemas
   Creating and understanding the Species Distribution Model required for
   EnvironmentalBasedSample.
 
+- [ProvisionalSTZ and Ecoregion Based
+  Sampling](https://sagesteppe.github.io/safeHavens/articles/pSTZEcoregionSampling.md):
+
+  Sampling provisional seed transfer zones and ecoregions
+
+- [Worked
+  Example](https://sagesteppe.github.io/safeHavens/articles/WorkedExample.md):
+
+  Downloading species occurrence data, creating hulls, sampling and
+  writing out data for sample design.
+
 ### Sampling schema for rare species
 
 A supplemental schema for rare species

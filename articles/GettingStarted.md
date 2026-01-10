@@ -5,7 +5,7 @@
 `safeHavens` can be installed directly from github.
 
 ``` r
-remotes::install_github('sagesteppe/safeHavens') 
+#remotes::install_github('sagesteppe/safeHavens') 
 ```
 
 ``` r
@@ -17,7 +17,8 @@ library(spData)
 library(dplyr)
 library(patchwork)
 set.seed(23) 
-planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
+
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 ```
 
 ### Defining a Species Range or Domain for Sampling
@@ -101,8 +102,9 @@ reproduced here.
 | `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
 | `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `EcoregionBasedSample`     | Using existing ecoregions to sample     | L     | H     |
+| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 
 *Note in this table ‘Comp.’ and ‘Envi.’ refer to computational and
@@ -135,11 +137,11 @@ initial grids.
 tgs <- TestGridSizes(x_buff)
 print(tgs)
 #>       Name Grids  Variance GridNOx GridNOy
-#> 1 Smallest    34  599.9513       8       6
-#> 2  Smaller    28  813.2043       7       5
-#> 3 Original    24  862.5458       6       4
-#> 4   Larger    18  681.7667       5       3
-#> 5  Largest    13 1182.8457       4       2
+#> 1 Smallest    35  613.5598       8       6
+#> 2  Smaller    28  790.2929       7       5
+#> 3 Original    24  886.7825       6       4
+#> 4   Larger    18  677.0360       5       3
+#> 5  Largest    13 1177.4608       4       2
 
 plot(tgs$Grids, tgs$Variance, xlab = 'Grid Number', ylab = 'Variance',
      main = 'Number of grids and areas overlapping species range')
@@ -169,15 +171,13 @@ won’t get the characteristic shape.
 grid_buff <- GridBasedSample(x_buff, planar_proj, gridDimensions = tgs) 
 
 gbs.p <- map + 
-  geom_sf(data = grid_buff, aes(fill = factor(ID))) + 
+  geom_sf(data = grid_buff[['Geometry']], aes(fill = factor(ID))) + 
  # geom_sf_label(data = grid_buff, aes(label = Assigned), alpha = 0.4) +  # on your computer, doesnt work at vignette size
   labs(title = 'Grids')  + 
   coord_sf(expand = F)
 
 gbs.p
 ```
-
-![](GettingStarted_files/figure-html/Grid%20Based%20Samples-1.png)
 
 ### Point Based Sample
 
@@ -193,7 +193,7 @@ better.
 
 ``` r
 pbs <- PointBasedSample(x_buff)
-pbs.sf <- pbs$Geometry
+pbs.sf <- pbs[['Geometry']]
 
 st_is_valid(x_buff)
 #> [1] TRUE
@@ -227,11 +227,14 @@ step back and by using many points let the clusters grow themselves to
 similar sizes.
 
 ``` r
-eas <- EqualAreaSample(x_buff, planar_projection = planar_proj) 
+eas <- EqualAreaSample(x_buff, planar_proj = planar_proj) 
+#> Warning: did not converge in 10 iterations
+#> Warning: did not converge in 10 iterations
+#> Warning: did not converge in 10 iterations
 #> Warning: did not converge in 10 iterations
 
 eas.p <- map + 
-  geom_sf(data = eas$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(data = eas[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = eas.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Equal Area') + 
   coord_sf(expand = F)
@@ -241,6 +244,8 @@ eas.p
 ![](GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png)
 
 The results look quite similar to point based sample.
+
+    #> Warning in rm(eas, pbs, pbs.sf, tgs, grid_buff): object 'grid_buff' not found
 
 ### Opportunistic Sample
 
@@ -267,7 +272,7 @@ exist_pts <- sf::st_sample(x_buff, size = 10) |>
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
 
 os.p <- map + 
-  geom_sf(data = os$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(data = os[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   geom_sf(data = exist_pts, alpha = 0.4) + 
   labs(title = 'Opportunistic') + 
@@ -304,13 +309,14 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors)
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = planar_proj)
 
 ibdbs.p <- map + 
-  geom_sf(data = ibdbs, aes(fill = factor(ID))) + 
+  geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'IBD') + 
   coord_sf(expand = F)
+
 ibdbs.p
 ```
 
@@ -378,25 +384,20 @@ head(neo_eco[,c(1, 3, 4, 6, 11)])
 #> 6                        Chacoan MULTIPOLYGON (((-35.56652 -...
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
-ebs.sf <- EcoregionBasedSample(x_buff, neo_eco, OmernikEPA = FALSE, ecoregion_col = 'Provincias')
-#> Warning: attribute variables are assumed to be spatially constant throughout
-#> all geometries
-#> Warning: attribute variables are assumed to be spatially constant throughout
-#> all geometries
+ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 10, zone_key = 'Provincias')
+#> Warning in st_collection_extract.sf(zones_poly, "POLYGON", warn = FALSE): x is
+#> already of type POLYGON.
 
-# for plotting let's crop it to the other objects
+# crop it to the other objects for plotting
 ebs.sf <- st_crop(ebs.sf, bb)
 #> Warning: attribute variables are assumed to be spatially constant throughout
 #> all geometries
 
 ebs.p <- map + 
-  geom_sf(data = ebs.sf, aes(fill = factor(n))) + 
+  geom_sf(data = ebs.sf , aes(fill = factor(allocation))) + 
   labs(title = 'Ecoregion') + 
   coord_sf(expand = F)
-ebs.p
 ```
-
-![](GettingStarted_files/figure-html/Ecoregion%20Based%20Sample-1.png)
 
 This output differs from the others we will see, here we have depicted
 the number of collections to be made per ecoregion. Because the number
@@ -476,14 +477,14 @@ ENVIbs <- EnvironmentalBasedSample(
   lyr = 'Supplemented',
   fixedClusters = TRUE, 
   n_pts = 500, 
-  planar_projection = planar_proj,
+  planar_proj = planar_proj,
   buffer_d = 3, prop_split = 0.8)
 #> Joining with `by = join_by(x, y)`
 #> Warning in st_point_on_surface.sfc(st_geometry(x)): st_point_on_surface may not
 #> give correct results for longitude/latitude data
 
 ENVIbs.p <- map + 
-  geom_sf(data = ENVIbs, aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
@@ -524,7 +525,7 @@ relatively similar to me when plotted one after another, let’s plot them
 all simultaneously and see if that’s still the case.
 
 ``` r
-gbs.p + pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
+pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
   plot_layout(ncol = 3)
 ```
 
@@ -534,6 +535,6 @@ Again, the top three figures appear quite similar, with the
 `Opportunistic` method only deviating slightly form them. In my mind
 isolation by distance (IBD) show the biggest different, it seems to have
 made the most *sense* of the naturally occurring patchiness of the
-species range. Ecoregion SEEMS…. Environmental also seems to partition
-the feature space quite well. Notably drawing a couple clusters in the
-Pacific lowlands and Northern Andes mountains.
+species range. Environmental also seems to partition the feature space
+quite well. Notably drawing a couple clusters in the Pacific lowlands
+and Northern Andes mountains.

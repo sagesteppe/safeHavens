@@ -19,6 +19,47 @@
 <meta name="description" content="Creating and understanding the Species Distribution Model required for EnvironmentalBasedSample.">
 <meta property="og:description" content="Creating and understanding the Species Distribution Model required for EnvironmentalBasedSample.">
 <meta property="og:image" content="https://sagesteppe.github.io/safeHavens/logo.png">
+<!-- Google Search Console Verification --><meta name="google-site-verification" content="viUZcwXk_Fi5hsfdB7m6GgrFgGMJ-xVe1BcMTezGJII">
+<!-- JSON-LD Structured Data for AI Crawlers --><script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "safeHavens",
+  "applicationCategory": "Scientific Software",
+  "operatingSystem": "Windows, macOS, Linux",
+  "softwareVersion": "0.0.0.9000",
+  "description": "R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation, including species distribution modeling optimized for germplasm sampling.",
+  "url": "https://sagesteppe.github.io/safeHavens/",
+  "downloadUrl": "https://github.com/sagesteppe/safeHavens",
+  "author": {
+    "@type": "Person",
+    "name": "Reed Benkendorf",
+    "url": "https://github.com/sagesteppe"
+  },
+  "programmingLanguage": "R",
+  "keywords": [
+    "germplasm conservation",
+    "ex situ conservation",
+    "plant conservation",
+    "sampling design",
+    "species distribution model",
+    "SDM",
+    "biodiversity",
+    "seed collection",
+    "R package",
+    "conservation biology"
+  ],
+  "inLanguage": "en-US",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script><!-- Additional SEO Meta Tags --><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package">
+<meta name="author" content="Reed Benkendorf">
+<link rel="canonical" href="https://sagesteppe.github.io/safeHavens/">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -44,6 +85,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/sagesteppe/safeHavens/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -59,14 +101,14 @@
       <img src="../logo.png" class="logo" alt=""><h1>Species Distribution Models</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/sagesteppe/safeHavens/blob/main/vignettes/SpeciesDistributionModels.Rmd" class="external-link"><code>vignettes/SpeciesDistributionModels.Rmd</code></a></small>
       <div class="d-none name"><code>SpeciesDistributionModels.Rmd</code></div>
     </div>
 
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'sagesteppe/safeHavens'</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'sagesteppe/safeHavens'</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="species-distribution-modelling">Species Distribution Modelling<a class="anchor" aria-label="anchor" href="#species-distribution-modelling"></a>
 </h2>
@@ -266,7 +308,7 @@ hood which allows for spatially informed cross validation.</p>
 </h4>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SpeciesDistributionModels_files/figure-html/Explore%20SDM%20output%20-%20Map%20of%20Predictions-1.png" class="r-plt" width="700"></p>
+<p><img src="SpeciesDistributionModels_files/figure-html/Explore%20SDM%20output%20-%20Map%20of%20Predictions-1.png" class="r-plt" alt="" width="700"></p>
 <p>SDM’s produce continuous surfaces displaying the predicted
 probability of suitable habitat across a landscape. However binary
 surfaes (Yes/No Suitable), i.e. <em>is it more or less probable that
@@ -332,7 +374,7 @@ without populations to collect from.</p>
 using the output from the function.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SpeciesDistributionModels_files/figure-html/Compare%20Threshold%20Results-1.png" class="r-plt" width="700"></p>
+<p><img src="SpeciesDistributionModels_files/figure-html/Compare%20Threshold%20Results-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="rescale-predictor-variables">rescale predictor variables<a class="anchor" aria-label="anchor" href="#rescale-predictor-variables"></a>
@@ -348,13 +390,13 @@ individual species</em>.</p>
 <p>In this way our raster stack becomes representative of our model, we
 can then use these values as the basis for hierarchical cluster later
 on.</p>
+<p>Below we create a copy of the raster predictions where we have
+standardized each variable, so it is equivalent to the input to glmnet,
+and then mulitplied by its beta-coefficient. We will also write out
+these beta coefficients with the <code>writeSDMresults</code> function
+right afterwards.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># CREATE A COPY OF THE RASTER PREDICTORS WHERE WE HAVE </span></span>
-<span><span class="co"># STANDARDIZED EACH VARIABLE - SO IT IS EQUIVALENT TO THE INPUT TO THE GLMNET</span></span>
-<span><span class="co"># FUNCTION, AND THEN MULTIPLIED IT BY IT'S BETA COEFFICIENT FROM THE FIT MODEL</span></span>
-<span><span class="co"># we will also write out the beta coefficients using writeSDMresults right after</span></span>
-<span><span class="co"># this. </span></span>
-<span></span>
+<code class="sourceCode R"><span></span>
 <span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span></span>
 <span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
 <span>  predictors <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span>, </span>
@@ -362,7 +404,7 @@ on.</p>
 <span>  pred_mat <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">PredictMatrix</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SpeciesDistributionModels_files/figure-html/Rescale%20Predictor%20Variables-1.png" class="r-plt" width="700"></p>
+<p><img src="SpeciesDistributionModels_files/figure-html/Rescale%20Predictor%20Variables-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can see that the variables are ‘close’ to being on the same scale,
 this will work in a clustering algorithm. If any of the layers are all
 the same color (maybe yellow?) that means they have no variance, that’s

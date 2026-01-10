@@ -10,7 +10,7 @@ EqualAreaSample(
   x,
   n = 20,
   pts = 5000,
-  planar_projection,
+  planar_proj,
   returnProjected,
   reps = 100,
   BS.reps = 9999
@@ -35,7 +35,7 @@ EqualAreaSample(
   number of points used may deviate slightly from the user submitted
   value to allow for equidistant spacing across `x`. Defaults to 5,000.
 
-- planar_projection:
+- planar_proj:
 
   Numeric, or character vector. An EPSG code, or a proj4 string, for a
   planar coordinate projection, in meters, for use with the function.
@@ -74,7 +74,7 @@ dplyr::select(NAME)
 
 set.seed(1)
 system.time(
-  zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_projection = 32617, reps = 50)
+  zones <- EqualAreaSample(nc, n = 20, pts = 500, planar_proj = 32617, reps = 50)
 )
 #> Warning: did not converge in 10 iterations
 #> Warning: did not converge in 10 iterations
@@ -82,7 +82,7 @@ system.time(
 #> Warning: did not converge in 10 iterations
 #> Warning: did not converge in 10 iterations
 #>    user  system elapsed 
-#>   5.566   0.019   5.585 
+#>   5.201   0.018   5.222 
 
 plot(nc, main = 'Counties of North Carolina')
 

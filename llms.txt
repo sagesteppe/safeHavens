@@ -1,7 +1,5 @@
 # safeHavens
 
-# Description
-
 The goal of this package is to provide germplasm curators with easily
 referable spatial data sets to help prioritize field collection efforts.
 
@@ -47,14 +45,21 @@ library(safeHavens)
 `safeHavens` has only seven user facing functions for generating the
 sampling schemes.
 
+### Available Sampling Schemes
+
+The following table shows the eight sampling approaches available in
+safeHavens, with their computational complexity (Comp.) and
+environmental data requirements (Envi.): L = Low, M = Medium, H = High.
+
 | Function                   | Description                             | Comp. | Envi. |
 |----------------------------|-----------------------------------------|-------|-------|
 | `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
 | `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
 | `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `EcoregionBasedSample`     | Using existing ecoregions to sample     | L     | H     |
+| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 
 The species distribution modelling section has a couple functions which
@@ -82,15 +87,17 @@ User facing functions for implementing the sampling schemes
   : Create equal area polygons over a geographic range
 - [`OpportunisticSample()`](https://sagesteppe.github.io/safeHavens/reference/OpportunisticSample.md)
   : Design additional collections around already existing collections
+- [`KMedoidsBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/KMedoidsBasedSample.md)
+  : Maximize Dispersion Site Selection
 - [`IBDBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/IBDBasedSample.md)
   : Sample a species based on Isolation by Geographic Distance (IBD)
-- [`EcoregionBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EcoregionBasedSample.md)
-  : Determine the sample size for n ecoregions in an area
+- [`PolygonBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/PolygonBasedSample.md)
+  : Sample spatial zones within a species range
 - [`EnvironmentalBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/EnvironmentalBasedSample.md)
   : Create environmental and spatial clusters for targeting collection
   areas
 - [`PrioritizeSample()`](https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.md)
-  : Determine which areas of a sample unit should be prioritized
+  : Determine which areas in a sample unit should be prioritized
 
 ## Environmental Sampling Prep
 
@@ -115,12 +122,12 @@ Preparation for Environmental Based Sampling
 
 ## Rare Plant Sampling
 
-Optimization based site selection for known populations
+Optimization based site selection helpers for known populations
 
 - [`greatCircleDistance()`](https://sagesteppe.github.io/safeHavens/reference/greatCircleDistance.md)
   : Haversine Distance Calculation
-- [`maximizeDispersion()`](https://sagesteppe.github.io/safeHavens/reference/maximizeDispersion.md)
-  : Maximize Dispersion Site Selection
+- [`split_cols()`](https://sagesteppe.github.io/safeHavens/reference/split_cols.md)
+  : split and extract the temperature values from Tmin and AHM columns
 
 ## Miscellaneous
 
@@ -151,6 +158,17 @@ Background, installation, usage, and sampling schemas
 
   Creating and understanding the Species Distribution Model required for
   EnvironmentalBasedSample.
+
+- [ProvisionalSTZ and Ecoregion Based
+  Sampling](https://sagesteppe.github.io/safeHavens/articles/pSTZEcoregionSampling.md):
+
+  Sampling provisional seed transfer zones and ecoregions
+
+- [Worked
+  Example](https://sagesteppe.github.io/safeHavens/articles/WorkedExample.md):
+
+  Downloading species occurrence data, creating hulls, sampling and
+  writing out data for sample design.
 
 ### Sampling schema for rare species
 

@@ -1,0 +1,186 @@
+# Maximize Dispersion Site Selection
+
+This function operates on individual points - representing populations,
+rather than drawing convex hulls or polygons around them to emulate a
+species range. It is designed for rare species, where individual
+populations are relatively scarce, e.g. \< 100, and have decent location
+data. It will perform bootstrap re-sampling to better estimate the true
+range of the extent species, as well as coordinate jittering to better
+address geo-location quality. After running `n_bootstrap` of these
+simulations it will identify the individual networks of sites
+(co-location) which is the most resilient to these perturbations, and
+should be less affected by data quality issues.
+
+As arguments it takes the known locations of populations, and will solve
+for n *priority* collection sites. Along this process it will also
+generate a priority ranking of all sites, indicating a naive possible
+order for prioritizing collections; although opportunity should never
+discard a site. A required input parameter is a column indicating
+whether a site is a *required*. Required sites (1 - as many as \<
+n_sites) will serve as fixed parameters in the optimization scenario
+which greatly speed up run time. They can represent: existing
+collections, collections with a very strong chance of happenging due to
+a funding agency mechanism, or otherwise a single population closet to
+the geographic center of the species. Notably the solve will be 'around'
+this site, hence the solves are not purely theoretical, but linked to a
+pragmatic element.
+
+Theoretically one can substitute a *geographic* distance matrix for an
+*environmental* distance matrix. However, the function will not
+internally recalculate distances between the bootstrapped points. See
+vignette for example of creating a quick environmental distance matrix
+using a simple PCA of bioclim variables.
+
+## Usage
+
+``` r
+KMedoidsBasedSample(
+  input_data,
+  n = 5,
+  n_bootstrap = 999,
+  dropout_prob = 0.1,
+  n_local_search_iter = 100,
+  n_restarts = 3,
+  verbose = TRUE,
+  distance_type = "geographic",
+  min_jitter_dist = 10000
+)
+```
+
+## Arguments
+
+- input_data:
+
+  A list with two elements: 'distances' (distance matrix) and 'sites'
+  (data frame of site metadata).
+
+- n:
+
+  The number of sites which you want to select for priority collection.
+  Note that the results will return a rank of prioritization for all
+  sites in the data.
+
+- n_bootstrap:
+
+  Number of bootstrap replicates to perform.
+
+- dropout_prob:
+
+  Probability of dropping non-seed sites in each bootstrap replicate,
+  give how few sites there are generally keep under 0.2. Set to 0 to
+  disable dropout.
+
+- n_local_search_iter:
+
+  Number of local search iterations per restart.
+
+- n_restarts:
+
+  Number of random restarts per bootstrap replicate.
+
+- verbose:
+
+  Whether to print progress information. Will print a message on run
+  settings, and a progress bar for the bootstraps.
+
+- distance_type:
+
+  Character. Defaults to 'geographic', otherwise 'environmental'. If
+  geogra'phic and coordinates uncertainty is greater than
+  `min_jitter_dist` then coordinate jittering will be performed.
+
+- min_jitter_dist:
+
+  Minimum coordinate uncertainty (in meters) to initiate jittering of
+  site coordinates.
+
+## Details
+
+Select a subset of sites that maximize spatial dispersion of sites using
+k-medioids clustering.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+library(ggplot2)
+
+ ### create sample data 
+ n_sites <- 30 # number of known populations
+ df <- data.frame(
+   site_id = seq_len(n_sites),
+   lat = runif(n_sites, 25, 30), # play with these to see elongated results. 
+   lon = runif(n_sites, -125, -120),
+   required = FALSE,
+   coord_uncertainty = 0
+ )
+
+#function can accept a required point, here arbitrarily place near geographic center
+ dists2c <- greatCircleDistance(
+   median(df$lat), 
+   median(df$lon), 
+   df$lat, 
+   df$lon
+ )
+ df[order(dists2c)[1],'required'] <- TRUE
+ 
+ ## we will simulate coordinate uncertainty on a number of sites.  
+ uncertain_sites <- sample(setdiff(seq_len(n), which(df$required)), size = min(6, n_sites-3))
+ df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 5000, 100000) # meters
+ 
+ # the function can take up to take matrices. the first (required) is a geographic distance
+ # matrix. calculate this with the `greatCircleDistance` fn from the package for consistency. 
+ # (it will be recalculated during simulations). `sf` gives results in slightly diff units. 
+ dist_mat <- sapply(1:nrow(df), function(i) {
+   greatCircleDistance(
+     df$lat[i], df$lon[i],
+     df$lat, df$lon
+   )
+ })
+
+ # the input data is a list, the distance matrix, and the df of actual point locations. 
+ head(df)
+
+ test_data <- list(distances = dist_mat, sites = df)
+ rm(dist_mat, df, n, uncertain_sites, dists2c)
+
+ # small quick run 
+   system.time( 
+     res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+       input_data = test_data,
+       n_bootstrap = 500,
+       n_local_search_iter = 50,
+       n_restarts = 2
+     )
+   )
+
+### first selected 
+ ggplot(data = res$input_data, 
+   aes(
+     x = lon, 
+     y = lat, 
+     shape = required, 
+     size = cooccur_strength,
+     color = selected
+     )
+   ) +
+   geom_point() + 
+ #  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
+   theme_minimal() + 
+   labs(main = 'Priority Selection Status of Sites') 
+
+### order of sampling priority ranking plot.
+ ggplot(data = res$input_data, 
+   aes(
+     x = lon, 
+     y = lat, 
+     shape = required, 
+     size = -sample_rank,
+     color = sample_rank
+     )
+   ) +
+   geom_point() + 
+#   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
+   theme_minimal()   
+} # }
+```

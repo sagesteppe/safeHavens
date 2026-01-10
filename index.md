@@ -1,7 +1,5 @@
 # safeHavens
 
-# Description
-
 The goal of this package is to provide germplasm curators with easily
 referable spatial data sets to help prioritize field collection efforts.
 
@@ -47,14 +45,21 @@ library(safeHavens)
 `safeHavens` has only seven user facing functions for generating the
 sampling schemes.
 
+### Available Sampling Schemes
+
+The following table shows the eight sampling approaches available in
+safeHavens, with their computational complexity (Comp.) and
+environmental data requirements (Envi.): L = Low, M = Medium, H = High.
+
 | Function                   | Description                             | Comp. | Envi. |
 |----------------------------|-----------------------------------------|-------|-------|
 | `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
 | `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
+| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
 | `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `EcoregionBasedSample`     | Using existing ecoregions to sample     | L     | H     |
+| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 
 The species distribution modelling section has a couple functions which
