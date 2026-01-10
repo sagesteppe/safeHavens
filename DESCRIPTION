@@ -26,7 +26,8 @@ Suggests:
     purrr,
     sp,
     tidyr,
-    testthat
+    testthat,
+    covr
 VignetteBuilder: knitr
 Imports: 
     caret,
