@@ -62,17 +62,19 @@ thin_occurrence_points <- function(x, quantile_v = 0.025) {
   
   thinD <- as.numeric(stats::quantile(dists, quantile_v, na.rm = TRUE) / 1000)
   
-  thinned <- spThin::thin(
-    loc.data = sp.coords, 
-    thin.par = thinD,
-    spec.col = 'Species',
-    lat.col = 'Y', 
-    long.col = 'X', 
-    reps = 100, 
-    locs.thinned.list.return = TRUE, 
-    verbose = FALSE, 
-    write.files = FALSE, 
-    write.log.file = FALSE
+  thinned <- suppressMessages(
+    spThin::thin(
+      loc.data = sp.coords, 
+      thin.par = thinD,
+      spec.col = 'Species',
+      lat.col = 'Y', 
+      long.col = 'X', 
+      reps = 100, 
+      locs.thinned.list.return = TRUE, 
+      verbose = FALSE, 
+      write.files = FALSE, 
+      write.log.file = FALSE
+    )
   )
   
   # Select the thinning result with the most points retained
@@ -127,12 +129,14 @@ perform_feature_selection <- function(train_data, cv_indices) {
     verbose = FALSE
   )
   
-  caret::rfe(
-    method = 'glmnet',
-    sizes = 3:ncol(train_dat), 
-    x = train_dat,
-    y = sf::st_drop_geometry(train_data)$occurrence,
-    rfeControl = ctrl
+  suppressMessages(
+    caret::rfe(
+      method = 'glmnet',
+      sizes = 3:ncol(train_dat), 
+      x = train_dat,
+      y = sf::st_drop_geometry(train_data)$occurrence,
+      rfeControl = ctrl
+    )
   )
 }
 
@@ -152,12 +156,14 @@ fit_elastic_net_model <- function(train_data, selected_predictors, cv_indices) {
   )
   
   # Fit with caret to find optimal hyperparameters
-  cv_model <- caret::train(
-    x = sf::st_drop_geometry(train1[, selected_predictors]), 
-    y = sf::st_drop_geometry(train_data)$occurrence, 
-    method = "glmnet", 
-    family = 'binomial', 
-    index = cv_indices$indx_train
+  cv_model <- suppressMessages(
+    caret::train(
+      x = sf::st_drop_geometry(train1[, selected_predictors]), 
+      y = sf::st_drop_geometry(train_data)$occurrence, 
+      method = "glmnet", 
+      family = 'binomial', 
+      index = cv_indices$indx_train
+    )
   )
   
   # Refit with glmnet directly for better predict compatibility
