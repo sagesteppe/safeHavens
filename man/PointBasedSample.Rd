@@ -11,8 +11,6 @@ PointBasedSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
 
 \item{n}{Numeric. The total number of desired collections. Defaults to 20.}
 
-\item{collections}{an sf point geometry data set of where existing collections have been made.}
-
 \item{reps}{further arguments passed to np.boot}
 
 \item{BS.reps}{number of bootstrap replicates for evaluating results.}
@@ -22,8 +20,7 @@ A list containing two objects, the first the results of bootstrap simulations.
 The second an sf dataframe containing the polygons with the smallest amount of variance in size.
 }
 \description{
-This function utilizes a regular, or nearly so in the case of existing collections, grid of points
-to develop a sampling scheme or n polygons.
+This function utilizes a regular grid of points to develop a sampling scheme or n polygons.
 }
 \examples{
 #' Utilize a grid based stratified sample for drawing up polygons
