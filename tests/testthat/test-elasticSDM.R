@@ -304,7 +304,7 @@ test_that("create_spatial_cv_folds creates non-overlapping folds", {
   result <- create_spatial_cv_folds(train, data$predictors, k = 5)
   
   # Check that train and test indices don't overlap within each fold
-  for (i in 1:length(result$indx_train)) {
+  for (i in seq_along(length(result$indx_train))){
     train_idx <- result$indx_train[[i]]
     test_idx <- result$indx_test[[i]]
     
@@ -435,7 +435,7 @@ test_that("thinning preserves data integrity", {
   
   data <- setup_sdm_test_data()
   data$occurrences$occurrence <- 1
-  data$occurrences$id <- 1:nrow(data$occurrences)
+  data$occurrences$id <- seq_len(nrow(data$occurrences))
   
   result <- thin_occurrence_points(data$occurrences, quantile_v = 0.025)
   
@@ -471,9 +471,9 @@ test_that("background points are within predictor extent", {
 test_that("predictor extraction maintains spatial relationships", {
   data <- setup_sdm_test_data()
   data$occurrences$occurrence <- 1
-  
+   
   # Add unique ID to track points
-  data$occurrences$point_id <- 1:nrow(data$occurrences)
+  data$occurrences$point_id <- seq_len(nrow(data$occurrences))
   
   result <- extract_predictors_to_points(data$occurrences, data$predictors)
   

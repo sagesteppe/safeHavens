@@ -97,4 +97,17 @@ test_that("RescaleRasters rescales predictors and returns valid coefficients", {
     expect_true(all(is.finite(vals[!is.na(vals)])))
   }
 
+
+  # Raster layer names and coefficient variables must match exactly
+  expect_setequal(
+    names(rescaled),
+    coef_tab$Variable
+  )
+
+  # Names must be unique
+  expect_equal(
+    length(names(rescaled)),
+    length(unique(names(rescaled)))
+  )
+
 })

@@ -109,7 +109,7 @@ test_that("reduceFinalGrids orders by Y then X coordinates", {
   }
   
   final_grids <- sf::st_sf(
-    Assigned = 1:length(grids),
+    Assigned = seq_along(length(grids)),
     geometry = sf::st_sfc(grids, crs = 3857)
   )
   

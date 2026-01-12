@@ -504,5 +504,5 @@ proportional_round <- function(values, target_sum, method = c("larger_up", "larg
       result[indices_to_adjust] <- result[indices_to_adjust] - 1
     }
   }
-  return(result)
+  result
 }

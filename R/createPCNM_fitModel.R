@@ -110,7 +110,7 @@ select_pcnm_features <- function(pcnm_df, occurrence_data, ctrl, cv_indices) {
     caret::rfe(
       method = 'glmnet',
       x = pcnm_df,
-      sizes = 1:min(5, ncol(pcnm_df)),
+      sizes = seq_len(min(5, ncol(pcnm_df))),
       y = occurrence_data,
       rfeControl = ctrl,
       index = cv_indices$indx_train

@@ -43,7 +43,7 @@ test_that("OpportunisticSample creates correct number of polygons", {
   set.seed(123)
   
   existing <- sf::st_as_sf(
-    data.frame(x = c(500), y = c(500)),
+    data.frame(x = 500, y = 500),
     coords = c("x", "y"),
     crs = 3857
   )
@@ -119,7 +119,7 @@ test_that("OpportunisticSample records correct rep counts", {
   set.seed(123)
   
   existing <- sf::st_as_sf(
-    data.frame(x = c(500), y = c(500)),
+    data.frame(x = 500, y = 500),
     coords = c("x", "y"),
     crs = 3857
   )
@@ -268,7 +268,7 @@ test_that("OpportunisticSample geometry column is properly named", {
   set.seed(123)
   
   existing <- sf::st_as_sf(
-    data.frame(x = c(500), y = c(500)),
+    data.frame(x = 500, y = 500),
     coords = c("x", "y"),
     crs = 3857
   )
