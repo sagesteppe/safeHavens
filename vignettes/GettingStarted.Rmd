@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 `safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-#remotes::install_github('sagesteppe/safeHavens') 
+#remotes::install_github('sagesteppe/safeHavens@tests') 
 ```
 
 ```{r Load Libraries, message=FALSE}
@@ -328,10 +328,6 @@ terra::plot(sdm)
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'sdModel.rds')
   )
-
-sdModel$Predictors <- terra::rast(
-  file.path(system.file(package="safeHavens"), 'extdata', 'Predictors.tif')
-)
 ```
 
 Once these data are loaded into R, we will scale the rasters (using `RescaleRasters`) which will serve as surfaces to predict from (this is also done above!), then we will run the algorithm (`EnvironmentalBasedSample`). 

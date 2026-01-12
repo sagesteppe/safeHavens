@@ -85,6 +85,8 @@ sdModel <- elasticSDM(
   quantile_v = 0.025,
   planar_proj = planar_proj
   )
+
+#saveRDS(sdModel, '../inst/extdata/sdModel.rds')
 ```
 
 Under the hood this function uses `caret` to help out with `glmnet`, as it provides output which is very easy to explore and interact with. 
