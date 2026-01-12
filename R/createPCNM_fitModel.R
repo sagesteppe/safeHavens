@@ -87,9 +87,9 @@ create_pcnm_vectors <- function(distance_matrix, n_vectors = 10) {
 
   if(total_vectors < n_vectors){
     message('Requested eigenvectors is greater than available, returning all eigenvectors.')
-    return(data.frame(xypcnm$vectors)[,1:total_vectors, drop = FALSE])
+    data.frame(xypcnm$vectors)[,1:total_vectors, drop = FALSE]
   } else {
-    return(data.frame(xypcnm$vectors)[,1:n_vectors, drop = FALSE])
+    data.frame(xypcnm$vectors)[,1:n_vectors, drop = FALSE]
   }
 }
 
