@@ -314,7 +314,8 @@ elasticSDM <- function(x, predictors, planar_projection, domain = NULL, quantile
     ), 
     indices_knndm = indices_knndm, 
     planar_proj = planar_projection, 
-    sub = model_results$selected_data
+    sub = model_results$selected_data,
+    predictors = predictors
   )
   
   mod <- obs$mod

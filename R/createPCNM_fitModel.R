@@ -44,7 +44,7 @@ createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predic
     pcnm_df, 
     selected_pcnm, 
     x, 
-    predictors[[1]]
+    template_raster = terra::subset(predictors, 1)
   )
   
   list(
@@ -234,7 +234,6 @@ create_pcnm_rasters <- function(pcnm_df, selected_pcnm, spatial_data, template_r
     pcnm_df <- data.frame(PCNM1 = pcnm_df)
     selected_pcnm <- names(pcnm_df)  # override selected_pcnm if numeric
   }
-
 
   pcnm_subset <- pcnm_df[, selected_pcnm, drop = FALSE]
   xypcnm.sf <- cbind(pcnm_subset, dplyr::select(spatial_data, geometry)) |>

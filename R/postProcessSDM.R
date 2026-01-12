@@ -23,11 +23,8 @@
 #' D' is the general basis for all future steps, but either B, or C serve as alternatives. 
 #' 2) All threshold statistics calculated by dismo as a dataframe. 
 #' @export 
-PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_projection){
-  
-  if(missing(thresh_metric)){thresh_metric <- 'sensitivity'}
-  if(missing(quant_amt)){quant_amt <- 0.25}
-  
+PostProcessSDM <- function(rast_cont, test, train, thresh_metric = 'sensitivity', quant_amt = 0.25, planar_projection){
+    
   # determine a threshold for creating a binomial map of the species distribution
   # we want to predict MORE habitat than exists, so we want to maximize sensitivity
   # in our classification. 
@@ -61,7 +58,7 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   # fold
   
   pres <-  dplyr::bind_rows(
-    sdModel$TrainingData, sdModel$TestData) |>
+    train, test) |>
     dplyr::filter(occurrence == 1)
   pres <- sf::st_transform(pres, planar_projection)
 

@@ -27,13 +27,13 @@ setup_pcnm_test_data <- function() {
     sf::st_as_sf()
   
   # Take subset for faster testing
-  x_subset <- x[1:30, ]
+ # x_subset <- x[1:30, ]
   
   # Planar projection for distance calculations
   planar_proj <- 3857  # Web Mercator
   
   list(
-    occurrences = x_subset,
+    occurrences = x,
     predictors = predictors,
     planar_proj = planar_proj
   )

@@ -344,7 +344,8 @@ rr <- RescaleRasters( # you may have already done this!
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
   training_data = sdModel$TrainData, 
-  pred_mat = sdModel$PredictMatrix)
+  pred_mat = sdModel$PredictMatrix
+  )
 
 # create a directory to hold the results from EBS real quick. 
 # we will default to placing it in your current working directory. 
