@@ -13,6 +13,7 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     
     steps:
+<<<<<<< HEAD
       - uses: actions/checkout@v4
       
       - uses: r-lib/actions/setup-r@v2
@@ -34,3 +35,45 @@ jobs:
         shell: Rscript {0}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+=======
+    - uses: actions/checkout@v3
+
+    # Cache R packages
+    - name: Cache R library
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-R-${{ matrix.config.r }}-library-${{ hashFiles('DESCRIPTION') }}
+        restore-keys: |
+          ${{ runner.os }}-R-${{ matrix.config.r }}-library-
+
+    # Set up R
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ matrix.config.r }}
+
+    # Install dependencies
+    - name: Install dependencies
+      run: |
+        Rscript -e "install.packages(c('remotes', 'covr'))"
+        Rscript -e "remotes::install_deps(dependencies = TRUE)"
+
+    # Optional: cache extdata or other heavy files (if large)
+    - name: Cache extdata
+      uses: actions/cache@v3
+      with:
+        path: tests/testthat/extdata
+        key: ${{ runner.os }}-extdata-${{ hashFiles('tests/testthat/extdata/**') }}
+        restore-keys: |
+          ${{ runner.os }}-extdata-
+
+    - name: Test coverage
+      run: |
+        Rscript -e 'covr::codecov()'
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+>>>>>>> main
