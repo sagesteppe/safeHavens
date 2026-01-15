@@ -95,8 +95,7 @@ create_pcnm_vectors <- function(distance_matrix, n_vectors = 10) {
 
 
 
-
-#' Select important PCNM vectors using recursive feature elimination
+#' Select important PCNM vectors using forward feature elimination
 #'
 #' @param pcnm_df Data frame of PCNM eigenvectors
 #' @param occurrence_data Factor vector of occurrence data (0/1)
@@ -106,18 +105,21 @@ create_pcnm_vectors <- function(distance_matrix, n_vectors = 10) {
 #' @keywords internal
 #' @noRd
 select_pcnm_features <- function(pcnm_df, occurrence_data, ctrl, cv_indices) {
-  pcnmProfile <- suppressMessages(
-    caret::rfe(
-      method = 'glmnet',
-      x = pcnm_df,
-      sizes = seq_len(min(5, ncol(pcnm_df))),
-      y = occurrence_data,
-      rfeControl = ctrl,
-      index = cv_indices$indx_train
+
+  ctrl <- caret::trainControl(method="cv", index = spatial_cv$index)
+  ffsmodel <- suppressMessages(
+    ffs(
+      predictors = pcnm_df,
+      response = occurrence_data,
+      method = "rf",
+      trControl = ctrl,
+      ntree = 20,
+      seed = 1,
+      cores = 16
     )
   )
   
-  caret::predictors(pcnmProfile)
+  ffsmodel$selectedvars
 }
 
 #' Combine environmental and spatial predictors
@@ -135,7 +137,6 @@ combine_predictors <- function(env_predictors, pcnm_df, selected_pcnm) {
   }
 
   pcnm_subset <- pcnm_df[, selected_pcnm, drop = FALSE]
-  
   preds <- cbind(env_predictors, pcnm_subset)
   
   # Handle case where only one PCNM variable selected
