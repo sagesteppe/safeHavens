@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r Load Libraries, message=FALSE}
-library(safeHavens)
+#library(safeHavens)
 library(ggplot2)
 library(sf)
 library(terra)
@@ -320,7 +320,7 @@ We will load them here.
  
 The package also has an SDM prediction saved in the data we can just load that too for a couple comparisons.
 ```{r}
-sdm <- terra::rast(file.path(system.file(package="safeHavens"),  'extdata', 'Bradypus_test.tif'))
+sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'extdata', 'Bradypus_test.tif'))
 terra::plot(sdm)
 ```
 

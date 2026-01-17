@@ -75,7 +75,6 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric = 'sensitivity'
   
   rast_clipped <- terra::mask(rast_binary, within_dist)
   
-  rm(nn_dist, indices_knndm, nn_distribution, within_dist)
   ####### IF WE HAVE POINTS WHICH ARE FLOATING IN SPACE - I.E. POINTS W/O  
   # SUITABLE HABITAT MARKED, THEN LET'S ADD the same amount of suitable habitat 
   # to each of them, that was used as the buffer for clipping suitable habitat to the

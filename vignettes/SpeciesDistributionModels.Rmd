@@ -86,6 +86,8 @@ sdModel <- elasticSDM(
   planar_proj = planar_proj
   )
 
+#setwd('~/Documents/assoRted/safeHavens/vignettes')
+#terra::plot(sdModel$RasterPredictions)
 #saveRDS(sdModel, '../inst/extdata/sdModel.rds')
 ```
 
@@ -185,7 +187,6 @@ In this way our raster stack becomes representative of our model, we can then us
 Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
 We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
 ```{r Rescale Predictor Variables}
-
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 

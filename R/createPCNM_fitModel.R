@@ -31,7 +31,7 @@ createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predic
   
   # Select important PCNM features
   occurrence_data <- sf::st_drop_geometry(x)$occurrence
-  selected_pcnm <- select_pcnm_features(pcnm_df, occurrence_data, ctrl, indices_knndm)
+  selected_pcnm <- select_pcnm_features(pcnm_df, occurrence_data,  cv_indices = indices_knndm)
   
   # Combine environmental and spatial predictors
   preds <- combine_predictors(sub, pcnm_df, selected_pcnm)
@@ -93,29 +93,25 @@ create_pcnm_vectors <- function(distance_matrix, n_vectors = 10) {
   }
 }
 
-
-
 #' Select important PCNM vectors using forward feature elimination
 #'
 #' @param pcnm_df Data frame of PCNM eigenvectors
 #' @param occurrence_data Factor vector of occurrence data (0/1)
-#' @param ctrl Control object from caret::rfeControl
 #' @param cv_indices Cross-validation indices from knndm
 #' @return Character vector of selected PCNM variable names
 #' @keywords internal
 #' @noRd
-select_pcnm_features <- function(pcnm_df, occurrence_data, ctrl, cv_indices) {
+select_pcnm_features <- function(pcnm_df, occurrence_data, cv_indices) {
 
-  ctrl <- caret::trainControl(method="cv", index = spatial_cv$index)
+  ctrl <- caret::trainControl(method="cv", index = cv_indices$index)
   ffsmodel <- suppressMessages(
-    ffs(
+    CAST::ffs(
       predictors = pcnm_df,
       response = occurrence_data,
       method = "rf",
       trControl = ctrl,
       ntree = 20,
-      seed = 1,
-      cores = 16
+      seed = 1
     )
   )
   
