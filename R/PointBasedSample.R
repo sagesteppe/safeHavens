@@ -23,7 +23,7 @@
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
-PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps = 9999){
+PointBasedSample <- function(polygon, n = 20, reps = 100, BS.reps = 9999){
   
 
   # we apply the voronoi process a number of replicated times, defaults to 100

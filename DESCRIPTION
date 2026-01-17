@@ -27,7 +27,9 @@ Suggests:
     sp,
     tidyr,
     testthat,
-    covr
+    covr,
+    withr,
+    rlang
 VignetteBuilder: knitr
 Imports: 
     caret,

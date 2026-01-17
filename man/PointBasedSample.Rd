@@ -4,7 +4,7 @@
 \alias{PointBasedSample}
 \title{Generate a sampling grid based off of regularly sampled points across the species range.}
 \usage{
-PointBasedSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
+PointBasedSample(polygon, n = 20, reps = 100, BS.reps = 9999)
 }
 \arguments{
 \item{polygon}{the input sf polygon, i.e. species range or administrative unit, where sampling is desired.}

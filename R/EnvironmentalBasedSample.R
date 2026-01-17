@@ -1,227 +1,3 @@
-#' Add weighted coordinate layers to predictor rasters
-#'
-#' @param pred_rescale Raster stack of predictors
-#' @param coord_wt Weight for coordinates relative to max variable range
-#' @return Modified raster stack with weighted x and y coordinate layers
-#' @keywords internal
-#' @noRd
-add_weighted_coordinates <- function(pred_rescale, coord_wt = 2.5) {
-  ranges <- terra::global(pred_rescale, fun = 'range', na.rm = TRUE)
-  targetRangeCoords <- max(abs(ranges$min - ranges$max)) * coord_wt
-  
-  pred_rescale$x <- terra::init(pred_rescale, fun = 'x') 
-  pred_rescale$y <- terra::init(pred_rescale, fun = 'y')
-  
-  pred_rescale$x <- scale(pred_rescale$x)
-  pred_rescale$y <- scale(pred_rescale$y)
-  
-  coordRanges <- rbind(
-    terra::global(pred_rescale$y, fun = 'range'),
-    terra::global(pred_rescale$x, fun = 'range')
-  )
-  
-  coordRanges$range <- (coordRanges$min - coordRanges$max) 
-  coordRanges$multiplier <- targetRangeCoords / coordRanges$range 
-  
-  pred_rescale$x <- pred_rescale$x * coordRanges[rownames(coordRanges) == 'x', 'multiplier']
-  pred_rescale$y <- pred_rescale$y * coordRanges[rownames(coordRanges) == 'y', 'multiplier']
-  pred_rescale <- terra::mask(pred_rescale, pred_rescale[[1]])
-  
-  # Drop predictors that were shrunk out of the model
-  pred_rescale[[ c(ranges$min != ranges$max, rep(TRUE, times = 2)) ]]
-}
-
-#' Extract weighted matrix from rasters for clustering
-#'
-#' @param pred_rescale Raster stack with weighted predictors
-#' @param f_rasts SDM workflow rasters
-#' @param n_pts Number of points to sample
-#' @return Data frame with extracted values, ready for clustering
-#' @keywords internal
-#' @noRd
-extract_weighted_matrix <- function(pred_rescale, f_rasts, n_pts = 500) {
-  pts <- terra::spatSample(
-    f_rasts[['Supplemented']], 
-    as.points = TRUE,
-    method = 'random', 
-    size = n_pts, 
-    na.rm = TRUE
-  )
-  
-  weighted_mat <- terra::extract(pred_rescale, pts, bind = TRUE) |> 
-    as.data.frame() |>
-    dplyr::select(-Supplemented) 
-  
-  weighted_mat[stats::complete.cases(weighted_mat), ]
-}
-
-#' Perform hierarchical clustering
-#'
-#' @param weighted_mat Data frame of weighted environmental variables
-#' @param n Number of clusters (if fixedClusters = TRUE)
-#' @param fixedClusters Whether to use fixed number of clusters
-#' @param ... Additional arguments passed to NbClust::NbClust
-#' @return Vector of cluster assignments
-#' @keywords internal
-#' @noRd
-perform_clustering <- function(weighted_mat, n = 20, fixedClusters = TRUE, ...) {
-  w_dist <- stats::dist(weighted_mat, method = 'euclidean')
-  
-  if (fixedClusters) {
-    clusters <- stats::hclust(w_dist, method = 'ward.D2')
-    stats::cutree(clusters, n)
-  } else {
-    NoClusters <- NbClust::NbClust(
-      data = weighted_mat, 
-      diss = w_dist, 
-      distance = NULL, 
-      ...
-    )
-    NoClusters$Best.partition
-  }
-}
-
-#' Sample additional points from underrepresented clusters
-#'
-#' @param clusterCut Initial cluster assignments
-#' @param pts Original sample points
-#' @param weighted_mat Weighted matrix with cluster assignments
-#' @param pred_rescale Raster stack with predictors
-#' @param f_rasts SDM workflow rasters
-#' @param lyr Layer name to use
-#' @param planar_proj Planar projection for buffering
-#' @param buffer_d Buffer distance multiplier
-#' @param n_pts Total number of points for second sampling
-#' @return Data frame of additional sampled points with predicted clusters
-#' @keywords internal
-#' @noRd
-sample_underrepresented_clusters <- function(clusterCut, pts, weighted_mat, 
-                                              pred_rescale, f_rasts, lyr,
-                                              planar_proj, buffer_d = 3, 
-                                              n_pts = 500) {
-  cc <- table(clusterCut)
-  more_samples <- as.numeric(which(cc < stats::median(cc)))
-  
-  # Get cell size for buffering
-  r_projected <- f_rasts[[lyr]][[1]] |>
-    terra::project(planar_proj)
-  d <- terra::xres(r_projected)
-  
-  # Create buffered sampling area
-  need_more_samples <- pts[weighted_mat$ID %in% more_samples, c('x', 'y')] |>
-    sf::st_as_sf(coords = c(x = 'x', y = 'y'), crs = terra::crs(f_rasts[[lyr]])) |>
-    sf::st_transform(crs = terra::crs(r_projected)) |>
-    sf::st_buffer(d * buffer_d) |>  
-    dplyr::summarize(geometry = sf::st_union(geometry)) |>
-    sf::st_make_valid() 
-  
-  # Sample concentrated points
-  concentrated_pts <- sf::st_sample(need_more_samples, size = n_pts / 5, type = 'regular') |>
-    sf::st_as_sf() |>
-    sf::st_transform(terra::crs(f_rasts[[lyr]]))
-  
-  concentrated_pts <- terra::extract(pred_rescale, concentrated_pts, bind = TRUE) |>
-    as.data.frame() |>
-    stats::na.omit() |>
-    unique()
-  
-  concentrated_pts$ID <- seq_len(nrow(concentrated_pts))
-  
-  # Remove duplicates from original sample
-  duplicated <- dplyr::inner_join(
-    concentrated_pts[, c('ID', 'x', 'y')], 
-    weighted_mat[, c('x', 'y')],
-    by = c('x', 'y')
-  )
-  
-  concentrated_pts <- concentrated_pts[
-    !concentrated_pts$ID %in% duplicated$ID, 
-    seq_len(ncol(concentrated_pts)) - 1
-  ]
-  
-  list(
-    concentrated_pts = concentrated_pts,
-    more_samples = more_samples
-  )
-}
-
-#' Reorder cluster IDs by geographic position
-#'
-#' @param spatialClusters Raster of cluster assignments
-#' @return List with reordered raster and vector polygons
-#' @keywords internal
-#' @noRd
-reorder_clusters_geographically <- function(spatialClusters) {
-  ClusterVectors <- terra::as.polygons(spatialClusters) |>
-    sf::st_as_sf() |>
-    sf::st_make_valid() 
-  
-  sf::st_agr(ClusterVectors) <- "constant"
-  cents <- sf::st_point_on_surface(ClusterVectors)
-  
-  cents <- cents |>
-    dplyr::mutate(
-      X = sf::st_coordinates(cents)[, 1],
-      Y = sf::st_coordinates(cents)[, 2]
-    ) |>
-    dplyr::arrange(-Y, X) |>
-    dplyr::mutate(ID = seq_len(dplyr::n())) |>
-    dplyr::arrange(ID) |>
-    dplyr::select(ID, geometry)
-  
-  sf::st_agr(cents) <- "constant"
-  ints <- unlist(sf::st_intersects(ClusterVectors, cents))
-  
-  ClusterVectors <- ClusterVectors |>
-    dplyr::mutate(ID = ints, .before = 1) |>
-    dplyr::select(-class) |>
-    dplyr::arrange(ID)
-  
-  spatialClusters <- terra::rasterize(ClusterVectors, spatialClusters, field = 'ID')
-  
-  list(raster = spatialClusters, vectors = ClusterVectors)
-}
-
-#' Write clustering results to disk
-#'
-#' @param spatialClusters Raster of cluster assignments
-#' @param ClusterVectors Vector polygons of clusters
-#' @param final_fit Final KNN model
-#' @param confusionMatrix Confusion matrix from final model
-#' @param path Root path for outputs
-#' @param taxon Taxon name
-#' @keywords internal
-#' @noRd
-write_cluster_results <- function(spatialClusters, ClusterVectors, final_fit, 
-                                   confusionMatrix, path, taxon) {
-  dir.create(file.path(path, 'ClusterRasters'), showWarnings = FALSE)
-  dir.create(file.path(path, 'ClusterVectors'), showWarnings = FALSE)
-  dir.create(file.path(path, 'TrainingKNN'), showWarnings = FALSE)
-  
-  terra::writeRaster(
-    spatialClusters, 
-    file.path(path, 'ClusterRasters', paste0(taxon, '.tif')),
-    overwrite = TRUE
-  )
-  
-  saveRDS(
-    final_fit, 
-    file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalKNN.rds'))
-  )
-  
-  saveRDS(
-    confusionMatrix, 
-    file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalCM.rds'))
-  )
-  
-  sf::st_write(
-    ClusterVectors, 
-    file.path(path, 'ClusterVectors', paste0(taxon, '.shp')), 
-    append = FALSE, 
-    quiet = TRUE
-  )
-}
-
 #' Create environmental and spatial clusters for targeting collection areas
 #' 
 #' This function utilizes the output from an elastic net GLM model to create a weights matrix of
@@ -304,12 +80,20 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr = 'Supplemented'
   
   # Create spatial clusters
   spatialClusters <- terra::predict(pred_rescale, model = fit.knn, na.rm = TRUE)
-  spatialClusters <- terra::mask(spatialClusters, f_rasts[[lyr]])
-  
+
+  # Project to planar for geometric operations
+  spatialClusters_planar <- terra::project(spatialClusters, planar_proj)
+  spatialClusters_planar <- terra::mask(
+    spatialClusters_planar, 
+    terra::project(f_rasts[[lyr]], planar_proj)
+  )
+
   # Reorder clusters geographically
-  reordered <- reorder_clusters_geographically(spatialClusters)
-  spatialClusters <- reordered$raster
-  ClusterVectors <- reordered$vectors
+  reordered <- reorder_clusters_geographically(spatialClusters_planar)
+
+  # back to in crs for writeout. 
+  spatialClusters <- terra::project(reordered$raster, terra::crs(f_rasts))
+  ClusterVectors <- sf::st_transform(reordered$vectors, terra::crs(f_rasts))
   
   # Write results if requested
   if (write2disk) {
@@ -320,4 +104,231 @@ EnvironmentalBasedSample <- function(pred_rescale, f_rasts, lyr = 'Supplemented'
   }
   
   list(Geometry = ClusterVectors)
+}
+
+#' Add weighted coordinate layers to predictor rasters
+#'
+#' @param pred_rescale Raster stack of predictors
+#' @param coord_wt Weight for coordinates relative to max variable range
+#' @return Modified raster stack with weighted x and y coordinate layers
+#' @keywords internal
+#' @noRd
+add_weighted_coordinates <- function(pred_rescale, coord_wt = 2.5) {
+  ranges <- terra::global(pred_rescale, fun = 'range', na.rm = TRUE)
+  targetRangeCoords <- max(abs(ranges$min - ranges$max)) * coord_wt
+  
+  pred_rescale$x <- terra::init(pred_rescale, fun = 'x') 
+  pred_rescale$y <- terra::init(pred_rescale, fun = 'y')
+  
+  pred_rescale$x <- scale(pred_rescale$x)
+  pred_rescale$y <- scale(pred_rescale$y)
+  
+  coordRanges <- rbind(
+    terra::global(pred_rescale$y, fun = 'range'),
+    terra::global(pred_rescale$x, fun = 'range')
+  )
+  
+  coordRanges$range <- (coordRanges$min - coordRanges$max) 
+  coordRanges$multiplier <- targetRangeCoords / coordRanges$range 
+  
+  pred_rescale$x <- pred_rescale$x * coordRanges[rownames(coordRanges) == 'x', 'multiplier']
+  pred_rescale$y <- pred_rescale$y * coordRanges[rownames(coordRanges) == 'y', 'multiplier']
+  pred_rescale <- terra::mask(pred_rescale, pred_rescale[[1]])
+  
+  # Drop predictors that were shrunk out of the model
+  pred_rescale[[ c(ranges$min != ranges$max, rep(TRUE, times = 2)) ]]
+}
+
+#' Extract weighted matrix from rasters for clustering
+#'
+#' @param pred_rescale Raster stack with weighted predictors
+#' @param f_rasts SDM workflow rasters
+#' @param n_pts Number of points to sample
+#' @return Data frame with extracted values, ready for clustering
+#' @keywords internal
+#' @noRd
+extract_weighted_matrix <- function(pred_rescale, f_rasts, n_pts = 500) {
+
+  pts <- terra::spatSample(
+    f_rasts[['Supplemented']], 
+    as.points = TRUE,
+    method = 'random', 
+    size = n_pts, 
+    na.rm = TRUE
+  )
+  
+  weighted_mat <- terra::extract(pred_rescale, pts, bind = TRUE) |> 
+    as.data.frame() |>
+    dplyr::select(-Supplemented) 
+  
+  weighted_mat[stats::complete.cases(weighted_mat), ]
+}
+
+#' Perform hierarchical clustering
+#'
+#' @param weighted_mat Data frame of weighted environmental variables
+#' @param n Number of clusters (if fixedClusters = TRUE)
+#' @param fixedClusters Whether to use fixed number of clusters
+#' @param ... Additional arguments passed to NbClust::NbClust
+#' @return Vector of cluster assignments
+#' @keywords internal
+#' @noRd
+perform_clustering <- function(weighted_mat, n = 20, fixedClusters = TRUE, ...) {
+  w_dist <- stats::dist(weighted_mat, method = 'euclidean')
+  
+  if (fixedClusters) {
+    clusters <- stats::hclust(w_dist, method = 'ward.D2')
+    stats::cutree(clusters, n)
+  } else {
+    NoClusters <- NbClust::NbClust(
+      data = weighted_mat, 
+      diss = w_dist, 
+      distance = NULL, 
+      ...
+    )
+    NoClusters$Best.partition
+  }
+}
+
+#' Sample additional points from underrepresented clusters
+#'
+#' @param clusterCut Initial cluster assignments
+#' @param pts Original sample points
+#' @param weighted_mat Weighted matrix with cluster assignments
+#' @param pred_rescale Raster stack with predictors
+#' @param f_rasts SDM workflow rasters
+#' @param lyr Layer name to use
+#' @param planar_proj Planar projection for buffering
+#' @param buffer_d Buffer distance multiplier
+#' @param n_pts Total number of points for second sampling
+#' @return Data frame of additional sampled points with predicted clusters
+#' @keywords internal
+#' @noRd
+sample_underrepresented_clusters <- function(clusterCut, pts, weighted_mat, 
+                                              pred_rescale, f_rasts, lyr,
+                                              planar_proj, buffer_d = 3, 
+                                              n_pts = 500) {
+  cc <- table(clusterCut)
+  more_samples <- as.numeric(which(cc < stats::median(cc)))
+  
+  # Get cell size for buffering
+  r_projected <- f_rasts[[lyr]][[1]] |>
+    terra::project(planar_proj)
+  d <- terra::xres(r_projected)
+  
+  # Create buffered sampling area
+  need_more_samples <- pts[weighted_mat$ID %in% more_samples, c('x', 'y')] |>
+    sf::st_as_sf(coords = c(x = 'x', y = 'y'), crs = terra::crs(f_rasts[[lyr]])) |>
+    sf::st_transform(crs = terra::crs(r_projected)) |>
+    sf::st_buffer(d * buffer_d) |>  
+    dplyr::reframe(geometry = sf::st_union(geometry)) |>
+    sf::st_as_sf() |>
+    sf::st_make_valid() 
+  
+  # Sample concentrated points
+  concentrated_pts <- sf::st_sample(need_more_samples, size = n_pts / 5, type = 'regular') |>
+    sf::st_as_sf() |>
+    sf::st_transform(terra::crs(f_rasts[[lyr]]))
+  
+  concentrated_pts <- terra::extract(pred_rescale, concentrated_pts, bind = TRUE) |>
+    as.data.frame() |>
+    stats::na.omit() |>
+    unique()
+  
+  concentrated_pts$ID <- seq_len(nrow(concentrated_pts))
+  
+  # Remove duplicates from original sample
+  duplicated <- dplyr::inner_join(
+    concentrated_pts[, c('ID', 'x', 'y')], 
+    weighted_mat[, c('x', 'y')],
+    by = c('x', 'y')
+  )
+  
+  concentrated_pts <- concentrated_pts[
+    !concentrated_pts$ID %in% duplicated$ID, 
+    seq_len(ncol(concentrated_pts)) - 1
+  ]
+  
+  list(
+    concentrated_pts = concentrated_pts,
+    more_samples = more_samples
+  )
+}
+
+#' Reorder cluster IDs by geographic position
+#'
+#' @param spatialClusters Raster of cluster assignments
+#' @return List with reordered raster and vector polygons
+#' @keywords internal
+#' @noRd
+reorder_clusters_geographically <- function(spatialClusters) {
+
+  ClusterVectors <- terra::as.polygons(spatialClusters) |>
+    sf::st_as_sf() |>
+    sf::st_make_valid() |>
+    sf::st_set_agr('constant') 
+  
+  cents <- sf::st_point_on_surface(ClusterVectors)
+
+  cents <- cents |>
+    dplyr::mutate(
+      X = sf::st_coordinates(cents)[, 1],
+      Y = sf::st_coordinates(cents)[, 2]
+    ) |>
+    dplyr::arrange(-Y, X) |>
+    dplyr::mutate(ID = seq_len(dplyr::n())) |>
+    dplyr::arrange(ID) |>
+    dplyr::select(ID, geometry)
+  
+  sf::st_agr(cents) <- "constant"
+  nearest_ids <- sf::st_nearest_feature(ClusterVectors, cents)
+  
+  ClusterVectors <- ClusterVectors |>
+    dplyr::mutate(ID = cents$ID[nearest_ids], .before = 1) |>
+    dplyr::select(-class) |>
+    dplyr::arrange(ID)
+  
+  spatialClusters <- terra::rasterize(ClusterVectors, spatialClusters, field = 'ID')
+  
+  list(raster = spatialClusters, vectors = ClusterVectors)
+}
+
+#' Write clustering results to disk
+#'
+#' @param spatialClusters Raster of cluster assignments
+#' @param ClusterVectors Vector polygons of clusters
+#' @param final_fit Final KNN model
+#' @param confusionMatrix Confusion matrix from final model
+#' @param path Root path for outputs
+#' @param taxon Taxon name
+#' @keywords internal
+#' @noRd
+write_cluster_results <- function(spatialClusters, ClusterVectors, final_fit, 
+                                   confusionMatrix, path, taxon) {
+  dir.create(file.path(path, 'ClusterRasters'), showWarnings = FALSE)
+  dir.create(file.path(path, 'ClusterVectors'), showWarnings = FALSE)
+  dir.create(file.path(path, 'TrainingKNN'), showWarnings = FALSE)
+  
+  terra::writeRaster(
+    spatialClusters, 
+    file.path(path, 'ClusterRasters', paste0(taxon, '.tif')),
+    overwrite = TRUE
+  )
+  
+  saveRDS(
+    final_fit, 
+    file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalKNN.rds'))
+  )
+  
+  saveRDS(
+    confusionMatrix, 
+    file = file.path(path, 'TrainingKNN', paste0(taxon, '-finalCM.rds'))
+  )
+  
+  sf::st_write(
+    ClusterVectors, 
+    file.path(path, 'ClusterVectors', paste0(taxon, '.shp')), 
+    append = FALSE, 
+    quiet = TRUE
+  )
 }

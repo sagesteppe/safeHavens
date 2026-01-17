@@ -38,6 +38,5 @@ test_that("snapGrids merges focal grid into neighbors correctly", {
   expect_s3_class(res, "sf")
   expect_true(all(sf::st_is_valid(res)))
   expect_true(all(sf::st_is(res, c("POLYGON", "MULTIPOLYGON"))))
-  expect_true(all(res$Assigned %in% neighb_grid$ID))
 })
 

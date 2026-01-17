@@ -28,11 +28,9 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric = 'sensitivity'
   # determine a threshold for creating a binomial map of the species distribution
   # we want to predict MORE habitat than exists, so we want to maximize sensitivity
   # in our classification. 
+
   
-  test.sf <- sf::st_as_sf(test, coords = c('x', 'y'), crs = 4326) |>
-    dplyr::select(occurrence)
-  
-  test.sf <- terra::extract(rast_cont, test.sf, bind = TRUE) |>
+  test.sf <- terra::extract(rast_cont, test, bind = TRUE) |>
     sf::st_as_sf() |>
     sf::st_drop_geometry() 
   
@@ -51,18 +49,17 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric = 'sensitivity'
   
   rast_binary <- terra::classify(rast_cont, m) # create a YES/NO raster
   
-  rm(eval_ob, cut, m, test.sf)
   # use sf::st_buffer() to only keep habitat within XXX distance from known populations
   # we'll use another set of cv-folds based on all occurrence data 
   # Essentially, we will see how far the nearest neighbor is from each point in each
   # fold
   
-  pres <-  dplyr::bind_rows(
+  pres <- dplyr::bind_rows(
     train, test) |>
-    dplyr::filter(occurrence == 1)
+    dplyr::filter(occurrence == 1) 
   pres <- sf::st_transform(pres, planar_projection)
 
-  indices_knndm <- CAST::knndm(pres, predictors, k=10)
+  indices_knndm <- CAST::knndm(tpoints = pres, modeldomain = rast_cont, k=10)
   
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
   dists <- unlist(list(lapply(nn_dist, stats::quantile, quant_amt))) 

@@ -320,7 +320,6 @@ test_that("create_spatial_cv_folds creates non-overlapping folds", {
 test_that("perform_feature_selection returns rfe object", {
   skip_if_not_installed("CAST")
   skip_if_not_installed("caret")
-  skip("Feature selection is slow - run manually")
   
   data <- setup_sdm_test_data()
   data$occurrences$occurrence <- factor(sample(0:1, nrow(data$occurrences), replace = TRUE))
@@ -397,7 +396,7 @@ test_that("complete workflow produces expected outputs", {
   skip_if_not_installed("CAST")
   skip_if_not_installed("caret")
   skip_if_not_installed("glmnet")
-  skip("Full integration test - slow, run manually")
+  #skip("Full integration test - slow, run manually")
   
   data <- setup_sdm_test_data()
   

@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r Load Libraries, message=FALSE}
-#library(safeHavens)
+library(safeHavens)
 library(ggplot2)
 library(sf)
 library(terra)
@@ -328,6 +328,10 @@ terra::plot(sdm)
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'sdModel.rds')
   )
+
+sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
+sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
 ```
 
 Once these data are loaded into R, we will scale the rasters (using `RescaleRasters`) which will serve as surfaces to predict from (this is also done above!), then we will run the algorithm (`EnvironmentalBasedSample`). 
@@ -352,6 +356,8 @@ p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real qui
 # Linux and Mac, but I don't think Windows? 
 # dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
 
+planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
   write2disk = FALSE, 
@@ -362,7 +368,8 @@ ENVIbs <- EnvironmentalBasedSample(
   fixedClusters = TRUE, 
   n_pts = 500, 
   planar_proj = planar_proj,
-  buffer_d = 3, prop_split = 0.8)
+  buffer_d = 3,
+  prop_split = 0.8)
 
 ENVIbs.p <- map + 
   geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
@@ -384,7 +391,8 @@ ENVIbs_thresh <- EnvironmentalBasedSample(
   taxon = 'Bradypus_test', 
   f_rasts = sdm, n = 20, 
   planar_proj = planar_proj,
-  lyr = 'Threshold')
+  lyr = 'Threshold'
+  )
 
 ENVIbs_clipped <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 

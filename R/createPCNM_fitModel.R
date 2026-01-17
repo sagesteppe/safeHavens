@@ -19,15 +19,16 @@
 #' @param indices_knndm from sdm function
 #' @param sub the subset predictors from elasticSDM
 #' @param predictors Raster stack of environmental predictors (used as template)
+#' @param n_vectors Number of PCNM vectors to extract (default 10)
 #' @keywords internal
 #' @noRd
-createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predictors) {
+createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predictors, n_vectors = 10) {
   
   # Calculate distance matrix
   dis <- calculate_distance_matrix(x, planar_proj)
   
   # Create PCNM eigenvectors
-  pcnm_df <- create_pcnm_vectors(dis, n_vectors = 20)
+  pcnm_df <- create_pcnm_vectors(dis, n_vectors = n_vectors)
   
   # Select important PCNM features
   occurrence_data <- sf::st_drop_geometry(x)$occurrence
@@ -76,7 +77,7 @@ calculate_distance_matrix <- function(x, planar_proj) {
 #' @return Data frame of PCNM eigenvectors
 #' @keywords internal
 #' @noRd
-create_pcnm_vectors <- function(distance_matrix, n_vectors = 10) {
+create_pcnm_vectors <- function(distance_matrix, n_vectors) {
 
   if (is.null(distance_matrix) || length(distance_matrix) == 0) {
     stop("Cannot compute PCNM: distance matrix is empty")
@@ -108,10 +109,13 @@ select_pcnm_features <- function(pcnm_df, occurrence_data, cv_indices) {
     CAST::ffs(
       predictors = pcnm_df,
       response = occurrence_data,
-      method = "rf",
+      method = "glmnet",
       trControl = ctrl,
       ntree = 20,
-      seed = 1
+      tuneLength = 10,
+      maxvar = 4,
+      seed = 1,
+      verbose = FALSE
     )
   )
   
@@ -154,7 +158,7 @@ combine_predictors <- function(env_predictors, pcnm_df, selected_pcnm) {
 fit_combined_model <- function(combined_predictors, occurrence_data, cv_indices) {
 
   if (ncol(combined_predictors) < 2) {
-    warning("glmnet requires ≥2 predictors. Returning NULL.")
+    warning("glmnet required 2 or more predictions. Returning Null.")
     return(list(cv_model = NULL, glmnet_model = NULL))
   }
   
