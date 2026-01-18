@@ -1,10 +1,8 @@
 #' Generate a sampling grid based off of regularly sampled points across the species range. 
 #' 
-#' @description This function utilizes a regular, or nearly so in the case of existing collections, grid of points 
-#' to develop a sampling scheme or n polygons. 
+#' @description This function utilizes a regular grid of points to develop a sampling scheme or n polygons. 
 #' @param polygon the input sf polygon, i.e. species range or administrative unit, where sampling is desired. 
 #' @param n Numeric. The total number of desired collections. Defaults to 20.
-#' @param collections an sf point geometry data set of where existing collections have been made.
 #' @param reps further arguments passed to np.boot 
 #' @param BS.reps number of bootstrap replicates for evaluating results. 
 #' @examples
@@ -25,20 +23,14 @@
 #' @return A list containing two objects, the first the results of bootstrap simulations.
 #' The second an sf dataframe containing the polygons with the smallest amount of variance in size. 
 #' @export
-PointBasedSample <- function(polygon, n = 20, collections, reps = 100, BS.reps = 9999){
+PointBasedSample <- function(polygon, n = 20, reps = 100, BS.reps = 9999){
   
 
   # we apply the voronoi process a number of replicated times, defaults to 100
-  if(missing(collections)){
     voronoiPolygons <- replicate(
       reps, 
       VoronoiSampler(polygon = polygon, n = n), 
-      simplify = FALSE)} else {
-        voronoiPolygons <- replicate(
-          reps, 
-          VoronoiSampler(polygon = polygon, n = n, collections = collections), 
-          simplify = FALSE)
-      }
+      simplify = FALSE)
   
   polygon <- sf::st_make_valid(polygon)
   

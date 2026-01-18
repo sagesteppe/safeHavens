@@ -63,7 +63,6 @@ reference:
 - title: Sampling
   desc: User facing functions for implementing the sampling schemes
   contents:
-  - GridBasedSample
   - PointBasedSample
   - EqualAreaSample
   - OpportunisticSample
@@ -85,9 +84,8 @@ reference:
   - greatCircleDistance
   - split_cols
 - title: Miscellaneous
-  desc: Data prep functions
+  desc: Built in data sets
   contents: 
-  - TestGridSizes
   - WesternEcoregions
 
 articles:

@@ -168,8 +168,10 @@ KMedoidsBasedSample <- function(
   for (b in seq_len(n_bootstrap)) {
     
     # sub-sample the data for the bootstrap. 
-    dropped <- sample(droppable, n_drop)
-    available_sites <- setdiff(seq_len(n_total), dropped)
+    if(dropout_prob > 0){
+          dropped <- sample(droppable, n_drop)
+        available_sites <- setdiff(seq_len(n_total), dropped)
+    } else {available_sites <- seq_len(n_total)}
     
     # Run single bootstrap iteration
     result <- run_bootstrap_iteration(

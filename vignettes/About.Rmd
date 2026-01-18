@@ -29,7 +29,6 @@ The table below presents the currently implemented sampling scheme and the user-
 
 |        Function           |              Description               | Comp.| Envi.|
 |---------------------------|----------------------------------------|------|------|
-| `GridBasedSample`         | Creates and merges *n* grids over area |  L   |   L  |
 | `PointBasedSample`        | Creates points to make grids over area |  L   |   L  |
 | `EqualAreaSample`         | Breaks area into similar size pieces   |  L   |   L  |
 | `OpportunisticSample`     | Using PBS with existing records        |  L   |   L  |
@@ -39,13 +38,13 @@ The table below presents the currently implemented sampling scheme and the user-
 | `EnvironmentalBasedSample`| Uses correlations from SDM to sample   |  H   |   H  |
 
 
-The first three functions, `GridBasedSample`, `PointBasedSample`, and `EqualAreaSample`, are flavors of the same process, where we try to partition the species range into geographic chunks (polygons) of similar sizes.  
+The first two functions, `PointBasedSample`, and `EqualAreaSample`, are flavors of the same process, where we try to partition the species range into geographic chunks (polygons) of similar sizes.  
 Each requires minimal computational power but features essentially no environmental information of context beyond the species current range restriction.
-The fourth method, `OpportunisticSample`, is a special case of the first three, where existing collection records are used to help guide the sampling scheme.
+The `OpportunisticSample` method is a special case of the first `PointBasedSample`, where existing collection records are used to help guide the sampling scheme.
 `OpportunisticSample` uses the same underlying logic as `PointBasedSample`, but first 'removes' areas around existing collection records, and then fills in the remaining gaps with new sampling locations
-The first three functions would be used when *establishing* a new collection strategy for a species, while `OpportunisticSample` would be used when trying to *augment* an existing collection strategy.
+The first `PointBasedSample`, and `EqualAreaSample`, functions would be used when *establishing* a new collection strategy for a species, while `OpportunisticSample` would be used when trying to *augment* an existing collection strategy.
 
-The sixth method, `IBDBasedSample`, is largely in a class of its own; in lieu of using the *continuity* of geographic space as its primary method, it focuses on the discontinuity of space and uses distance matrices and clustering to determine which patches of range are closer to each other than to other patches. 
+`IBDBasedSample`, is largely in a class of its own; in lieu of using the *continuity* of geographic space as its primary method, it focuses on the discontinuity of space and uses distance matrices and clustering to determine which patches of range are closer to each other than to other patches. 
 This method is more computationally expensive than the previous four, and while it incorporates some environmental information, it is not explicit in the way that the final two methods are.
 
 The `PolygonBasedSample` may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
@@ -54,7 +53,7 @@ In broad strokes, the general thinking is that these regions represent continuou
 It can be used with either ecoregion or seed transfer zone based data. 
 However, it relies on existing spatial data products, which may or may not be relevant to the ecology of the species.
 
-The final function, `EnvironmentalBasedSample`, is both the most computationally expensive and the most environmentally explicit. 
+`EnvironmentalBasedSample`, is both the most computationally expensive and the most environmentally explicit. 
 This function fits a Species Distribution Model (SDM), generated via a generalized linear model (glmnet), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
 On paper, this draws together all aspects of the above functions; however no empirical testing of this approach has been implemented. 
 

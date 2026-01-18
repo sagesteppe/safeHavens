@@ -12,36 +12,75 @@
 #' @export 
 RescaleRasters <- function(model, predictors, training_data, pred_mat){
   
-  sdN <- function(x){sigma=sqrt((1/length(x)) * sum((x-mean(x))^2))}
+  sdN <- function(x){
+    sqrt((1 / length(x)) * sum((x - mean(x))^2))
+  }
   
+  # extract coefficients (including intercept)
+  coef_mat <- as.matrix(stats::coef(model))
+
+  coef_vec <- coef_mat[, 1]
+  coef_names <- rownames(coef_mat)
+
   coef_tab <- data.frame(
-    Variable = row.names(as.data.frame(as.matrix(stats::coef(model)))), 
-    Coefficient = as.numeric(stats::coef(model))
+    Variable = coef_names,
+    Coefficient = coef_vec,
+    row.names = NULL
   )
-  coef_tab <- coef_tab[2:nrow(coef_tab),]
-  
-  # now calculate the beta coefficient 
-  yvar <- sdN(as.numeric(training_data$occurrence)-1)
-  coef_tab$BetaCoefficient <- apply(pred_mat, 2, FUN = sdN)
-  coef_tab$BetaCoefficient <- coef_tab$Coefficient / yvar * coef_tab$BetaCoefficient
-  
+
+  # drop intercept explicitly
+  coef_tab <- coef_tab[coef_tab$Variable != "(Intercept)", , drop = FALSE]
+
+  # response variance
+  yvar <- sdN(as.numeric(training_data$occurrence) - 1)
+
+  # ensure predictors exist
+  stopifnot(all(coef_tab$Variable %in% colnames(pred_mat)))
+
+  # predictor SDs (name-safe)
+  x_sd <- vapply(
+    coef_tab$Variable,
+    function(v) sdN(pred_mat[, v]),
+    numeric(1)
+  )
+
+  # compute beta coefficients (one per row)
+  coef_tab$BetaCoefficient <- (coef_tab$Coefficient / yvar) * x_sd
+
   # this rescales the raster to be equivalent to the inputs to the elastic net model. 
   # after this they still need to be multiplied by the beta coefficients 
-  pred_rescale <- predictors
-  pred_rescale <- pred_rescale[[ names(pred_rescale) %in% coef_tab$Variable ]]
-  for (i in seq_len(dim(pred_rescale)[3])){
-    
-    lyr_name <- names(pred_rescale)[[i]]
-    vals <- pred_mat[,lyr_name]
-    pred_rescale[[i]] <- terra::app(pred_rescale[[i]], 
-                                    fun = function(x){(x - mean(vals)) / sdN(vals)})
-    
-    pred_rescale[[i]] <- pred_rescale[[i]] * abs(coef_tab[coef_tab$Variable==lyr_name,'BetaCoefficient'])
-    names(pred_rescale[[i]]) <- lyr_name
-  }
+  stopifnot(inherits(predictors, "SpatRaster"))
+
+  pred_rescale <- terra::subset(
+    predictors,
+    coef_tab$Variable
+  )
+
+  layer_names <- names(pred_rescale)
+  out_layers <- lapply(layer_names, function(lyr_name) {
+
+    vals <- pred_mat[, lyr_name]
+
+    scaled <- terra::app(
+      pred_rescale[[lyr_name]],
+      fun = function(x){ (x - mean(vals)) / sdN(vals) }
+    )
+
+    beta <- abs(
+      coef_tab$BetaCoefficient[
+        coef_tab$Variable == lyr_name
+      ]
+    )
+
+    scaled * beta
+  })
+  pred_rescale <- terra::rast(out_layers)
+  names(pred_rescale) <- layer_names
+
+
   list(
     RescaledPredictors = pred_rescale, 
     BetaCoefficients = coef_tab
   )
-  
 }
+

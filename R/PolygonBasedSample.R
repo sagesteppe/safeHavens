@@ -245,11 +245,31 @@ PolygonBasedSample <- function(
       sf::st_drop_geometry() |>
       dplyr::group_by(.data[[zone_key]]) |>
       dplyr::summarise(
-        warmest = if (need_warm) max(.data[[warmest_col]], na.rm = TRUE) else NA_real_,
-        precip  = if (need_drier) min(.data[[precip_col]],  na.rm = TRUE) else NA_real_,
+        !!!c(
+          if (need_warm) {
+            rlang::set_names(
+              list(
+                rlang::expr(
+                  max(.data[[!!warmest_col]], na.rm = TRUE)
+                )
+              ),
+              warmest_col
+            )
+          },
+          if (need_drier) {
+            rlang::set_names(
+              list(
+                rlang::expr(
+                  min(.data[[!!precip_col]], na.rm = TRUE)
+                )
+              ),
+              precip_col
+            )
+          }
+        ),
         .groups = "drop"
       )
-    
+
   zone_summary <- dplyr::left_join(zone_summary, modifiers_reduced, by = zone_key)
   }
   
@@ -303,7 +323,7 @@ PolygonBasedSample <- function(
 # Helper to rank zones based on method
 #' @keywords internal
 #' @noRd
-rank_zones <- function(df, method, total_area_m2 = NULL, Pplygon_ct = NULL, warmest_col = NULL, precip_col = NULL){
+rank_zones <- function(df, method, total_area_m2 = NULL, Polygon_ct = NULL, warmest_col = NULL, precip_col = NULL){
   # df must contain total_area_m2, polygon_ct, plus optionally climate columns
   if (method == "Largest") {
     dplyr::arrange(df, dplyr::desc(total_area_m2))
@@ -353,14 +373,20 @@ allocate_increase <- function(zone_summary, zones_sub, zone_key, requested, meth
 
     } else if (method == "Assist-warm") {
 
-      top_indices <- order(zone_summary[[warmest_col]], decreasing = TRUE)[1:min(remainder, n_zones)]
-      allocation_counts[top_indices] <- allocation_counts[top_indices] + 1
+        ord <- order(zone_summary[[warmest_col]], decreasing = TRUE)
+        for (i in seq_len(remainder)) {
+          idx <- ord[(i - 1) %% n_zones + 1]
+          allocation_counts[idx] <- allocation_counts[idx] + 1
+        }
 
     } else if (method == "Assist-drier") {
 
-      top_indices <- order(zone_summary[[precip_col]], decreasing = FALSE)[1:min(remainder, n_zones)]
-      allocation_counts[top_indices] <- allocation_counts[top_indices] + 1
-
+        ord <- order(zone_summary[[precip_col]], decreasing = FALSE)
+        for (i in seq_len(remainder)) {
+          idx <- ord[(i - 1) %% n_zones + 1]
+          allocation_counts[idx] <- allocation_counts[idx] + 1
+        }
+      
     } else {
       stop("Unknown increase_method: ", method)
     }
@@ -478,4 +504,5 @@ proportional_round <- function(values, target_sum, method = c("larger_up", "larg
       result[indices_to_adjust] <- result[indices_to_adjust] - 1
     }
   }
+  result
 }

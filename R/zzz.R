@@ -28,5 +28,8 @@ utils::globalVariables(c(
   "x", "y",
 
   # dplyr placeholder (rare but legit)
-  "."
+  ".",
+
+  # random
+  'NewAssigned'
 ))

@@ -4,14 +4,12 @@
 \alias{PointBasedSample}
 \title{Generate a sampling grid based off of regularly sampled points across the species range.}
 \usage{
-PointBasedSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
+PointBasedSample(polygon, n = 20, reps = 100, BS.reps = 9999)
 }
 \arguments{
 \item{polygon}{the input sf polygon, i.e. species range or administrative unit, where sampling is desired.}
 
 \item{n}{Numeric. The total number of desired collections. Defaults to 20.}
-
-\item{collections}{an sf point geometry data set of where existing collections have been made.}
 
 \item{reps}{further arguments passed to np.boot}
 
@@ -22,8 +20,7 @@ A list containing two objects, the first the results of bootstrap simulations.
 The second an sf dataframe containing the polygons with the smallest amount of variance in size.
 }
 \description{
-This function utilizes a regular, or nearly so in the case of existing collections, grid of points
-to develop a sampling scheme or n polygons.
+This function utilizes a regular grid of points to develop a sampling scheme or n polygons.
 }
 \examples{
 #' Utilize a grid based stratified sample for drawing up polygons

@@ -64,6 +64,6 @@ Writes four objects to disk, and returns one object to R session (optional).
 }
 \description{
 This function utilizes the output from an elastic net GLM model to create a weights matrix of
-features relevant to a species distribution to identify clusters throughout it's range while
+features relevant to a species distribution to identify clusters throughout its range while
 incorporating the PCNM/MEM data and coordinates to implement some spatial contiguity.
 }

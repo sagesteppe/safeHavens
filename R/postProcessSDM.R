@@ -23,19 +23,14 @@
 #' D' is the general basis for all future steps, but either B, or C serve as alternatives. 
 #' 2) All threshold statistics calculated by dismo as a dataframe. 
 #' @export 
-PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, planar_projection){
-  
-  if(missing(thresh_metric)){thresh_metric <- 'sensitivity'}
-  if(missing(quant_amt)){quant_amt <- 0.25}
-  
+PostProcessSDM <- function(rast_cont, test, train, thresh_metric = 'sensitivity', quant_amt = 0.25, planar_projection){
+    
   # determine a threshold for creating a binomial map of the species distribution
   # we want to predict MORE habitat than exists, so we want to maximize sensitivity
   # in our classification. 
+
   
-  test.sf <- sf::st_as_sf(test, coords = c('x', 'y'), crs = 4326) |>
-    dplyr::select(occurrence)
-  
-  test.sf <- terra::extract(rast_cont, test.sf, bind = TRUE) |>
+  test.sf <- terra::extract(rast_cont, test, bind = TRUE) |>
     sf::st_as_sf() |>
     sf::st_drop_geometry() 
   
@@ -54,18 +49,17 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   
   rast_binary <- terra::classify(rast_cont, m) # create a YES/NO raster
   
-  rm(eval_ob, cut, m, test.sf)
   # use sf::st_buffer() to only keep habitat within XXX distance from known populations
   # we'll use another set of cv-folds based on all occurrence data 
   # Essentially, we will see how far the nearest neighbor is from each point in each
   # fold
   
-  pres <-  dplyr::bind_rows(
-    sdModel$TrainingData, sdModel$TestData) |>
-    dplyr::filter(occurrence == 1)
+  pres <- dplyr::bind_rows(
+    train, test) |>
+    dplyr::filter(occurrence == 1) 
   pres <- sf::st_transform(pres, planar_projection)
 
-  indices_knndm <- CAST::knndm(pres, predictors, k=10)
+  indices_knndm <- CAST::knndm(tpoints = pres, modeldomain = rast_cont, k=10)
   
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
   dists <- unlist(list(lapply(nn_dist, stats::quantile, quant_amt))) 
@@ -78,7 +72,6 @@ PostProcessSDM <- function(rast_cont, test, train, thresh_metric, quant_amt, pla
   
   rast_clipped <- terra::mask(rast_binary, within_dist)
   
-  rm(nn_dist, indices_knndm, nn_distribution, within_dist)
   ####### IF WE HAVE POINTS WHICH ARE FLOATING IN SPACE - I.E. POINTS W/O  
   # SUITABLE HABITAT MARKED, THEN LET'S ADD the same amount of suitable habitat 
   # to each of them, that was used as the buffer for clipping suitable habitat to the
