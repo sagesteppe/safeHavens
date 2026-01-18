@@ -165,7 +165,7 @@ test_that("PostProcessSDM binary raster has only 1 and NA values", {
   binary_vals <- unique(terra::values(result$FinalRasters[['Threshold']]))
   binary_vals <- binary_vals[!is.na(binary_vals)]
   
-  expect_true(all(binary_vals %in% c(1)))
+  expect_true(all(binary_vals %in% 1))
   expect_length(binary_vals, 1)
 })
 
