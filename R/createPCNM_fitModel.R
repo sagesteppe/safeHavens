@@ -25,15 +25,15 @@
 createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predictors, n_vectors = 10) {
   
   # Calculate distance matrix - pcnm is created only on presence. 
-  x_occ <- x[x$occurrence==1,]
-  dis <- calculate_distance_matrix(x_occ, planar_proj)
-  
+  dis <- calculate_distance_matrix(x, planar_proj)
+
   # Create PCNM eigenvectors
   pcnm_df <- create_pcnm_vectors(dis, n_vectors = n_vectors)
-  
+
   # Select important PCNM features
-  occurrence_data <- sf::st_drop_geometry(x)$occurrence
-  selected_pcnm <- select_pcnm_features(pcnm_df, occurrence_data,  cv_indices = indices_knndm)
+  occurrence_data <- sf::st_drop_geometry(x)$occurrence 
+
+  selected_pcnm <- select_pcnm_features(pcnm_df, occurrence_data, cv_indices = indices_knndm)
   
   # Combine environmental and spatial predictors
   preds <- combine_predictors(sub, pcnm_df, selected_pcnm)

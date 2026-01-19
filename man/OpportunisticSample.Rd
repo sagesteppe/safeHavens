@@ -34,10 +34,8 @@ existing_collections <- sf::st_sample(ri, size = 5) |>
   dplyr::rename(geometry = x)
 
 system.time(
-  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=4999) 
-) # set very low for example
-# the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
-# 7 seconds per species so not much concern on the speed end of things.
+  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999) 
+) 
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
   ggplot2::geom_sf(data = existing_collections) 

@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r Install Package, message=FALSE, eval = F}
-#remotes::install_github('sagesteppe/safeHavens')
+remotes::install_github('sagesteppe/safeHavens')
 ```
 
 # Species Distribution Modelling
