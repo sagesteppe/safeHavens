@@ -26,7 +26,10 @@ Suggests:
     purrr,
     sp,
     tidyr,
-    testthat
+    testthat,
+    covr,
+    withr,
+    rlang
 VignetteBuilder: knitr
 Imports: 
     caret,
@@ -37,12 +40,9 @@ Imports:
     glmnet,
     magrittr,
     NbClust,
-    nngeo,
     nptest,
-    rmapshaper,
     sdm,
     sf,
-    spdep,
     spThin,
     stats,
     terra,

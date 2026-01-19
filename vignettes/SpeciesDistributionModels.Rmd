@@ -87,6 +87,20 @@ sdModel <- elasticSDM(
   )
 ```
 
+
+```{r save sdmodel for getting started vignette, echo =F, eval=F}
+sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::wrap(sdModel$Predictors)
+sdModel$PCNM <- terra::wrap(sdModel$PCNM)
+### this is only for vignette setup!!!!!!!!!!!!!!!!!!!
+setwd('~/Documents/assoRted/safeHavens/vignettes')
+saveRDS(sdModel, '../inst/extdata/sdModel.rds')
+
+sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
+sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
+```
+
 Under the hood this function uses `caret` to help out with `glmnet`, as it provides output which is very easy to explore and interact with. 
 Elastic net modelS bridge the world of lasso and ridge regression by blending the alpha parameter. 
 Lasso has an alpha of 0, while Ridge has an alpha of 1. 
@@ -98,9 +112,7 @@ MAKE A NOTE ABOUT THE PCNM MORAN EIGNENVECTORS HERE TOO.
 
 ### explore the output
 
-```{r Explore SDM output - Different alpha}
-sdModel$CVStructure
-
+```{r Explore SDM output - Different alpha}sdModel$CVStructure
 coef(sdModel$Model, s = "lambda.min")
 ```
 
@@ -158,6 +170,7 @@ The cost with increasing the distances greatly is that the sampling methods may 
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
+  train = sdModel$TrainData,
   planar_proj = planar_proj,
   thresh_metric = 'sensitivity', 
   quant_amt = 0.5
@@ -182,7 +195,6 @@ In this way our raster stack becomes representative of our model, we can then us
 Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
 We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
 ```{r Rescale Predictor Variables}
-
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
