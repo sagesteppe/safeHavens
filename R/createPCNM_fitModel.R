@@ -24,8 +24,9 @@
 #' @noRd
 createPCNM_fitModel <- function(x, planar_proj, ctrl, indices_knndm, sub, predictors, n_vectors = 10) {
   
-  # Calculate distance matrix
-  dis <- calculate_distance_matrix(x, planar_proj)
+  # Calculate distance matrix - pcnm is created only on presence. 
+  x_occ <- x[x$occurrence==1,]
+  dis <- calculate_distance_matrix(x_occ, planar_proj)
   
   # Create PCNM eigenvectors
   pcnm_df <- create_pcnm_vectors(dis, n_vectors = n_vectors)

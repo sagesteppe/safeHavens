@@ -95,6 +95,10 @@ sdModel$PCNM <- terra::wrap(sdModel$PCNM)
 ### this is only for vignette setup!!!!!!!!!!!!!!!!!!!
 setwd('~/Documents/assoRted/safeHavens/vignettes')
 saveRDS(sdModel, '../inst/extdata/sdModel.rds')
+
+sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
+sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
 ```
 
 Under the hood this function uses `caret` to help out with `glmnet`, as it provides output which is very easy to explore and interact with. 
