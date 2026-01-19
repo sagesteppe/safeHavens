@@ -131,7 +131,7 @@ library(ggplot2)
  # the function can take up to take matrices. the first (required) is a geographic distance
  # matrix. calculate this with the `greatCircleDistance` fn from the package for consistency. 
  # (it will be recalculated during simulations). `sf` gives results in slightly diff units. 
- dist_mat <- sapply(1:nrow(df), function(i) {
+ dist_mat <- sapply(seq_len(nrow(df)), function(i) {
    greatCircleDistance(
      df$lat[i], df$lon[i],
      df$lat, df$lon

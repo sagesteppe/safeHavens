@@ -4,8 +4,6 @@
 
 User facing functions for implementing the sampling schemes
 
-- [`GridBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/GridBasedSample.md)
-  : Create hexagonal grid based polygons over a geographic range
 - [`PointBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/PointBasedSample.md)
   : Generate a sampling grid based off of regularly sampled points
   across the species range.
@@ -57,9 +55,7 @@ Optimization based site selection helpers for known populations
 
 ## Miscellaneous
 
-Data prep functions
+Built in data sets
 
-- [`TestGridSizes()`](https://sagesteppe.github.io/safeHavens/reference/TestGridSizes.md)
-  : Get an estimate for how many grids to draw over a species range
 - [`WesternEcoregions`](https://sagesteppe.github.io/safeHavens/reference/WesternEcoregions.md)
   : Omernik level 4 ecoregions of California and Oregon

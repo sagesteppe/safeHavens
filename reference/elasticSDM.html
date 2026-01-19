@@ -4,14 +4,14 @@ properly format all data for downstream use with the safeHavens workflow.
 Note that elastic net models are used for a couple very important reasons:
 they rescale all input independent variables before modelling, allowing us
 to combine the raw data with the beta coefficients to use for clustering
-algorithms downstream. They also allowing for 'shrinking' of terms from models
+algorithms downstream. They also allow for 'shrinking' of terms from models
 by shrinking terms from models we are able to get levels of ecological inference
 prohibited by older model selection frameworks."><meta property="og:description" content="This function quickly creates a SDM using elastic net regression, and it will
 properly format all data for downstream use with the safeHavens workflow.
 Note that elastic net models are used for a couple very important reasons:
 they rescale all input independent variables before modelling, allowing us
 to combine the raw data with the beta coefficients to use for clustering
-algorithms downstream. They also allowing for 'shrinking' of terms from models
+algorithms downstream. They also allow for 'shrinking' of terms from models
 by shrinking terms from models we are able to get levels of ecological inference
 prohibited by older model selection frameworks."><meta property="og:image" content="https://sagesteppe.github.io/safeHavens/logo.png"><!-- Google Search Console Verification --><meta name="google-site-verification" content="viUZcwXk_Fi5hsfdB7m6GgrFgGMJ-xVe1BcMTezGJII"><!-- JSON-LD Structured Data for AI Crawlers --><script type="application/ld+json">
 {
@@ -88,14 +88,14 @@ properly format all data for downstream use with the <code>safeHavens</code> wor
 Note that elastic net models are used for a couple very important reasons:
 they rescale all input independent variables before modelling, allowing us
 to combine the raw data with the beta coefficients to use for clustering
-algorithms downstream. They also allowing for 'shrinking' of terms from models
+algorithms downstream. They also allow for 'shrinking' of terms from models
 by shrinking terms from models we are able to get levels of ecological inference
 prohibited by older model selection frameworks.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">elasticSDM</span><span class="op">(</span><span class="va">x</span>, <span class="va">predictors</span>, <span class="va">planar_projection</span>, <span class="va">domain</span>, quantile_v <span class="op">=</span> <span class="fl">0.025</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">elasticSDM</span><span class="op">(</span><span class="va">x</span>, <span class="va">predictors</span>, <span class="va">planar_projection</span>, domain <span class="op">=</span> <span class="cn">NULL</span>, quantile_v <span class="op">=</span> <span class="fl">0.025</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -107,7 +107,7 @@ prohibited by older model selection frameworks.</p>
 
 
 <dt id="arg-predictors">predictors<a class="anchor" aria-label="anchor" href="#arg-predictors"></a></dt>
-<dd><p>a terra 'rasterstack' of variables to serve as indepedent predictors.</p></dd>
+<dd><p>A terra 'rasterstack' of variables to serve as independent predictors.</p></dd>
 
 
 <dt id="arg-planar-projection">planar_projection<a class="anchor" aria-label="anchor" href="#arg-planar-projection"></a></dt>
@@ -124,8 +124,8 @@ prohibited by older model selection frameworks.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list of 12 objects, each of these subsequently used in the downstream  SDM Post processing sequence, or which we think are best written to disk.
-The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the indepedent variables used in the final model are present in 'Predictors, and just the global PCNM/MEM raster surfaces are in 'PCNM'.
+    <p>A list of 12 objects, each of these subsequently used in the downstream SDM post processing sequence, or which we think are best written to disk.
+The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the independent variables used in the final model are present in 'Predictors', and just the global PCNM/MEM raster surfaces are in 'PCNM'.
 The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix.</p>
     </div>
 

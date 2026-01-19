@@ -6,7 +6,7 @@ collections, grid of points to develop a sampling scheme or n polygons.
 ## Usage
 
 ``` r
-OpportunisticSample(polygon, n, collections, reps, BS.reps)
+OpportunisticSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
 ```
 
 ## Arguments
@@ -55,15 +55,13 @@ existing_collections <- sf::st_sample(ri, size = 5) |>
   dplyr::rename(geometry = x)
 
 system.time(
-  out <- OpportunisticSample(polygon = ri, BS.reps=4999) 
-) # set very low for example
-#> Error in FUN(X[[i]], ...): argument "collections" is missing, with no default
-#> Timing stopped at: 0.041 0 0.041
-# the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
-# 7 seconds per species so not much concern on the speed end of things.
+  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999) 
+) 
+#>    user  system elapsed 
+#>   6.451   0.034   6.486 
 ggplot2::ggplot() + 
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
   ggplot2::geom_sf(data = existing_collections) 
-#> Error: object 'out' not found
+
  
 ```

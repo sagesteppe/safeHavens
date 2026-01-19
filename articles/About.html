@@ -160,48 +160,42 @@ them.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>GridBasedSample</code></td>
-<td>Creates and merges <em>n</em> grids over area</td>
-<td>L</td>
-<td>L</td>
-</tr>
-<tr class="even">
 <td><code>PointBasedSample</code></td>
 <td>Creates points to make grids over area</td>
 <td>L</td>
 <td>L</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>EqualAreaSample</code></td>
 <td>Breaks area into similar size pieces</td>
 <td>L</td>
 <td>L</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>OpportunisticSample</code></td>
 <td>Using PBS with existing records</td>
 <td>L</td>
 <td>L</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>KMedoidsBasedSample</code></td>
 <td>For rare species with known occurrences</td>
 <td>M</td>
 <td>L</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>IBDBasedSample</code></td>
 <td>Breaks species range into clusters</td>
 <td>H</td>
 <td>M</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>PolygonBasedSample</code></td>
 <td>Using existing ecoregions or STZs</td>
 <td>L</td>
 <td>H</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>EnvironmentalBasedSample</code></td>
 <td>Uses correlations from SDM to sample</td>
 <td>H</td>
@@ -209,30 +203,31 @@ them.</p>
 </tr>
 </tbody>
 </table>
-<p>The first three functions, <code>GridBasedSample</code>,
-<code>PointBasedSample</code>, and <code>EqualAreaSample</code>, are
-flavors of the same process, where we try to partition the species range
-into geographic chunks (polygons) of similar sizes.<br>
+<p>The first two functions, <code>PointBasedSample</code>, and
+<code>EqualAreaSample</code>, are flavors of the same process, where we
+try to partition the species range into geographic chunks (polygons) of
+similar sizes.<br>
 Each requires minimal computational power but features essentially no
 environmental information of context beyond the species current range
-restriction. The fourth method, <code>OpportunisticSample</code>, is a
-special case of the first three, where existing collection records are
-used to help guide the sampling scheme. <code>OpportunisticSample</code>
-uses the same underlying logic as <code>PointBasedSample</code>, but
-first ‘removes’ areas around existing collection records, and then fills
-in the remaining gaps with new sampling locations The first three
-functions would be used when <em>establishing</em> a new collection
-strategy for a species, while <code>OpportunisticSample</code> would be
-used when trying to <em>augment</em> an existing collection
-strategy.</p>
-<p>The sixth method, <code>IBDBasedSample</code>, is largely in a class
-of its own; in lieu of using the <em>continuity</em> of geographic space
-as its primary method, it focuses on the discontinuity of space and uses
-distance matrices and clustering to determine which patches of range are
-closer to each other than to other patches. This method is more
-computationally expensive than the previous four, and while it
-incorporates some environmental information, it is not explicit in the
-way that the final two methods are.</p>
+restriction. The <code>OpportunisticSample</code> method is a special
+case of the first <code>PointBasedSample</code>, where existing
+collection records are used to help guide the sampling scheme.
+<code>OpportunisticSample</code> uses the same underlying logic as
+<code>PointBasedSample</code>, but first ‘removes’ areas around existing
+collection records, and then fills in the remaining gaps with new
+sampling locations The first <code>PointBasedSample</code>, and
+<code>EqualAreaSample</code>, functions would be used when
+<em>establishing</em> a new collection strategy for a species, while
+<code>OpportunisticSample</code> would be used when trying to
+<em>augment</em> an existing collection strategy.</p>
+<p><code>IBDBasedSample</code>, is largely in a class of its own; in
+lieu of using the <em>continuity</em> of geographic space as its primary
+method, it focuses on the discontinuity of space and uses distance
+matrices and clustering to determine which patches of range are closer
+to each other than to other patches. This method is more computationally
+expensive than the previous four, and while it incorporates some
+environmental information, it is not explicit in the way that the final
+two methods are.</p>
 <p>The <code>PolygonBasedSample</code> may be the most commonly
 encountered method in North America, and in various formats, is driving
 two major germplasm banking projects in both the Midwest and
@@ -247,15 +242,14 @@ will be differently adapted to these environments. It can be used with
 either ecoregion or seed transfer zone based data. However, it relies on
 existing spatial data products, which may or may not be relevant to the
 ecology of the species.</p>
-<p>The final function, <code>EnvironmentalBasedSample</code>, is both
-the most computationally expensive and the most environmentally
-explicit. This function fits a Species Distribution Model (SDM),
-generated via a generalized linear model (glmnet), supported by this
-package, to cluster populations based on environmental variables related
-to their observed distributions and the spatial configuration and
-distance between them. On paper, this draws together all aspects of the
-above functions; however no empirical testing of this approach has been
-implemented.</p>
+<p><code>EnvironmentalBasedSample</code>, is both the most
+computationally expensive and the most environmentally explicit. This
+function fits a Species Distribution Model (SDM), generated via a
+generalized linear model (glmnet), supported by this package, to cluster
+populations based on environmental variables related to their observed
+distributions and the spatial configuration and distance between them.
+On paper, this draws together all aspects of the above functions;
+however no empirical testing of this approach has been implemented.</p>
 </div>
 <div class="section level4">
 <h4 id="rare-species-sampling-approach">rare species sampling approach<a class="anchor" aria-label="anchor" href="#rare-species-sampling-approach"></a>

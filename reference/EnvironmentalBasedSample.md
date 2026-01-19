@@ -2,7 +2,7 @@
 
 This function utilizes the output from an elastic net GLM model to
 create a weights matrix of features relevant to a species distribution
-to identify clusters throughout it's range while incorporating the
+to identify clusters throughout its range while incorporating the
 PCNM/MEM data and coordinates to implement some spatial contiguity.
 
 ## Usage

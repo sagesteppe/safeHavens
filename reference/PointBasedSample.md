@@ -1,12 +1,12 @@
 # Generate a sampling grid based off of regularly sampled points across the species range.
 
-This function utilizes a regular, or nearly so in the case of existing
-collections, grid of points to develop a sampling scheme or n polygons.
+This function utilizes a regular grid of points to develop a sampling
+scheme or n polygons.
 
 ## Usage
 
 ``` r
-PointBasedSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
+PointBasedSample(polygon, n = 20, reps = 100, BS.reps = 9999)
 ```
 
 ## Arguments
@@ -19,11 +19,6 @@ PointBasedSample(polygon, n = 20, collections, reps = 100, BS.reps = 9999)
 - n:
 
   Numeric. The total number of desired collections. Defaults to 20.
-
-- collections:
-
-  an sf point geometry data set of where existing collections have been
-  made.
 
 - reps:
 
@@ -52,15 +47,15 @@ ri <- spData::us_states |>
   out <- PointBasedSample(polygon = ri, reps = 10, BS.reps = 10) # set very low for example
  )
 #>    user  system elapsed 
-#>   0.601   0.003   0.604 
+#>   0.599   0.003   0.602 
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 2 seconds per species so not much concern on the speed end of things!
 head(out$SummaryData)
 #>                  Metric    Value
-#> 1     variance.observed 13547881
-#> 2        quantile.0.001 13564486
-#> 3             lwr.95.CI 13547881
-#> 4             upr.95.CI 13576721
+#> 1     variance.observed 11067894
+#> 2        quantile.0.001 11072471
+#> 3             lwr.95.CI 11067894
+#> 4             upr.95.CI 11075442
 #> 5    Voronoi.reps.asked       10
 #> 6 Voronoi.reps.received        6
 plot(out$Geometry)

@@ -97,6 +97,14 @@ sdModel <- elasticSDM(
 #> Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
 #>   (GCV) Generalized Cross-Validation 
 #>    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
+#> Warning: 
+#> Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+#>   (GCV) Generalized Cross-Validation 
+#>    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
+#> Warning: 
+#> Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+#>   (GCV) Generalized Cross-Validation 
+#>    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
 ```
 
 Under the hood this function uses `caret` to help out with `glmnet`, as
@@ -115,44 +123,7 @@ MAKE A NOTE ABOUT THE PCNM MORAN EIGNENVECTORS HERE TOO.
 
 #### explore the output
 
-``` r
-sdModel$CVStructure
-#> glmnet 
-#> 
-#> 184 samples
-#>   6 predictor
-#>   2 classes: '0', '1' 
-#> 
-#> No pre-processing
-#> Resampling: Bootstrapped (25 reps) 
-#> Summary of sample sizes: 184, 184, 184, 184, 184, 184, ... 
-#> Resampling results across tuning parameters:
-#> 
-#>   alpha  lambda        Accuracy   Kappa    
-#>   0.10   0.0006204077  0.8360016  0.6712790
-#>   0.10   0.0062040769  0.8282214  0.6560044
-#>   0.10   0.0620407692  0.8279379  0.6559269
-#>   0.55   0.0006204077  0.8365349  0.6722483
-#>   0.55   0.0062040769  0.8287096  0.6571131
-#>   0.55   0.0620407692  0.8182452  0.6371623
-#>   1.00   0.0006204077  0.8376016  0.6743248
-#>   1.00   0.0062040769  0.8293442  0.6582937
-#>   1.00   0.0620407692  0.8107098  0.6222415
-#> 
-#> Accuracy was used to select the optimal model using the largest value.
-#> The final values used for the model were alpha = 1 and lambda = 0.0006204077.
-
-coef(sdModel$Model, s = "lambda.min")
-#> 7 x 1 sparse Matrix of class "dgCMatrix"
-#>              s=lambda.min
-#> (Intercept)  -4.138796551
-#> bio17        -0.007649011
-#> biome        -0.176893842
-#> bio1          0.023751253
-#> bio8         -0.005606085
-#> bio12         0.001275749
-#> PCNM1       -18.787653011
-```
+`{r Explore SDM output - Different alpha}sdModel$CVStructure coef(sdModel$Model, s = "lambda.min")`
 
 Here we can see how the elastic net decided that is the top model. We
 used Accuracy rather than Kappa as the main criterion for model
@@ -164,28 +135,28 @@ sdModel$ConfusionMatrix
 #> 
 #>           Reference
 #> Prediction  0  1
-#>          0 16  0
-#>          1  7 22
-#>                                           
-#>                Accuracy : 0.8444          
-#>                  95% CI : (0.7054, 0.9351)
-#>     No Information Rate : 0.5111          
-#>     P-Value [Acc > NIR] : 3.102e-06       
-#>                                           
-#>                   Kappa : 0.6909          
-#>                                           
-#>  Mcnemar's Test P-Value : 0.02334         
-#>                                           
-#>             Sensitivity : 1.0000          
-#>             Specificity : 0.6957          
-#>          Pos Pred Value : 0.7586          
-#>          Neg Pred Value : 1.0000          
-#>              Prevalence : 0.4889          
-#>          Detection Rate : 0.4889          
-#>    Detection Prevalence : 0.6444          
-#>       Balanced Accuracy : 0.8478          
-#>                                           
-#>        'Positive' Class : 1               
+#>          0 16  1
+#>          1  7 21
+#>                                         
+#>                Accuracy : 0.8222        
+#>                  95% CI : (0.6795, 0.92)
+#>     No Information Rate : 0.5111        
+#>     P-Value [Acc > NIR] : 1.465e-05     
+#>                                         
+#>                   Kappa : 0.6464        
+#>                                         
+#>  Mcnemar's Test P-Value : 0.0771        
+#>                                         
+#>             Sensitivity : 0.9545        
+#>             Specificity : 0.6957        
+#>          Pos Pred Value : 0.7500        
+#>          Neg Pred Value : 0.9412        
+#>              Prevalence : 0.4889        
+#>          Detection Rate : 0.4667        
+#>    Detection Prevalence : 0.6222        
+#>       Balanced Accuracy : 0.8251        
+#>                                         
+#>        'Positive' Class : 1             
 #> 
 ```
 
@@ -269,13 +240,12 @@ then puts grids in many areas without populations to collect from.
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
+  train = sdModel$TrainData,
   planar_proj = planar_proj,
   thresh_metric = 'sensitivity', 
   quant_amt = 0.5
   )
 #> 1000 prediction points are sampled from the modeldomain
-#> Warning in rm(nn_dist, indices_knndm, nn_distribution, within_dist): object
-#> 'nn_distribution' not found
 ```
 
 We can compare the results of applying this function side by side using
@@ -307,7 +277,6 @@ these beta coefficients with the `writeSDMresults` function right
 afterwards.
 
 ``` r
-
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 

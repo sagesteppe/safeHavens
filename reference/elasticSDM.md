@@ -6,14 +6,14 @@ workflow. Note that elastic net models are used for a couple very
 important reasons: they rescale all input independent variables before
 modelling, allowing us to combine the raw data with the beta
 coefficients to use for clustering algorithms downstream. They also
-allowing for 'shrinking' of terms from models by shrinking terms from
+allow for 'shrinking' of terms from models by shrinking terms from
 models we are able to get levels of ecological inference prohibited by
 older model selection frameworks.
 
 ## Usage
 
 ``` r
-elasticSDM(x, predictors, planar_projection, domain, quantile_v = 0.025)
+elasticSDM(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025)
 ```
 
 ## Arguments
@@ -24,7 +24,7 @@ elasticSDM(x, predictors, planar_projection, domain, quantile_v = 0.025)
 
 - predictors:
 
-  a terra 'rasterstack' of variables to serve as indepedent predictors.
+  A terra 'rasterstack' of variables to serve as independent predictors.
 
 - planar_projection:
 
@@ -52,10 +52,10 @@ elasticSDM(x, predictors, planar_projection, domain, quantile_v = 0.025)
 ## Value
 
 A list of 12 objects, each of these subsequently used in the downstream
-SDM Post processing sequence, or which we think are best written to
+SDM post processing sequence, or which we think are best written to
 disk. The actual model prediction on a raster surface are present in the
-first list 'RasterPredictions', the indepedent variables used in the
-final model are present in 'Predictors, and just the global PCNM/MEM
+first list 'RasterPredictions', the independent variables used in the
+final model are present in 'Predictors', and just the global PCNM/MEM
 raster surfaces are in 'PCNM'. The fit model is in 'Model', while the
 cross validation folds are stored in 'CVStructure', results from a
 single test/train partition in 'ConfusionMatrix', and the two data split

@@ -19,8 +19,8 @@ PostProcessSDM(
   rast_cont,
   test,
   train,
-  thresh_metric,
-  quant_amt,
+  thresh_metric = "sensitivity",
+  quant_amt = 0.25,
   planar_projection
 )
 ```
