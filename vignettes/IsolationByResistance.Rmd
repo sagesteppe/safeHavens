@@ -122,7 +122,7 @@ plot(res_rast)
 
 We can run the function using the input raster, which is exactly what the function itself woukd produce.
 ```{r}
-ob <- population_resistance_cluster(
+ob <- populationResistance(
   base_raster = rast(ocean_r),
   populations_sf = x,
   planar_proj = 3857,
@@ -131,9 +131,16 @@ ob <- population_resistance_cluster(
   ibr_method = 'leastcost'
 )
 
-plot(ob$resistance_raster)
+names(ob)
 
+w_dist <- as.dist(ob$ibr_matrix)
 
+IBRBasedSample(
+  base_raster = rast(ocean_r),
+  resistance_surface = res_rast, 
+  pts_sf = ob$sampled_points, 
+  ibr_matrix = ob$ibr_matrix
+  )
 ```
 
 ## altering default parameters. 
