@@ -13,6 +13,7 @@
 #' 
 IBRBasedSample <- function(
   base_raster,
+  pop_raster,
   resistance_surface,
   pts_sf, 
   ibr_matrix, 
@@ -21,7 +22,7 @@ IBRBasedSample <- function(
   min.nc = 5, 
   max.nc = 20,
   min_cluster_cells = 25,
-  max_geo_dist = NULL,
+  max_geo_dist = 20000,
   max_geo_cells = NULL,
   geo_iters = 10,
   boundary_width = 2,
@@ -37,7 +38,7 @@ IBRBasedSample <- function(
 
   pts_sf <- sf::st_transform(pts_sf, terra::crs(base_raster))
 
-  if (is.null(max_geo_dist)) {
+  if (is.null(max_geo_dist)) { ## working in degrees rn  - need to fix. 
     max_geo_dist <- 5 * terra::res(base_raster)[1]
   }
 
@@ -58,9 +59,9 @@ IBRBasedSample <- function(
 
   ## ---- Step 1: Conservative geographic cores -------------------------------
   cluster_r <- geographic_core_assignment(
-    seeds_sf        = pts_sf,
-    template_raster = base_raster,
-    max_dist        = max_geo_dist,
+    pop_raster = pop_raster, 
+    pts_sf  = clusts$clusters,
+    max_dist = max_geo_dist,
     distance_method = distance_method
   )
 
@@ -69,8 +70,9 @@ IBRBasedSample <- function(
     min_cells = min_cluster_cells
   )
 
-  ## ---- Step 2: Cheap geographic expansion ----------------------------------
+  return(cluster_r)
 
+  ## ---- Step 2: Cheap geographic expansion ----------------------------------
   cluster_r <- expand_geographic_front(
     cluster_r,
     max_cells_per_cluster = max_geo_cells,
@@ -78,7 +80,6 @@ IBRBasedSample <- function(
   )
 
   ## ---- Step 3: Resistance-based assignment ---------------------------------
-
   contested <- find_contested_cells(
     cluster_r,
     width = boundary_width
@@ -112,8 +113,7 @@ cluster_connectivity <- function(
   fixedClusters = TRUE,
   n = NULL,
   min.nc = 2,
-  max.nc = 10,
-  linkage = NULL
+  max.nc = 10
 ) {
 
   input <- match.arg(input)
@@ -155,39 +155,47 @@ cluster_connectivity <- function(
   list(
     clusters = pts_sf,
     hclust = hc,
-    distance = w_dist,
-    linkage = linkage,
     input = input
   )
 }
 
 geographic_core_assignment <- function(
-  seeds_sf,
-  template_raster,
-  max_dist,
-  distance_method = "haversine"
+  pop_raster,          # raster of buffered population areas
+  pts_sf,              # sf/tibble of points with $ID already assigned
+  max_dist,            # maximum distance to assign cells
+  distance_method = c("haversine", "cosine")  # geodesic distance
 ) {
+  distance_method <- match.arg(distance_method)
 
-  seeds_sf$cluster_id <- seq_len(nrow(seeds_sf))
-
+  # --- Setup seed raster ---
   seed_r <- terra::rasterize(
-    terra::vect(seeds_sf),
-    template_raster,
-    field = "cluster_id"
+    terra::vect(pts_sf),
+    pop_raster,
+    field = "ID"
   )
 
-  d <- terra::distance(
-    template_raster,
-    seed_r,
-    method = distance_method
-  )
+  # --- Compute distances from all pop_raster cells to nearest seed ---
+  d <- terra::distance(seed_r, method = distance_method)
 
-  nearest <- terra::nearest(seed_r)
+  # --- Mask pop_raster to only cells within max_dist ---
+  pop_masked <- terra::mask(pop_raster, d <= max_dist)
+  pop_masked_cells <- which(!is.na(terra::values(pop_masked)))
 
-  out <- terra::ifel(d <= max_dist, nearest, NA)
-  names(out) <- "cluster_id"
-  out
+  # --- Get centroids of masked raster cells as SpatVector points ---
+  cell_vect <- as.points(pop_masked)
+
+  # --- Use terra::nearest() to assign each cell to nearest seed ---
+  nearest_seed_idx <- terra::nearest(cell_vect, terra::vect(pts_sf))
+  cluster_ids <- pts_sf$ID[nearest_seed_idx$to_id]
+
+  # --- Fill masked raster with cluster IDs ---
+  cluster_r <- pop_masked
+  cluster_r[pop_masked_cells] <- cluster_ids
+  names(cluster_r) <- "ID"
+
+  cluster_r
 }
+
 
 
 enforce_min_core_area <- function(cluster_r, min_cells) {

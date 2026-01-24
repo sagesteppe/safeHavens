@@ -44,6 +44,10 @@ sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
 tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
 names(tri) <- 'tri'
 
+## rasters need to have symmetrical grid cells for usage in this function
+dim(res_rast)
+
+
 rescale_rast <- function(r, new_min = 0, new_max = 1) {
   r_min <- global(r, "min", na.rm = TRUE)[[1]]
   r_max <- global(r, "max", na.rm = TRUE)[[1]]
@@ -135,8 +139,9 @@ ob <- populationResistance(
   base_raster = rast(ocean_r),
   populations_sf = x,
   planar_proj = 3857,
+  buffer_dist = 100000,
   resistance_surface = res_rast,
-  graph_method = 'mst',
+  graph_method = 'delaunay',
   ibr_method = 'leastcost'
 )
 
@@ -148,6 +153,7 @@ clusts <- cluster_connectivity(
   n = 10
 )
 
+
 v <- vect(clusts$clusters)
 plot(res_rast)
 points(v, 
@@ -156,12 +162,18 @@ points(v,
        cex = 2,
        lwd = 3) 
 
-IBRBasedSample(
+inner_class <- IBRBasedSample(
   base_raster = rast(ocean_r),
   resistance_surface = res_rast, 
+  pop_raster = ob$pop_raster,
   pts_sf = ob$sampled_points, 
-  ibr_matrix = ob$ibr_matrix
+  ibr_matrix = ob$ibr_matrix,
+  max_geo_dist = 100000
   )
+
+
+plot(inner_class)
 ```
 
 ## altering default parameters. 
+

@@ -163,6 +163,7 @@ populationResistance <- function(
 
   list(
     resistance_raster = res_rast,
+    pop_raster = pop_raster,
     sampled_points = pts_sf,
     spatial_graph = g_out$graph,
     edge_list = g_out$edges,
