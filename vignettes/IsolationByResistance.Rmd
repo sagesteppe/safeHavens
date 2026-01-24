@@ -1,0 +1,139 @@
+---
+title: "Isolation By Resistance"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Isolation By Resistance}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+description: >
+  Cleaning and prepping data for creating resistance surfaces required for Isolation By Resistance sampling. 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Isolation by Resistance Sampling
+
+## Background 
+
+words birds. birds and words.
+
+```{r libraries}
+library(terra)
+library(sf)
+library(tidyverse)
+library(safeHavens)
+```
+
+```{r import sample data}
+x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
+x <- x[,c('lon', 'lat')]
+x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
+
+planar_proj <- 3857 # Web Mercator for planar distance calcs
+```
+
+## Prepping raster surfaces
+
+```{r import spatial data}
+sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
+tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
+names(tri) <- 'tri'
+
+lakes_v <- sf::st_read(
+  file.path(sf_data, 'GLWD-level1', 'glwd_1.shp'), quiet = T) |>
+  st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
+  select(TYPE, geometry) |> 
+  filter(TYPE == 'Lake') |> # remove reservoirs for our purposes (time scale)
+  mutate(Value = 1) |> # this will be rasterized. 
+  terra::vect()
+
+ocean_v <- sf::st_read(
+  file.path(sf_data, 'ne_10m_ocean', 'ne_10m_ocean.shp'), quiet = T) |>
+  select(geometry) |>
+  mutate(Value = 1) |>
+  terra::vect()
+
+rivers_v <- sf::st_read(
+  file.path(sf_data, 'rivers_world_47950', 'rivers_world_47950.shp'), quiet = T) |>
+  filter(Strahler > 3) |> # just showing this option exists... 
+  select(geometry) |>
+  mutate(Value = 1) |>
+  terra::vect()
+
+```
+
+We'll convert each of the above spatVect objects to spatRasters, for the area of analysis.
+
+```{r crop data and project}
+x_buff <- sf::st_transform(x, planar_proj) |>
+  # huge buffer for the bbox. 
+  st_buffer(200000) |> 
+  st_transform(crs(lakes_v)) |>
+  st_as_sfc() |> 
+  st_union() |>
+  vect() |>
+  ext()
+
+lakes_v <- crop(lakes_v, x_buff)
+rivers_v <- crop(rivers_v, x_buff)
+ocean_v <- crop(ocean_v, x_buff)
+tri <- crop(tri, x_buff)
+```
+
+The vector data can be converted to raster data like below. 
+
+```{r rasterize data}
+ocean_r <- rasterize(ocean_v, tri, field = 'Value', background = 0.1)
+lakes_r <- rasterize(lakes_v, tri, field = 'Value',  background = 0.1)
+rivers_r <- rasterize(rivers_v, tri, field = 'Value',  background = 0.1)
+plot(rivers_r)
+
+rm(ocean_v, lakes_v, rivers_v)
+```
+
+
+manually create a resistance surface
+
+```{r simple manual surface}
+w_ocean <- 1000
+w_lakes <- 200
+w_rivers <- 100
+w_tri <- 2
+
+res_rast <- rast(ocean_r) ## create template to become surface
+values(res_rast) <- 0
+
+res_rast <- res_rast + (w_ocean * ocean_r)
+res_rast <- res_rast + (w_lakes * lakes_r)
+res_rast <- res_rast + (w_rivers * rivers_r)
+res_rast <- res_rast + (w_tri * tri)
+
+res_rast <- terra::as.int(res_rast) ## for memory. 
+
+plot(res_rast)
+```
+
+## running function 
+
+We can run the function using the input raster, which is exactly what the function itself woukd produce.
+```{r}
+ob <- population_resistance_cluster(
+  base_raster = rast(ocean_r),
+  populations_sf = x,
+  planar_proj = 3857,
+  resistance_surface = res_rast,
+  graph_method = 'mst',
+  ibr_method = 'leastcost'
+)
+
+plot(ob$resistance_raster)
+
+
+```
+
+## altering default parameters. 
