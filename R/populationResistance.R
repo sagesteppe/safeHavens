@@ -70,17 +70,17 @@
 populationResistance <- function(
   populations_sf,
   base_raster,
-  buffer_dist = 10000,
+  buffer_dist = 20000,
   planar_proj = NULL,
-  n_points = 50,
+  n_points = 100,
   resistance_surface = NULL,
   oceans = NULL,
   lakes = NULL,
   rivers = NULL,
   tri = NULL,
   habitat = NULL,
-  w_ocean = 2000,
-  w_lakes = 200,
+  w_ocean = 100,
+  w_lakes = 50,
   w_rivers = 20,
   w_tri = 1,
   w_habitat = 1,
@@ -157,12 +157,16 @@ populationResistance <- function(
     epsilon = epsilon
   )
 
+  # and now create a dense matrix suitable for use with most stats packages
+  # we will impute Inf for values we did not compute pairwise distances with. 
+  dense_mat  <- inflate_to_dense(g_out$edges)   # dense
+
   list(
     resistance_raster = res_rast,
     sampled_points = pts_sf,
     spatial_graph = g_out$graph,
     edge_list = g_out$edges,
-    ibr_matrix = Rmat
+    ibr_matrix = dense_mat
   )
 }
 
@@ -337,3 +341,27 @@ compute_ibr_edges <- function(
 
   R
 }
+
+#' @keywords internal
+#' @noRd
+inflate_to_dense <- function(edges) {
+  # edges: data.frame with columns 'from', 'to', 'd' (distance)
+  
+  # determine number of points from edges
+  n <- max(c(edges$from, edges$to))
+
+  finite_max <- max(edges$weight)*4
+  D <- matrix(finite_max, n, n)
+  diag(D) <- 0
+
+  for (k in seq_len(nrow(edges))) {
+    i <- edges$from[k]
+    j <- edges$to[k]
+    d <- edges$weight[k]
+    D[i, j] <- d
+    D[j, i] <- d
+  }
+  
+  D
+}
+

@@ -44,6 +44,15 @@ sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
 tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
 names(tri) <- 'tri'
 
+rescale_rast <- function(r, new_min = 0, new_max = 1) {
+  r_min <- global(r, "min", na.rm = TRUE)[[1]]
+  r_max <- global(r, "max", na.rm = TRUE)[[1]]
+  ((r - r_min) / (r_max - r_min)) * (new_max - new_min) + new_min
+}
+
+tri <- rescale_rast(tri, 0, 100)
+
+
 lakes_v <- sf::st_read(
   file.path(sf_data, 'GLWD-level1', 'glwd_1.shp'), quiet = T) |>
   st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
@@ -100,10 +109,10 @@ rm(ocean_v, lakes_v, rivers_v)
 manually create a resistance surface
 
 ```{r simple manual surface}
-w_ocean <- 1000
-w_lakes <- 200
-w_rivers <- 100
-w_tri <- 2
+w_ocean <- 100
+w_lakes <- 50
+w_rivers <- 20
+w_tri <- 5
 
 res_rast <- rast(ocean_r) ## create template to become surface
 values(res_rast) <- 0
@@ -131,9 +140,21 @@ ob <- populationResistance(
   ibr_method = 'leastcost'
 )
 
-names(ob)
+clusts <- cluster_connectivity(
+  x = ob$ibr_matrix,
+  pts_sf = ob$sampled_points,
+  input = c("features", "distance"),
+  fixedClusters = FALSE,
+  n = 10
+)
 
-w_dist <- as.dist(ob$ibr_matrix)
+v <- vect(clusts$clusters)
+plot(res_rast)
+points(v, 
+       pch = as.numeric(as.factor(v$ID)),  # different symbol per ID
+       col = rainbow(length(unique(v$ID)))[as.factor(v$ID)],
+       cex = 2,
+       lwd = 3) 
 
 IBRBasedSample(
   base_raster = rast(ocean_r),

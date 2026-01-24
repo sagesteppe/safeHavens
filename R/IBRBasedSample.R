@@ -47,12 +47,13 @@ IBRBasedSample <- function(
 
   ## ---- Step 0: Cluster points into groups ----------------------------------
   clusts <- cluster_connectivity(
+    x = ibr_matrix,
+    pts_sf = pts_sf,
     input = c("features", "distance"),
     fixedClusters = fixedClusters,
     n = n,
     min.nc = min.nc,
-    max.nc = max.nc,
-    linkage = NULL
+    max.nc = max.nc
   )
 
   ## ---- Step 1: Conservative geographic cores -------------------------------
@@ -102,26 +103,11 @@ IBRBasedSample <- function(
 }
 
 
-expand_sparse_to_dense <- function(edges, n) {
-  D <- matrix(Inf, n, n)
-  diag(D) <- 0
-
-  for (k in seq_len(nrow(edges))) {
-    i <- edges$i[k]
-    j <- edges$j[k]
-    d <- edges$d[k]
-    D[i, j] <- d
-    D[j, i] <- d
-  }
-
-  as.dist(D)
-}
-
-
 #' @keywords internal
 #' @tags noRd
 cluster_connectivity <- function(
   x,
+  pts_sf, 
   input = c("features", "distance"),
   fixedClusters = TRUE,
   n = NULL,
@@ -135,46 +121,6 @@ cluster_connectivity <- function(
   # drop incomplete cases (rows only)
   x <- x[stats::complete.cases(x), , drop = FALSE]
 
-  # --- DISTANCE CONSTRUCTION ---
-  if (input == "features") {
-
-    # Euclidean feature space
-    w_dist <- stats::dist(x, method = "euclidean")
-
-    # default linkage
-    if (is.null(linkage)) {
-      linkage <- "ward.D2"
-    }
-
-    # sanity check
-    if (linkage %in% c("ward.D", "ward.D2") == FALSE) {
-      warning("Non-Ward linkage used on feature matrix")
-    }
-
-  } else {
-
-    # x is already a distance matrix
-    if (!is.matrix(x) || nrow(x) != ncol(x)) {
-      stop("For input = 'distance', x must be a square distance matrix")
-    }
-
-    if (any(abs(diag(x)) > 1e-8)) {
-      stop("Distance matrix must have ~0 diagonal")
-    }
-
-    w_dist <- as.dist(x)
-
-    # default linkage
-    if (is.null(linkage)) {
-      linkage <- "complete"
-    }
-
-    # forbid Ward
-    if (linkage %in% c("ward.D", "ward.D2")) {
-      stop("Ward linkage is not valid for non-Euclidean distance matrices")
-    }
-  }
-
   # --- CLUSTERING ---
   if (fixedClusters == TRUE) {
 
@@ -182,25 +128,32 @@ cluster_connectivity <- function(
       stop("n must be provided when fixedClusters = TRUE")
     }
 
-    hc <- stats::hclust(w_dist, method = linkage)
-    clusterCut <- stats::cutree(hc, n)
+    finite_max <- max(x[is.finite(x)])
+    x[!is.finite(x)] <- 3 * finite_max   # replace Inf with large number
+    d <- as.dist(x)
+    
+    hc <- stats::hclust(d, method = 'complete')
+    pts_sf$ID <- stats::cutree(hc, n)
 
   } else {
 
+    coords <- stats::cmdscale(x, k = 2)  # have to perform 2d embedding for nbclust method. 
+
     NoClusters <- NbClust::NbClust(
-      diss = w_dist,
-      distance = NULL,
+      data = coords,
+      distance = 'euclidean',
       min.nc = min.nc,
       max.nc = max.nc,
-      method = linkage
+      method = 'complete',
+      index = 'silhouette'
     )
 
-    clusterCut <- NoClusters$Best.partition
+    pts_sf$ID <- NoClusters$Best.partition
     hc <- NULL
   }
 
   list(
-    clusters = clusterCut,
+    clusters = pts_sf,
     hclust = hc,
     distance = w_dist,
     linkage = linkage,
