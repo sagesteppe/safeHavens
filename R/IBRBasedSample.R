@@ -81,29 +81,22 @@ IBRBasedSample <- function(
     max_iters = geo_iters
   )
 
-  ## ---- Step 3: Resistance-based assignment ---------------------------------
+  ## ---- Step 3: Fill contested cells from neigbors ---------------------------------
   contested <- find_contested_cells(
     cluster_r,
     pop_rast = pop_raster
   )
 
-  return(
-    list(
-      resistance_raster = resistance_surface,
-      cluster_r         = contested$cluster_r,
-      contested         = contested$contested,
-      pts_sf            = clusts$clusters
-      )
-    )
-  
-  if (!is.null(resistance_surface)) {
-    cluster_r <- assign_by_resistance(
-      resistance_raster = resistance_surface,
-      cluster_r         = contested$cluster_r,
-      contested         = contested$contested,
-      pts_sf            = clusts$clusters
-    )
-  }
+  cluster_r <- assign_contested_line(
+    cluster_r = contested$cluster_r, 
+    contested = contested$contested
+  )
+
+  ## randomly fill remaining cells from a neighbor. 
+  cluster_r <- finalize_cluster(
+    cluster_r = cluster_r,
+    pop_raster = pop_raster
+  )
 
   return(cluster_r)
 
@@ -118,8 +111,8 @@ cluster_connectivity <- function(
   input = c("features", "distance"),
   fixedClusters = TRUE,
   n = NULL,
-  min.nc = 5,
-  max.nc = 10
+  min.nc,
+  max.nc
 ) {
 
   input <- match.arg(input)
@@ -128,6 +121,8 @@ cluster_connectivity <- function(
   x <- x[stats::complete.cases(x), , drop = FALSE]
 
   # --- CLUSTERING ---
+  coords <- stats::cmdscale(x, k = 2)  # have to perform 2d embedding for nbclust method. 
+
   if (fixedClusters == TRUE) {
 
     if (is.null(n)) {
@@ -139,8 +134,6 @@ cluster_connectivity <- function(
     pts_sf$ID <- stats::cutree(hc, n)
 
   } else {
-
-    coords <- stats::cmdscale(x, k = 2)  # have to perform 2d embedding for nbclust method. 
 
     NoClusters <- NbClust::NbClust(
       data = coords,
@@ -286,105 +279,116 @@ find_contested_cells <- function(
     pairs = TRUE
   )
 
-  nbr_df <- data.frame(
-    cell    = adj[, 1],
-    nbr_val = terra::values(cluster_pop)[adj[, 2]]
+  adj_df <- data.frame(
+    cell = adj[, 1],
+    nbr  = adj[, 2],
+    to_cluster = terra::values(cluster_r)[adj[, 2]]
   )
 
-  nbr_df <- nbr_df[!is.na(nbr_df$nbr_val), , drop = FALSE]
+  # drop NA neighbors
+  adj_df <- adj_df[!is.na(adj_df$to_cluster), , drop = FALSE]
 
-  # Per-cell neighbor summary
-  summary <- nbr_df |>
+  # ---- Per-cell neighbor summary ----
+  nbr_summary <- adj_df |>
     dplyr::group_by(cell) |>
     dplyr::summarise(
-      n_clusters = dplyr::n_distinct(nbr_val),
-      cluster_id = dplyr::first(nbr_val),
+      clusters   = list(unique(to_cluster)),
+      n_clusters = dplyr::n_distinct(to_cluster),
       .groups = "drop"
     )
 
-  # Safe cells: exactly one neighbor cluster
-  safe <- summary$cell[summary$n_clusters == 1]
-  safe_ids <- summary$cluster_id[summary$n_clusters == 1]
+  # ---- Safe assignments ----
+  safe <- nbr_summary[nbr_summary$n_clusters == 1, ]
+  safe_cells <- safe$cell
+  safe_ids   <- vapply(safe$clusters, `[`, numeric(1), 1)
 
-  # Contested cells
-  contested_cells <- summary$cell[summary$n_clusters >= 2]
-
-  # ---- Update cluster raster ----
   cluster_out <- cluster_r
-  cluster_out[safe] <- safe_ids
+  cluster_out[safe_cells] <- safe_ids
 
-  # ---- Contested raster ----
+  # ---- Contested cells ----
+  contested_cells <- nbr_summary$cell[nbr_summary$n_clusters >= 2]
+
   contested <- cluster_out * NA
   contested[contested_cells] <- 1
   names(contested) <- "contested"
 
   list(
     cluster_r = cluster_out,
-    contested = contested
+    contested = contested,
+    candidates = split(
+      nbr_summary$clusters,
+      nbr_summary$cell
+    )
   )
+
 }
 
-assign_by_resistance <- function(
-  resistance_raster,
-  cluster_r,
-  contested,
-  pts_sf
-) {
-
+assign_contested_line <- function(cluster_r, contested) {
+  # Identify contested cell indices
   contested_cells <- which(!is.na(terra::values(contested)))
   if (!length(contested_cells)) return(cluster_r)
-
-  # adjacency: contested cell -> neighboring clusters
-  adj <- terra::adjacent(
-    cluster_r,
-    cells = contested_cells,
-    directions = 8,
-    pairs = TRUE
+  
+  # Get adjacency graph for contested cells (8 directions)
+  adj <- terra::adjacent(cluster_r, cells = contested_cells, directions = 8, pairs = FALSE)
+  
+  # Find connected components of contested cells
+  library(igraph)
+  g <- igraph::graph_from_data_frame(
+    d = do.call(rbind, lapply(seq_along(adj), function(i) {
+      cbind(contested_cells[i], adj[[i]])
+    })),
+    directed = FALSE
   )
-
-  nbr_df <- data.frame(
-    cell    = adj[, 1],
-    cluster = cluster_r[adj[, 2]]
-  )
-
-  nbr_df <- nbr_df[!is.na(nbr_df$cluster), , drop = FALSE]
-  if (!nrow(nbr_df)) return(cluster_r)
-
-  candidates <- split(nbr_df$cell, nbr_df$cluster)
-
-  seed_pts <- split(pts_sf, pts_sf$cluster_id)
-
-  # explicit trackers
-  best_dist    <- rep(Inf, length(contested_cells))
-  best_cluster <- rep(NA_integer_, length(contested_cells))
-  names(best_dist) <- names(best_cluster) <- contested_cells
-
-  for (k in names(candidates)) {
-
-    cells_k <- unique(candidates[[k]])
-    seeds_k <- seed_pts[[k]]
-
-    if (is.null(seeds_k) || !nrow(seeds_k)) next
-
-    d <- terra::distance(
-      resistance_raster,
-      terra::vect(seeds_k)
-    )
-
-    vals <- terra::values(d)[cells_k]
-
-    idx <- match(cells_k, contested_cells)
-
-    update <- vals < best_dist[idx]
-    best_dist[idx[update]]    <- vals[update]
-    best_cluster[idx[update]] <- as.integer(k)
+  
+  comps <- igraph::components(g)$membership
+  
+  # Split each contiguous component in half
+  cluster_out <- cluster_r
+  for (comp_id in unique(comps)) {
+    cells <- contested_cells[comps == comp_id]
+    n <- length(cells)
+    half <- ceiling(n/2)
+    
+    # Get neighboring cluster ids
+    nbr_vals <- terra::values(cluster_r)[terra::adjacent(cluster_r, cells = cells, directions = 8)]
+    nbr_vals <- nbr_vals[!is.na(nbr_vals)]
+    if (length(nbr_vals) < 2) next  # cannot split, just leave assigned later
+    
+    # Assign first half to one neighbor, second half to the other
+    cluster_out[cells[1:half]] <- nbr_vals[1]
+    cluster_out[cells[(half+1):n]] <- nbr_vals[2]
   }
+  
+  cluster_out
+}
 
-  # only assign where we actually found a cluster
-  ok <- !is.na(best_cluster)
-  if (any(ok)) {
-    cluster_r[as.integer(names(best_cluster)[ok])] <- best_cluster[ok]
+
+finalize_cluster <- function(cluster_r, pop_raster, directions = 8) {
+  
+  # --- Mask to population raster ---
+  cluster_pop <- terra::mask(cluster_r, pop_raster)
+  
+  # Identify unassigned cells
+  na_cells <- which(is.na(terra::values(cluster_pop)) & !is.na(terra::values(pop_raster)))
+  
+  if (!length(na_cells)) return(cluster_pop)
+  
+  # --- Assign nearest cluster for each NA cell ---
+  for (cell in na_cells) {
+    
+    nbr_cells <- terra::adjacent(cluster_pop, cells = cell, directions = directions, pairs = FALSE)[[1]]
+    
+    # Neighbor cluster IDs, drop NA
+    nbr_vals <- na.omit(terra::values(cluster_pop)[nbr_cells])
+    
+    if (length(nbr_vals)) {
+      # Randomly pick one if multiple neighbors
+      cluster_pop[cell] <- sample(nbr_vals, 1)
+    } else {
+      # If truly isolated, leave NA (should be rare)
+      cluster_pop[cell] <- NA
+    }
   }
-
-  cluster_r
+  
+  cluster_pop
 }

@@ -104,11 +104,10 @@ plot(rivers_r)
 rm(ocean_v, lakes_v, rivers_v)
 ```
 
-
 manually create a resistance surface
 
 ```{r simple manual surface}
-w_ocean <- 100
+w_ocean <- 200
 w_lakes <- 50
 w_rivers <- 20
 w_tri <- 5
@@ -144,12 +143,12 @@ clusts <- cluster_connectivity(
   x = ob$ibr_matrix,
   pts_sf = ob$sampled_points,
   input = c("features", "distance"),
-  fixedClusters = FALSE,
-  n = 3
+  fixedClusters = TRUE,
+  n = 5,
+  min.nc = 3,
+  max.nc = 10
 )
 
-d <- clusts$clusters
-id_groups <- split(d, f = d$ID)
 
 v <- vect(clusts$clusters)
 plot(res_rast)
@@ -168,23 +167,7 @@ inner_class <- IBRBasedSample(
   ibr_matrix = ob$ibr_matrix
   )
 
-inner_class$contested
-
-  contested_cells <- which(!is.na(terra::values(inner_class$contested)))
-
-
-adj <- terra::adjacent(
-  inner_class$cluster_r,
-  cells = contested_cells,
-  directions = 8,
-  pairs = TRUE
-)
-
-head(data.frame(
-  from = adj[,1],
-  to   = adj[,2],
-  to_cluster = inner_class$cluster_r[adj[,2]]
-))
+plot(inner_class)
 ```
 
 ## altering default parameters. 
