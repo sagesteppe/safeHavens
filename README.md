@@ -7,6 +7,7 @@ status](https://github.com/sagesteppe/safeHavens/workflows/R-CMD-check/badge.svg
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![](https://img.shields.io/badge/doi-10.5281/zenodo.18149377-orange.svg)](https://doi.org/10.5281/zenodo.18149377)
+[![](https://codecov.io/gh/sagesteppe/safeHavens/branch/main/graph/badge.svg)](https://app.codecov.io/gh/sagesteppe/safeHavens)
 
 # safeHavens <img src="/man/figures/logo.png" align="right" height="138" />
 
@@ -37,7 +38,7 @@ for each individual taxon they hope to process.
 
     install.packages('devtools')
     devtools::install_github('sagesteppe/safeHavens')
-    
+
     install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
     remotes::install_github('sagesteppe/safeHavens')
 
@@ -57,16 +58,15 @@ The following table shows the eight sampling approaches available in
 safeHavens, with their computational complexity (Comp.) and
 environmental data requirements (Envi.): L = Low, M = Medium, H = High.
 
-| Function                   | Description                             | Comp. | Envi. |
-| -------------------------- | --------------------------------------- | ----- | ----- |
-| `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
-| `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
-| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
-| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
-| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
-| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
+| Function | Description | Comp. | Envi. |
+|----|----|----|----|
+| `PointBasedSample` | Creates points to make pieces over area | L | L |
+| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
+| `OpportunisticSample` | Using PBS with existing records | L | L |
+| `KMedoidsBasedSample` | Use ecoregions or STSz for sample | L | M |
+| `IBDBasedSample` | Breaks species range into clusters | H | M |
+| `PolygonBasedSample` | Using existing ecoregions to sample | L | H |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
 
 The species distribution modelling section has a couple functions which
 are essential for achieving the `EnvironmentalBasedSample` design, these
