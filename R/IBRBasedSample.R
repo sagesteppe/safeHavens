@@ -121,8 +121,6 @@ cluster_connectivity <- function(
   x <- x[stats::complete.cases(x), , drop = FALSE]
 
   # --- CLUSTERING ---
-  coords <- stats::cmdscale(x, k = 2)  # have to perform 2d embedding for nbclust method. 
-
   if (fixedClusters == TRUE) {
 
     if (is.null(n)) {
@@ -134,7 +132,8 @@ cluster_connectivity <- function(
     pts_sf$ID <- stats::cutree(hc, n)
 
   } else {
-
+    coords <- stats::cmdscale(x, k = 2) # have to perform 2d embedding for nbclust method.
+    
     NoClusters <- NbClust::NbClust(
       data = coords,
       distance = 'euclidean',

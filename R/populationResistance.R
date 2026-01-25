@@ -72,7 +72,7 @@ populationResistance <- function(
   base_raster,
   buffer_dist = 20000,
   planar_proj = NULL,
-  n_points = 200,
+  n_points = 150,
   resistance_surface = NULL,
   oceans = NULL,
   lakes = NULL,
@@ -84,8 +84,8 @@ populationResistance <- function(
   w_rivers = 20,
   w_tri = 1,
   w_habitat = 1,
-  graph_method = c("mst", "gabriel", "delaunay"),
-  ibr_method = c("leastcost", "randomwalk"),
+  graph_method = c("complete", "delaunay"),
+  ibr_method = "leastcost",
   epsilon = 1e-6,
   min_resistance = 1L
 ) {
@@ -193,78 +193,42 @@ sample_population_cells <- function(
 
 #' @keywords internal
 #' @tags noRd
+#' @keywords internal
+#' @tags noRd
 build_spatial_graph <- function(
   pts_sf,
-  method = c("mst", "gabriel", "delaunay"),
+  method = "delaunay",
   great_circle = TRUE
 ) {
-  method <- match.arg(method)
-
+  method <- match.arg(method, choices = c("delaunay", "complete"))
+  
   if (!inherits(pts_sf, "sf")) {
     stop("pts_sf must be an sf object with POINT geometry")
   }
-
   if (!all(sf::st_geometry_type(pts_sf) == "POINT")) {
     stop("pts_sf must contain only POINT geometries")
   }
-
+  
   n <- nrow(pts_sf)
   if (n < 2) {
     stop("At least two points are required to build a graph")
   }
-
+  
   # --- coordinates ---
   coords <- sf::st_coordinates(pts_sf)
-
-  # --- distance matrix (used for MST weights) ---
+  
+  # --- distance matrix ---
   if (great_circle) {
-    if (sf::st_is_longlat(pts_sf)) {
-      D <- sf::st_distance(pts_sf)
-      D <- units::drop_units(D)
-    } else {
-      warning("great_circle=TRUE but CRS is not lon/lat; using planar distances")
-      D <- as.matrix(dist(coords))
-    }
+    D <- sf::st_distance(pts_sf)
+    D <- units::drop_units(D)
   } else {
     D <- as.matrix(dist(coords))
   }
-
+  
   # --- graph construction ---
-  if (method == "mst") {
-
-    # Safety: check finite distances
-    if (any(!is.finite(D))) {
-      stop("Distance matrix contains non-finite values; cannot compute MST")
-    }
-
-    g_full <- igraph::graph_from_adjacency_matrix(
-      D,
-      mode = "undirected",
-      weighted = TRUE,
-      diag = FALSE
-    )
-
-    # Safety: ensure connectivity
-    comps <- igraph::components(g_full)
-    if (comps$no > 1) {
-      stop(
-        "Point set is disconnected under the chosen distance metric; ",
-        "MST cannot be constructed"
-      )
-    }
-
-    g <- igraph::mst(g_full)
-
-  } else {
-
-    # --- proximity graphs via spdep ---
-    if (method == "delaunay") {
-      nb <- spdep::tri2nb(coords)
-
-    } else if (method == "gabriel") {
-      nb <- spdep::neigh2nb(spdep::gabrielneigh(coords))
-    }
-
+  if (method == "delaunay") {
+    nb <- spdep::tri2nb(coords)
+    
     # Safety: empty neighbor sets
     if (any(lengths(nb) == 0)) {
       warning(
@@ -272,7 +236,7 @@ build_spatial_graph <- function(
         "' graph; graph may be disconnected"
       )
     }
-
+    
     # Convert nb -> edge list
     edges <- do.call(
       rbind,
@@ -281,20 +245,24 @@ build_spatial_graph <- function(
         cbind(i, nb[[i]])
       })
     )
-
+    
     # Ensure unique undirected edges
     edges <- edges[edges[, 1] < edges[, 2], , drop = FALSE]
-
-    g <- igraph::graph_from_edgelist(edges, directed = FALSE)
-
-    # Attach weights
-    w <- D[cbind(edges[, 1], edges[, 2])]
-    igraph::E(g)$weight <- w
+    
+  } else if (method == "complete") {
+    # Complete graph: all pairwise connections
+    edges <- t(combn(n, 2))
   }
-
+  
+  g <- igraph::graph_from_edgelist(edges, directed = FALSE)
+  
+  # Attach weights
+  w <- D[cbind(edges[, 1], edges[, 2])]
+  igraph::E(g)$weight <- w
+  
   # --- return both graph + edge table ---
   edge_df <- igraph::as_data_frame(g, what = "edges")
-
+  
   list(
     graph = g,
     edges = edge_df,
@@ -329,15 +297,6 @@ compute_ibr_edges <- function(
       R[i, j] <- terra::extract(d, pts_v[j])[, 2]
       R[j, i] <- R[i, j]
     }
-  }
-
-  if (method == "randomwalk") {
-    W <- 1 / (R + epsilon)
-    diag(W) <- 0
-    g <- igraph::graph_from_adjacency_matrix(
-      W, mode = "undirected", weighted = TRUE
-    )
-    R <- igraph::resistance_distance(g)
   }
 
   R

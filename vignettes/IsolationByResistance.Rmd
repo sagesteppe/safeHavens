@@ -135,22 +135,22 @@ ob <- populationResistance(
   planar_proj = 3857,
   buffer_dist = 75000,
   resistance_surface = res_rast,
-  graph_method = 'delaunay',
-  ibr_method = 'leastcost'
+  graph_method = 'complete',
+  ibr_method = 'randomwalk'
 )
 
 clusts <- cluster_connectivity(
   x = ob$ibr_matrix,
   pts_sf = ob$sampled_points,
   input = c("features", "distance"),
-  fixedClusters = TRUE,
-  n = 5,
-  min.nc = 3,
+  fixedClusters = FALSE,
+  min.nc = 6,
   max.nc = 10
 )
 
-
 v <- vect(clusts$clusters)
+table(clusts$clusters$ID)
+
 plot(res_rast)
 points(v, 
        pch = as.numeric(as.factor(v$ID)),  # different symbol per ID
