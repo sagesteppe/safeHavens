@@ -72,7 +72,7 @@ populationResistance <- function(
   base_raster,
   buffer_dist = 20000,
   planar_proj = NULL,
-  n_points = 100,
+  n_points = 200,
   resistance_surface = NULL,
   oceans = NULL,
   lakes = NULL,
@@ -351,7 +351,7 @@ inflate_to_dense <- function(edges) {
   # determine number of points from edges
   n <- max(c(edges$from, edges$to))
 
-  finite_max <- max(edges$weight)*4
+  finite_max <- max(edges$weight)*2
   D <- matrix(finite_max, n, n)
   diag(D) <- 0
 

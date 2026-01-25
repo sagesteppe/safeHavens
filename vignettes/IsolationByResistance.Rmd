@@ -44,10 +44,6 @@ sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
 tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
 names(tri) <- 'tri'
 
-## rasters need to have symmetrical grid cells for usage in this function
-dim(res_rast)
-
-
 rescale_rast <- function(r, new_min = 0, new_max = 1) {
   r_min <- global(r, "min", na.rm = TRUE)[[1]]
   r_max <- global(r, "max", na.rm = TRUE)[[1]]
@@ -55,7 +51,6 @@ rescale_rast <- function(r, new_min = 0, new_max = 1) {
 }
 
 tri <- rescale_rast(tri, 0, 100)
-
 
 lakes_v <- sf::st_read(
   file.path(sf_data, 'GLWD-level1', 'glwd_1.shp'), quiet = T) |>
@@ -139,7 +134,7 @@ ob <- populationResistance(
   base_raster = rast(ocean_r),
   populations_sf = x,
   planar_proj = 3857,
-  buffer_dist = 100000,
+  buffer_dist = 75000,
   resistance_surface = res_rast,
   graph_method = 'delaunay',
   ibr_method = 'leastcost'
@@ -150,9 +145,11 @@ clusts <- cluster_connectivity(
   pts_sf = ob$sampled_points,
   input = c("features", "distance"),
   fixedClusters = FALSE,
-  n = 10
+  n = 3
 )
 
+d <- clusts$clusters
+id_groups <- split(d, f = d$ID)
 
 v <- vect(clusts$clusters)
 plot(res_rast)
@@ -160,19 +157,34 @@ points(v,
        pch = as.numeric(as.factor(v$ID)),  # different symbol per ID
        col = rainbow(length(unique(v$ID)))[as.factor(v$ID)],
        cex = 2,
-       lwd = 3) 
+       lwd = 3
+       ) 
 
 inner_class <- IBRBasedSample(
   base_raster = rast(ocean_r),
   resistance_surface = res_rast, 
   pop_raster = ob$pop_raster,
   pts_sf = ob$sampled_points, 
-  ibr_matrix = ob$ibr_matrix,
-  max_geo_dist = 100000
+  ibr_matrix = ob$ibr_matrix
   )
 
+inner_class$contested
 
-plot(inner_class)
+  contested_cells <- which(!is.na(terra::values(inner_class$contested)))
+
+
+adj <- terra::adjacent(
+  inner_class$cluster_r,
+  cells = contested_cells,
+  directions = 8,
+  pairs = TRUE
+)
+
+head(data.frame(
+  from = adj[,1],
+  to   = adj[,2],
+  to_cluster = inner_class$cluster_r[adj[,2]]
+))
 ```
 
 ## altering default parameters. 
