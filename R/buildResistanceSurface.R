@@ -71,7 +71,7 @@ buildResistanceSurface <- function(
     res <- terra::clamp(res, lower = min_resistance)
   }
 
-  # convert to int32
+  # convert to integer for memory and calculation efficiency. 
   res <- terra::as.int(res)
 }
 

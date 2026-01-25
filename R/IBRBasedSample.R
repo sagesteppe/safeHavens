@@ -98,7 +98,12 @@ IBRBasedSample <- function(
     pop_raster = pop_raster
   )
 
-  return(cluster_r)
+  return(
+    list(
+      points = clusts$clusters,
+      clusters = cluster_r
+    )
+  )
 
 }
 

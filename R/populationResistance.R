@@ -24,9 +24,9 @@
 #' @param w_rivers Numeric. Weight applied to rivers (default 20).
 #' @param w_tri Numeric. Weight applied to TRI (default 1).
 #' @param w_habitat Numeric. Weight applied to habitat suitability (default 1).
-#' @param graph_method Character. One of `"mst"`, `"gabriel"`, or `"delaunay"`. Defines the spatial graph connecting population points.
-#' @param ibr_method Character. One of `"leastcost"` or `"randomwalk"`. Random-walk converts pairwise distances to effective resistance.
-#' @param epsilon Numeric. Small value to stabilize conversion to conductance in `randomwalk` method (default 1e-6).
+#' @param graph_method Character. One of `"delaunay"` or `"complete"`. Defines the spatial graph connecting population points.
+#' Delauney produces a sparser graph can deal with higher `n`, 'complete' is more computationally intensive and n > 175 take considerable time.
+#' @param ibr_method Character. Currently only `"leastcost"`. 
 #' 
 #' @return A list with the following elements:
 #' \describe{
@@ -70,7 +70,7 @@
 populationResistance <- function(
   populations_sf,
   base_raster,
-  buffer_dist = 20000,
+  buffer_dist = 25000,
   planar_proj = NULL,
   n_points = 150,
   resistance_surface = NULL,
@@ -162,7 +162,6 @@ populationResistance <- function(
   dense_mat  <- inflate_to_dense(g_out$edges)   # dense
 
   list(
-    resistance_raster = res_rast,
     pop_raster = pop_raster,
     sampled_points = pts_sf,
     spatial_graph = g_out$graph,
