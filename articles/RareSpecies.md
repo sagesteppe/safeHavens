@@ -155,7 +155,7 @@ applications.
 ``` r
 st
 #>    user  system elapsed 
-#>  27.148   0.018  27.170
+#>  26.758   0.024  26.785
 rm(st)
 ```
 
@@ -369,7 +369,7 @@ rm(dist_mat, env_dist_mat)
 ``` r
 st
 #>    user  system elapsed 
-#>  34.368   0.006  34.378
+#>  34.928   0.004  34.935
 rm(st)
 ```
 

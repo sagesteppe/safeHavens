@@ -53,7 +53,6 @@ environmental data requirements (Envi.): L = Low, M = Medium, H = High.
 
 | Function                   | Description                             | Comp. | Envi. |
 |----------------------------|-----------------------------------------|-------|-------|
-| `GridBasedSample`          | Creates and merges *n* grids over area  | L     | L     |
 | `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
