@@ -50,7 +50,7 @@ test_that("populationResistance requires planar_proj", {
                            ymin = 40, ymax = 41,
                            crs = "EPSG:4326")
   
-  pops_coords <- data.frame(lon = c(-99.5), lat = c(40.5))
+  pops_coords <- data.frame(lon = -99.5, lat = 40.5)
   pops_sf <- sf::st_as_sf(pops_coords, coords = c("lon", "lat"), crs = 4326)
   
   # Test 7: Error when planar_proj is NULL

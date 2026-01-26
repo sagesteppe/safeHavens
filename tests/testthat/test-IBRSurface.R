@@ -18,7 +18,7 @@ test_that("IBRSurface returns correct structure", {
   pts_sf <- sf::st_as_sf(coords, coords = c("lon", "lat"), crs = 4326)
   
   # Add explicit IDs
-  pts_sf$ID <- 1:nrow(pts_sf)
+  pts_sf$ID <- seq_len(nrow(pts_sf))
   
   # Create IBR matrix with validation
   n <- nrow(pts_sf)
