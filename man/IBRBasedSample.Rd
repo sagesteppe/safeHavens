@@ -42,9 +42,13 @@ IBRBasedSample(
 
 \item{planar_proj}{For numbering clusters in return object.}
 
+\item{max_geo_cells}{Numeric. Maximum number of cells to grow cheap geographic front growth of cluster centers by.}
+
 \item{geo_iters}{Numeric. Maximum number of iterations to grow hulls by.}
 
 \item{boundary_width}{Numeric. Maximum boundary width before switching to final assignment method.}
+
+\item{distance_method}{Great circle distance calculation method passed onto ot terra. One of 'haversine' (default), or 'cosine'.}
 }
 \description{
 Create \code{n} seed collection areas based on the habitat, and geographic, resistance between points.
