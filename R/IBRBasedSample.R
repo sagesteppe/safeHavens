@@ -6,7 +6,8 @@
 #' @param ibr_matrix Distance matrix, from `populationResistance` slot $Rmat
 #' @param pts_sf sf/tibble/dataframe of point locations from `populationResistance` $pts_sf 
 #' @param n Numeric. the number of clusters desired. 
-#' @param fixedClusters Boolean. Defaults to TRUE, which will create n clusters. If False then use NbClust::NbClust to determine the optimal number of clusters.
+#' @param planar_proj For numbering clusters in return object. 
+#' @param fixedClusters Boolean. Defaults to FALSE, which will create n clusters. If False then use NbClust::NbClust to determine the optimal number of clusters. TRUE not yet suported. 
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
 #' @example 
@@ -22,6 +23,7 @@ IBRBasedSample <- function(
   min.nc = 5, 
   max.nc = 20,
   min_cluster_cells = 25,
+  planar_proj, 
   max_geo_cells = NULL,
   geo_iters = 10,
   boundary_width = 2,
@@ -98,10 +100,43 @@ IBRBasedSample <- function(
     pop_raster = pop_raster
   )
 
+  ## format data for return 
+
+  spatialClusters <- terra::as.polygons(cluster_r) |>
+    sf::st_as_sf()
+  
+  # now number the grids in a uniform fashion
+  if(!missing(planar_proj)){
+    spatialClusters <- sf::st_transform(spatialClusters, planar_proj)
+  }
+  
+  sf::st_agr(spatialClusters) = "constant"
+  cents <- sf::st_point_on_surface(spatialClusters)
+
+  cents <- sf::st_transform(cents, sf::st_crs(x))
+  spatialClusters <- sf::st_transform(spatialClusters, sf::st_crs(x))
+
+    cents <- cents |>
+    dplyr::mutate(
+      X = sf::st_coordinates(cents)[,1],
+      Y = sf::st_coordinates(cents)[,2]
+    ) |>
+    dplyr::arrange(-Y, X) |>
+    dplyr::mutate(ID = seq_len(dplyr::n())) |>
+    dplyr::arrange(ID) |>
+    dplyr::select(ID, geometry)
+  
+  sf::st_agr(cents) = "constant"
+  ints <- unlist(sf::st_intersects(spatialClusters, cents))
+  spatialClusters <- spatialClusters |>
+    dplyr::mutate(ID = ints, .before = 1) |>
+    dplyr::select(-class) |>
+    dplyr::arrange(ID)
+
   return(
     list(
       points = clusts$clusters,
-      clusters = cluster_r
+      geometry = spatialClusters
     )
   )
 
@@ -335,15 +370,21 @@ assign_contested_line <- function(cluster_r, contested) {
   # Get adjacency graph for contested cells (8 directions)
   adj <- terra::adjacent(cluster_r, cells = contested_cells, directions = 8, pairs = FALSE)
   
-  # Find connected components of contested cells
-  library(igraph)
-  g <- igraph::graph_from_data_frame(
-    d = do.call(rbind, lapply(seq_along(adj), function(i) {
-      cbind(contested_cells[i], adj[[i]])
-    })),
-    directed = FALSE
-  )
+  # Build edge list, filtering out NA adjacencies to avoid igraph warnings
+  edge_list <- do.call(rbind, lapply(seq_along(adj), function(i) {
+    valid_adj <- adj[[i]][!is.na(adj[[i]])]
+    if (length(valid_adj) > 0) {
+      cbind(contested_cells[i], valid_adj)
+    } else {
+      NULL
+    }
+  }))
   
+  # If no valid edges, return as-is
+  if (is.null(edge_list) || nrow(edge_list) == 0) return(cluster_r)
+  
+  # Find connected components of contested cells
+  g <- igraph::graph_from_data_frame(d = edge_list, directed = FALSE)
   comps <- igraph::components(g)$membership
   
   # Split each contiguous component in half
@@ -365,7 +406,6 @@ assign_contested_line <- function(cluster_r, contested) {
   
   cluster_out
 }
-
 
 finalize_cluster <- function(cluster_r, pop_raster, directions = 8) {
   

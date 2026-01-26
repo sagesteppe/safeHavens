@@ -157,7 +157,7 @@ res_surface <- buildResistanceSurface(
   w_rivers = 20, # is 1 *20
   w_tri = 4 # ranges from 1~30, so from (1-30)*4 up to a weight of ~120. 
 )
-
+terra::datatype(res_surface)
 plot(res_surface)
 ```
 
@@ -198,7 +198,8 @@ ibr_groups <- IBRBasedSample(
   pop_raster = pop_res_graphs$pop_raster,
   pts_sf = pop_res_graphs$sampled_points, 
   ibr_matrix = pop_res_graphs$ibr_matrix, 
-  min.nc = 9
+  min.nc = 9,
+  planar_proj = 3857
   )
 ```
 

@@ -329,7 +329,7 @@ test_that("perform_feature_selection returns rfe object", {
   
   cv_indices <- create_spatial_cv_folds(train, data$predictors, k = 3)
   
-  result <- perform_feature_selection(train, cv_indices)
+  result <- suppressWarnings(perform_feature_selection(train, cv_indices))
   
   expect_s3_class(result, "rfe")
   expect_true("optVariables" %in% names(result))
