@@ -89,10 +89,6 @@ reference:
   contents:
   - greatCircleDistance
   - split_cols
-- title: Miscellaneous
-  desc: Built in data sets
-  contents: 
-  - WesternEcoregions
 
 articles:
   - title: "About the package and getting started"

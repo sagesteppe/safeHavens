@@ -227,3 +227,10 @@ plot(ibr_groups$geometry, add = TRUE)
 points(classified_pts, col = 'white') 
 ```
 
+finally the surface can be sampled using `PolygonBasedSample`
+
+```{r}
+
+
+ibr_groups$geometry
+```

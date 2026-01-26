@@ -3,31 +3,16 @@
 \docType{data}
 \name{WesternEcoregions}
 \alias{WesternEcoregions}
-\title{Omernik level 4 ecoregions of California and Oregon}
+\title{Biogeographic regions of the Neotropics.}
 \format{
 A spatial vector data set.
-
-A spatial vector data set.
-}
-\usage{
-data(WesternEcoregions)
 }
 \description{
-A vector data set of the Omernik level 4 ecoregions clipped to California and Oregon.
-Downloaded from https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states and
-simplified using mapshaper.
-
 A vector data set of Bioregions developed by Morrone et al. 2022
 Downloaded from https://neotropicalmap.atlasbiogeografico.com/ and
 simplified using mapshaper.
 }
 \details{
-\itemize{
-\item L4_KEY. Full name and codes of Level 4 ecoregions
-\item US_L4CODE. Codes of level 4 ecoregions
-\item US_L4NAME. Names of level 4 ecoregions
-}
-
 \itemize{
 \item Provincias Full name of the bioregion
 }

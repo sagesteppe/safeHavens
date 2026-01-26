@@ -15,6 +15,8 @@ sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
 tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
 names(tri) <- 'tri'
 
+
+
 lakes_v <- sf::st_read(
   file.path(sf_data, 'GLWD-level1', 'glwd_1.shp'), quiet = T) |>
   st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
@@ -66,4 +68,6 @@ sf::st_write(lakes_v, file.path(p, 'lakes.gpkg'), driver = 'gpkg')
 
 sf::st_write(rivers_v, file.path(p, 'rivers.gpkg'), driver = 'gpkg')
 sf::st_write(ocean_v, file.path(p, 'oceans.gpkg'), driver = 'gpkg')
+
+tri <- as.int(tri)
 terra::writeRaster(tri, file.path(p, 'tri.tif'))
