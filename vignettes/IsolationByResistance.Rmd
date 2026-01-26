@@ -194,7 +194,7 @@ plot(pop_res_graphs$pop_raster)
 This function does not perform well with user pre-specified `n`, however the `min.nc` parameter, passed to NbClust can be applied to generally give the analyst specified value. 
 
 ```{r run IBRBasedSample}
-ibr_groups <- IBRBasedSample(
+ibr_groups <- IBRSurface(
   base_raster = rast(ocean_r),
   resistance_surface = res_surface, 
   pop_raster = pop_res_graphs$pop_raster,

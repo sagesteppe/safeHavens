@@ -71,6 +71,12 @@ reference:
   - PolygonBasedSample
   - EnvironmentalBasedSample
   - PrioritizeSample
+- title: Isolation by Resistance Sampling Prep
+  desc: Preparation for Isolation by Resistance Sampling
+  contents:
+  - buildResistanceSurface
+  - populationResistance
+  - IBRSurface
 - title: Environmental Sampling Prep
   desc: Preparation for Environmental Based Sampling
   contents:
@@ -94,6 +100,7 @@ articles:
     contents:
     - About
     - GettingStarted
+    - IsolationByResistance
     - SpeciesDistributionModels
     - pSTZEcoregionSampling
     - WorkedExample

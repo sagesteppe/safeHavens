@@ -17,7 +17,7 @@
 #' @param distance_method Great circle distance calculation method passed onto ot terra. One of 'haversine' (default), or 'cosine'.
 #' @examples  # see package vignette
 #' @export
-IBRBasedSample <- function(
+IBRSurface <- function(
   base_raster,
   pop_raster,
   resistance_surface,

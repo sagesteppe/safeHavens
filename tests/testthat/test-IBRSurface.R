@@ -1,4 +1,4 @@
-test_that("IBRBasedSample returns correct structure", {
+test_that("IBRSurface returns correct structure", {
   # Setup
   base_rast <- terra::rast(nrows = 50, ncols = 50, 
                            xmin = -100, xmax = -99, 
@@ -27,7 +27,7 @@ test_that("IBRBasedSample returns correct structure", {
   
   # Test 1: Function returns list with expected components
   result <- suppressWarnings(
-      IBRBasedSample(
+      IBRSurface(
       base_raster = base_rast,
       pop_raster = pop_rast,
       resistance_surface = res_rast,
@@ -51,7 +51,7 @@ test_that("IBRBasedSample returns correct structure", {
   expect_true("ID" %in% names(result$points))
 })
 
-test_that("IBRBasedSample requires lon/lat coordinate system", {
+test_that("IBRSurface requires lon/lat coordinate system", {
   # Setup with projected CRS
   base_rast <- terra::rast(nrows = 50, ncols = 50, 
                            xmin = 0, xmax = 100000, 
@@ -71,7 +71,7 @@ test_that("IBRBasedSample requires lon/lat coordinate system", {
   
   # Test 5: Error when base_raster is not lon/lat
   expect_error(
-    IBRBasedSample(
+    IBRSurface(
       base_raster = base_rast,
       pop_raster = pop_rast,
       resistance_surface = base_rast,
@@ -102,7 +102,7 @@ test_that("IBRBasedSample handles different distance methods", {
   
   # Test 6: Haversine method
   result_haversine <- suppressWarnings(
-    IBRBasedSample(
+    IBRSurface(
       base_raster = base_rast,
       pop_raster = pop_rast,
       resistance_surface = base_rast,
@@ -117,7 +117,7 @@ test_that("IBRBasedSample handles different distance methods", {
   expect_s3_class(result_haversine$geometry, "sf")
   
   # Test 7: Cosine method
-  result_cosine <- IBRBasedSample(
+  result_cosine <- IBRSurface(
     base_raster = base_rast,
     pop_raster = pop_rast,
     resistance_surface = base_rast,
