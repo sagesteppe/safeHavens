@@ -40,6 +40,7 @@ They include:
 library(terra)
 library(sf)
 library(dplyr)
+library(ggplot2)
 library(safeHavens)
 ```
 
@@ -227,10 +228,21 @@ plot(ibr_groups$geometry, add = TRUE)
 points(classified_pts, col = 'white') 
 ```
 
-finally the surface can be sampled using `PolygonBasedSample`
+Finally the surface can be sampled using `PolygonBasedSample`. 
+Simply union the geometries to be the species range, and supply the groups to the x argument, in lieu of an ecoregion or pstz type surface. 
 
 ```{r}
+out <- PolygonBasedSample(
+  x = st_union(ibr_groups$geometry),
+  zones = ibr_groups$geometry, 
+  zone_key = 'ID', 
+  n  = 20)
 
-
-ibr_groups$geometry
+ggplot(data = out) + 
+  geom_sf(aes(fill = factor(allocation))) + 
+  theme_minimal() + 
+  labs(fill = 'Ct. collections\nper cluster') + 
+  theme(legend.position = 'bottom')
 ```
+
+Each of the nine clusters has a different number of the 20 desired collections assigned to it. 
