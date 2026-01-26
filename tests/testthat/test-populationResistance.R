@@ -373,25 +373,3 @@ test_that("inflate_to_dense handles single edge", {
   expect_equal(result[2, 1], 42)
 })
 
-test_that("populationResistance respects min_resistance parameter", {
-  base_rast <- terra::rast(nrows = 30, ncols = 30, 
-                           xmin = -100, xmax = -99, 
-                           ymin = 40, ymax = 41,
-                           crs = "EPSG:4326")
-  terra::values(base_rast) <- 1
-  
-  pops_coords <- data.frame(lon = c(-99.5, -99.3), lat = c(40.5, 40.7))
-  pops_sf <- sf::st_as_sf(pops_coords, coords = c("lon", "lat"), crs = 4326)
-  
-  # Test 36: Custom min_resistance
-  result <- populationResistance(
-    populations_sf = pops_sf,
-    base_raster = base_rast,
-    planar_proj = 32614,
-    n_points = 10,
-    min_resistance = 10L,
-    graph_method = "delaunay"
-  )
-  
-  expect_s4_class(result$pop_raster, "SpatRaster")
-})

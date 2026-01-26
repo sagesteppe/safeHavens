@@ -4,7 +4,7 @@ utils::globalVariables(c(
   ".data", 
 
   # common spatial / tidy columns
-  "X", "Y", "ID", "geometry",
+  "X", "Y", "ID", "geometry", "cell", "to_cluster",
 
   # allocation / assignment flags
   "Assigned", "NEWID", "Supplemented",
@@ -31,5 +31,5 @@ utils::globalVariables(c(
   ".",
 
   # random
-  'NewAssigned'
+  'NewAssigned', 'epsilon'
 ))

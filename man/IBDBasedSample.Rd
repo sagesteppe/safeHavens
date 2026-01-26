@@ -34,10 +34,11 @@ IBDBasedSample(
 
 \item{max.nc}{Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20.}
 
-\item{planar_proj}{Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.}
+\item{planar_proj}{Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensure valid spatial operations.}
 }
 \value{
-An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
+An simple features (sf) object containing the final grids for saving to computer.
+See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster).
 }
 \description{
 Create \code{n} seed collection areas based on the distance geographic (great circle) distance between points.

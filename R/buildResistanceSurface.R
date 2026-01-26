@@ -18,7 +18,8 @@
 #' \dontrun{
 #' # Prepare resistance raster
 #' 
-#' # this also can run internally in `population resistance`, but for time sakes is best to prep ahead of time
+#' # this also can run internally in `population resistance`, 
+#' # but for time sakes is best to prep ahead of time
 #' # especially if treating multiple species in the same domain. 
 #' res <- buildResistanceSurface(
 #'   base_raster = base_rast,
@@ -41,8 +42,7 @@ buildResistanceSurface <- function(
   w_lakes = 200,
   w_rivers = 20,
   w_tri = 1,
-  w_habitat = 1,
-  min_resistance = 1L
+  w_habitat = 1
 ) {
 
   if (!is.null(resistance_surface)) {
@@ -68,7 +68,7 @@ buildResistanceSurface <- function(
   # --- clamp only if raster has values ---
   vals <- terra::values(res)
   if (!is.null(vals) && length(vals) > 0 && any(!is.na(vals))) {
-    res <- terra::clamp(res, lower = min_resistance)
+    res <- terra::clamp(res, lower = 1L)
   }
 
   # convert to integer for memory and calculation efficiency. 

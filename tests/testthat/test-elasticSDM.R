@@ -402,11 +402,13 @@ test_that("complete workflow produces expected outputs", {
   
   # This would test the full elasticSDM workflow
   # Only run this manually due to computation time
-  result <- elasticSDM(
-    x = data$occurrences,
-    predictors = data$predictors,
-    planar_projection = data$planar_proj,
-    quantile_v = 0.05
+  result <- suppressWarnings(
+    elasticSDM(
+      x = data$occurrences,
+      predictors = data$predictors,
+      planar_projection = data$planar_proj,
+      quantile_v = 0.05
+    )
   )
   
   # Check return structure

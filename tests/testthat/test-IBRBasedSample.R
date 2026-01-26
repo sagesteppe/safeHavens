@@ -32,19 +32,20 @@ test_that("IBRBasedSample returns correct structure", {
       pop_raster = pop_rast,
       resistance_surface = res_rast,
       pts_sf = pts_sf,
+      planar_proj = 3857,
       ibr_matrix = ibr_mat,
       fixedClusters = TRUE,
       n = 3
     )
   )
   expect_type(result, "list")
-  expect_named(result, c("points", "clusters"))
+  expect_named(result, c("points", "geometry"))
   
   # Test 2: Points is sf object
   expect_s3_class(result$points, "sf")
   
   # Test 3: Clusters is SpatRaster
-  expect_s4_class(result$clusters, "SpatRaster")
+  expect_s3_class(result$geometry, "sf")
   
   # Test 4: Points have ID column
   expect_true("ID" %in% names(result$points))
@@ -74,6 +75,7 @@ test_that("IBRBasedSample requires lon/lat coordinate system", {
       base_raster = base_rast,
       pop_raster = pop_rast,
       resistance_surface = base_rast,
+      planar_proj = 3857,
       pts_sf = pts_sf,
       ibr_matrix = ibr_mat,
       fixedClusters = TRUE,
@@ -106,12 +108,13 @@ test_that("IBRBasedSample handles different distance methods", {
       resistance_surface = base_rast,
       pts_sf = pts_sf,
       ibr_matrix = ibr_mat,
+      planar_proj = 3857,
       fixedClusters = TRUE,
       n = 2,
       distance_method = "haversine"
     )
   )
-  expect_s4_class(result_haversine$clusters, "SpatRaster")
+  expect_s3_class(result_haversine$geometry, "sf")
   
   # Test 7: Cosine method
   result_cosine <- IBRBasedSample(
@@ -120,11 +123,12 @@ test_that("IBRBasedSample handles different distance methods", {
     resistance_surface = base_rast,
     pts_sf = pts_sf,
     ibr_matrix = ibr_mat,
+    planar_proj = 3857,
     fixedClusters = TRUE,
     n = 2,
     distance_method = "cosine"
   )
-  expect_s4_class(result_cosine$clusters, "SpatRaster")
+  expect_s3_class(result_cosine$geometry, "sf")
 })
 
 # ===== Tests for cluster_connectivity =====

@@ -41,7 +41,8 @@
 #' \dontrun{
 #' # Prepare resistance raster once
 #' 
-#' # this also can run internally in `population resistance`, but for time sakes is best to prep ahead of time
+#' # this also can run internally in `population resistance`, 
+#' # but for time sakes is best to prep ahead of time
 #' # especially if treating multiple species in the same domain. 
 #' res <- buildResistanceSurface(
 #'   base_raster = base_rast,
@@ -85,9 +86,7 @@ populationResistance <- function(
   w_tri = 1,
   w_habitat = 1,
   graph_method = c("complete", "delaunay"),
-  ibr_method = "leastcost",
-  epsilon = 1e-6,
-  min_resistance = 1L
+  ibr_method = "leastcost"
 ) {
 
   graph_method <- match.arg(graph_method)
@@ -131,8 +130,7 @@ populationResistance <- function(
     w_lakes = w_lakes,
     w_rivers = w_rivers,
     w_tri = w_tri,
-    w_habitat = w_habitat,
-    min_resistance = min_resistance
+    w_habitat = w_habitat
   )
 
   # --- sample population points ---
@@ -171,7 +169,7 @@ populationResistance <- function(
 }
 
 #' @keywords internal
-#' @tags noRd
+#' @noRd
 sample_population_cells <- function(
   pop_raster,
   n_total,
@@ -191,9 +189,7 @@ sample_population_cells <- function(
 }
 
 #' @keywords internal
-#' @tags noRd
-#' @keywords internal
-#' @tags noRd
+#' @noRd
 build_spatial_graph <- function(
   pts_sf,
   method = "delaunay",
@@ -219,7 +215,7 @@ build_spatial_graph <- function(
   # --- distance matrix ---
   if (great_circle) {
     D <- sf::st_distance(pts_sf)
-    D <- units::drop_units(D)
+    D <- as.matrix(D)
   } else {
     D <- as.matrix(dist(coords))
   }
@@ -250,7 +246,7 @@ build_spatial_graph <- function(
     
   } else if (method == "complete") {
     # Complete graph: all pairwise connections
-    edges <- t(combn(n, 2))
+    edges <- t(utils::combn(n, 2))
   }
   
   g <- igraph::graph_from_edgelist(edges, directed = FALSE)
@@ -270,7 +266,7 @@ build_spatial_graph <- function(
 }
 
 #' @keywords internal
-#' @tags noRd
+#' @noRd
 compute_ibr_edges <- function(
   resistance_raster,
   pts_sf,

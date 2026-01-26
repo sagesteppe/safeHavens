@@ -126,20 +126,6 @@ test_that("buildResistanceSurface combines multiple features", {
   expect_true(max(combined_vals, na.rm = TRUE) >= 200L)
 })
 
-test_that("buildResistanceSurface respects min_resistance parameter", {
-  base_rast <- terra::rast(nrows = 10, ncols = 10, xmin = 0, xmax = 10, 
-                           ymin = 0, ymax = 10, vals = 1)
-  
-  # Test 13: Default min_resistance = 1
-  result <- buildResistanceSurface(base_raster = base_rast)
-  expect_true(all(terra::values(result) >= 1L, na.rm = TRUE))
-  
-  # Test 14: Custom min_resistance
-  result_custom <- buildResistanceSurface(base_raster = base_rast, 
-                                         min_resistance = 10L)
-  expect_true(all(terra::values(result_custom) >= 10L, na.rm = TRUE))
-})
-
 test_that("buildResistanceSurface handles NULL inputs gracefully", {
   base_rast <- terra::rast(nrows = 10, ncols = 10, xmin = 0, xmax = 10, 
                            ymin = 0, ymax = 10, vals = 1)

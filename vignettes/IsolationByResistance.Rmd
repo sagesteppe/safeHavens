@@ -39,7 +39,7 @@ They include:
 ```{r libraries}
 library(terra)
 library(sf)
-library(tidyverse)
+library(dplyr)
 library(safeHavens)
 ```
 
@@ -60,8 +60,8 @@ Here we rescale the tri rasters, to put them on a similar numeric range as the o
 The other data sets, which are vectors, are also slightly filtered, and converted from sf to spatVect objects for better use with `terra`.  
 
 ```{r clean vector data sets}
-sf_data <- file.path('~', 'Documents', 'assoRted', 'safeHavens-data')
-tri <- terra::rast(file.path(sf_data, 'tri_5KMmd_GMTEDmd.tif'))
+tri <- terra::rast(file.path(system.file(package = "safeHavens"), "extdata", "tri.tif"))
+
 names(tri) <- 'tri'
 
 rescale_rast <- function(r, new_min = 0, new_max = 1) {
@@ -73,23 +73,25 @@ rescale_rast <- function(r, new_min = 0, new_max = 1) {
 tri <- rescale_rast(tri, 0, 100)
 
 lakes_v <- sf::st_read(
-  file.path(sf_data, 'GLWD-level1', 'glwd_1.shp'), quiet = T) |>
+  file.path(system.file(package = "safeHavens"),  "extdata", "lakes.gpkg"),
+    quiet = T) |>
   st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
-  select(TYPE, geometry) |> 
   filter(TYPE == 'Lake') |> # remove reservoirs for our purposes (time scale)
+  select(geometry = geom) |> 
   mutate(Value = 1) |> # this will be rasterized. 
   terra::vect()
 
 ocean_v <- sf::st_read(
-  file.path(sf_data, 'ne_10m_ocean', 'ne_10m_ocean.shp'), quiet = T) |>
-  select(geometry) |>
+  file.path(system.file(package = "safeHavens"), "extdata", "oceans.gpkg"),
+   quiet = T) |>
+  select(geometry = geom) |>
   mutate(Value = 1) |>
   terra::vect()
 
 rivers_v <- sf::st_read(
-  file.path(sf_data, 'rivers_world_47950', 'rivers_world_47950.shp'), quiet = T) |>
-  filter(Strahler > 3) |> # just showing this option exists... 
-  select(geometry) |>
+  file.path(system.file(package = "safeHavens"), "extdata", "rivers.gpkg"),
+   quiet = T) |>
+  select(geometry = geom) |>
   mutate(Value = 1) |>
   terra::vect()
 
@@ -221,7 +223,7 @@ The classified occupied area clusters are visualized below.
 
 ```{r plot the classified clusters}
 plot(res_surface)
-plot(ibr_groups$clusters, add = TRUE)
+plot(ibr_groups$geometry, add = TRUE)
 points(classified_pts, col = 'white') 
 ```
 

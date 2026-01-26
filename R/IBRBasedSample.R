@@ -2,6 +2,7 @@
 #' 
 #' @description Create `n` seed collection areas based on the habitat, and geographic, resistance between points. 
 #' @param base_raster a Raster surface to sample the points within, .... 
+#' @param pop_raster Spatiall buffered population raster from `populationResistance`. 
 #' @param resistance_surface a resistance surface raster from  `build_resistance_surface` or `populationResistance`.
 #' @param ibr_matrix Distance matrix, from `populationResistance` slot $Rmat
 #' @param pts_sf sf/tibble/dataframe of point locations from `populationResistance` $pts_sf 
@@ -10,8 +11,12 @@
 #' @param fixedClusters Boolean. Defaults to FALSE, which will create n clusters. If False then use NbClust::NbClust to determine the optimal number of clusters. TRUE not yet suported. 
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
-#' @example 
-#' 
+#' @param geo_iters Numeric. Maximum number of iterations to grow hulls by. 
+#' @param boundary_width Numeric. Maximum boundary width before switching to final assignment method. 
+#' @param max_geo_cells Numeric. Maximum number of cells to grow cheap geographic front growth of cluster centers by. 
+#' @param distance_method Great circle distance calculation method passed onto ot terra. One of 'haversine' (default), or 'cosine'.
+#' @examples  # see package vignette
+#' @export
 IBRBasedSample <- function(
   base_raster,
   pop_raster,
@@ -22,7 +27,6 @@ IBRBasedSample <- function(
   n = NULL,
   min.nc = 5, 
   max.nc = 20,
-  min_cluster_cells = 25,
   planar_proj, 
   max_geo_cells = NULL,
   geo_iters = 10,
@@ -113,8 +117,8 @@ IBRBasedSample <- function(
   sf::st_agr(spatialClusters) = "constant"
   cents <- sf::st_point_on_surface(spatialClusters)
 
-  cents <- sf::st_transform(cents, sf::st_crs(x))
-  spatialClusters <- sf::st_transform(spatialClusters, sf::st_crs(x))
+  cents <- sf::st_transform(cents, sf::st_crs(planar_proj))
+  spatialClusters <- sf::st_transform(spatialClusters, sf::st_crs(planar_proj))
 
     cents <- cents |>
     dplyr::mutate(
@@ -130,7 +134,6 @@ IBRBasedSample <- function(
   ints <- unlist(sf::st_intersects(spatialClusters, cents))
   spatialClusters <- spatialClusters |>
     dplyr::mutate(ID = ints, .before = 1) |>
-    dplyr::select(-class) |>
     dplyr::arrange(ID)
 
   return(
@@ -144,7 +147,7 @@ IBRBasedSample <- function(
 
 
 #' @keywords internal
-#' @tags noRd
+#' @noRd
 cluster_connectivity <- function(
   x,
   pts_sf, 
@@ -167,7 +170,7 @@ cluster_connectivity <- function(
       stop("n must be provided when fixedClusters = TRUE")
     }
 
-    d <- as.dist(x)
+    d <- stats::as.dist(x)
     hc <- stats::hclust(d, method = 'complete')
     pts_sf$ID <- stats::cutree(hc, n)
 
@@ -194,6 +197,8 @@ cluster_connectivity <- function(
   )
 }
 
+#' @keywords internal
+#' @noRd
 geographic_core_assignment <- function(
   pop_raster,          # raster of buffered population areas
   pts_sf,              # sf/tibble of points with $ID already assigned
@@ -241,6 +246,8 @@ geographic_core_assignment <- function(
   cluster_r
 }
 
+#' @keywords internal
+#' @noRd
 expand_geographic_front <- function(
   cluster_r,
   max_cells_per_cluster,
@@ -290,7 +297,8 @@ expand_geographic_front <- function(
   cluster_r
 }
 
-
+#' @keywords internal
+#' @noRd
 find_contested_cells <- function(
   cluster_r,
   pop_rast,
@@ -362,6 +370,8 @@ find_contested_cells <- function(
 
 }
 
+#' @keywords internal
+#' @noRd
 assign_contested_line <- function(cluster_r, contested) {
   # Identify contested cell indices
   contested_cells <- which(!is.na(terra::values(contested)))
@@ -407,6 +417,8 @@ assign_contested_line <- function(cluster_r, contested) {
   cluster_out
 }
 
+#' @keywords internal
+#' @noRd
 finalize_cluster <- function(cluster_r, pop_raster, directions = 8) {
   
   # --- Mask to population raster ---
@@ -423,7 +435,7 @@ finalize_cluster <- function(cluster_r, pop_raster, directions = 8) {
     nbr_cells <- terra::adjacent(cluster_pop, cells = cell, directions = directions, pairs = FALSE)[[1]]
     
     # Neighbor cluster IDs, drop NA
-    nbr_vals <- na.omit(terra::values(cluster_pop)[nbr_cells])
+    nbr_vals <- stats::na.omit(terra::values(cluster_pop)[nbr_cells])
     
     if (length(nbr_vals)) {
       # Randomly pick one if multiple neighbors
