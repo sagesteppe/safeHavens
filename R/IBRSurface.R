@@ -136,11 +136,9 @@ IBRSurface <- function(
     dplyr::mutate(ID = ints, .before = 1) |>
     dplyr::arrange(ID)
 
-  return(
-    list(
-      points = clusts$clusters,
-      geometry = spatialClusters
-    )
+  list(
+    points = clusts$clusters,
+    geometry = spatialClusters
   )
 
 }
@@ -393,6 +391,12 @@ assign_contested_line <- function(cluster_r, contested) {
   # If no valid edges, return as-is
   if (is.null(edge_list) || nrow(edge_list) == 0) return(cluster_r)
   
+  # Remove any remaining NA rows (belt and suspenders)
+  edge_list <- edge_list[complete.cases(edge_list), , drop = FALSE]
+
+  # Check again after NA removal
+  if (nrow(edge_list) == 0) return(cluster_r)
+
   # Find connected components of contested cells
   g <- igraph::graph_from_data_frame(d = edge_list, directed = FALSE)
   comps <- igraph::components(g)$membership

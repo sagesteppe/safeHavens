@@ -5,10 +5,8 @@ test_that("IBRSurface returns correct structure", {
                            ymin = 40, ymax = 41,
                            crs = "EPSG:4326")
   terra::values(base_rast) <- 1
-  
   pop_rast <- terra::rast(base_rast)
   terra::values(pop_rast) <- sample(1:3, 2500, replace = TRUE)
-  
   res_rast <- terra::rast(base_rast)
   terra::values(res_rast) <- runif(2500, 1, 100)
   
@@ -19,15 +17,23 @@ test_that("IBRSurface returns correct structure", {
   )
   pts_sf <- sf::st_as_sf(coords, coords = c("lon", "lat"), crs = 4326)
   
-  # Create IBR matrix
+  # Add explicit IDs
+  pts_sf$ID <- 1:nrow(pts_sf)
+  
+  # Create IBR matrix with validation
   n <- nrow(pts_sf)
   ibr_mat <- matrix(runif(n*n, 10, 100), n, n)
   diag(ibr_mat) <- 0
   ibr_mat[lower.tri(ibr_mat)] <- t(ibr_mat)[lower.tri(ibr_mat)]
   
-  # Test 1: Function returns list with expected components
+  # Validate IBR matrix
+  expect_false(any(is.na(ibr_mat)), info = "IBR matrix contains NAs")
+  expect_equal(nrow(ibr_mat), n, info = "IBR matrix rows don't match points")
+  expect_equal(ncol(ibr_mat), n, info = "IBR matrix cols don't match points")
+  
+  # Test function
   result <- suppressWarnings(
-      IBRSurface(
+    IBRSurface(
       base_raster = base_rast,
       pop_raster = pop_rast,
       resistance_surface = res_rast,
@@ -38,16 +44,11 @@ test_that("IBRSurface returns correct structure", {
       n = 3
     )
   )
+  
   expect_type(result, "list")
   expect_named(result, c("points", "geometry"))
-  
-  # Test 2: Points is sf object
   expect_s3_class(result$points, "sf")
-  
-  # Test 3: Clusters is SpatRaster
   expect_s3_class(result$geometry, "sf")
-  
-  # Test 4: Points have ID column
   expect_true("ID" %in% names(result$points))
 })
 
@@ -62,7 +63,7 @@ test_that("IBRSurface requires lon/lat coordinate system", {
   terra::values(pop_rast) <- 1
   
   pts_sf <- sf::st_as_sf(
-    data.frame(x = c(50000), y = c(50000)),
+    data.frame(x = 50000, y = 50000),
     coords = c("x", "y"),
     crs = 3857
   )
@@ -233,7 +234,7 @@ test_that("geographic_core_assignment respects max_dist", {
   pop_rast <- terra::rast(base_rast)
   terra::values(pop_rast) <- 1
   
-  coords <- data.frame(lon = c(-99.5), lat = c(40.5))
+  coords <- data.frame(lon = -99.5, lat = 40.5)
   pts_sf <- sf::st_as_sf(coords, coords = c("lon", "lat"), crs = 4326)
   pts_sf$ID <- 1
   
@@ -323,8 +324,8 @@ test_that("find_contested_cells identifies contested cells", {
   # Create cluster raster with gaps
   cluster_r <- terra::rast(base_rast)
   terra::values(cluster_r) <- NA
-  cluster_r[c(1:10)] <- 1
-  cluster_r[c(91:100)] <- 2
+  cluster_r[1:10] <- 1
+  cluster_r[91:100] <- 2
   # Middle cells are NA and will be contested
   
   # Test 22: Returns list with expected components
@@ -404,12 +405,12 @@ test_that("assign_contested_line assigns contested cells", {
   
   cluster_r <- terra::rast(base_rast)
   terra::values(cluster_r) <- NA
-  cluster_r[c(1:20)] <- 1
-  cluster_r[c(81:100)] <- 2
+  cluster_r[1:20] <- 1
+  cluster_r[81:100] <- 2
   
   contested <- terra::rast(base_rast)
   terra::values(contested) <- NA
-  contested[c(40:60)] <- 1  # Mark middle cells as contested
+  contested[40:60] <- 1  # Mark middle cells as contested
   
   # Test 27: Returns SpatRaster
   result <- suppressWarnings(
@@ -460,8 +461,8 @@ test_that("finalize_cluster assigns remaining cells", {
   
   cluster_r <- terra::rast(base_rast)
   terra::values(cluster_r) <- NA
-  cluster_r[c(1:30)] <- 1
-  cluster_r[c(71:100)] <- 2
+  cluster_r[1:30] <- 1
+  cluster_r[71:100] <- 2
   # Middle cells are unassigned
   
   # Test 30: Returns SpatRaster
@@ -512,12 +513,12 @@ test_that("finalize_cluster respects population mask", {
   # Population only in some cells
   pop_rast <- terra::rast(base_rast)
   terra::values(pop_rast) <- NA
-  pop_rast[c(1:50)] <- 1
+  pop_rast[1:50] <- 1
   
   cluster_r <- terra::rast(base_rast)
   terra::values(cluster_r) <- NA
-  cluster_r[c(1:20)] <- 1
-  cluster_r[c(31:40)] <- 2
+  cluster_r[1:20] <- 1
+  cluster_r[31:40] <- 2
   
   # Test 33: Only assigns within population mask
   result <- finalize_cluster(
