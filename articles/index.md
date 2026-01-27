@@ -13,6 +13,12 @@ Background, installation, usage, and sampling schemas
 
   Running the main sampling schemes for common species.
 
+- [Isolation By
+  Resistance](https://sagesteppe.github.io/safeHavens/articles/IsolationByResistance.md):
+
+  Cleaning and prepping data for creating resistance surfaces required
+  for Isolation By Resistance sampling.
+
 - [Species Distribution
   Models](https://sagesteppe.github.io/safeHavens/articles/SpeciesDistributionModels.md):
 

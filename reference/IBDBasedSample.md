@@ -65,7 +65,7 @@ IBDBasedSample(
 - planar_proj:
 
   Numeric. Optional. A planar projection to use for an
-  sf::st_point_on_surface to ensuare valid spatial operations.
+  sf::st_point_on_surface to ensure valid spatial operations.
 
 ## Value
 

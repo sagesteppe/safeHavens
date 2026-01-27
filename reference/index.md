@@ -23,6 +23,19 @@ User facing functions for implementing the sampling schemes
 - [`PrioritizeSample()`](https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.md)
   : Determine which areas in a sample unit should be prioritized
 
+## Isolation by Resistance Sampling Prep
+
+Preparation for Isolation by Resistance Sampling
+
+- [`buildResistanceSurface()`](https://sagesteppe.github.io/safeHavens/reference/buildResistanceSurface.md)
+  : Create a simple, theoretical, raster surface modelling Isolation by
+  Distance.
+- [`populationResistance()`](https://sagesteppe.github.io/safeHavens/reference/populationResistance.md)
+  : Identify clusters of populations least separated by landscape
+  resistance
+- [`IBRSurface()`](https://sagesteppe.github.io/safeHavens/reference/IBRSurface.md)
+  : Sample a species based on Isolation by Resistance Distance (IBR)
+
 ## Environmental Sampling Prep
 
 Preparation for Environmental Based Sampling
@@ -52,10 +65,3 @@ Optimization based site selection helpers for known populations
   : Haversine Distance Calculation
 - [`split_cols()`](https://sagesteppe.github.io/safeHavens/reference/split_cols.md)
   : split and extract the temperature values from Tmin and AHM columns
-
-## Miscellaneous
-
-Built in data sets
-
-- [`WesternEcoregions`](https://sagesteppe.github.io/safeHavens/reference/WesternEcoregions.md)
-  : Omernik level 4 ecoregions of California and Oregon

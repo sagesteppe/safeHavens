@@ -4,6 +4,7 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/LICENSE.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/About.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/GettingStarted.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/articles/IsolationByResistance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/RareSpecies.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/SpeciesDistributionModels.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/WorkedExample.html</loc></url>
@@ -14,6 +15,7 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/EnvironmentalBasedSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/EqualAreaSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/IBDBasedSample.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/IBRSurface.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/KMedoidsBasedSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/OpportunisticSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PointBasedSample.html</loc></url>
@@ -21,11 +23,12 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PostProcessSDM.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/RescaleRasters.html</loc></url>
-<url><loc>https://sagesteppe.github.io/safeHavens/reference/WesternEcoregions.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/buildResistanceSurface.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/elasticSDM.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/greatCircleDistance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/index.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/order_by_distance_variance.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/populationResistance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/reexports.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/split_cols.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/trainKNN.html</loc></url>

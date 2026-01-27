@@ -47,15 +47,15 @@ ri <- spData::us_states |>
   out <- PointBasedSample(polygon = ri, reps = 10, BS.reps = 10) # set very low for example
  )
 #>    user  system elapsed 
-#>   0.590   0.005   0.595 
+#>   0.587   0.004   0.590 
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 2 seconds per species so not much concern on the speed end of things!
 head(out$SummaryData)
 #>                  Metric    Value
-#> 1     variance.observed 11067894
-#> 2        quantile.0.001 11072471
-#> 3             lwr.95.CI 11067894
-#> 4             upr.95.CI 11075442
+#> 1     variance.observed 16074215
+#> 2        quantile.0.001 16084226
+#> 3             lwr.95.CI 16074215
+#> 4             upr.95.CI 16084384
 #> 5    Voronoi.reps.asked       10
 #> 6 Voronoi.reps.received        6
 plot(out$Geometry)
