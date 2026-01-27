@@ -46,7 +46,6 @@ All of these packages are well documented, and maintained.
 
 # Steps to create an SDM
 
-
 ### prep data 
 
 ```{r load packaeges, message=FALSE, warning=FALSE}

@@ -329,7 +329,7 @@ test_that("perform_feature_selection returns rfe object", {
   
   cv_indices <- create_spatial_cv_folds(train, data$predictors, k = 3)
   
-  result <- perform_feature_selection(train, cv_indices)
+  result <- suppressWarnings(perform_feature_selection(train, cv_indices))
   
   expect_s3_class(result, "rfe")
   expect_true("optVariables" %in% names(result))
@@ -402,11 +402,13 @@ test_that("complete workflow produces expected outputs", {
   
   # This would test the full elasticSDM workflow
   # Only run this manually due to computation time
-  result <- elasticSDM(
-    x = data$occurrences,
-    predictors = data$predictors,
-    planar_projection = data$planar_proj,
-    quantile_v = 0.05
+  result <- suppressWarnings(
+    elasticSDM(
+      x = data$occurrences,
+      predictors = data$predictors,
+      planar_projection = data$planar_proj,
+      quantile_v = 0.05
+    )
   )
   
   # Check return structure

@@ -71,6 +71,12 @@ reference:
   - PolygonBasedSample
   - EnvironmentalBasedSample
   - PrioritizeSample
+- title: Isolation by Resistance Sampling Prep
+  desc: Preparation for Isolation by Resistance Sampling
+  contents:
+  - buildResistanceSurface
+  - populationResistance
+  - IBRSurface
 - title: Environmental Sampling Prep
   desc: Preparation for Environmental Based Sampling
   contents:
@@ -83,10 +89,6 @@ reference:
   contents:
   - greatCircleDistance
   - split_cols
-- title: Miscellaneous
-  desc: Built in data sets
-  contents: 
-  - WesternEcoregions
 
 articles:
   - title: "About the package and getting started"
@@ -94,6 +96,7 @@ articles:
     contents:
     - About
     - GettingStarted
+    - IsolationByResistance
     - SpeciesDistributionModels
     - pSTZEcoregionSampling
     - WorkedExample

@@ -10,7 +10,7 @@
 #' 0.8 to use 80% of records for training and 20% for the independent test sample.  
 #' @param min.nc Numeric. Minimum number of clusters to test if fixedClusters=FALSE, defaults to 5. 
 #' @param max.nc Numeric. Maximum number of clusters to test if fixedClusters=FALSE, defaults to 20. 
-#' @param planar_proj Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensuare valid spatial operations.
+#' @param planar_proj Numeric. Optional. A planar projection to use for an sf::st_point_on_surface to ensure valid spatial operations.
 #' @examples 
 #' planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 #' 
@@ -43,7 +43,8 @@
 #'    template = predictors, planar_proj = planar_proj)
 #' plot(ibdbs[['Geometry']])
 #' 
-#' @return An simple features (sf) object containing the final grids for saving to computer. See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
+#' @return An simple features (sf) object containing the final grids for saving to computer. 
+#' See the vignette for questions about saving the two main types of spatial data models (vector - used here, and raster). 
 #' @export 
 IBDBasedSample <- function(x, n, fixedClusters = TRUE, n_pts = 1000, template, prop_split = 0.8, 
   min.nc = 5, max.nc = 20, planar_proj){
