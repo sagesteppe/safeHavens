@@ -200,7 +200,8 @@ ibr_groups <- IBRSurface(
   pop_raster = pop_res_graphs$pop_raster,
   pts_sf = pop_res_graphs$sampled_points, 
   ibr_matrix = pop_res_graphs$ibr_matrix, 
-  min.nc = 10,
+  fixedClusters = TRUE,
+  n = 20,
   planar_proj = 3857
 )
 
@@ -236,7 +237,7 @@ out <- PolygonBasedSample(
   x = st_union(ibr_groups$geometry),
   zones = ibr_groups$geometry, 
   zone_key = 'ID', 
-  n  = 20
+  n  = 30
   )
 
 ggplot(data = out) + 
@@ -247,3 +248,8 @@ ggplot(data = out) +
 ```
 
 Each of the nine clusters has a different number of the 20 desired collections assigned to it. 
+
+```{r save results for getting started final plot, eval = F, echo = F}
+#p <- file.path('~', 'Documents', 'assoRted', 'safeHavens', 'inst', 'extdata')
+#sf::st_write(ibr_groups$geometry, file.path(p, 'IBR.gpkg'), driver = 'gpkg')
+```

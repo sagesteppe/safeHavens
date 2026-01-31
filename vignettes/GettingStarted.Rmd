@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 `safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-remotes::install_github('sagesteppe/safeHavens') 
+# remotes::install_github('sagesteppe/safeHavens@IBR') 
 ```
 
 ```{r Load Libraries, message=FALSE,warnings=FALSE}
@@ -232,6 +232,16 @@ rm(predictors, files, v, x_buff.sf, exist_pts, os)
 Because these data were processed from a raster, they have 90 corners and large straight lines, representing raster tiles. 
 Regardless, it is evident that the *borders* of the clusters are more natural looking than in the previous (and future) sampling schemes, and we have better matching of the individual polygons into single classes. 
 
+## Isolation by resistance
+
+words
+
+```{r}
+ibr <- sf::st_read(
+  file.path(system.file(package="safeHavens"), 'extdata', 'IBR.gpkg'), 
+  quiet = TRUE)
+```
+
 ## Polygon Based Sample 
 
 This is the most commonly implemented method for guiding native seed collection in North America.
@@ -276,7 +286,7 @@ rm(bb, neo_eco, x_buff)
 The `EnvironmentalBasedSample` can only be used if you have the species distribution model data. 
 We have included the ouputs of the vignette 'Species Distibution Model' with the package so they are available to this vignette. 
 
-# load the SDM predictions
+### load the SDM predictions
  
 Here we load the results of the sdm processing from the package data. 
 
@@ -292,7 +302,7 @@ sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
 
 And load the threshold predictions
 ```{r}
-sdm <- readRDS(
+sdm <- terra::rast(
   file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
   )
 terra::plot(sdm)
