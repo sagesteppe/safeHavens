@@ -2,7 +2,7 @@
 title: "Polygon Based Sampling"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{ProvisionalSTZ, Ecoregion, and Isolation Based Sampling}
+  %\VignetteIndexEntry{Polygon Based Sampling}
   %\VignetteEngine{knitr::rmarkdown}, 
   %\VignetteEncoding{UTF-8}
 description: >

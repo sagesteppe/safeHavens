@@ -39,7 +39,7 @@ x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 
 And we will create the same base map used in `GettingStarted`, note this chunk is 'hidden' in the rendered man pages, but present in the raw vignette documents. 
 
-```{r create map for visualizing results, echo = F, eval = F}
+```{r create map for visualizing results, echo = F, eval = T}
 planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 
 americas <- spData::world

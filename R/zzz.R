@@ -20,6 +20,7 @@ utils::globalVariables(c(
   "sdModel",
   "occurrence",
   "s0",
+  "pop_res_graphs",
 
   # polygon / area summaries
   "poly_area",

@@ -51,27 +51,27 @@ x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 x_buff <- sf::st_transform(x, planar_proj) |>
  sf::st_buffer(125000) |> # we are working in planar metric coordinates, we are
- sf::st_as_sfc() |> # buffer by this many / 1000 kilometers. 
+ sf::st_as_sfc() |> # buffer by this many / 1000 kilometers.
  sf::st_union()
 
-files <- list.files( # note that for this process we need a raster rather than 
+files <- list.files( # note that for this process we need a raster rather than
   path = file.path(system.file(package="dismo"), 'ex'), # vector data to accomplish
   pattern = 'grd',  full.names=TRUE ) # this we will 'rasterize' the vector using terra
 predictors <- terra::rast(files)
 # this can also be done using 'fasterize'. Whenever
 # we rasterize a product, we will need to provide a template raster that our vector
-# will inherit the cell size, coordinate system, etc. from 
+# will inherit the cell size, coordinate system, etc. from
 
-x_buff.sf <- sf::st_as_sf(x_buff) |> 
-  dplyr::mutate(Range = 1) |> 
+x_buff.sf <- sf::st_as_sf(x_buff) |>
+  dplyr::mutate(Range = 1) |>
   sf::st_transform(terra::crs(predictors))
 
-# and here we specify the field/column with our variable we want to become 
+# and here we specify the field/column with our variable we want to become
 # an attribute of our raster
-v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
+v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 
-# now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, 
+# now we run the function demanding 20 areas to make accessions from,
+ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE,
    template = predictors, planar_proj = planar_proj)
 plot(ibdbs[['Geometry']])
 

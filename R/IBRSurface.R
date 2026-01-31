@@ -413,7 +413,7 @@ assign_contested_line <- function(cluster_r, contested) {
   }
 
   # Remove any remaining NA rows (belt and suspenders)
-  edge_list <- edge_list[complete.cases(edge_list), , drop = FALSE]
+  edge_list <- edge_list[stats::complete.cases(edge_list), , drop = FALSE]
 
   # Check again after NA removal
   if (nrow(edge_list) == 0) {
