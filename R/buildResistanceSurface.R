@@ -1,7 +1,7 @@
-#' Create a simple, theoretical, raster surface modelling Isolation by Distance. 
-#' 
-#' Used in conjunction, preferably before `populationResistance` in the `IBRBasedSample` workflow. 
-#' 
+#' Create a simple, theoretical, raster surface modelling Isolation by Distance.
+#'
+#' Used in conjunction, preferably before `populationResistance` in the `IBRBasedSample` workflow.
+#'
 #' @param base_raster SpatRaster. Base raster for the study area. Provides template geometry and resolution.
 #' @param resistance_surface SpatRaster. Optional pre-computed resistance raster. If provided, the raster-building arguments are ignored.
 #' @param oceans SpatRaster. Binary (0/1) raster for ocean cells. Used to increase movement cost.
@@ -17,10 +17,10 @@
 #' @examples
 #' \dontrun{
 #' # Prepare resistance raster
-#' 
-#' # this also can run internally in `population resistance`, 
+#'
+#' # this also can run internally in `population resistance`,
 #' # but for time sakes is best to prep ahead of time
-#' # especially if treating multiple species in the same domain. 
+#' # especially if treating multiple species in the same domain.
 #' res <- buildResistanceSurface(
 #'   base_raster = base_rast,
 #'   oceans = ocean_r,
@@ -44,24 +44,30 @@ buildResistanceSurface <- function(
   w_tri = 1,
   w_habitat = 1
 ) {
-
   if (!is.null(resistance_surface)) {
     res <- resistance_surface
 
     if (!terra::compareGeom(res, base_raster, stopOnError = FALSE)) {
       stop("resistance_surface must match base_raster geometry")
     }
-
   } else {
     # initialize blank raster
     res <- terra::rast(base_raster)
     terra::values(res) <- 0
 
     # add weighted features
-    if (!is.null(oceans))  res[oceans == 1]  <- res[oceans == 1]  + w_ocean
-    if (!is.null(lakes))   res[lakes == 1]   <- res[lakes == 1]   + w_lakes
-    if (!is.null(rivers))  res[rivers == 1]  <- res[rivers == 1]  + w_rivers
-    if (!is.null(tri))     res <- res + w_tri * terra::setValues(res, scale(terra::values(tri)))
+    if (!is.null(oceans)) {
+      res[oceans == 1] <- res[oceans == 1] + w_ocean
+    }
+    if (!is.null(lakes)) {
+      res[lakes == 1] <- res[lakes == 1] + w_lakes
+    }
+    if (!is.null(rivers)) {
+      res[rivers == 1] <- res[rivers == 1] + w_rivers
+    }
+    if (!is.null(tri)) {
+      res <- res + w_tri * terra::setValues(res, scale(terra::values(tri)))
+    }
     if (!is.null(habitat)) res <- res + w_habitat * (1 / (habitat + 0.01))
   }
 
@@ -71,7 +77,6 @@ buildResistanceSurface <- function(
     res <- terra::clamp(res, lower = 1L)
   }
 
-  # convert to integer for memory and calculation efficiency. 
+  # convert to integer for memory and calculation efficiency.
   res <- terra::as.int(res)
 }
-

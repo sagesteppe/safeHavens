@@ -167,6 +167,7 @@ Now that we have our resistance surface, the next step is calculating the distan
 Similar to other functions in `safeHavens` we will not use population occurrence record data directly, as we know that spatial biases affect occurrence record distributinons. 
 Rather we will buffer (`buffer_dist`) the occurrence records, using a relevant `planar_proj`, and create a raster surface of their locations. 
 From this surface we will sample `n` points (using terra::spatSample, with method = 'spread'), and identify neighboring points using a `graph_method`, either delauney triangulation, which is useful when a very high `n` is required, or through a complete distance matrix.  
+In my testing I *greatly* prefer results from 'complete' calculations, and these work with NbClust without having to be ordinated down into 2-dimensional space and give much better results. 
 
 This function will return a raster representing the buffered populations (species range in the domain), the points sampled by terra, the graph information, and a distance matrix with the least cost distance values from the resistance surface. 
 
@@ -199,9 +200,10 @@ ibr_groups <- IBRSurface(
   pop_raster = pop_res_graphs$pop_raster,
   pts_sf = pop_res_graphs$sampled_points, 
   ibr_matrix = pop_res_graphs$ibr_matrix, 
-  min.nc = 9,
+  min.nc = 10,
   planar_proj = 3857
-  )
+)
+
 ```
 
 The results of the clustering process are visualized beneath. 
@@ -221,9 +223,9 @@ points(
 The classified occupied area clusters are visualized below. 
 
 ```{r plot the classified clusters}
-plot(res_surface)
-plot(ibr_groups$geometry, add = TRUE)
-#points(classified_pts, col = 'white') 
+ggplot() +
+  geom_sf(data = ibr_groups$geometry, aes(fill = factor(ID))) + 
+  theme_minimal()
 ```
 
 Finally the surface can be sampled using `PolygonBasedSample`. 
@@ -234,7 +236,8 @@ out <- PolygonBasedSample(
   x = st_union(ibr_groups$geometry),
   zones = ibr_groups$geometry, 
   zone_key = 'ID', 
-  n  = 20)
+  n  = 20
+  )
 
 ggplot(data = out) + 
   geom_sf(aes(fill = factor(allocation))) + 

@@ -1,80 +1,90 @@
 #' Create a quick SDM using elastic net regression
-#' 
-#' @description This function quickly creates a SDM using elastic net regression, and it will 
-#' properly format all data for downstream use with the `safeHavens` workflow. 
-#' Note that elastic net models are used for a couple very important reasons: 
-#' they rescale all input independent variables before modelling, allowing us 
-#' to combine the raw data with the beta coefficients to use for clustering 
+#'
+#' @description This function quickly creates a SDM using elastic net regression, and it will
+#' properly format all data for downstream use with the `safeHavens` workflow.
+#' Note that elastic net models are used for a couple very important reasons:
+#' they rescale all input independent variables before modelling, allowing us
+#' to combine the raw data with the beta coefficients to use for clustering
 #' algorithms downstream. They also allow for 'shrinking' of terms from models
 #' by shrinking terms from models we are able to get levels of ecological inference
-#' prohibited by older model selection frameworks. 
-#' @param x A (simple feature) sf data set of occurrence data for the species. 
-#' @param predictors A terra 'rasterstack' of variables to serve as independent predictors. 
-#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment. 
-#' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`. 
-#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025. 
+#' prohibited by older model selection frameworks.
+#' @param x A (simple feature) sf data set of occurrence data for the species.
+#' @param predictors A terra 'rasterstack' of variables to serve as independent predictors.
+#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.
+#' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
+#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
 #' @examples \dontrun{
-#' 
+#'
 #'  x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 #'  x <- x[,c('lon', 'lat')]
 #'  x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
-#' 
+#'
 #'  files <- list.files(
-#'    path = file.path(system.file(package="dismo"), 'ex'), 
+#'    path = file.path(system.file(package="dismo"), 'ex'),
 #'    pattern = 'grd',  full.names=TRUE )
 #'  predictors <- terra::rast(files)
-#' 
+#'
 #' sdModel <- elasticSDM(
 #'    x = x, predictors = predictors, quantile_v = 0.025,
 #'    planar_projection =
 #'      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
-#'      
+#'
 #'  terra::plot(sdModel$RasterPredictions)
 #' }
-#' @returns A list of 12 objects, each of these subsequently used in the downstream SDM post processing sequence, or which we think are best written to disk. 
-#' The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the independent variables used in the final model are present in 'Predictors', and just the global PCNM/MEM raster surfaces are in 'PCNM'. 
-#' The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix. 
+#' @returns A list of 12 objects, each of these subsequently used in the downstream SDM post processing sequence, or which we think are best written to disk.
+#' The actual model prediction on a raster surface are present in the first list 'RasterPredictions', the independent variables used in the final model are present in 'Predictors', and just the global PCNM/MEM raster surfaces are in 'PCNM'.
+#' The fit model is in 'Model', while the cross validation folds are stored in 'CVStructure', results from a single test/train partition in 'ConfusionMatrix', and the two data split in 'TrainData' and 'TestData' finally the 'PredictMatrix' which was used for classifying the test data for the confusion matrix.
 #' @export
-elasticSDM <- function(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025) {
-  
+elasticSDM <- function(
+  x,
+  predictors,
+  planar_projection,
+  domain = NULL,
+  quantile_v = 0.025
+) {
   # Calculate study extent
-  study_extent <- calculate_study_extent(x, planar_projection, domain, predictors)
-  
+  study_extent <- calculate_study_extent(
+    x,
+    planar_projection,
+    domain,
+    predictors
+  )
+
   # Generate background points
   pa <- generate_background_points(predictors, x)
-  
+
   # Combine presence and pseudo-absence
   x$occurrence <- 1
   x <- dplyr::bind_rows(x, pa) |>
     dplyr::mutate(occurrence = factor(occurrence))
-  
+
   # Spatially thin points
   x <- thin_occurrence_points(x, quantile_v)
-  
+
   # Extract predictor values
   x <- extract_predictors_to_points(x, predictors)
-  
+
   # Create train/test split
   index <- unlist(caret::createDataPartition(x$occurrence, p = 0.8))
   train <- x[index, ]
   test <- x[-index, ]
-  
+
   # Create spatial CV folds
   indices_knndm <- create_spatial_cv_folds(train, predictors, k = 5)
-  
+
   # Perform recursive feature elimination
   lmProfile <- perform_feature_selection(train, indices_knndm)
-  
+
   # Fit elastic net model
   model_results <- fit_elastic_net_model(
-    train, 
-    predictors(lmProfile), 
+    train,
+    predictors(lmProfile),
     indices_knndm
   )
-  
+
   # Create PCNM variables and refit model
   obs <- createPCNM_fitModel(
-    x = train, 
+    x = train,
     ctrl = caret::rfeControl(
       method = "LGOCV",
       repeats = 5,
@@ -82,36 +92,36 @@ elasticSDM <- function(x, predictors, planar_projection, domain = NULL, quantile
       functions = caret::lrFuncs,
       index = indices_knndm$indx_train,
       verbose = FALSE
-    ), 
-    indices_knndm = indices_knndm, 
-    planar_proj = planar_projection, 
+    ),
+    indices_knndm = indices_knndm,
+    planar_proj = planar_projection,
     sub = model_results$selected_data,
     predictors = predictors
   )
-  
+
   mod <- obs$mod
   pcnm <- obs$pcnm
-  
+
   # Combine predictors with PCNM
   predictors <- c(predictors, pcnm)
-  
+
   # Get variables from final model
   vars <- rownames(stats::coef(mod))
   vars <- vars[2:length(vars)]
-  
+
   # Evaluate model on test data
   cm <- evaluate_model_performance(mod, test, predictors, vars)
-  
+
   # Create spatial predictions
   rast_cont <- create_spatial_predictions(mod, predictors, vars)
-  
+
   list(
-    RasterPredictions = rast_cont, 
-    Predictors = predictors, 
+    RasterPredictions = rast_cont,
+    Predictors = predictors,
     PCNM = pcnm,
     Model = mod,
-    CVStructure = obs$cv_model, 
-    ConfusionMatrix = cm, 
+    CVStructure = obs$cv_model,
+    ConfusionMatrix = cm,
     TrainData = train,
     TestData = test,
     PredictMatrix = obs$pred_mat
@@ -127,14 +137,20 @@ elasticSDM <- function(x, predictors, planar_projection, domain = NULL, quantile
 #' @return Terra extent object in predictors' CRS
 #' @keywords internal
 #' @noRd
-calculate_study_extent <- function(x, planar_projection, domain = NULL, predictors) {
+calculate_study_extent <- function(
+  x,
+  planar_projection,
+  domain = NULL,
+  predictors
+) {
   pts_plan <- sf::st_transform(x, planar_projection)
-  
+
   bb <- sf::st_bbox(pts_plan)
   buff_dist <- as.numeric(
-    ((bb[3] - bb[1]) + (bb[4] - bb[2])) / 2 
-  ) / 2
-  
+    ((bb[3] - bb[1]) + (bb[4] - bb[2])) / 2
+  ) /
+    2
+
   sf::st_union(pts_plan) |>
     sf::st_buffer(buff_dist) |>
     terra::vect() |>
@@ -151,9 +167,9 @@ calculate_study_extent <- function(x, planar_projection, domain = NULL, predicto
 #' @noRd
 generate_background_points <- function(predictors, occurrences) {
   sdm::background(
-    x = predictors, 
-    n = nrow(occurrences), 
-    sp = occurrences, 
+    x = predictors,
+    n = nrow(occurrences),
+    sp = occurrences,
     method = 'eDist'
   ) |>
     dplyr::select(lon = x, lat = y) |>
@@ -170,37 +186,37 @@ generate_background_points <- function(predictors, occurrences) {
 #' @noRd
 thin_occurrence_points <- function(x, quantile_v = 0.025) {
   sp.coords <- data.frame(
-    Species = 'Species', 
+    Species = 'Species',
     data.frame(sf::st_coordinates(x))
   )
-  
+
   dists <- sf::st_distance(
-    x[sf::st_nearest_feature(x), ], 
-    x, 
+    x[sf::st_nearest_feature(x), ],
+    x,
     by_element = TRUE
   )
-  
+
   thinD <- as.numeric(stats::quantile(dists, quantile_v, na.rm = TRUE) / 1000)
-  
+
   thinned <- suppressMessages(
     spThin::thin(
-      loc.data = sp.coords, 
+      loc.data = sp.coords,
       thin.par = thinD,
       spec.col = 'Species',
-      lat.col = 'Y', 
-      long.col = 'X', 
-      reps = 100, 
-      locs.thinned.list.return = TRUE, 
-      verbose = FALSE, 
-      write.files = FALSE, 
+      lat.col = 'Y',
+      long.col = 'X',
+      reps = 100,
+      locs.thinned.list.return = TRUE,
+      verbose = FALSE,
+      write.files = FALSE,
       write.log.file = FALSE
     )
   )
-  
+
   # Select the thinning result with the most points retained
   thinned <- data.frame(thinned[which.max(unlist(lapply(thinned, nrow)))]) |>
     sf::st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
-  
+
   x[lengths(sf::st_intersects(x, thinned)) > 0, ]
 }
 
@@ -239,7 +255,7 @@ perform_feature_selection <- function(train_data, cv_indices) {
   train_dat <- sf::st_drop_geometry(
     train_data[, -which(names(train_data) %in% "occurrence")]
   )
-  
+
   ctrl <- caret::rfeControl(
     method = "LGOCV",
     repeats = 5,
@@ -248,11 +264,11 @@ perform_feature_selection <- function(train_data, cv_indices) {
     index = cv_indices$indx_train,
     verbose = FALSE
   )
-  
+
   suppressMessages(
     caret::rfe(
       method = 'glmnet',
-      sizes = 3:ncol(train_dat), 
+      sizes = 3:ncol(train_dat),
       x = train_dat,
       y = sf::st_drop_geometry(train_data)$occurrence,
       rfeControl = ctrl
@@ -274,30 +290,30 @@ fit_elastic_net_model <- function(train_data, selected_predictors, cv_indices) {
     train_data,
     occurrence = dplyr::if_else(occurrence == 1, 'YES', 'NO')
   )
-  
+
   # Fit with caret to find optimal hyperparameters
   cv_model <- suppressMessages(
     caret::train(
-      x = sf::st_drop_geometry(train1[, selected_predictors]), 
-      y = sf::st_drop_geometry(train_data)$occurrence, 
-      method = "glmnet", 
-      family = 'binomial', 
+      x = sf::st_drop_geometry(train1[, selected_predictors]),
+      y = sf::st_drop_geometry(train_data)$occurrence,
+      method = "glmnet",
+      family = 'binomial',
       index = cv_indices$indx_train
     )
   )
-  
+
   # Refit with glmnet directly for better predict compatibility
   sub <- sf::st_drop_geometry(train_data[, selected_predictors])
-  
+
   mod <- glmnet::glmnet(
-    x = as.matrix(sub), 
-    y = sf::st_drop_geometry(train_data)$occurrence, 
-    family = 'binomial', 
-    keep = TRUE, 
-    lambda = cv_model$bestTune$lambda, 
+    x = as.matrix(sub),
+    y = sf::st_drop_geometry(train_data)$occurrence,
+    family = 'binomial',
+    keep = TRUE,
+    lambda = cv_model$bestTune$lambda,
     alpha = cv_model$bestTune$alpha
   )
-  
+
   list(
     cv_model = cv_model,
     glmnet_model = mod,
@@ -314,16 +330,21 @@ fit_elastic_net_model <- function(train_data, selected_predictors, cv_indices) {
 #' @return Confusion matrix from caret
 #' @keywords internal
 #' @noRd
-evaluate_model_performance <- function(model, test_data, predictors, selected_vars) {
+evaluate_model_performance <- function(
+  model,
+  test_data,
+  predictors,
+  selected_vars
+) {
   predict_mat <- predictors[[selected_vars]]
   predict_mat <- as.matrix(
     terra::extract(predict_mat, test_data, ID = FALSE)
   )
-  
+
   predictions <- stats::predict(model, newx = predict_mat, type = 'class')
-  
+
   caret::confusionMatrix(
-    data = as.factor(predictions), 
+    data = as.factor(predictions),
     reference = test_data$occurrence,
     positive = "1"
   )
@@ -339,10 +360,10 @@ evaluate_model_performance <- function(model, test_data, predictors, selected_va
 #' @noRd
 create_spatial_predictions <- function(model, predictors, selected_vars) {
   preds <- predictors[[selected_vars]]
-  
+
   predfun <- function(model, data, ...) {
     stats::predict(model, newx = as.matrix(data), type = 'response')
   }
-  
+
   terra::predict(preds, model = model, fun = predfun, na.rm = TRUE)
 }
