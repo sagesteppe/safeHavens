@@ -12,12 +12,12 @@ description: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = ""
 )
 ```
 
 ```{r Install Package, message=FALSE, eval = F}
-remotes::install_github('sagesteppe/safeHavens')
+#remotes::install_github('sagesteppe/safeHavens')
 ```
 
 # Species Distribution Modelling
@@ -180,6 +180,10 @@ We can compare the results of applying this function side by side using the outp
 
 ```{r Compare Threshold Results}
 terra::plot(threshold_rasts$FinalRasters)
+```
+
+```{r save the ouputs for vignettes, echo = F, eval = F}
+#terra::writeRaster(threshold_rasts$FinalRasters, filename = file.path('..', 'inst', 'extdata', 'SDM_thresholds.tif'))
 ```
 
 ### rescale predictor variables

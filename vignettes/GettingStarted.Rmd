@@ -23,9 +23,8 @@ knitr::opts_chunk$set(
 `safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-#remotes::install_github('sagesteppe/safeHavens@tests') 
+remotes::install_github('sagesteppe/safeHavens') 
 ```
-
 
 ```{r Load Libraries, message=FALSE,warnings=FALSE}
 library(safeHavens)
@@ -70,7 +69,7 @@ rm(x)
 
 Alternatives to this include a simple convex hull around a species, if it is widespread throughout an area (see 'Worked Example' for an example), or masking a binary SDM surface as the domain (see below, and 'Species Distribution Model'). 
 
-# Prep a map background 
+# Prep a base map 
 
 We will use the `spData` package which uses [naturalearth](https://www.naturalearthdata.com/) for it's `world` data and is suitable for creating maps at a variety of resolutions. 
 
@@ -170,7 +169,7 @@ As we have observed, the previous sampling schemes have somewhat similar results
 
 ```{r Opportunistic Sample, message = FALSE}
 exist_pts <- sf::st_sample(x_buff, size = 10) |> 
-   sf::st_as_sf() |> # ^^ just randomly sampling 10 points in the species range
+   sf::st_as_sf() |> # ^^ randomly sampling 10 points in the species range
    dplyr::rename(geometry = x)
 
 os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts, reps = 50, BS.reps = 333)
@@ -289,6 +288,14 @@ sdModel <- readRDS(
 sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
 sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
 sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
+```
+
+And load the threshold predictions
+```{r}
+sdm <- readRDS(
+  file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
+  )
+terra::plot(sdm)
 ```
 
 Once these data are loaded into R, we will scale the rasters (using `RescaleRasters`) which will serve as surfaces to predict from (this is also done above!), then we will run the algorithm (`EnvironmentalBasedSample`). 
