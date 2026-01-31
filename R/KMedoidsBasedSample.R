@@ -13,9 +13,13 @@
 #' They can represent: existing collections, collections with a very strong chance of happenging due to a funding agency mechanism, or otherwise a single population closet to the geographic center of the species.
 #' Notably the solve will be 'around' this site, hence the solves are not purely theoretical, but linked to a pragmatic element.
 #'
-#' Theoretically one can substitute a *geographic* distance matrix for an *environmental* distance matrix. 
+#' One can substitute a *geographic* distance matrix for either a *resistance* or *environmental* distance matrix. 
 #' However, the function will not internally recalculate distances between the bootstrapped points.
 #' See vignette for example of creating a quick environmental distance matrix using a simple PCA of bioclim variables.  
+#' 
+#' Note that the input data *require* two boolean (TRUE/FALSE) columns, 'required' and 'certain', for the function to run. 
+#' 'required' notes sites that **have** to be, or have been sampled for germplasm collections, no sites default to required. 
+#' 'certain' notes that the user is confident are of the taxon at hand; this will default to all FALSE, meaning all sites except 'required' sites will be dropped in simulations. 
 #'
 #' @param input_data A list with two elements: 'distances' (distance matrix) and 'sites' (data frame of site metadata).
 #' @param n The number of sites which you want to select for priority collection.
@@ -25,7 +29,8 @@
 #' @param n_local_search_iter Number of local search iterations per restart.
 #' @param n_restarts Number of random restarts per bootstrap replicate.
 #' @param verbose Whether to print progress information. Will print a message on run settings, and a progress bar for the bootstraps.
-#' @param distance_type Character. Defaults to 'geographic', otherwise 'environmental'. If geogra'phic and coordinates uncertainty is greater than `min_jitter_dist` then coordinate jittering will be performed.
+#' @param distance_type Character. Defaults to 'geographic', otherwise 'environmental'.
+#' If geographic and coordinate uncertainty is greater than `min_jitter_dist` then coordinate jittering will be performed.
 #' @param min_jitter_dist Minimum coordinate uncertainty (in meters) to initiate jittering of site coordinates.
 #' @examples 
 #' \dontrun{
@@ -132,9 +137,14 @@ KMedoidsBasedSample <- function(
   }
   seeds <- which(sites_df$required)
 
+  ## if no sites are certain, explicitly mention that no sites are certain
+  if (!"certain" %in% names(sites_df)) {
+    sites_df$certain <- FALSE
+  }
+
   ## identify sites which can be jittered for coord uncertainty. 
-  uncertain_idx <- which(   ### minimum distance to initiate this is 10 km
-    !is.na(sites_df$coord_uncertainty) & sites_df$coord_uncertainty > min_jitter_dist
+  uncertain_idx <- which(
+    !is.na(sites_df$coord_uncertainty) & sites_df$coord_uncertainty > min_jitter_dist & !sites_df$certain
   )
   
   # Initialize tracking matrices
@@ -156,7 +166,7 @@ KMedoidsBasedSample <- function(
   
   # Setup resample parameters
   if (dropout_prob > 0) {
-    droppable <- which(!sites_df$required)
+    droppable <- which(!sites_df$required & !sites_df$certain)
     n_drop <- floor(length(droppable) * dropout_prob)
   }
   
@@ -479,6 +489,12 @@ pam_fixed <- function(dist_matrix, k, fixed_ids) {
   init <- head(init, k - length(fixed_ids))
   
   medoids <- unique(c(fixed_ids, init))
+
+  if (length(medoids) < k) {
+    # backfill from remaining sites
+    remaining <- setdiff(seq_len(n), medoids)
+    medoids <- c(medoids, head(remaining, k - length(medoids)))
+  }
   
   # Cost function: sum of minimum distances to nearest medoid
   get_cost <- function(meds) {
