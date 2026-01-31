@@ -1,5 +1,4 @@
-#' Maximize Dispersion Site Selection
-#'
+#' K Medoids Based Sample Site Selection
 #' Select a subset of sites that maximize spatial dispersion of sites using k-medioids clustering. 
 #'
 #' @description This function operates on individual points - representing populations, rather than drawing convex hulls or polygons around them to emulate a species range.

@@ -28,15 +28,15 @@ While IBD is easily calculated from geographic distances, IBR requires a paramet
 
 ## Example 
 
-Species occurrence data from the dismo package will be used again for this. 
-A few spatial data sets that should be suitable for nearly all users applications are also used in this example, but they are not shipped with this package. 
+We'll use the species occurrence data from dismo again here. 
+A few spatial data sets that should be suitable for nearly all users IBR applications are included in `safeHavens` for this example, but the full data sets are not shipped with the package. 
 They include: 
   - lakes, Lehner et al. 2025, [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)
   - oceans from Natural Earth, https://www.naturalearthdata.com/downloads/10m-physical-vectors/
   - rivers from [FAO](https://data.apps.fao.org/catalog/dataset/76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), 
   - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography
 
-```{r libraries}
+```{r libraries, warning =F, message = F}
 library(terra)
 library(sf)
 library(dplyr)
@@ -44,7 +44,7 @@ library(ggplot2)
 library(safeHavens)
 ```
 
-Load the dismo example data again. 
+We'll load the species occurrence data and make it explicitly spatial. 
 
 ```{r import sample data}
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -56,13 +56,11 @@ planar_proj <- 3857 # Web Mercator for planar distance calcs
 
 ## data prep
 
-Each of the environmental variable data sources needs some pre-processing before being feed into the IBR workflow. 
-Here we rescale the tri rasters, to put them on a similar numeric range as the other data sets. 
-The other data sets, which are vectors, are also slightly filtered, and converted from sf to spatVect objects for better use with `terra`.  
+Each of the environmental variable data sources needs some pre-processing before being feed into the IBR workflow, most of them just need to be converted from vector to raster formats - a process we call 'rasterization'. 
+We will also rescale the tri rasters, to put them on a similar numeric range as the other data sets. 
 
 ```{r clean vector data sets}
 tri <- terra::rast(file.path(system.file(package = "safeHavens"), "extdata", "tri.tif"))
-
 names(tri) <- 'tri'
 
 rescale_rast <- function(r, new_min = 0, new_max = 1) {
@@ -76,7 +74,6 @@ tri <- rescale_rast(tri, 0, 100)
 lakes_v <- sf::st_read(
   file.path(system.file(package = "safeHavens"),  "extdata", "lakes.gpkg"),
     quiet = T) |>
-  st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
   filter(TYPE == 'Lake') |> # remove reservoirs for our purposes (time scale)
   select(geometry = geom) |> 
   mutate(Value = 1) |> # this will be rasterized. 
@@ -118,7 +115,7 @@ tri <- crop(tri, x_buff)
 
 The vector data need to be converted to raster format using a function like `rasterize`, from terra.
 
-```{r rasterize data}
+```{r rasterize data, message=F,warning=F}
 ocean_r <- rasterize(ocean_v, tri, field = 'Value', background = 0.1)
 lakes_r <- rasterize(lakes_v, tri, field = 'Value',  background = 0.1)
 rivers_r <- rasterize(rivers_v, tri, field = 'Value',  background = 0.1)
@@ -143,7 +140,7 @@ For plants, oceans generally get very high weight, while lakes and rivers - stil
 Terrain ruggedness values are much more likely to vary based on both the ecology of the species, and the lanscape being sampled. 
 
 When considering weights consider the influences of: bird dispersal, land animal dispersal, and natural growth/expansion of populations. 
-This is certainly the most difficult part of this workstream to tune. 
+This is certainly the most difficult part of this workstream to tune, and often relies on subjective expert judgement.
 The values below are the functions defaults - to my eyes they work OK for the landscape at hand; although an ecologist with experience in this region may beg to differ, and I would not argue with them. 
 
 ```{r create resistance surface}
@@ -160,26 +157,26 @@ res_surface <- buildResistanceSurface(
   w_rivers = 20, # is 1 *20
   w_tri = 4 # ranges from 1~30, so from (1-30)*4 up to a weight of ~120. 
 )
-terra::datatype(res_surface)
+
 plot(res_surface)
 ```
 
-Note that the above object will be stored *in memory*, I advocate for the use of a relatively coarsely grained raster surface, because we are doing pretty generalized work, and it will speed up processing. 
+Note that the above object will be stored *in memory*, I advocate for the use of a relatively coarsely grained raster surface (e.g. 4kmx4km cells or more), because we are doing pretty generalized work, and it will speed up processing. 
 
-The next step is calculating the distances between the areas of the raster surfaces. 
+Now that we have our resistance surface, the next step is calculating the distances between areas across the species range. 
 Similar to other functions in `safeHavens` we will not use population occurrence record data directly, as we know that spatial biases affect occurrence record distributinons. 
 Rather we will buffer (`buffer_dist`) the occurrence records, using a relevant `planar_proj`, and create a raster surface of their locations. 
 From this surface we will sample `n` points (using terra::spatSample, with method = 'spread'), and identify neighboring points using a `graph_method`, either delauney triangulation, which is useful when a very high `n` is required, or through a complete distance matrix.  
 
-This function will return a raster depicting the buffered populations (species range in the domain), the points sampled by terra, the graph information, and a distance matrix with the least cost distance values from the resistance surface. 
+This function will return a raster representing the buffered populations (species range in the domain), the points sampled by terra, the graph information, and a distance matrix with the least cost distance values from the resistance surface. 
 
-```{r generate population graphs and distance matrix}
+```{r generate population graphs and distance matrix, warning=F}
 pop_res_graphs <- populationResistance(
   base_raster = rast(ocean_r),
   populations_sf = x,
   n = 150,
   planar_proj = 3857,
-  buffer_dist = 75000,
+  buffer_dist = 125000,
   resistance_surface = res_surface,
   graph_method = 'complete'
 )
@@ -188,13 +185,14 @@ names(pop_res_graphs)
 ```
 
 The buffered locations look like this - currently the IDs are meaningless. 
+
 ```{r plot the buffered populations}
 plot(pop_res_graphs$pop_raster)
 ```
 
-This function does not perform well with user pre-specified `n`, however the `min.nc` parameter, passed to NbClust can be applied to generally give the analyst specified value. 
+This function does not perform well with user pre-specified `n`, however the `min.nc` parameter, passed to `NbClust` can be applied to generally give the analyst specified value. 
 
-```{r run IBRBasedSample}
+```{r run IBRBasedSample, warning = F}
 ibr_groups <- IBRSurface(
   base_raster = rast(ocean_r),
   resistance_surface = res_surface, 
@@ -225,13 +223,13 @@ The classified occupied area clusters are visualized below.
 ```{r plot the classified clusters}
 plot(res_surface)
 plot(ibr_groups$geometry, add = TRUE)
-points(classified_pts, col = 'white') 
+#points(classified_pts, col = 'white') 
 ```
 
 Finally the surface can be sampled using `PolygonBasedSample`. 
 Simply union the geometries to be the species range, and supply the groups to the x argument, in lieu of an ecoregion or pstz type surface. 
 
-```{r}
+```{r, warning = F}
 out <- PolygonBasedSample(
   x = st_union(ibr_groups$geometry),
   zones = ibr_groups$geometry, 

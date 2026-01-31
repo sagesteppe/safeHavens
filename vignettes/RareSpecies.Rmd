@@ -9,35 +9,37 @@ description: >
   Running an additional sampling scheme for rare species. 
 ---
 
+`safeHavens` offers only one function that operates explictly on population level data. 
+
 ## prepare data
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = ""
 )
 ```
 
 Load the required packages. 
 
 ```{r required packages, message=FALSE}
-#remotes::install_github('sagesteppe/safeHavens')
 library(safeHavens)
 library(ggplot2)
 library(patchwork)
 set.seed(99)
 ```
 
-Here we will use the Bradypus data included in the `dismo` package again. 
+We will use the Bradypus data included in the `dismo` package for this vignette. 
 
-```{r import bradypus data for testing}
+```{r import bradypus data for testing, warning = FALSE}
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 ```
 
-And we will create the same base map used in `GettingStarted`. 
+And we will create the same base map used in `GettingStarted`, note this chunk is 'hidden' in the rendered man pages, but present in the raw vignette documents. 
 
-```{r create map for visualizing results, echo = F}
+```{r create map for visualizing results, echo = F, eval = F}
 planar_proj <- '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs'
 
 americas <- spData::world
@@ -73,9 +75,9 @@ map <- ggplot() +
 rm(americas, bb, planar_proj, x_buff)
 ```
 
-While all other functions in the package handle `sf` objects directly, this function will actually just use a simple data frame of sites, to simplfy handing data off to C++ for optimization routines. 
+While all other functions in the package handle `sf` objects directly, this function will actually just use a simple data.frame of sites, to streamline making a couple calculations. 
 
-The input to the `maximizeDispersion` function is a list with two elements: a distance matrix, and a data frame of site locations and attributes. 
+The input to the `KMedoidsBasedSample` function is a list with two elements: a distance matrix, and a data frame of site locations and attributes. 
 The data frame must contain the following columns. 
 
 ```{r prep bradypus for sampling}
@@ -92,8 +94,9 @@ head(df)
 ```
 
 The second required element, the distance matrix, can be calculated with the `greatCircleDistance` function in the package. 
-Please use this rather than st_distance from `sf` for consistency, as the units differ slightly. 
+Please use this rather than `st_distance` from `sf` for consistency, as the units differ slightly. 
 If you want to use `sf::st_distance`, make sure to convert the units to match the scale of the `greatCircleDistance` function, otherwise the results will be incorrect.
+Note that you can also use an environmental distance matrix from the first two axes of a PCA, this is detailed below. 
 
 ```{r calculate distance matrix}
 dist_mat <- sapply(1:nrow(df), function(i) {
@@ -107,7 +110,7 @@ dist_mat <- sapply(1:nrow(df), function(i) {
 The optimization routine requires at least one 'required' site to be specified. 
 Here we will select the site closest to the geographic center of all sites as the required site.
 
-Normally this can refer to existing accessions, or administrative units, or preserves which are helping to implement the germplasm collection, and are fortunate enough to already have some samples or at least guaranteed access.
+Normally this can refer to existing accessions, or administrative units, or nature preserves which are helping to implement the germplasm collection, and are fortunate enough to already have some samples or at least guaranteed access.
 
 ```{r required points}
 dists2c <- greatCircleDistance(
@@ -119,7 +122,7 @@ dists2c <- greatCircleDistance(
 df[order(dists2c)[1],'required'] <- TRUE
 ```
 
-This function not only bootstraps sites to simulate the true distribution distribution of the species, but it also bootstraps coordinate uncertainty for each site. 
+This function not only bootstraps sites to simulate the true distribution of the species, but it also bootstraps coordinate uncertainty for each site. 
 Here we will randomly assign 20% of the sites to have coordinate uncertainty between 1 km and 40 km. 
 Note that he argument is always in meters. 
 
@@ -147,9 +150,9 @@ str(test_data)
 rm(x, n_sites, uncertain_sites, dists2c)
 ```
 
-The funtion `KMedoidsBasedSample` has several parameters to control run parameters.
+The funtion `KMedoidsBasedSample` has several arguments used to control run parameters.
 
-```{r run with geograpihc distances}
+```{r run with geographic distances, message=F}
 st <- system.time( {
     geo_res <- KMedoidsBasedSample(  ## reduce some parameters for faster run. 
       input_data = test_data,
@@ -163,17 +166,21 @@ st <- system.time( {
 )
 ```
 
-The function operates relatively quick with few bootstraps and few sites, but will take a smidge of time longer  with more complex scenarios.
+The function operates relatively quick with few bootstraps and few sites, but will take a smidge of time longer with more complex scenarios.
 We recommened using at least 999 bootstraps for real world applications. 
 
 ```{r}
 st
+```
+
+```{r,echo=F}
 rm(st)
 ```
 
 
 ### return output structure
-Various elements are returned in the output list.
+
+Five objects are returned by the function.
 ```{r structure of output}
 str(geo_res)
 ```
@@ -189,16 +196,20 @@ head(geo_res$stability)
 ```
 
 Many users may find the combindation of their input data with a few columns, to be all they need to carry on after the results. 
+
 ```{r}
 head(geo_res$input_data)
 ```
 
 Run parameters are saved in the settings element.
+
 ```{r}
 head(geo_res$settings)
 ```
 
 ### visualize the selection results
+
+We can plot the required, and selected sites. 
 
 ```{r first selection of target sites}
 map + 
@@ -216,6 +227,9 @@ map +
   labs(title = 'Priority Selection Status of Sites; Geographic Distances')
 ```
 
+As you can see, a couple alternative sites in very close proximity to the selected sites also score highly. 
+Functionally, these could serve as subtitutes for the target sites. 
+What is important is that these combinations are found and articulated in the results. 
 
 ```{r priority ranking plot}
 map + 
@@ -232,10 +246,18 @@ map +
   theme_minimal()   
 ```
 
+Because we believe that as many populations should be sampled as *can* be sampled, we include a 'priority' ranking with the results. 
+Focus should be on the selected sites, but opportunities to sample beyond these should not be overlooked. 
 
 ## run KMedoidsBasedSample with environmental distances
 
+As mentioned, instead of using geographic distance, we can use environmental distance ordinated into two dimensional space. 
+An analyst should only consider the use of variables they know relevant to the species distrubution for this. 
+However, for the sake of the example we will feed in the full stack of environmental variables available from the dismo package. 
+
 ### extract prep environmental distances 
+
+First we read in the rasters. 
 
 ```{r prep environmental distance matrix}
 files <- list.files(
@@ -246,9 +268,8 @@ rm(files)
 ```
 
 For our environmental distances, we will use a PCA transformation of the environmental variables.
-We will simply scrape 100 random points from the raster layers to calculate the PCA.
-Then predict the PCA raster layers across the entire study area.
-We will take the first two layers, and calculate environmental distances based on these two layers.
+We will sample 100 random points from the raster layers to calculate the PCA, and then predict the PCA raster layers across the entire study area.
+We will take the only the first two layers, from the pca, and calculate environmental distances based on these two layers.
 
 ```{r run with geographic and environmental distances}
 pts <- terra::spatSample(predictors, 100, na.rm = TRUE)
@@ -257,14 +278,18 @@ pts <- pts[, names(pts)!='biome' ] # remove categorical variable for distance ca
 pca_results <- stats::prcomp(pts, scale = TRUE)
 round(pca_results$sdev^2 / sum(pca_results$sdev^2), 2) # variance explained
 pca_raster <- terra::predict(predictors, pca_results)
+```
 
+From the above we see that the first two PCA axes explain a large amount of the variance observed in this landscape.
+
+```{r plot pca layers}
 terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a new raster
 rm(pts, predictors, pca_results)
 ```
 
-we keep the first two PCA layers for environmental distance calculation.
-More layers will increase dimenstionality, and may lead to less useful results.
-Note that it's fine to use a euclidean distance calculation for these, as the values are truly in the position of the plot. 
+We keep the first two PCA layers for environmental distance calculation.
+More layers will increase dimensionality, and may lead to less useful results.
+Note that it's fine to use a euclidean distance calculation for these, as the values are truly in the position of the pca plot. 
 
 ```{r extract environmental values and calculate distance matrix}
 env_values <- terra::extract(pca_raster, 
@@ -277,7 +302,11 @@ env_values <- terra::extract(pca_raster,
   )
 )[,1:2]
 plot(env_values, main = 'environmental distance of points from first two PCA axis')
+```
 
+We'll ensure that these data are in a proper matrix format for feeding into the function. 
+
+```{r convert pca distances to a matrix}
 env_dist_mat <- as.matrix(
     dist(env_values)
   )
@@ -285,6 +314,7 @@ env_dist_mat <- as.matrix(
 rm(pca_raster)
 ```
 
+Similar to the above run with geographic distances, we create our input object, and run the function. 
 ```{r run with environmental distance}
 test_data <- list(
   distances = env_dist_mat,
@@ -307,14 +337,21 @@ st <- system.time(
 rm(dist_mat, env_dist_mat)
 ```
 
+This run takes longer than the runs with only the geographic distance matrix. 
+
 ```{r}
 st
-rm(st)
 ```
+
+The environmental distance run takes about 10 seconds longer. 
 
 ```{r}
 head(env_res$stability_score)
 ```
+
+The overall stability score is similar to from the geographic score. 
+When you view the plots you will see that a handful of sites in close proximity to the selected sites would have served as nearly equivanently suitable substitutes. 
+A few areas have dropped out of priority sampling based on this method, but in general the results are pretty similar - the relationship between geographic and environmental distance is somewhat strong in this landscape. 
 
 ```{r }
 map + 
@@ -337,7 +374,7 @@ map +
 In the example above we use a point at the median geographic center of the populations. 
 
 We can also identify the population which is *most* near the highest density of populations. 
-Intuitively, this would be suggested as a population with a very high genetic diversity.  
+Intuitively, this would be suggested as a population with a high amount of genetic diversity for the species, although it is unlikely to have accumulated considerably local changes as the effects of drift are overcome by more frequent dispersal.  
 
 ```{r required point method - population centroid - heat map}
 dens <- with(df, MASS::kde2d(lon, lat, n = 200))
@@ -350,7 +387,7 @@ pop_centered_id <- which.min(rowSums(abs(pops_centre^2)))
 rm(dens, max_idx, max_point, pops_centre)
 ```
 
-Likewise we can identify the *population* which is most near the 'center' of the environmental variable space. 
+Alternatively we can identify the *population* which is most near the 'center' of the environmental variable space. 
 
 ```{r required point method - environmental centroid}
 env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
@@ -360,6 +397,7 @@ rm(env_values)
 ```
 
 Personally I would consider the 'pop centered' population to be the most important required site to center a design off of. 
+However, it can suffer from sampling bias, and you may want to sense check that the recorded populations are de-duplicated to accomodate this reality. 
 
 ```{r plot alternative centroids}
 # geographic centroid was pt 47
@@ -385,4 +423,3 @@ map +
 
 rm(env_centered_id, env_centered, pop_centered_id)
 ```
-
