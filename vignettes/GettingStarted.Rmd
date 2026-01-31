@@ -219,14 +219,22 @@ ibdbs <- IBDBasedSample(
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'IBD') + 
+  labs(title = 'IBDistance') + 
+  coord_sf(expand = F)
+
+## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. 
+ibdbs_crop <- sf::st_intersection(ibdbs[['Geometry']], sf::st_union(x_buff.sf))
+ibdbs.p2 <- map + 
+  geom_sf(data = ibdbs_crop, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
+  labs(title = 'IBDistance') + 
   coord_sf(expand = F)
 
 ibdbs.p
 ```
 
 ```{r,echo=F}
-rm(predictors, files, v, x_buff.sf, exist_pts, os)
+rm(predictors, files, v, exist_pts, os)
 ```
 
 Because these data were processed from a raster, they have 90 corners and large straight lines, representing raster tiles. 
@@ -234,12 +242,20 @@ Regardless, it is evident that the *borders* of the clusters are more natural lo
 
 ## Isolation by resistance
 
-words
+This workflow requires a couple steps to enact. 
+We have a vignette dedicated to detailing them at `Isolation by Resistance` - check it out!
+Here we will just load the data that you will get if you run that vignette. 
 
 ```{r}
 ibr <- sf::st_read(
   file.path(system.file(package="safeHavens"), 'extdata', 'IBR.gpkg'), 
   quiet = TRUE)
+
+ibr.p <- map + 
+  geom_sf(data = ibr, aes(fill = factor(ID))) +
+  labs(title = 'IBResistance') + 
+  coord_sf(expand = F)
+
 ```
 
 ## Polygon Based Sample 
@@ -283,7 +299,7 @@ rm(bb, neo_eco, x_buff)
 
 ## Environmental Based Sample 
 
-The `EnvironmentalBasedSample` can only be used if you have the species distribution model data. 
+The `EnvironmentalBasedSample` can only be used if you have species distribution model data. 
 We have included the ouputs of the vignette 'Species Distibution Model' with the package so they are available to this vignette. 
 
 ### load the SDM predictions
@@ -341,6 +357,7 @@ ENVIbs <- EnvironmentalBasedSample(
   path = file.path(p, 'safeHavens-Vignette'), 
   taxon = 'Bradypus_test', 
   f_rasts = sdm, 
+  coord_wt = 2,
   n = 20, 
   lyr = 'Supplemented',
   fixedClusters = TRUE, 
@@ -350,8 +367,11 @@ ENVIbs <- EnvironmentalBasedSample(
   prop_split = 0.8
   )
 
+## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. 
+ENVIbs_crop <- sf::st_intersection(ENVIbs[['Geometry']], sf::st_union(x_buff.sf))
+
 ENVIbs.p <- map + 
-  geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs_crop, aes(fill = factor(ID))) + 
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
@@ -414,20 +434,21 @@ So, we have some maps for you to look at!
 They all *looked* relatively similar to me when plotted one after another, let's plot them all simultaneously and see if that's still the case. 
 
 ```{r Plot all Sampling Schemes together}
-pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
+pbs.p + eas.p + os.p  +  ibdbs.p2 + ibr.p + ENVIbs.p + 
   plot_layout(ncol = 3)
 ```
 
-The geographic based samples (here Point, Equal Area, Opportunistic, and IBE) are quite similar
-In my mind isolation by distance (IBD) show the biggest different, it seems to have made the most *sense* of the naturally occurring patchiness of the species range. 
+The geographic based samples (here Point, Equal Area, Opportunistic, and IBE) are quite similar. 
+In my mind isolation by distance (IBD) show the biggest different, it makes the most *sense* by splitting sampling areas along naturally occurring patches of the species range. 
 
 The application of `PolygonBasedSample` to the data are difficult to evaluate in the same sense as the other data sets, but it was able to identify the desired regions for sampling. 
+We do not show it in this pane. 
 
-Isolation by Resistance DOES THIS 
+Isolation by Resistance is similar to IBD, however it makes fewer splits in Central America, instead picking up on them in the Peru. 
 
-Isolation by Environment seems to partition the feature space quite well. 
-Notably drawing a couple clusters in the Pacific lowlands and Northern Andes mountains. 
-The ranges are relatively contigious, certaintly enough to sensibly sample from. 
+Relative to IBR Isolation by Environment tends to split locations across the Andes and the NW coastal regions of South America. 
+The ranges are relatively contigious - enough to sensibly sample from. 
+Contiguity of ranges in this approach can be controlled with the `coord_wt` argument. 
 
 ```{r echo = F}
 rm(pbs.p, eas.p, os.p, ibdbs.p, ebs.p, ENVIbs.p, planar_proj)

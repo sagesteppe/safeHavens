@@ -106,7 +106,6 @@ IBRSurface <- function(
   )
 
   ## format data for return
-
   spatialClusters <- terra::as.polygons(cluster_r) |>
     sf::st_as_sf()
 
@@ -292,6 +291,10 @@ expand_geographic_front <- function(
 
     sizes <- table(terra::values(cluster_r))
     df <- df[sizes[as.character(df$cluster)] < max_cells_per_cluster, ]
+
+    # prevents overwriting just assigned cells. 
+    still_na <- is.na(cluster_r[df$cell])
+    df <- df[still_na, ]
 
     if (!nrow(df)) {
       break

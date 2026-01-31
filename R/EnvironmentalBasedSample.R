@@ -137,7 +137,7 @@ EnvironmentalBasedSample <- function(
 #' @return Modified raster stack with weighted x and y coordinate layers
 #' @keywords internal
 #' @noRd
-add_weighted_coordinates <- function(pred_rescale, coord_wt = 2.5) {
+add_weighted_coordinates <- function(pred_rescale, coord_wt) {
   ranges <- terra::global(pred_rescale, fun = 'range', na.rm = TRUE)
   targetRangeCoords <- max(abs(ranges$min - ranges$max)) * coord_wt
 
