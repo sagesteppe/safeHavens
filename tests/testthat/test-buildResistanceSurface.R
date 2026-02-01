@@ -159,4 +159,8 @@ test_that("buildResistanceSurface handles edge cases", {
                                         oceans = ocean_rast, 
                                         w_ocean = 1e6)
   expect_true(max(terra::values(result_large), na.rm = TRUE) >= 1e6)
+<<<<<<< HEAD
 })
+=======
+})
+>>>>>>> f6aca0fdc88a3c068ec4bf663723b63dcd779f08

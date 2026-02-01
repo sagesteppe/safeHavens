@@ -203,7 +203,6 @@ build_spatial_graph <- function(
   if (!all(sf::st_geometry_type(pts_sf) == "POINT")) {
     stop("pts_sf must contain only POINT geometries")
   }
-
   n <- nrow(pts_sf)
   if (n < 2) {
     stop("At least two points are required to build a graph")

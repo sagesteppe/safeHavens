@@ -186,7 +186,6 @@ names(pop_res_graphs)
 ```
 
 The buffered locations look like this - currently the IDs are meaningless. 
-
 ```{r plot the buffered populations}
 plot(pop_res_graphs$pop_raster)
 ```

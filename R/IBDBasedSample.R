@@ -57,6 +57,7 @@ IBDBasedSample <- function(
   max.nc = 20,
   planar_proj
 ) {
+
   pts <- sf::st_sample(
     sf::st_as_sf(terra::as.polygons(x)),
     size = n_pts
