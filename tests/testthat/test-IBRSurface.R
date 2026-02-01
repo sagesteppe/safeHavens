@@ -3,7 +3,7 @@ library(terra)
 create_mock_raster <- function(nrow = 10, ncol = 10, vals = 0) {
   r <- terra::rast(nrows = nrow, ncols = ncol, xmin = 0, xmax = 10, ymin = 0, ymax = 10)
   values(r) <- vals
-  return(r)
+  r
 }
 
 # Test 1: Basic functionality with named parameters only
@@ -99,7 +99,7 @@ test_that("buildResistanceSurface combines named and additional layers correctly
     w_ocean = 100,
     w_lakes = 50,
     addtl_r = extra_r,
-    addtl_w = c(3)
+    addtl_w = 3
   )
   
   expect_s4_class(res, "SpatRaster")
@@ -117,7 +117,7 @@ test_that("buildResistanceSurface skips addtl layers when counts don't match", {
   res <- buildResistanceSurface(
     base_raster = base_r,
     addtl_r = addtl_stack,
-    addtl_w = c(1)  # Mismatch
+    addtl_w = 1  # Mismatch
   )
   
   expect_s4_class(res, "SpatRaster")
@@ -134,7 +134,7 @@ test_that("buildResistanceSurface returns integer raster", {
   res <- buildResistanceSurface(
     base_raster = base_r,
     addtl_r = extra_r,
-    addtl_w = c(1.5)
+    addtl_w = 1.5
   )
   
   expect_true(is.int(res))
@@ -149,7 +149,7 @@ test_that("buildResistanceSurface clamps values to minimum of 1", {
   res <- buildResistanceSurface(
     base_raster = base_r,
     addtl_r = extra_r,
-    addtl_w = c(1)
+    addtl_w = 1
   )
   
   expect_true(all(values(res) >= 1, na.rm = TRUE))
