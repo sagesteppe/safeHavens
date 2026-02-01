@@ -253,3 +253,106 @@ Each of the nine clusters has a different number of the 20 desired collections a
 #p <- file.path('~', 'Documents', 'assoRted', 'safeHavens', 'inst', 'extdata')
 #sf::st_write(ibr_groups$geometry, file.path(p, 'IBR.gpkg'), driver = 'gpkg')
 ```
+
+## bonus: adding sdm as a resistance layer, and non-linear scaling. 
+
+A default argument to cluster IBR is the probablity surface predictions from an SDM. 
+Here we will add it to the surface. 
+
+We will also show another way of adding topographc ruggedness index, that 'bypasses' an assumed linear relationship along the weighting scheme. 
+
+```{r}
+sdm <- terra::rast(
+  file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
+  )
+plot(sdm['Predictions'])
+```
+
+Note that we will have to reverse the predictions from this layer, currently higher values mean more suitable habitat. 
+We want the higher values going into the probability surface function to mean more resistance to movement. 
+
+```{r}
+inverted_sdm <- 1 - sdm['Predictions']
+plot(inverted_sdm)
+```
+
+And indeed, we may actually just want to remove weights in suitable habitat, or set to an arbitrarily low value
+```{r}
+inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
+plot(inverted_sdm)
+```
+
+And we will convert it to the same, integer, scale as the rest of the predictors
+```{r}
+inverted_sdm = round(inverted_sdm * 100, 0)
+plot(inverted_sdm)
+```
+
+Note that we will have to make sure our SDM aligns with the existin layers
+```{r}
+inverted_sdm <- crop(inverted_sdm, ocean_r)
+inverted_sdm <- resample(inverted_sdm, ocean_r)
+inverted_sdm[is.na(inverted_sdm)] <- 99
+
+plot(inverted_sdm)
+```
+
+
+### non-linear weight
+
+Not all environmental variables are expected to have linear effects on movement. 
+Indeed something like terrain ruggedness may have only a small effect until reaching certain thresholds. 
+
+```{r plot non-linear transformations}
+x <- 1:100
+rs <- function(x, to = c(0, 100)) {
+  rng <- range(x, na.rm = TRUE)
+  to[1] + (x - rng[1]) / diff(rng) * diff(to)
+}
+
+# display some transformations. 
+par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))
+plot(x, rs(sqrt(x)), type = "l", main = "sqrt(x)")
+plot(x, rs(log1p(x)), type = "l", main = "log1p(x)")
+plot(x, rs(asinh(x)), type = "l", main = "asinh(x)")
+plot(x, rs(x^2), type = "l", main = "x^2: polynomial")
+plot(x, rs(x^3), type = "l", main = "x^3: polynomial")
+plot(x, rs(x^4), type = "l", main = "x^4 polynomial")
+
+rm(x)
+```
+
+We will apply a fourth order polynomial to the input tri data to accomodate a non-linear effect. 
+
+```{r rescale TRI}
+tri_rscl <- app(tri, function(x) { rs(x^2, to = c(1, 80)) })
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+plot(tri, main = 'Original')
+plot(tri_rscl, main = 'Rescaled')
+```
+
+And we can create a new resistance surface
+
+```{r}
+res_surface <- buildResistanceSurface(
+
+  base_raster = rast(ocean_r), # template
+
+  oceans = ocean_r, # rasters
+  lakes = lakes_r,
+  rivers = rivers_r,
+  #tri = tri, # dont use me! i rescale. 
+  habitat = inverted_sdm,
+  addtl_r = tri_rscl,
+
+  w_ocean = 120, # weights to multiple  input raster values by -- 
+  w_lakes = 70, # is 1 * 50
+  w_rivers = 40, # is 1 *20
+  w_habitat = 0.5,
+  #w_tri = 4 # don't use me! use addtl_wt
+  addtl_w = 1
+)
+dev.off()
+plot(res_surface)
+```

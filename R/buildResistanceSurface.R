@@ -9,11 +9,14 @@
 #' @param rivers SpatRaster. Binary (0/1) raster for rivers.
 #' @param tri SpatRaster. Continuous raster of topographic roughness (TRI). Used to increase cost in mountainous terrain.
 #' @param habitat SpatRaster. Continuous raster of habitat suitability. Low values increase cost.
+#' @param addtl_r SpatRaster, 'raster stack'. Additional layers to include in the resistance surface
 #' @param w_ocean Numeric. Weight applied to oceans (default 2000).
 #' @param w_lakes Numeric. Weight applied to lakes (default 200).
 #' @param w_rivers Numeric. Weight applied to rivers (default 20).
 #' @param w_tri Numeric. Weight applied to TRI (default 1).
 #' @param w_habitat Numeric. Weight applied to habitat suitability (default 1).
+#' @param addtl_w Numeric vector. Must equal the length of addtl_r exactly. Weights for the additional rasters layers to include in the resistance surface
+
 #' @examples
 #' \dontrun{
 #' # Prepare resistance raster
@@ -38,11 +41,13 @@ buildResistanceSurface <- function(
   rivers = NULL,
   tri = NULL,
   habitat = NULL,
-  w_ocean = 1000,
-  w_lakes = 200,
+  addtl_r = NULL,
+  w_ocean = 100,
+  w_lakes = 50,
   w_rivers = 20,
   w_tri = 1,
-  w_habitat = 1
+  w_habitat = 1,
+  addtl_w = NULL
 ) {
   if (!is.null(resistance_surface)) {
     res <- resistance_surface
@@ -68,7 +73,14 @@ buildResistanceSurface <- function(
     if (!is.null(tri)) {
       res <- res + w_tri * terra::setValues(res, scale(terra::values(tri)))
     }
-    if (!is.null(habitat)) res <- res + w_habitat * (1 / (habitat + 0.01))
+    if (!is.null(habitat)) res <- res + w_habitat * habitat
+    
+    ## additional layers if supplied
+    if (!is.null(addtl_r) & terra::nlyr(addtl_r)==length(addtl_w)){
+      for (i in seq_along(addtl_w)){
+        res <- res + addtl_r[[i]] * addtl_w[i]
+      }
+    }
   }
 
   # --- clamp only if raster has values ---

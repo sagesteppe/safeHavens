@@ -44,7 +44,7 @@ PostProcessSDM <- function(
     a = test.sf[test.sf$occurrence == 0, 's0']
   )
   thresh <- dismo::threshold(eval_ob)
-  cut <- thresh[[thresh_metric]] # ARGUMENT TO FN @PARAM
+  cut <- thresh[[thresh_metric]] 
 
   m <- matrix(
     # use this to reclassiy data to a binary raster
