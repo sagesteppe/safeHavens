@@ -25,8 +25,8 @@ Background, installation, usage, and sampling schemas
   Creating and understanding the Species Distribution Model required for
   EnvironmentalBasedSample.
 
-- [ProvisionalSTZ and Ecoregion Based
-  Sampling](https://sagesteppe.github.io/safeHavens/articles/pSTZEcoregionSampling.md):
+- [Polygon Based
+  Sampling](https://sagesteppe.github.io/safeHavens/articles/PolygonBasedSamples.md):
 
   Sampling provisional seed transfer zones and ecoregions
 

@@ -21,10 +21,11 @@ that can be used to support basic `IBR` type sampling.
 
 ### Example
 
-Species occurrence data from the dismo package will be used again for
-this. A few spatial data sets that should be suitable for nearly all
-users applications are also used in this example, but they are not
-shipped with this package. They include: - lakes, Lehner et al. 2025,
+We’ll use the species occurrence data from dismo again here. A few
+spatial data sets that should be suitable for nearly all users IBR
+applications are included in `safeHavens` for this example, but the full
+data sets are not shipped with the package. They include: - lakes,
+Lehner et al. 2025,
 [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994) -
 oceans from Natural Earth,
 <https://www.naturalearthdata.com/downloads/10m-physical-vectors/> -
@@ -35,26 +36,13 @@ tri (terrain ruggedness index), Amatulli et al. 2018,
 
 ``` r
 library(terra)
-#> terra 1.8.93
 library(sf)
-#> Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:terra':
-#> 
-#>     intersect, union
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(ggplot2)
 library(safeHavens)
 ```
 
-Load the dismo example data again.
+We’ll load the species occurrence data and make it explicitly spatial.
 
 ``` r
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -67,15 +55,13 @@ planar_proj <- 3857 # Web Mercator for planar distance calcs
 ### data prep
 
 Each of the environmental variable data sources needs some
-pre-processing before being feed into the IBR workflow. Here we rescale
-the tri rasters, to put them on a similar numeric range as the other
-data sets. The other data sets, which are vectors, are also slightly
-filtered, and converted from sf to spatVect objects for better use with
-`terra`.
+pre-processing before being feed into the IBR workflow, most of them
+just need to be converted from vector to raster formats - a process we
+call ‘rasterization’. We will also rescale the tri rasters, to put them
+on a similar numeric range as the other data sets.
 
 ``` r
 tri <- terra::rast(file.path(system.file(package = "safeHavens"), "extdata", "tri.tif"))
-
 names(tri) <- 'tri'
 
 rescale_rast <- function(r, new_min = 0, new_max = 1) {
@@ -89,7 +75,6 @@ tri <- rescale_rast(tri, 0, 100)
 lakes_v <- sf::st_read(
   file.path(system.file(package = "safeHavens"),  "extdata", "lakes.gpkg"),
     quiet = T) |>
-  st_set_crs(4326) |> ## messed up shape, manually tell it the crs. 
   filter(TYPE == 'Lake') |> # remove reservoirs for our purposes (time scale)
   select(geometry = geom) |> 
   mutate(Value = 1) |> # this will be rasterized. 
@@ -169,10 +154,11 @@ both the ecology of the species, and the lanscape being sampled.
 
 When considering weights consider the influences of: bird dispersal,
 land animal dispersal, and natural growth/expansion of populations. This
-is certainly the most difficult part of this workstream to tune. The
-values below are the functions defaults - to my eyes they work OK for
-the landscape at hand; although an ecologist with experience in this
-region may beg to differ, and I would not argue with them.
+is certainly the most difficult part of this workstream to tune, and
+often relies on subjective expert judgement. The values below are the
+functions defaults - to my eyes they work OK for the landscape at hand;
+although an ecologist with experience in this region may beg to differ,
+and I would not argue with them.
 
 ``` r
 res_surface <- buildResistanceSurface(
@@ -188,29 +174,33 @@ res_surface <- buildResistanceSurface(
   w_rivers = 20, # is 1 *20
   w_tri = 4 # ranges from 1~30, so from (1-30)*4 up to a weight of ~120. 
 )
-terra::datatype(res_surface)
-#> [1] ""
+
 plot(res_surface)
 ```
 
 ![](IsolationByResistance_files/figure-html/create%20resistance%20surface-1.png)
 
 Note that the above object will be stored *in memory*, I advocate for
-the use of a relatively coarsely grained raster surface, because we are
-doing pretty generalized work, and it will speed up processing.
+the use of a relatively coarsely grained raster surface (e.g. 4kmx4km
+cells or more), because we are doing pretty generalized work, and it
+will speed up processing.
 
-The next step is calculating the distances between the areas of the
-raster surfaces. Similar to other functions in `safeHavens` we will not
-use population occurrence record data directly, as we know that spatial
-biases affect occurrence record distributinons. Rather we will buffer
-(`buffer_dist`) the occurrence records, using a relevant `planar_proj`,
-and create a raster surface of their locations. From this surface we
-will sample `n` points (using terra::spatSample, with method =
-‘spread’), and identify neighboring points using a `graph_method`,
-either delauney triangulation, which is useful when a very high `n` is
-required, or through a complete distance matrix.
+Now that we have our resistance surface, the next step is calculating
+the distances between areas across the species range. Similar to other
+functions in `safeHavens` we will not use population occurrence record
+data directly, as we know that spatial biases affect occurrence record
+distributinons. Rather we will buffer (`buffer_dist`) the occurrence
+records, using a relevant `planar_proj`, and create a raster surface of
+their locations. From this surface we will sample `n` points (using
+terra::spatSample, with method = ‘spread’), and identify neighboring
+points using a `graph_method`, either delauney triangulation, which is
+useful when a very high `n` is required, or through a complete distance
+matrix.  
+In my testing I *greatly* prefer results from ‘complete’ calculations,
+and these work with NbClust without having to be ordinated down into
+2-dimensional space and give much better results.
 
-This function will return a raster depicting the buffered populations
+This function will return a raster representing the buffered populations
 (species range in the domain), the points sampled by terra, the graph
 information, and a distance matrix with the least cost distance values
 from the resistance surface.
@@ -221,11 +211,10 @@ pop_res_graphs <- populationResistance(
   populations_sf = x,
   n = 150,
   planar_proj = 3857,
-  buffer_dist = 75000,
+  buffer_dist = 125000,
   resistance_surface = res_surface,
   graph_method = 'complete'
 )
-#> Warning: Quick-TRANSfer stage steps exceeded maximum (= 2557900)
 
 names(pop_res_graphs)
 #> [1] "pop_raster"     "sampled_points" "spatial_graph"  "edge_list"     
@@ -242,7 +231,7 @@ plot(pop_res_graphs$pop_raster)
 ![](IsolationByResistance_files/figure-html/plot%20the%20buffered%20populations-1.png)
 
 This function does not perform well with user pre-specified `n`, however
-the `min.nc` parameter, passed to NbClust can be applied to generally
+the `min.nc` parameter, passed to `NbClust` can be applied to generally
 give the analyst specified value.
 
 ``` r
@@ -252,11 +241,10 @@ ibr_groups <- IBRSurface(
   pop_raster = pop_res_graphs$pop_raster,
   pts_sf = pop_res_graphs$sampled_points, 
   ibr_matrix = pop_res_graphs$ibr_matrix, 
-  min.nc = 9,
+  fixedClusters = TRUE,
+  n = 20,
   planar_proj = 3857
-  )
-#> Warning in min.default(structure(numeric(0), units = structure(list(numerator =
-#> "m", : no non-missing arguments to min; returning Inf
+)
 ```
 
 The results of the clustering process are visualized beneath.
@@ -278,9 +266,9 @@ points(
 The classified occupied area clusters are visualized below.
 
 ``` r
-plot(res_surface)
-plot(ibr_groups$geometry, add = TRUE)
-points(classified_pts, col = 'white') 
+ggplot() +
+  geom_sf(data = ibr_groups$geometry, aes(fill = factor(ID))) + 
+  theme_minimal()
 ```
 
 ![](IsolationByResistance_files/figure-html/plot%20the%20classified%20clusters-1.png)
@@ -294,11 +282,8 @@ out <- PolygonBasedSample(
   x = st_union(ibr_groups$geometry),
   zones = ibr_groups$geometry, 
   zone_key = 'ID', 
-  n  = 20)
-#> Warning in st_collection_extract.sf(zones_poly, "POLYGON", warn = FALSE): x is
-#> already of type POLYGON.
-#> Warning in st_collection_extract.sf(zones_sub, "POLYGON", warn = FALSE): x is
-#> already of type POLYGON.
+  n  = 30
+  )
 
 ggplot(data = out) + 
   geom_sf(aes(fill = factor(allocation))) + 
@@ -311,3 +296,136 @@ ggplot(data = out) +
 
 Each of the nine clusters has a different number of the 20 desired
 collections assigned to it.
+
+### bonus: adding sdm as a resistance layer, and non-linear scaling.
+
+A default argument to cluster IBR is the probablity surface predictions
+from an SDM. Here we will add it to the surface.
+
+We will also show another way of adding topographc ruggedness index,
+that ‘bypasses’ an assumed linear relationship along the weighting
+scheme.
+
+``` r
+sdm <- terra::rast(
+  file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
+  )
+plot(sdm['Predictions'])
+```
+
+![](IsolationByResistance_files/figure-html/unnamed-chunk-3-1.png)
+
+Note that we will have to reverse the predictions from this layer,
+currently higher values mean more suitable habitat. We want the higher
+values going into the probability surface function to mean more
+resistance to movement.
+
+``` r
+inverted_sdm <- 1 - sdm['Predictions']
+plot(inverted_sdm)
+```
+
+![](IsolationByResistance_files/figure-html/unnamed-chunk-4-1.png)
+
+And indeed, we may actually just want to remove weights in suitable
+habitat, or set to an arbitrarily low value
+
+``` r
+inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
+plot(inverted_sdm)
+```
+
+![](IsolationByResistance_files/figure-html/unnamed-chunk-5-1.png)
+
+And we will convert it to the same, integer, scale as the rest of the
+predictors
+
+``` r
+inverted_sdm = round(inverted_sdm * 100, 0)
+plot(inverted_sdm)
+```
+
+![](IsolationByResistance_files/figure-html/unnamed-chunk-6-1.png)
+
+Note that we will have to make sure our SDM aligns with the existin
+layers
+
+``` r
+inverted_sdm <- crop(inverted_sdm, ocean_r)
+inverted_sdm <- resample(inverted_sdm, ocean_r)
+inverted_sdm[is.na(inverted_sdm)] <- 99
+
+plot(inverted_sdm)
+```
+
+![](IsolationByResistance_files/figure-html/unnamed-chunk-7-1.png)
+
+#### non-linear weight
+
+Not all environmental variables are expected to have linear effects on
+movement. Indeed something like terrain ruggedness may have only a small
+effect until reaching certain thresholds.
+
+``` r
+x <- 1:100
+rs <- function(x, to = c(0, 100)) {
+  rng <- range(x, na.rm = TRUE)
+  to[1] + (x - rng[1]) / diff(rng) * diff(to)
+}
+
+# display some transformations. 
+par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))
+plot(x, rs(sqrt(x)), type = "l", main = "sqrt(x)")
+plot(x, rs(log1p(x)), type = "l", main = "log1p(x)")
+plot(x, rs(asinh(x)), type = "l", main = "asinh(x)")
+plot(x, rs(x^2), type = "l", main = "x^2: polynomial")
+plot(x, rs(x^3), type = "l", main = "x^3: polynomial")
+plot(x, rs(x^4), type = "l", main = "x^4 polynomial")
+```
+
+![](IsolationByResistance_files/figure-html/plot%20non-linear%20transformations-1.png)
+
+``` r
+
+rm(x)
+```
+
+We will apply a fourth order polynomial to the input tri data to
+accomodate a non-linear effect.
+
+``` r
+tri_rscl <- app(tri, function(x) { rs(x^2, to = c(1, 80)) })
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+plot(tri, main = 'Original')
+plot(tri_rscl, main = 'Rescaled')
+```
+
+![](IsolationByResistance_files/figure-html/rescale%20TRI-1.png)
+
+And we can create a new resistance surface
+
+``` r
+res_surface <- buildResistanceSurface(
+
+  base_raster = rast(ocean_r), # template
+
+  oceans = ocean_r, # rasters
+  lakes = lakes_r,
+  rivers = rivers_r,
+  #tri = tri, # dont use me! i rescale. 
+  habitat = inverted_sdm,
+  addtl_r = tri_rscl,
+
+  w_ocean = 120, # weights to multiple  input raster values by -- 
+  w_lakes = 70, # is 1 * 50
+  w_rivers = 40, # is 1 *20
+  w_habitat = 0.5,
+  #w_tri = 4 # don't use me! use addtl_wt
+  addtl_w = 1
+)
+dev.off()
+#> null device 
+#>           1
+plot(res_surface)
+```

@@ -54,12 +54,12 @@ PolygonBasedSample(
 - warmest_col:
 
   Character. Column name for warmest temperature metric (required for
-  "Assist-warm" method).
+  "Assist-warm" method). Higher values in this column assumed warmer.
 
 - precip_col:
 
   Character. Column name for precipitation metric (required for
-  "Assist-drier" method).
+  "Assist-drier" method). Lower values in this column assumed drier.
 
 ## Value
 
@@ -100,7 +100,7 @@ x <- sf::st_sf(id = 1, geometry = sf::st_sfc(sr_poly))
 rm(sr_mat, sr_poly)
 
 zone_polys = data.frame(
-  ## randomly generate some points in XY space. 
+  ## randomly generate some points in XY space.
   x = runif(10, min = -2, max = 12),
   y = runif(10, min = -2, max = 12)
 ) |>
@@ -112,36 +112,36 @@ zone_polys = data.frame(
   ## extract the contiguous pieces of XY space around points
   sf::st_collection_extract('POLYGON') |>
   sf::st_as_sf() |>
-  ## make up seed zones on the fly, assign multiple polygons to some zones. 
+  ## make up seed zones on the fly, assign multiple polygons to some zones.
   dplyr::mutate(pstz_key = sample(LETTERS[1:7], size = 10, replace = T)) |>
   dplyr::rename('geometry' = x) |>
   sf::st_crop(x)
 
-bp <- ggplot2::ggplot(x) + 
-  ggplot2::geom_sf(fill = NA, lwd = 2) + 
-  ggplot2::geom_sf(data = zone_polys, ggplot2::aes(fill = pstz_key)) 
+bp <- ggplot2::ggplot(x) +
+  ggplot2::geom_sf(fill = NA, lwd = 2) +
+  ggplot2::geom_sf(data = zone_polys, ggplot2::aes(fill = pstz_key))
 
-bp + 
+bp +
   ggplot2::geom_sf_label(data = zone_polys, ggplot2::aes(label = pstz_key))
 
-###################################################################### 
-# example #1: request same numer of samples as zones - all zones returned. 
+######################################################################
+# example #1: request same numer of samples as zones - all zones returned.
  res1 <- PolygonBasedSample(
-   x = x, 
-   n = length(unique(zone_polys[['pstz_key']])), 
-   zones = zone_polys, 
+   x = x,
+   n = length(unique(zone_polys[['pstz_key']])),
+   zones = zone_polys,
    zone_key  = "pstz_key",
    increase_method = "Most"
  )
 
 bp +
-  geom_sf(data = res1, alpha = 0.9) + 
-  geom_sf_label(data = pstz,aes(label = pstz_key)) 
+  geom_sf(data = res1, alpha = 0.9) +
+  geom_sf_label(data = pstz,aes(label = pstz_key))
 
-## note that we get the largest polygon from EACH group to sample from. 
+## note that we get the largest polygon from EACH group to sample from.
 
-##################################################################### 
-# Example #2: request fewer samples than zones -> subset by method - choosing largest by area 
+#####################################################################
+# Example #2: request fewer samples than zones -> subset by method - choosing largest by area
 
 res2 <- PolygonBasedSample(
    x = x, n = 3, zones = zone_polys, zone_key  = "pstz_key", increase_method = "Largest"
@@ -154,12 +154,12 @@ res2 |>
   arrange(-total_area)|>
   knitr::kable()
 
-bp + # picks, the three largest 
-  geom_sf(data = res2, alpha = 0.9) + 
+bp + # picks, the three largest
+  geom_sf(data = res2, alpha = 0.9) +
   geom_sf_label(data = zone_polys, aes(label = pstz_key))
 
-####################################################################### 
-# Example #3: request fewer samples than zones -> subset by method - choosing smallest by area 
+#######################################################################
+# Example #3: request fewer samples than zones -> subset by method - choosing smallest by area
 res3 <- PolygonBasedSample(
   x = x, n = 3, zones = zone_polys, zone_key = "pstz_key", increase_method = "Smallest")
 
@@ -173,18 +173,18 @@ res3 |>
 ## returns the largest polygon (poly_area) within the `pstz_key` group, ranked by (total_area)
 
 bp + # picks, the n smallest - too small to see sometimes
-  geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) + 
-  geom_sf_label(data = zone_polys, aes(label = pstz_key)) 
+  geom_sf(data = filter(res3, allocation == 0), alpha = 0.9) +
+  geom_sf_label(data = zone_polys, aes(label = pstz_key))
 
 ####################################################################
 # Example #4: request more samples than zones -> allocate extras to Largest pSTZs
 
-## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest 
+## note that is really a rounding rule - 'Largest' favors giving extra collections to the largest
 ## polygons while 'smallest' favors giving them smaller polygons. It is really mostly for edge cases
-## and the two will generally behave similarly on contrived examples. 
+## and the two will generally behave similarly on contrived examples.
 res4 <- PolygonBasedSample(
    x = x, n = 12, zones = zone_polys, zone_key = "pstz_key", increase_method = "Largest")
-  
+
 res4 |>
   group_by(pstz_key) |>
   summarize(total_area = sum(poly_area),  Total_Allocation = sum(allocation)) |>
@@ -192,16 +192,16 @@ res4 |>
   arrange(-total_area) |>
   knitr::kable()
 
-bp + 
-  theme(legend.position = 'none') + 
-  geom_sf(data = res4, aes(fill = as.factor(allocation))) + 
-  geom_sf_label(data = res4, aes(label = allocation)) 
+bp +
+  theme(legend.position = 'none') +
+  geom_sf(data = res4, aes(fill = as.factor(allocation))) +
+  geom_sf_label(data = res4, aes(label = allocation))
 
 ####################################################################
 # Example #5: request more samples than zones -> allocate extras to pSTZs with most polygons
 res5 <- PolygonBasedSample(
    x = x, n = 14, zones = zone_polys, zone_key = "pstz_key", increase_method = "Most")
-  
+
 res5 |>
   group_by(pstz_key) |>
   summarize(Count = n(), Total_Allocation = sum(allocation)) |>

@@ -42,12 +42,12 @@ ri <- spData::us_states |>
   dplyr::select(NAME) |>
   dplyr::filter(NAME == 'Rhode Island') |>
   sf::st_transform(32617)
-  
+
  system.time(
   out <- PointBasedSample(polygon = ri, reps = 10, BS.reps = 10) # set very low for example
  )
 #>    user  system elapsed 
-#>   0.587   0.004   0.590 
+#>   0.586   0.004   0.590 
 # the function is actually very fast; 150 voronoi reps, with 9999 BS should only take about
 # 2 seconds per species so not much concern on the speed end of things!
 head(out$SummaryData)

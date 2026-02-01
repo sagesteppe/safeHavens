@@ -83,7 +83,7 @@ prioritization zones.
 if (FALSE) { # \dontrun{
 nc <- sf::st_read(system.file("shape/nc.shp", package="sf"), quiet = TRUE) |>
   dplyr::select(NAME) |>
-  sf::st_transform(5070) # should be in planar coordinate system. 
+  sf::st_transform(5070) # should be in planar coordinate system.
 
 set.seed(1)
 zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_proj = 32617, reps = 100)
@@ -91,22 +91,22 @@ zones <- EqualAreaSample(nc, n = 20, pts = 1000, planar_proj = 32617, reps = 100
 # the function requires an input sampling strategy to create the prioritization areas
 ps <- PrioritizeSample(zones$Geometry, n_breaks = 3, metric = 'energy')
 
-ggplot2::ggplot() + 
+ggplot2::ggplot() +
   ggplot2::geom_sf(data = ps[['Geometry']],
-  ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) + 
-  ggplot2::theme_void() + 
+  ggplot2::aes(fill = factor(Level)), color = 'white', lwd = 1) +
+  ggplot2::theme_void() +
   ggplot2::labs(fill = 'Within Zone Priority:', title = 'Focal areas to center sampling within') +
   ggplot2::theme(legend.position= 'bottom')
 
-ps[['Geometry']] |> ### to visualize without the priority zones within. 
-  dplyr::group_by(SampleOrder) |> 
+ps[['Geometry']] |> ### to visualize without the priority zones within.
+  dplyr::group_by(SampleOrder) |>
   dplyr::summarize(geometry = sf::st_union(geometry)) |>
 
-  ggplot2::ggplot() + 
+  ggplot2::ggplot() +
   ggplot2::geom_sf(ggplot2::aes(fill = SampleOrder), color = 'white') +
-  ggplot2::geom_sf_label(ggplot2::aes(label = SampleOrder), color = 'white', size = 7) + 
-  ggplot2::labs(fill = 'Sample Order', title = 'Priority guidance for sampling order') + 
-  ggplot2::theme_void() + 
+  ggplot2::geom_sf_label(ggplot2::aes(label = SampleOrder), color = 'white', size = 7) +
+  ggplot2::labs(fill = 'Sample Order', title = 'Priority guidance for sampling order') +
+  ggplot2::theme_void() +
   ggplot2::theme(legend.position= 'bottom')
 } # }
 ```

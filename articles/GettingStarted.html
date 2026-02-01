@@ -107,12 +107,14 @@
 
     
     
+<p>This vignette showcases the different sampling designs applied to the
+same species.</p>
 <div class="section level3">
 <h3 id="set-up">set up<a class="anchor" aria-label="anchor" href="#set-up"></a>
 </h3>
 <p><code>safeHavens</code> can be installed directly from github.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#remotes::install_github('sagesteppe/safeHavens@tests') </span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># remotes::install_github('sagesteppe/safeHavens@IBR') </span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sagesteppe.github.io/safeHavens/">safeHavens</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -129,13 +131,13 @@
 <h3 id="defining-a-species-range-or-domain-for-sampling">Defining a Species Range or Domain for Sampling<a class="anchor" aria-label="anchor" href="#defining-a-species-range-or-domain-for-sampling"></a>
 </h3>
 <p>Central to the sampling schemes in <code>safeHavens</code> is a
-species range or domain for sampling. For example, depending on the
+species range, or domain, for sampling. For example, depending on the
 goals of the collection, a curator may want to sample across the entire
 range of a species. Alternatively one may be interested in sampling only
 a portion of the range, e.g. a country, state, or ecoregion. Either of
-these scenarios can be accomplished with the package. Here we will show
-how to create a species range from occurrence data, and then use that
-range to run the various sampling schemes.</p>
+these scenarios can be supported by package. Here we will show how to
+create a species range from occurrence data, and then use that range for
+the various sampling schemes.</p>
 <p>Below we will use <code>sf</code> to simply buffer occurrence points
 to create a species range across multiple South American nations.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -152,41 +154,41 @@ to create a species range across multiple South American nations.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Just%20Buffer%20it!-1.png" class="r-plt" alt="" width="700"></p>
 <p>Alternatives to this include a simple convex hull around a species,
-if it is widespread throughout an area, or masking a binary SDM surface
-as the domain.</p>
+if it is widespread throughout an area (see ‘Worked Example’ for an
+example), or masking a binary SDM surface as the domain (see below, and
+‘Species Distribution Model’).</p>
 </div>
 <div class="section level2">
-<h2 id="prep-a-map-background">Prep a map background<a class="anchor" aria-label="anchor" href="#prep-a-map-background"></a>
+<h2 id="prep-a-base-map">Prep a base map<a class="anchor" aria-label="anchor" href="#prep-a-base-map"></a>
 </h2>
-<p>We will use the <code>spData</code> package which uses <a href="https://www.naturalearthdata.com/" class="external-link">naturalearth</a> data for it’s
-<code>world</code> data and is suitable for creating effective maps at a
-variety of resolutions.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">x_extra_buff</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_buffer</a></span><span class="op">(</span><span class="va">x_buff</span>, <span class="fl">100000</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># add a buffer to 'frame' the maps</span></span>
-<span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="fl">4326</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">americas</span> <span class="op">&lt;-</span> <span class="fu">spData</span><span class="fu">::</span><span class="va"><a href="https://jakubnowosad.com/spData/reference/world.html" class="external-link">world</a></span></span>
-<span><span class="va">americas</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crop.html" class="external-link">st_crop</a></span><span class="op">(</span><span class="va">americas</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_bbox.html" class="external-link">st_bbox</a></span><span class="op">(</span><span class="va">x_extra_buff</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">name_long</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
-<span><span class="co">#&gt; all geometries</span></span>
-<span></span>
-<span><span class="va">bb</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_bbox.html" class="external-link">st_bbox</a></span><span class="op">(</span><span class="va">x_extra_buff</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">map</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">americas</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span></span>
-<span>    legend.position <span class="op">=</span> <span class="st">'none'</span>, </span>
-<span>    panel.background <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_rect</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"aliceblue"</span><span class="op">)</span>, </span>
-<span>    panel.grid.minor.x <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_line</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"red"</span>, linetype <span class="op">=</span> <span class="fl">3</span>, linewidth  <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, </span>
-<span>    axis.ticks<span class="op">=</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    axis.text<span class="op">=</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    plot.background<span class="op">=</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_rect</a></span><span class="op">(</span>colour<span class="op">=</span><span class="st">"steelblue"</span><span class="op">)</span>,</span>
-<span>    plot.margin<span class="op">=</span><span class="fu">grid</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span>,<span class="fl">0</span><span class="op">)</span>,<span class="st">"cm"</span><span class="op">)</span>,</span>
-<span>    axis.ticks.length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0</span>, <span class="st">"pt"</span><span class="op">)</span><span class="op">)</span><span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">bb</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">bb</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">bb</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="va">bb</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span>, expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">x_extra_buff</span>, <span class="va">americas</span><span class="op">)</span></span></code></pre></div>
+<p>We will use the <code>spData</code> package which uses <a href="https://www.naturalearthdata.com/" class="external-link">naturalearth</a> for it’s
+<code>world</code> data and is suitable for creating maps at a variety
+of resolutions.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>x_extra_buff <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_buffer</span>(x_buff, <span class="dv">100000</span>) <span class="sc">|&gt;</span> <span class="co"># add a buffer to 'frame' the maps</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_transform</span>(<span class="dv">4326</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>americas <span class="ot">&lt;-</span> spData<span class="sc">::</span>world</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>americas <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_crop</span>(americas, sf<span class="sc">::</span><span class="fu">st_bbox</span>(x_extra_buff)) <span class="sc">|&gt;</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(name_long)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>Warning<span class="sc">:</span> attribute variables are assumed to be spatially constant throughout</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>all geometries</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>bb <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_bbox</span>(x_extra_buff)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>map <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> americas) <span class="sc">+</span> </span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">'none'</span>, </span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>    <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"aliceblue"</span>), </span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>    <span class="at">panel.grid.minor.x =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"red"</span>, <span class="at">linetype =</span> <span class="dv">3</span>, <span class="at">linewidth  =</span> <span class="fl">0.5</span>), </span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>    <span class="at">axis.ticks=</span><span class="fu">element_blank</span>(),</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>    <span class="at">axis.text=</span><span class="fu">element_blank</span>(),</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>    <span class="at">plot.background=</span><span class="fu">element_rect</span>(<span class="at">colour=</span><span class="st">"steelblue"</span>),</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>    <span class="at">plot.margin=</span>grid<span class="sc">::</span><span class="fu">unit</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>),<span class="st">"cm"</span>),</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>    <span class="at">axis.ticks.length =</span> <span class="fu">unit</span>(<span class="dv">0</span>, <span class="st">"pt"</span>))<span class="sc">+</span> </span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">xlim =</span> <span class="fu">c</span>(bb[<span class="dv">1</span>], bb[<span class="dv">3</span>]), <span class="at">ylim =</span> <span class="fu">c</span>(bb[<span class="dv">2</span>], bb[<span class="dv">4</span>]), <span class="at">expand =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="fu">rm</span>(x_extra_buff, americas)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="running-the-various-sample-design-algorithms">Running the Various Sample Design Algorithms<a class="anchor" aria-label="anchor" href="#running-the-various-sample-design-algorithms"></a>
@@ -258,19 +260,20 @@ medium to high.</em></p>
 <div class="section level3">
 <h3 id="point-based-sample">Point Based Sample<a class="anchor" aria-label="anchor" href="#point-based-sample"></a>
 </h3>
-<p>INTRO HERE</p>
+<p><code>PointBasedSample</code> simply samples a grid of regularly
+space points across the domain, and assigns the areas nearest to each
+point to a cluster. It will work very well for common species without
+many gaps in their distributions.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PointBasedSample.html">PointBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PointBasedSample.html">PointBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span>, reps <span class="op">=</span> <span class="fl">50</span>, BS.reps <span class="op">=</span> <span class="fl">333</span><span class="op">)</span></span>
 <span><span class="va">pbs.sf</span> <span class="op">&lt;-</span> <span class="va">pbs</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span></span>
-<span></span>
-<span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">st_is_valid</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
 <span><span class="va">pbs.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">pbs.sf</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
 <span><span class="co">#  geom_sf_label(data = pbs.sf, aes(label = ID), alpha = 0.4) + </span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Point'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">pbs.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Point%20Based%20Sample-1.png" class="r-plt" alt="" width="700"></p>
 </div>
@@ -278,26 +281,22 @@ medium to high.</em></p>
 <h3 id="equal-area-sample">Equal Area Sample<a class="anchor" aria-label="anchor" href="#equal-area-sample"></a>
 </h3>
 <p>Perhaps the simplest method which is offered in
-<code>safeHavens</code> is <code>EqualAreaSample</code>. It simply
-creates many points, <code>pts</code> defaulting to 5000, within our
-target domain and subjects them to k-means sampling where the groups are
-specified by <code>n</code>, our target number of collections. The
-individual points assigned to each group are merged into polygons which
-‘take’ up all of the geographic space, and are intersected back to the
-species range, and the area of each polygon is then measured. This
-process will be ran a few times, defaulting to 100 <code>reps</code>,
-and the set of polygons which was created during these reps with the
-smallest variance in polygon size will be selected and returned.</p>
+<code>safeHavens</code> is <code>EqualAreaSample</code>. It creates many
+points, <code>pts</code> defaulting to 5000, within our target domain
+and subjects them to k-means clustering where the groups are specified
+by <code>n</code>, our target number of collections. The individual
+points assigned to each group are merged into polygons which ‘take’ up
+all of the geographic space, and are intersected back to the species
+range, and the area of each polygon is then measured. This process will
+be ran a few times, defaulting to 100 <code>reps</code>, and the set of
+polygons which was created during these reps with the smallest variance
+in polygon size will be selected and returned.</p>
 <p>This differs from point based sampling in that the above instance, we
 start with a few regularly spaced points to grow from, here we take a
 step back and by using many points let the clusters grow themselves to
 similar sizes.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eas</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EqualAreaSample.html">EqualAreaSample</a></span><span class="op">(</span><span class="va">x_buff</span>, planar_proj <span class="op">=</span> <span class="va">planar_proj</span><span class="op">)</span> </span>
-<span><span class="co">#&gt; Warning: did not converge in 10 iterations</span></span>
-<span><span class="co">#&gt; Warning: did not converge in 10 iterations</span></span>
-<span><span class="co">#&gt; Warning: did not converge in 10 iterations</span></span>
-<span><span class="co">#&gt; Warning: did not converge in 10 iterations</span></span>
 <span></span>
 <span><span class="va">eas.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">eas</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -307,32 +306,26 @@ similar sizes.</p>
 <span><span class="va">eas.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png" class="r-plt" alt="" width="700"></p>
 <p>The results look quite similar to point based sample.</p>
-<pre><code><span><span class="co">#&gt; Warning in rm(eas, pbs, pbs.sf, tgs, grid_buff): object 'tgs' not found</span></span>
-<span><span class="co">#&gt; Warning in rm(eas, pbs, pbs.sf, tgs, grid_buff): object 'grid_buff' not found</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="opportunistic-sample">Opportunistic Sample<a class="anchor" aria-label="anchor" href="#opportunistic-sample"></a>
 </h3>
-<p>Many curators are interested in how much they can embed their
-existing collections into a sampling framework. The function
+<p>Users may be interested in how they can embed their existing
+collections into a sampling framework. The function
 <code>OpportunisticSample</code> makes a few minor modifications to the
-point based sample to maximize an existing collection. It doesn’t always
-work exceptionally, especially when a couple collections are very close
-to each other, but it may be a beneficial tool to have in the belt. As
-we have observed, the three previous sampling schemes end of with
-somewhat similar results - so we took used the
-<code>PointBasedSample</code> as the framework we embedded this function
-into it.</p>
-<p>Essentially this combines the approach of point based sampling, but
-forces that the clusters are based around the existing accessions. It
-attempts to ‘center’ the existing collections within clusters, but this
-can be nearly impossible for a variety of reasons.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+point based sample to and designs it around existing collections It
+doesn’t always work exceptionally, especially when a couple collections
+are very close to each other, but as the old saying goes “a bird in hand
+is worth two in the bush”. As we have observed, the previous sampling
+schemes have somewhat similar results - so we used the
+<code>PointBasedSample</code> as the framework to embed into this
+function.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">exist_pts</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_sample.html" class="external-link">st_sample</a></span><span class="op">(</span><span class="va">x_buff</span>, size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>   <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># ^^ just randomly sampling 10 points in the species range</span></span>
+<span>   <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># ^^ randomly sampling 10 points in the species range</span></span>
 <span>   <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>geometry <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">os</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/OpportunisticSample.html">OpportunisticSample</a></span><span class="op">(</span>polygon <span class="op">=</span> <span class="va">x_buff</span>, n <span class="op">=</span> <span class="fl">20</span>, collections <span class="op">=</span> <span class="va">exist_pts</span><span class="op">)</span></span>
+<span><span class="va">os</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/OpportunisticSample.html">OpportunisticSample</a></span><span class="op">(</span>polygon <span class="op">=</span> <span class="va">x_buff</span>, n <span class="op">=</span> <span class="fl">20</span>, collections <span class="op">=</span> <span class="va">exist_pts</span>, reps <span class="op">=</span> <span class="fl">50</span>, BS.reps <span class="op">=</span> <span class="fl">333</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">os.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">os</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -343,9 +336,9 @@ can be nearly impossible for a variety of reasons.</p>
 <span></span>
 <span><span class="va">os.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Opportunistic%20Sample-1.png" class="r-plt" alt="" width="700"></p>
-<p>Here, the grids have been aligned around the points. This can lead to
-some oddly shaped clusters, but <em>a bird in hand is worth two in the
-bush.</em></p>
+<p>Here, the grids have been aligned around the existing collections.
+The results from this function can lead to some oddly shaped clusters,
+but <em>a bird in hand is worth two in the bush.</em></p>
 </div>
 <div class="section level3">
 <h3 id="isolation-by-distance-based-sample">Isolation by Distance Based Sample<a class="anchor" aria-label="anchor" href="#isolation-by-distance-based-sample"></a>
@@ -353,9 +346,9 @@ bush.</em></p>
 <p>Isolation by Distance is the fundamental idea behind this package.
 This function explicitly uses IBD to develop a sampling scheme, and does
 not obfuscate it with any other parameters.</p>
-<p>Note that this function requires a raster input, rather than a
-vector.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>Note that this function requires a raster, rather than vector,
+input.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span> </span>
 <span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"dismo"</span><span class="op">)</span>, <span class="st">'ex'</span><span class="op">)</span>,</span>
 <span>  pattern <span class="op">=</span> <span class="st">'grd'</span>,  full.names<span class="op">=</span><span class="cn">TRUE</span> <span class="op">)</span> </span>
@@ -369,23 +362,53 @@ vector.</p>
 <span><span class="va">v</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rasterize.html" class="external-link">rasterize</a></span><span class="op">(</span><span class="va">x_buff.sf</span>, <span class="va">predictors</span>, field <span class="op">=</span> <span class="st">'Range'</span><span class="op">)</span> </span>
 <span></span>
 <span><span class="co"># now we run the function demanding 20 areas to make accessions from, </span></span>
-<span><span class="va">ibdbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/IBDBasedSample.html">IBDBasedSample</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">v</span>, n <span class="op">=</span> <span class="fl">20</span>, fixedClusters <span class="op">=</span> <span class="cn">TRUE</span>, template <span class="op">=</span> <span class="va">predictors</span>, planar_proj <span class="op">=</span> <span class="va">planar_proj</span><span class="op">)</span></span>
+<span><span class="va">ibdbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/IBDBasedSample.html">IBDBasedSample</a></span><span class="op">(</span></span>
+<span>    x <span class="op">=</span> <span class="va">v</span>, </span>
+<span>    n <span class="op">=</span> <span class="fl">20</span>, </span>
+<span>    fixedClusters <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>    template <span class="op">=</span> <span class="va">predictors</span>, </span>
+<span>    planar_proj <span class="op">=</span> <span class="va">planar_proj</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
 <span><span class="va">ibdbs.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ibdbs</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
 <span><span class="co">#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + </span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'IBD'</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'IBDistance'</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. </span></span>
+<span><span class="va">ibdbs_crop</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_intersection</a></span><span class="op">(</span><span class="va">ibdbs</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="va">x_buff.sf</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ibdbs.p2</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ibdbs_crop</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
+<span><span class="co">#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + </span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'IBDistance'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ibdbs.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Isolatation%20by%20Distance%20Example-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">predictors</span>, <span class="va">files</span>, <span class="va">v</span>, <span class="va">x_buff.sf</span>, <span class="va">exist_pts</span>, <span class="va">os</span><span class="op">)</span></span></code></pre></div>
-<p>Because these data were processed from a raster, they have lienar
-edges, representing raster tiles. However, it is evident that the
-borders of the clusters are more natural looking than in the previous
-(and future) sampling schemes.</p>
+<p>Because these data were processed from a raster, they have 90 corners
+and large straight lines, representing raster tiles. Regardless, it is
+evident that the <em>borders</em> of the clusters are more natural
+looking than in the previous (and future) sampling schemes, and we have
+better matching of the individual polygons into single classes.</p>
+</div>
+<div class="section level3">
+<h3 id="isolation-by-resistance">Isolation by resistance<a class="anchor" aria-label="anchor" href="#isolation-by-resistance"></a>
+</h3>
+<p>This workflow requires a couple steps to enact. We have a vignette
+dedicated to detailing them at <code>Isolation by Resistance</code> -
+check it out! Here we will just load the data that you will get if you
+run that vignette.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>ibr <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">system.file</span>(<span class="at">package=</span><span class="st">"safeHavens"</span>), <span class="st">'extdata'</span>, <span class="st">'IBR.gpkg'</span>), </span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>ibr.p <span class="ot">&lt;-</span> map <span class="sc">+</span> </span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> ibr, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(ID))) <span class="sc">+</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">'IBResistance'</span>) <span class="sc">+</span> </span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">expand =</span> F)</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="polygon-based-sample">Polygon Based Sample<a class="anchor" aria-label="anchor" href="#polygon-based-sample"></a>
@@ -413,46 +436,29 @@ should contain unique names for the highest resolution level ecoregion
 you want to use from the data set, for many data sets, such as our
 example we call ‘neo_eco’ this may be the only field with ecolevel
 information!</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">neo_eco</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>, <span class="st">'NeoTropicsEcoregions.gpkg'</span><span class="op">)</span>, </span>
-<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>geometry <span class="op">=</span> <span class="va">geom</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">neo_eco</span><span class="op">[</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">6</span>, <span class="fl">11</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Simple feature collection with 6 features and 4 fields</span></span>
-<span><span class="co">#&gt; Geometry type: MULTIPOLYGON</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -103.0432 ymin: -31.25308 xmax: -34.79344 ymax: 26.91751</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
-<span><span class="co">#&gt;                  Provincias      Region      Dominio</span></span>
-<span><span class="co">#&gt; 1 Araucaria Forest province Neotropical       Parana</span></span>
-<span><span class="co">#&gt; 2          Atacama province Neotropical         &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3         Atlantic province Neotropical       Parana</span></span>
-<span><span class="co">#&gt; 4           Bahama province Neotropical         &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 5     Balsas Basin province Neotropical Mesoamerican</span></span>
-<span><span class="co">#&gt; 6         Caatinga province Neotropical      Chacoan</span></span>
-<span><span class="co">#&gt;                        Subregion                       geometry</span></span>
-<span><span class="co">#&gt; 1                        Chacoan MULTIPOLYGON (((-53.58012 -...</span></span>
-<span><span class="co">#&gt; 2 South American Transition Zone MULTIPOLYGON (((-69.42981 -...</span></span>
-<span><span class="co">#&gt; 3                        Chacoan MULTIPOLYGON (((-48.41217 -...</span></span>
-<span><span class="co">#&gt; 4                      Antillean MULTIPOLYGON (((-77.58593 2...</span></span>
-<span><span class="co">#&gt; 5                      Brazilian MULTIPOLYGON (((-97.37265 1...</span></span>
-<span><span class="co">#&gt; 6                        Chacoan MULTIPOLYGON (((-35.56652 -...</span></span>
-<span></span>
-<span><span class="va">x_buff</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">x_buff</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="va">neo_eco</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">ebs.sf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PolygonBasedSample.html">PolygonBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span>, zones <span class="op">=</span> <span class="va">neo_eco</span>, n <span class="op">=</span> <span class="fl">10</span>, zone_key <span class="op">=</span> <span class="st">'Provincias'</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in st_collection_extract.sf(zones_poly, "POLYGON", warn = FALSE): x is</span></span>
-<span><span class="co">#&gt; already of type POLYGON.</span></span>
-<span></span>
-<span><span class="co"># crop it to the other objects for plotting</span></span>
-<span><span class="va">ebs.sf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crop.html" class="external-link">st_crop</a></span><span class="op">(</span><span class="va">ebs.sf</span>, <span class="va">bb</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
-<span><span class="co">#&gt; all geometries</span></span>
-<span></span>
-<span><span class="va">ebs.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ebs.sf</span> , <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">allocation</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Ecoregion'</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>neo_eco <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">system.file</span>(<span class="at">package=</span><span class="st">"safeHavens"</span>), <span class="st">'extdata'</span>, <span class="st">'NeoTropicsEcoregions.gpkg'</span>), </span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">quiet =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">geometry =</span> geom)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">st_drop_geometry</span>(neo_eco)[,<span class="fu">c</span>(<span class="st">'Provincias'</span>, <span class="st">'Dominio'</span>, <span class="st">'Subregion'</span>)])</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>                 Provincias      Dominio                      Subregion</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="dv">1</span> Araucaria Forest province       Parana                        Chacoan</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="dv">2</span>          Atacama province         <span class="sc">&lt;</span><span class="cn">NA</span><span class="sc">&gt;</span> South American Transition Zone</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="dv">3</span>         Atlantic province       Parana                        Chacoan</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="dv">4</span>           Bahama province         <span class="sc">&lt;</span><span class="cn">NA</span><span class="sc">&gt;</span>                      Antillean</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="dv">5</span>     Balsas Basin province Mesoamerican                      Brazilian</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="dv">6</span>         Caatinga province      Chacoan                        Chacoan</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>x_buff <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_transform</span>(x_buff, sf<span class="sc">::</span><span class="fu">st_crs</span>(neo_eco))</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>ebs.sf <span class="ot">&lt;-</span> <span class="fu">PolygonBasedSample</span>(x_buff, <span class="at">zones =</span> neo_eco, <span class="at">n =</span> <span class="dv">20</span>, <span class="at">zone_key =</span> <span class="st">'Provincias'</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co"># crop it to the other objects for plotting</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>ebs.sf <span class="ot">&lt;-</span> <span class="fu">st_crop</span>(ebs.sf, bb)</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>ebs.p <span class="ot">&lt;-</span> map <span class="sc">+</span> </span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> ebs.sf , <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(allocation))) <span class="sc">+</span> </span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">'Ecoregion'</span>) <span class="sc">+</span> </span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">expand =</span> F)</span></code></pre></div>
 <p>This output differs from the others we will see, here we have
 depicted the number of collections to be made per ecoregion. Because the
 number of ecoregions is greater than our requested sample size, the
@@ -462,22 +468,16 @@ collection.</p>
 <div class="section level3">
 <h3 id="environmental-based-sample">Environmental Based Sample<a class="anchor" aria-label="anchor" href="#environmental-based-sample"></a>
 </h3>
-<p>The environmental based sample can only be conducted if you have the
-species distribution model data. Included in the data directory of the
-folder are all of the objects required to run this example for the
-species. We will load them here.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="load-the-sdm-predictions">load the SDM predictions<a class="anchor" aria-label="anchor" href="#load-the-sdm-predictions"></a>
-</h2>
-<p>The package also has an SDM prediction saved in the data we can just
-load that too for a couple comparisons.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sdm</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>, <span class="st">'Bradypus_test.tif'</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdm</span><span class="op">)</span></span></code></pre></div>
-<p><img src="GettingStarted_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>The <code>EnvironmentalBasedSample</code> can only be used if you
+have species distribution model data. We have included the ouputs of the
+vignette ‘Species Distibution Model’ with the package so they are
+available to this vignette.</p>
+<div class="section level4">
+<h4 id="load-the-sdm-predictions">load the SDM predictions<a class="anchor" aria-label="anchor" href="#load-the-sdm-predictions"></a>
+</h4>
+<p>Here we load the results of the sdm processing from the package
+data.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/serialize.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>,  <span class="st">'sdModel.rds'</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -485,6 +485,13 @@ load that too for a couple comparisons.</p>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span><span class="op">)</span></span>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span><span class="op">)</span></span>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">PCNM</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">PCNM</span><span class="op">)</span></span></code></pre></div>
+<p>And load the threshold predictions</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sdm</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>,  <span class="st">'SDM_thresholds.tif'</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdm</span><span class="op">)</span></span></code></pre></div>
+<p><img src="GettingStarted_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="700"></p>
 <p>Once these data are loaded into R, we will scale the rasters (using
 <code>RescaleRasters</code>) which will serve as surfaces to predict
 from (this is also done above!), then we will run the algorithm
@@ -500,51 +507,59 @@ finally saving relevant data with <code>writeSDMresults</code>), this
 function produces both the product and writes out ancillary data
 simultaneously.<br>
 This approach was chosen as this function is only writing out four
-objects: 1) the groups as vector data, 2) and the groups as raster data,
-3) the k-nearest neighbors (knn) model used to generate these clusters,
-and 4) the confusion matrix associated with testing the knn model.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span> <span class="co"># you may have already done this!</span></span>
-<span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
-<span>  predictors <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span>, </span>
-<span>  training_data <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TrainData</span>, </span>
-<span>  pred_mat <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">PredictMatrix</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="co"># create a directory to hold the results from EBS real quick. </span></span>
-<span><span class="co"># we will default to placing it in your current working directory. </span></span>
-<span><span class="co"># If you are a data management freak don't worry too much about this. </span></span>
-<span><span class="co"># The code to remove the directory will be provided below. </span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># this is where the folder is going to located IF YOU DON'T RUN the code below. </span></span>
-<span><span class="co">#&gt; [1] "/home/runner/work/safeHavens/safeHavens/vignettes"</span></span>
-<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">'~'</span>, <span class="st">'Documents'</span><span class="op">)</span> <span class="co"># in my case I'll dump it in Documents real quick, this should work on </span></span>
-<span><span class="co"># Linux and Mac, but I don't think Windows? </span></span>
-<span><span class="co"># dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. </span></span>
-<span></span>
-<span><span class="va">planar_proj</span> <span class="op">&lt;-</span> <span class="st">"+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"</span></span>
-<span></span>
-<span><span class="va">ENVIbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EnvironmentalBasedSample.html">EnvironmentalBasedSample</a></span><span class="op">(</span></span>
-<span>  pred_rescale <span class="op">=</span> <span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span>, </span>
-<span>  write2disk <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">'safeHavens-Vignette'</span><span class="op">)</span>, <span class="co"># we are not writing, but showing how to provide argument</span></span>
-<span>  taxon <span class="op">=</span> <span class="st">'Bradypus_test'</span>, </span>
-<span>  f_rasts <span class="op">=</span> <span class="va">sdm</span>, n <span class="op">=</span> <span class="fl">20</span>, </span>
-<span>  lyr <span class="op">=</span> <span class="st">'Supplemented'</span>,</span>
-<span>  fixedClusters <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>  n_pts <span class="op">=</span> <span class="fl">500</span>, </span>
-<span>  planar_proj <span class="op">=</span> <span class="va">planar_proj</span>,</span>
-<span>  buffer_d <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  prop_split <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ENVIbs.p</span> <span class="op">&lt;-</span> <span class="va">map</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ENVIbs</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="co">#geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + </span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Environmental'</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Coordinate system already present.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Adding new coordinate system, which will replace the existing one.</span></span>
-<span></span>
-<span><span class="va">ENVIbs.p</span></span></code></pre></div>
+objects: 1) the groups as vector data<br>
+2) and the groups as raster data<br>
+3) the k-nearest neighbors (knn) model used to generate these
+clusters<br>
+4) the confusion matrix associated with testing the knn model</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>rr <span class="ot">&lt;-</span> <span class="fu">RescaleRasters</span>( <span class="co"># you may have already done this!</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">predictors =</span> sdModel<span class="sc">$</span>Predictors, </span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">training_data =</span> sdModel<span class="sc">$</span>TrainData, </span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">pred_mat =</span> sdModel<span class="sc">$</span>PredictMatrix</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  )</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># create a directory to hold the results from EBS real quick. </span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># we will default to placing it in your current working directory. </span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="fu">getwd</span>() <span class="co"># this is where the folder is going to be created if you do not run the code below. </span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"/home/runner/work/safeHavens/safeHavens/vignettes"</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="fu">path.expand</span>(<span class="st">'~'</span>), <span class="st">'Documents'</span>) <span class="co"># in my case I'll dump it in Documents real quick, this should work on </span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co"># optional, intentionally create a directory to hold results</span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co"># dir.create(file.path(p, 'safeHavens-Vignette'))</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>planar_proj <span class="ot">&lt;-</span> <span class="st">"+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"</span></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>ENVIbs <span class="ot">&lt;-</span> <span class="fu">EnvironmentalBasedSample</span>(</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>  <span class="at">pred_rescale =</span> rr<span class="sc">$</span>RescaledPredictors, </span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>  <span class="at">write2disk =</span> <span class="cn">FALSE</span>, <span class="co"># we are not writing, but showing how to provide some arguments</span></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a>  <span class="at">path =</span> <span class="fu">file.path</span>(p, <span class="st">'safeHavens-Vignette'</span>), </span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a>  <span class="at">taxon =</span> <span class="st">'Bradypus_test'</span>, </span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>  <span class="at">f_rasts =</span> sdm, </span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>  <span class="at">coord_wt =</span> <span class="dv">2</span>,</span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>  <span class="at">n =</span> <span class="dv">20</span>, </span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>  <span class="at">lyr =</span> <span class="st">'Supplemented'</span>,</span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>  <span class="at">fixedClusters =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>  <span class="at">n_pts =</span> <span class="dv">500</span>, </span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>  <span class="at">planar_proj =</span> planar_proj,</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>  <span class="at">buffer_d =</span> <span class="dv">3</span>,</span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>  <span class="at">prop_split =</span> <span class="fl">0.8</span></span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>  )</span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a></span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a><span class="do">## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. </span></span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a>ENVIbs_crop <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_intersection</span>(ENVIbs[[<span class="st">'Geometry'</span>]], sf<span class="sc">::</span><span class="fu">st_union</span>(x_buff.sf))</span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>Warning<span class="sc">:</span> attribute variables are assumed to be spatially constant throughout</span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a>all geometries</span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a></span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a>ENVIbs.p <span class="ot">&lt;-</span> map <span class="sc">+</span> </span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> ENVIbs_crop, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(ID))) <span class="sc">+</span> </span>
+<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>  <span class="co">#geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + </span></span>
+<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">'Environmental'</span>) <span class="sc">+</span> </span>
+<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">expand =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
+<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span>
+<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a></span>
+<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a>ENVIbs.p</span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Environmental%20Based%20Sample-1.png" class="r-plt" alt="" width="700"></p>
 <p>The function <code>EnvironmentalBasedSample</code> can take any of
 the three binary rasters created by <code>PostProcessSDM</code> as
@@ -566,23 +581,34 @@ want to ‘miss’ too many areas, whereas the clipped and supplemented
 options may be better suited for scenarios where we do not want to draw
 up clusters, which lack any populations which can be collected from.</p>
 </div>
+</div>
+</div>
 <div class="section level2">
 <h2 id="comparision-of-different-sampling-schemes">Comparision of different sampling schemes<a class="anchor" aria-label="anchor" href="#comparision-of-different-sampling-schemes"></a>
 </h2>
-<p>So, we’ve made got some maps for you to look at! They all look
+<p>So, we have some maps for you to look at! They all <em>looked</em>
 relatively similar to me when plotted one after another, let’s plot them
 all simultaneously and see if that’s still the case.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbs.p</span> <span class="op">+</span> <span class="va">eas.p</span> <span class="op">+</span> <span class="va">os.p</span>  <span class="op">+</span>  <span class="va">ibdbs.p</span> <span class="op">+</span> <span class="va">ebs.p</span> <span class="op">+</span> <span class="va">ENVIbs.p</span> <span class="op">+</span> </span>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbs.p</span> <span class="op">+</span> <span class="va">eas.p</span> <span class="op">+</span> <span class="va">os.p</span>  <span class="op">+</span>  <span class="va">ibdbs.p2</span> <span class="op">+</span> <span class="va">ibr.p</span> <span class="op">+</span> <span class="va">ENVIbs.p</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Plot%20all%20Sampling%20Schemes%20together-1.png" class="r-plt" alt="" width="700"></p>
-<p>Again, the XX figures appear quite similar, with the
-<code>Opportunistic</code> method only deviating slightly form them. In
-my mind isolation by distance (IBD) show the biggest different, it seems
-to have made the most <em>sense</em> of the naturally occurring
-patchiness of the species range. Environmental also seems to partition
-the feature space quite well. Notably drawing a couple clusters in the
-Pacific lowlands and Northern Andes mountains.</p>
+<p>The geographic based samples (here Point, Equal Area, Opportunistic,
+and IBE) are quite similar. In my mind isolation by distance (IBD) show
+the biggest different, it makes the most <em>sense</em> by splitting
+sampling areas along naturally occurring patches of the species
+range.</p>
+<p>The application of <code>PolygonBasedSample</code> to the data are
+difficult to evaluate in the same sense as the other data sets, but it
+was able to identify the desired regions for sampling. We do not show it
+in this pane.</p>
+<p>Isolation by Resistance is similar to IBD, however it makes fewer
+splits in Central America, instead picking up on them in the Peru.</p>
+<p>Relative to IBR Isolation by Environment tends to split locations
+across the Andes and the NW coastal regions of South America. The ranges
+are relatively contigious - enough to sensibly sample from. Contiguity
+of ranges in this approach can be controlled with the
+<code>coord_wt</code> argument.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

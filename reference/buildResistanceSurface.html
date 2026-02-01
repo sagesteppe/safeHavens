@@ -82,11 +82,13 @@
 <span>  rivers <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tri <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  habitat <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  w_ocean <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  w_lakes <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>  w_ocean <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  w_lakes <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  w_rivers <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  w_tri <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  w_habitat <span class="op">=</span> <span class="fl">1</span></span>
+<span>  w_habitat <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  addtl_r <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  addtl_w <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -141,6 +143,14 @@
 <dt id="arg-w-habitat">w_habitat<a class="anchor" aria-label="anchor" href="#arg-w-habitat"></a></dt>
 <dd><p>Numeric. Weight applied to habitat suitability (default 1).</p></dd>
 
+
+<dt id="arg-addtl-r">addtl_r<a class="anchor" aria-label="anchor" href="#arg-addtl-r"></a></dt>
+<dd><p>SpatRaster, 'raster stack'. Additional layers to include in the resistance surface</p></dd>
+
+
+<dt id="arg-addtl-w">addtl_w<a class="anchor" aria-label="anchor" href="#arg-addtl-w"></a></dt>
+<dd><p>Numeric vector. Must equal the length of addtl_r exactly. Weights for the additional rasters layers to include in the resistance surface</p></dd>
+
 </dl></div>
 
     <div class="section level2">
@@ -148,9 +158,9 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># Prepare resistance raster</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># this also can run internally in `population resistance`, </span></span></span>
+<span class="r-in"><span><span class="co"># this also can run internally in `population resistance`,</span></span></span>
 <span class="r-in"><span><span class="co"># but for time sakes is best to prep ahead of time</span></span></span>
-<span class="r-in"><span><span class="co"># especially if treating multiple species in the same domain. </span></span></span>
+<span class="r-in"><span><span class="co"># especially if treating multiple species in the same domain.</span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">buildResistanceSurface</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  base_raster <span class="op">=</span> <span class="va">base_rast</span>,</span></span>
 <span class="r-in"><span>  oceans <span class="op">=</span> <span class="va">ocean_r</span>,</span></span>

@@ -12,7 +12,8 @@ User facing functions for implementing the sampling schemes
 - [`OpportunisticSample()`](https://sagesteppe.github.io/safeHavens/reference/OpportunisticSample.md)
   : Design additional collections around already existing collections
 - [`KMedoidsBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/KMedoidsBasedSample.md)
-  : Maximize Dispersion Site Selection
+  : K Medoids Based Sample Site Selection Select a subset of sites that
+  maximize spatial dispersion of sites using k-medioids clustering.
 - [`IBDBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/IBDBasedSample.md)
   : Sample a species based on Isolation by Geographic Distance (IBD)
 - [`PolygonBasedSample()`](https://sagesteppe.github.io/safeHavens/reference/PolygonBasedSample.md)

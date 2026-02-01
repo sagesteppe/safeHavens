@@ -14,11 +14,13 @@ buildResistanceSurface(
   rivers = NULL,
   tri = NULL,
   habitat = NULL,
-  w_ocean = 1000,
-  w_lakes = 200,
+  w_ocean = 100,
+  w_lakes = 50,
   w_rivers = 20,
   w_tri = 1,
-  w_habitat = 1
+  w_habitat = 1,
+  addtl_r = NULL,
+  addtl_w = NULL
 )
 ```
 
@@ -77,15 +79,25 @@ buildResistanceSurface(
 
   Numeric. Weight applied to habitat suitability (default 1).
 
+- addtl_r:
+
+  SpatRaster, 'raster stack'. Additional layers to include in the
+  resistance surface
+
+- addtl_w:
+
+  Numeric vector. Must equal the length of addtl_r exactly. Weights for
+  the additional rasters layers to include in the resistance surface
+
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
 # Prepare resistance raster
 
-# this also can run internally in `population resistance`, 
+# this also can run internally in `population resistance`,
 # but for time sakes is best to prep ahead of time
-# especially if treating multiple species in the same domain. 
+# especially if treating multiple species in the same domain.
 res <- buildResistanceSurface(
   base_raster = base_rast,
   oceans = ocean_r,

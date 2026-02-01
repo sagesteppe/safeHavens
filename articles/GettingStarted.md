@@ -1,11 +1,14 @@
 # Getting Started
 
+This vignette showcases the different sampling designs applied to the
+same species.
+
 ### set up
 
 `safeHavens` can be installed directly from github.
 
 ``` r
-#remotes::install_github('sagesteppe/safeHavens@tests') 
+# remotes::install_github('sagesteppe/safeHavens@IBR') 
 ```
 
 ``` r
@@ -23,14 +26,14 @@ planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +uni
 
 ### Defining a Species Range or Domain for Sampling
 
-Central to the sampling schemes in `safeHavens` is a species range or
-domain for sampling. For example, depending on the goals of the
+Central to the sampling schemes in `safeHavens` is a species range, or
+domain, for sampling. For example, depending on the goals of the
 collection, a curator may want to sample across the entire range of a
 species. Alternatively one may be interested in sampling only a portion
 of the range, e.g. a country, state, or ecoregion. Either of these
-scenarios can be accomplished with the package. Here we will show how to
-create a species range from occurrence data, and then use that range to
-run the various sampling schemes.
+scenarios can be supported by package. Here we will show how to create a
+species range from occurrence data, and then use that range for the
+various sampling schemes.
 
 Below we will use `sf` to simply buffer occurrence points to create a
 species range across multiple South American nations.
@@ -52,15 +55,15 @@ plot(x_buff)
 ![](GettingStarted_files/figure-html/Just%20Buffer%20it!-1.png)
 
 Alternatives to this include a simple convex hull around a species, if
-it is widespread throughout an area, or masking a binary SDM surface as
-the domain.
+it is widespread throughout an area (see ‘Worked Example’ for an
+example), or masking a binary SDM surface as the domain (see below, and
+‘Species Distribution Model’).
 
-## Prep a map background
+## Prep a base map
 
 We will use the `spData` package which uses
-[naturalearth](https://www.naturalearthdata.com/) data for it’s `world`
-data and is suitable for creating effective maps at a variety of
-resolutions.
+[naturalearth](https://www.naturalearthdata.com/) for it’s `world` data
+and is suitable for creating maps at a variety of resolutions.
 
 ``` r
 x_extra_buff <- sf::st_buffer(x_buff, 100000) |> # add a buffer to 'frame' the maps
@@ -69,8 +72,8 @@ x_extra_buff <- sf::st_buffer(x_buff, 100000) |> # add a buffer to 'frame' the m
 americas <- spData::world
 americas <- sf::st_crop(americas, sf::st_bbox(x_extra_buff)) |>
   dplyr::select(name_long)
-#> Warning: attribute variables are assumed to be spatially constant throughout
-#> all geometries
+Warning: attribute variables are assumed to be spatially constant throughout
+all geometries
 
 bb <- sf::st_bbox(x_extra_buff)
 
@@ -112,20 +115,21 @@ medium to high.*
 
 ### Point Based Sample
 
-INTRO HERE
+`PointBasedSample` simply samples a grid of regularly space points
+across the domain, and assigns the areas nearest to each point to a
+cluster. It will work very well for common species without many gaps in
+their distributions.
 
 ``` r
-pbs <- PointBasedSample(x_buff)
+pbs <- PointBasedSample(x_buff, reps = 50, BS.reps = 333)
 pbs.sf <- pbs[['Geometry']]
-
-st_is_valid(x_buff)
-#> [1] TRUE
 
 pbs.p <- map + 
   geom_sf(data = pbs.sf, aes(fill = factor(ID))) + 
 #  geom_sf_label(data = pbs.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Point') + 
   coord_sf(expand = F)
+
 pbs.p
 ```
 
@@ -134,12 +138,12 @@ pbs.p
 ### Equal Area Sample
 
 Perhaps the simplest method which is offered in `safeHavens` is
-`EqualAreaSample`. It simply creates many points, `pts` defaulting to
-5000, within our target domain and subjects them to k-means sampling
-where the groups are specified by `n`, our target number of collections.
-The individual points assigned to each group are merged into polygons
-which ‘take’ up all of the geographic space, and are intersected back to
-the species range, and the area of each polygon is then measured. This
+`EqualAreaSample`. It creates many points, `pts` defaulting to 5000,
+within our target domain and subjects them to k-means clustering where
+the groups are specified by `n`, our target number of collections. The
+individual points assigned to each group are merged into polygons which
+‘take’ up all of the geographic space, and are intersected back to the
+species range, and the area of each polygon is then measured. This
 process will be ran a few times, defaulting to 100 `reps`, and the set
 of polygons which was created during these reps with the smallest
 variance in polygon size will be selected and returned.
@@ -151,10 +155,6 @@ similar sizes.
 
 ``` r
 eas <- EqualAreaSample(x_buff, planar_proj = planar_proj) 
-#> Warning: did not converge in 10 iterations
-#> Warning: did not converge in 10 iterations
-#> Warning: did not converge in 10 iterations
-#> Warning: did not converge in 10 iterations
 
 eas.p <- map + 
   geom_sf(data = eas[['Geometry']], aes(fill = factor(ID))) + 
@@ -168,32 +168,24 @@ eas.p
 
 The results look quite similar to point based sample.
 
-    #> Warning in rm(eas, pbs, pbs.sf, tgs, grid_buff): object 'tgs' not found
-    #> Warning in rm(eas, pbs, pbs.sf, tgs, grid_buff): object 'grid_buff' not found
-
 ### Opportunistic Sample
 
-Many curators are interested in how much they can embed their existing
-collections into a sampling framework. The function
-`OpportunisticSample` makes a few minor modifications to the point based
-sample to maximize an existing collection. It doesn’t always work
-exceptionally, especially when a couple collections are very close to
-each other, but it may be a beneficial tool to have in the belt. As we
-have observed, the three previous sampling schemes end of with somewhat
-similar results - so we took used the `PointBasedSample` as the
-framework we embedded this function into it.
-
-Essentially this combines the approach of point based sampling, but
-forces that the clusters are based around the existing accessions. It
-attempts to ‘center’ the existing collections within clusters, but this
-can be nearly impossible for a variety of reasons.
+Users may be interested in how they can embed their existing collections
+into a sampling framework. The function `OpportunisticSample` makes a
+few minor modifications to the point based sample to and designs it
+around existing collections It doesn’t always work exceptionally,
+especially when a couple collections are very close to each other, but
+as the old saying goes “a bird in hand is worth two in the bush”. As we
+have observed, the previous sampling schemes have somewhat similar
+results - so we used the `PointBasedSample` as the framework to embed
+into this function.
 
 ``` r
 exist_pts <- sf::st_sample(x_buff, size = 10) |> 
-   sf::st_as_sf() |> # ^^ just randomly sampling 10 points in the species range
+   sf::st_as_sf() |> # ^^ randomly sampling 10 points in the species range
    dplyr::rename(geometry = x)
 
-os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts)
+os <- OpportunisticSample(polygon = x_buff, n = 20, collections = exist_pts, reps = 50, BS.reps = 333)
 
 os.p <- map + 
   geom_sf(data = os[['Geometry']], aes(fill = factor(ID))) + 
@@ -207,9 +199,9 @@ os.p
 
 ![](GettingStarted_files/figure-html/Opportunistic%20Sample-1.png)
 
-Here, the grids have been aligned around the points. This can lead to
-some oddly shaped clusters, but *a bird in hand is worth two in the
-bush.*
+Here, the grids have been aligned around the existing collections. The
+results from this function can lead to some oddly shaped clusters, but
+*a bird in hand is worth two in the bush.*
 
 ### Isolation by Distance Based Sample
 
@@ -217,7 +209,7 @@ Isolation by Distance is the fundamental idea behind this package. This
 function explicitly uses IBD to develop a sampling scheme, and does not
 obfuscate it with any other parameters.
 
-Note that this function requires a raster input, rather than a vector.
+Note that this function requires a raster, rather than vector, input.
 
 ``` r
 files <- list.files( 
@@ -233,12 +225,26 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
 
 # now we run the function demanding 20 areas to make accessions from, 
-ibdbs <- IBDBasedSample(x = v, n = 20, fixedClusters = TRUE, template = predictors, planar_proj = planar_proj)
+ibdbs <- IBDBasedSample(
+    x = v, 
+    n = 20, 
+    fixedClusters = TRUE, 
+    template = predictors, 
+    planar_proj = planar_proj
+    )
 
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
-  labs(title = 'IBD') + 
+  labs(title = 'IBDistance') + 
+  coord_sf(expand = F)
+
+## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. 
+ibdbs_crop <- sf::st_intersection(ibdbs[['Geometry']], sf::st_union(x_buff.sf))
+ibdbs.p2 <- map + 
+  geom_sf(data = ibdbs_crop, aes(fill = factor(ID))) + 
+#  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
+  labs(title = 'IBDistance') + 
   coord_sf(expand = F)
 
 ibdbs.p
@@ -246,15 +252,31 @@ ibdbs.p
 
 ![](GettingStarted_files/figure-html/Isolatation%20by%20Distance%20Example-1.png)
 
+Because these data were processed from a raster, they have 90 corners
+and large straight lines, representing raster tiles. Regardless, it is
+evident that the *borders* of the clusters are more natural looking than
+in the previous (and future) sampling schemes, and we have better
+matching of the individual polygons into single classes.
+
+### Isolation by resistance
+
+This workflow requires a couple steps to enact. We have a vignette
+dedicated to detailing them at `Isolation by Resistance` - check it out!
+Here we will just load the data that you will get if you run that
+vignette.
+
 ``` r
+ibr <- sf::st_read(
+  file.path(system.file(package="safeHavens"), 'extdata', 'IBR.gpkg'), 
+  quiet = TRUE)
 
-rm(predictors, files, v, x_buff.sf, exist_pts, os)
+ibr.p <- map + 
+  geom_sf(data = ibr, aes(fill = factor(ID))) +
+  labs(title = 'IBResistance') + 
+  coord_sf(expand = F)
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
-
-Because these data were processed from a raster, they have lienar edges,
-representing raster tiles. However, it is evident that the borders of
-the clusters are more natural looking than in the previous (and future)
-sampling schemes.
 
 ### Polygon Based Sample
 
@@ -286,36 +308,20 @@ neo_eco <- sf::st_read(
   file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'), 
   quiet = TRUE) |>
   dplyr::rename(geometry = geom)
-head(neo_eco[,c(1, 3, 4, 6, 11)])
-#> Simple feature collection with 6 features and 4 fields
-#> Geometry type: MULTIPOLYGON
-#> Dimension:     XY
-#> Bounding box:  xmin: -103.0432 ymin: -31.25308 xmax: -34.79344 ymax: 26.91751
-#> Geodetic CRS:  WGS 84
-#>                  Provincias      Region      Dominio
-#> 1 Araucaria Forest province Neotropical       Parana
-#> 2          Atacama province Neotropical         <NA>
-#> 3         Atlantic province Neotropical       Parana
-#> 4           Bahama province Neotropical         <NA>
-#> 5     Balsas Basin province Neotropical Mesoamerican
-#> 6         Caatinga province Neotropical      Chacoan
-#>                        Subregion                       geometry
-#> 1                        Chacoan MULTIPOLYGON (((-53.58012 -...
-#> 2 South American Transition Zone MULTIPOLYGON (((-69.42981 -...
-#> 3                        Chacoan MULTIPOLYGON (((-48.41217 -...
-#> 4                      Antillean MULTIPOLYGON (((-77.58593 2...
-#> 5                      Brazilian MULTIPOLYGON (((-97.37265 1...
-#> 6                        Chacoan MULTIPOLYGON (((-35.56652 -...
+head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')])
+                 Provincias      Dominio                      Subregion
+1 Araucaria Forest province       Parana                        Chacoan
+2          Atacama province         <NA> South American Transition Zone
+3         Atlantic province       Parana                        Chacoan
+4           Bahama province         <NA>                      Antillean
+5     Balsas Basin province Mesoamerican                      Brazilian
+6         Caatinga province      Chacoan                        Chacoan
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
-ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 10, zone_key = 'Provincias')
-#> Warning in st_collection_extract.sf(zones_poly, "POLYGON", warn = FALSE): x is
-#> already of type POLYGON.
+ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 20, zone_key = 'Provincias')
 
 # crop it to the other objects for plotting
 ebs.sf <- st_crop(ebs.sf, bb)
-#> Warning: attribute variables are assumed to be spatially constant throughout
-#> all geometries
 
 ebs.p <- map + 
   geom_sf(data = ebs.sf , aes(fill = factor(allocation))) + 
@@ -330,22 +336,14 @@ object can only take on two values - no collections, or one collection.
 
 ### Environmental Based Sample
 
-The environmental based sample can only be conducted if you have the
-species distribution model data. Included in the data directory of the
-folder are all of the objects required to run this example for the
-species. We will load them here.
+The `EnvironmentalBasedSample` can only be used if you have species
+distribution model data. We have included the ouputs of the vignette
+‘Species Distibution Model’ with the package so they are available to
+this vignette.
 
-## load the SDM predictions
+#### load the SDM predictions
 
-The package also has an SDM prediction saved in the data we can just
-load that too for a couple comparisons.
-
-``` r
-sdm <- terra::rast(file.path(system.file(package="safeHavens"), 'extdata', 'Bradypus_test.tif'))
-terra::plot(sdm)
-```
-
-![](GettingStarted_files/figure-html/unnamed-chunk-5-1.png)
+Here we load the results of the sdm processing from the package data.
 
 ``` r
 sdModel <- readRDS(
@@ -356,6 +354,17 @@ sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
 sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
 sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
 ```
+
+And load the threshold predictions
+
+``` r
+sdm <- terra::rast(
+  file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
+  )
+terra::plot(sdm)
+```
+
+![](GettingStarted_files/figure-html/unnamed-chunk-7-1.png)
 
 Once these data are loaded into R, we will scale the rasters (using
 `RescaleRasters`) which will serve as surfaces to predict from (this is
@@ -371,9 +380,10 @@ SDM and associated products we used: `elasticSDM`, `PostProcessSDM`, and
 `writeSDMresults`), this function produces both the product and writes
 out ancillary data simultaneously.  
 This approach was chosen as this function is only writing out four
-objects: 1) the groups as vector data, 2) and the groups as raster data,
-3) the k-nearest neighbors (knn) model used to generate these clusters,
-and 4) the confusion matrix associated with testing the knn model.
+objects: 1) the groups as vector data  
+2) and the groups as raster data  
+3) the k-nearest neighbors (knn) model used to generate these clusters  
+4) the confusion matrix associated with testing the knn model
 
 ``` r
 rr <- RescaleRasters( # you may have already done this!
@@ -385,36 +395,43 @@ rr <- RescaleRasters( # you may have already done this!
 
 # create a directory to hold the results from EBS real quick. 
 # we will default to placing it in your current working directory. 
-# If you are a data management freak don't worry too much about this. 
-# The code to remove the directory will be provided below. 
-getwd() # this is where the folder is going to located IF YOU DON'T RUN the code below. 
-#> [1] "/home/runner/work/safeHavens/safeHavens/vignettes"
-p <- file.path('~', 'Documents') # in my case I'll dump it in Documents real quick, this should work on 
-# Linux and Mac, but I don't think Windows? 
-# dir.create(file.path(p, 'safeHavens-Vignette')) # now create the directory. 
+getwd() # this is where the folder is going to be created if you do not run the code below. 
+[1] "/home/runner/work/safeHavens/safeHavens/vignettes"
+p <- file.path(path.expand('~'), 'Documents') # in my case I'll dump it in Documents real quick, this should work on 
+
+# optional, intentionally create a directory to hold results
+# dir.create(file.path(p, 'safeHavens-Vignette'))
 
 planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = rr$RescaledPredictors, 
-  write2disk = FALSE, 
-  path = file.path(p, 'safeHavens-Vignette'), # we are not writing, but showing how to provide argument
+  write2disk = FALSE, # we are not writing, but showing how to provide some arguments
+  path = file.path(p, 'safeHavens-Vignette'), 
   taxon = 'Bradypus_test', 
-  f_rasts = sdm, n = 20, 
+  f_rasts = sdm, 
+  coord_wt = 2,
+  n = 20, 
   lyr = 'Supplemented',
   fixedClusters = TRUE, 
   n_pts = 500, 
   planar_proj = planar_proj,
   buffer_d = 3,
-  prop_split = 0.8)
+  prop_split = 0.8
+  )
+
+## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. 
+ENVIbs_crop <- sf::st_intersection(ENVIbs[['Geometry']], sf::st_union(x_buff.sf))
+Warning: attribute variables are assumed to be spatially constant throughout
+all geometries
 
 ENVIbs.p <- map + 
-  geom_sf(data = ENVIbs[['Geometry']], aes(fill = factor(ID))) + 
+  geom_sf(data = ENVIbs_crop, aes(fill = factor(ID))) + 
   #geom_sf_label(data = ENVIbs, aes(label = ID), alpha = 0.4) + 
   labs(title = 'Environmental') + 
   coord_sf(expand = FALSE)
-#> Coordinate system already present.
-#> ℹ Adding new coordinate system, which will replace the existing one.
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 
 ENVIbs.p
 ```
@@ -445,21 +462,31 @@ up clusters, which lack any populations which can be collected from.
 
 ## Comparision of different sampling schemes
 
-So, we’ve made got some maps for you to look at! They all look
-relatively similar to me when plotted one after another, let’s plot them
-all simultaneously and see if that’s still the case.
+So, we have some maps for you to look at! They all *looked* relatively
+similar to me when plotted one after another, let’s plot them all
+simultaneously and see if that’s still the case.
 
 ``` r
-pbs.p + eas.p + os.p  +  ibdbs.p + ebs.p + ENVIbs.p + 
+pbs.p + eas.p + os.p  +  ibdbs.p2 + ibr.p + ENVIbs.p + 
   plot_layout(ncol = 3)
 ```
 
 ![](GettingStarted_files/figure-html/Plot%20all%20Sampling%20Schemes%20together-1.png)
 
-Again, the XX figures appear quite similar, with the `Opportunistic`
-method only deviating slightly form them. In my mind isolation by
-distance (IBD) show the biggest different, it seems to have made the
-most *sense* of the naturally occurring patchiness of the species range.
-Environmental also seems to partition the feature space quite well.
-Notably drawing a couple clusters in the Pacific lowlands and Northern
-Andes mountains.
+The geographic based samples (here Point, Equal Area, Opportunistic, and
+IBE) are quite similar. In my mind isolation by distance (IBD) show the
+biggest different, it makes the most *sense* by splitting sampling areas
+along naturally occurring patches of the species range.
+
+The application of `PolygonBasedSample` to the data are difficult to
+evaluate in the same sense as the other data sets, but it was able to
+identify the desired regions for sampling. We do not show it in this
+pane.
+
+Isolation by Resistance is similar to IBD, however it makes fewer splits
+in Central America, instead picking up on them in the Peru.
+
+Relative to IBR Isolation by Environment tends to split locations across
+the Andes and the NW coastal regions of South America. The ranges are
+relatively contigious - enough to sensibly sample from. Contiguity of
+ranges in this approach can be controlled with the `coord_wt` argument.

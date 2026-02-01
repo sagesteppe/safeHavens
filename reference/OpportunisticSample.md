@@ -55,13 +55,12 @@ existing_collections <- sf::st_sample(ri, size = 5) |>
   dplyr::rename(geometry = x)
 
 system.time(
-  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999) 
-) 
+  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999)
+)
 #>    user  system elapsed 
-#>   6.289   0.021   6.310 
-ggplot2::ggplot() + 
-  ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
-  ggplot2::geom_sf(data = existing_collections) 
+#>   6.300   0.029   6.332 
+ggplot2::ggplot() +
+  ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) +
+  ggplot2::geom_sf(data = existing_collections)
 
- 
 ```

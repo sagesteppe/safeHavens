@@ -108,7 +108,7 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'sagesteppe/safeHavens'</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co">#remotes::install_github('sagesteppe/safeHavens')</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="species-distribution-modelling">Species Distribution Modelling<a class="anchor" aria-label="anchor" href="#species-distribution-modelling"></a>
 </h2>
@@ -196,25 +196,24 @@ pseudo-absence data by calculating the distance from each occurrence
 point to the nearest neighbor, and then selecting a quantile of these
 distances to create a buffer around each occurrence point. Points
 outside of this buffer are used pseudo-absences.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/elasticSDM.html">elasticSDM</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">x</span>,</span>
-<span>  predictors <span class="op">=</span> <span class="va">predictors</span>,</span>
-<span>  quantile_v <span class="op">=</span> <span class="fl">0.025</span>,</span>
-<span>  planar_proj <span class="op">=</span> <span class="va">planar_proj</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: </span></span>
-<span><span class="co">#&gt; Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: </span></span>
-<span><span class="co">#&gt;   (GCV) Generalized Cross-Validation </span></span>
-<span><span class="co">#&gt;    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )</span></span>
-<span><span class="co">#&gt; Warning: </span></span>
-<span><span class="co">#&gt; Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: </span></span>
-<span><span class="co">#&gt;   (GCV) Generalized Cross-Validation </span></span>
-<span><span class="co">#&gt;    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )</span></span>
-<span><span class="co">#&gt; Warning: </span></span>
-<span><span class="co">#&gt; Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: </span></span>
-<span><span class="co">#&gt;   (GCV) Generalized Cross-Validation </span></span>
-<span><span class="co">#&gt;    minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>sdModel <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">x =</span> x,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">predictors =</span> predictors,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">quantile_v =</span> <span class="fl">0.025</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">planar_proj =</span> planar_proj</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  )</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">1.656291e-07</span> (eff. <span class="at">df=</span> <span class="fl">174.8</span> )</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">1.656291e-07</span> (eff. <span class="at">df=</span> <span class="fl">174.8</span> )</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">1.656291e-07</span> (eff. <span class="at">df=</span> <span class="fl">174.8</span> )</span></code></pre></div>
 <p>Under the hood this function uses <code>caret</code> to help out with
 <code>glmnet</code>, as it provides output which is very easy to explore
 and interact with. Elastic net modelS bridge the world of lasso and
@@ -235,35 +234,34 @@ hand.</p>
 <p>Here we can see how the elastic net decided that is the top model. We
 used Accuracy rather than Kappa as the main criterion for model
 selection.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sdModel</span><span class="op">$</span><span class="va">ConfusionMatrix</span></span>
-<span><span class="co">#&gt; Confusion Matrix and Statistics</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;           Reference</span></span>
-<span><span class="co">#&gt; Prediction  0  1</span></span>
-<span><span class="co">#&gt;          0 16  1</span></span>
-<span><span class="co">#&gt;          1  7 21</span></span>
-<span><span class="co">#&gt;                                         </span></span>
-<span><span class="co">#&gt;                Accuracy : 0.8222        </span></span>
-<span><span class="co">#&gt;                  95% CI : (0.6795, 0.92)</span></span>
-<span><span class="co">#&gt;     No Information Rate : 0.5111        </span></span>
-<span><span class="co">#&gt;     P-Value [Acc &gt; NIR] : 1.465e-05     </span></span>
-<span><span class="co">#&gt;                                         </span></span>
-<span><span class="co">#&gt;                   Kappa : 0.6464        </span></span>
-<span><span class="co">#&gt;                                         </span></span>
-<span><span class="co">#&gt;  Mcnemar's Test P-Value : 0.0771        </span></span>
-<span><span class="co">#&gt;                                         </span></span>
-<span><span class="co">#&gt;             Sensitivity : 0.9545        </span></span>
-<span><span class="co">#&gt;             Specificity : 0.6957        </span></span>
-<span><span class="co">#&gt;          Pos Pred Value : 0.7500        </span></span>
-<span><span class="co">#&gt;          Neg Pred Value : 0.9412        </span></span>
-<span><span class="co">#&gt;              Prevalence : 0.4889        </span></span>
-<span><span class="co">#&gt;          Detection Rate : 0.4667        </span></span>
-<span><span class="co">#&gt;    Detection Prevalence : 0.6222        </span></span>
-<span><span class="co">#&gt;       Balanced Accuracy : 0.8251        </span></span>
-<span><span class="co">#&gt;                                         </span></span>
-<span><span class="co">#&gt;        'Positive' Class : 1             </span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>sdModel<span class="sc">$</span>ConfusionMatrix</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>Confusion Matrix and Statistics</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>          Reference</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>Prediction  <span class="dv">0</span>  <span class="dv">1</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>         <span class="dv">0</span> <span class="dv">16</span>  <span class="dv">1</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>         <span class="dv">1</span>  <span class="dv">7</span> <span class="dv">21</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>                                        </span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>               Accuracy <span class="sc">:</span> <span class="fl">0.8222</span>        </span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>                 <span class="dv">95</span>% CI <span class="sc">:</span> (<span class="fl">0.6795</span>, <span class="fl">0.92</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    No Information Rate <span class="sc">:</span> <span class="fl">0.5111</span>        </span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    P<span class="sc">-</span>Value [Acc <span class="sc">&gt;</span> NIR] <span class="sc">:</span> <span class="fl">1.465e-05</span>     </span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>                                        </span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>                  Kappa <span class="sc">:</span> <span class="fl">0.6464</span>        </span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>                                        </span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a> Mcnemar<span class="st">'s Test P-Value : 0.0771        </span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="st">                                        </span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="st">            Sensitivity : 0.9545        </span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="st">            Specificity : 0.6957        </span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="st">         Pos Pred Value : 0.7500        </span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="st">         Neg Pred Value : 0.9412        </span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="st">             Prevalence : 0.4889        </span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="st">         Detection Rate : 0.4667        </span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="st">   Detection Prevalence : 0.6222        </span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="st">      Balanced Accuracy : 0.8251        </span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="st">                                        </span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="st">       '</span>Positive<span class="st">' Class : 1             </span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="st">                                        </span></span></code></pre></div>
 <p>Here we can see how our selected model works on predicting the state
 of test data. Note these accuracy results are slightly higher than those
 from the CV folds. This is not a bug, CV folds are testing on their own
@@ -333,16 +331,15 @@ to say 1.0 will mean that no suitable habitat is removed, decreasing it
 makes maps more conservative. The cost with increasing the distances
 greatly is that the sampling methods may then puts grids in many areas
 without populations to collect from.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
-<span>  rast_cont <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
-<span>  test <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TestData</span>,</span>
-<span>  train <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TrainData</span>,</span>
-<span>  planar_proj <span class="op">=</span> <span class="va">planar_proj</span>,</span>
-<span>  thresh_metric <span class="op">=</span> <span class="st">'sensitivity'</span>, </span>
-<span>  quant_amt <span class="op">=</span> <span class="fl">0.5</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="co">#&gt; 1000 prediction points are sampled from the modeldomain</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>threshold_rasts <span class="ot">&lt;-</span> <span class="fu">PostProcessSDM</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">rast_cont =</span> sdModel<span class="sc">$</span>RasterPredictions, </span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">test =</span> sdModel<span class="sc">$</span>TestData,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">train =</span> sdModel<span class="sc">$</span>TrainData,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">planar_proj =</span> planar_proj,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">thresh_metric =</span> <span class="st">'sensitivity'</span>, </span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">quant_amt =</span> <span class="fl">0.5</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  )</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="dv">1000</span> prediction points are sampled from the modeldomain</span></code></pre></div>
 <p>We can compare the results of applying this function side by side
 using the output from the function.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

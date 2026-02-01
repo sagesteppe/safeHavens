@@ -72,7 +72,7 @@ if (FALSE) { # \dontrun{
  x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 
  files <- list.files(
-   path = file.path(system.file(package="dismo"), 'ex'), 
+   path = file.path(system.file(package="dismo"), 'ex'),
    pattern = 'grd',  full.names=TRUE )
  predictors <- terra::rast(files)
 
@@ -80,7 +80,7 @@ sdModel <- elasticSDM(
    x = x, predictors = predictors, quantile_v = 0.025,
    planar_projection =
      '+proj=laea +lon_0=-421.171875 +lat_0=-16.8672134 +datum=WGS84 +units=m +no_defs')
-     
+
  terra::plot(sdModel$RasterPredictions)
 } # }
 ```
