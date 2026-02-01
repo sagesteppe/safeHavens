@@ -12,11 +12,13 @@ buildResistanceSurface(
   rivers = NULL,
   tri = NULL,
   habitat = NULL,
-  w_ocean = 1000,
-  w_lakes = 200,
+  w_ocean = 100,
+  w_lakes = 50,
   w_rivers = 20,
   w_tri = 1,
-  w_habitat = 1
+  w_habitat = 1,
+  addtl_r = NULL,
+  addtl_w = NULL
 )
 }
 \arguments{
@@ -43,6 +45,10 @@ buildResistanceSurface(
 \item{w_tri}{Numeric. Weight applied to TRI (default 1).}
 
 \item{w_habitat}{Numeric. Weight applied to habitat suitability (default 1).}
+
+\item{addtl_r}{SpatRaster, 'raster stack'. Additional layers to include in the resistance surface}
+
+\item{addtl_w}{Numeric vector. Must equal the length of addtl_r exactly. Weights for the additional rasters layers to include in the resistance surface}
 }
 \description{
 Used in conjunction, preferably before \code{populationResistance} in the \code{IBRBasedSample} workflow.
