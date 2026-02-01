@@ -5,7 +5,7 @@ magrittr::`%>%`
 
 #' @importFrom dplyr any_of
 #' @keywords internal
-#' @export 
+#' @export
 dplyr::any_of
 
 ## usethis namespace: start

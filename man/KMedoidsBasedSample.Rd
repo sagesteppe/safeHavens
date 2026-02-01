@@ -2,7 +2,8 @@
 % Please edit documentation in R/KMedoidsBasedSample.R
 \name{KMedoidsBasedSample}
 \alias{KMedoidsBasedSample}
-\title{Maximize Dispersion Site Selection}
+\title{K Medoids Based Sample Site Selection
+Select a subset of sites that maximize spatial dispersion of sites using k-medioids clustering.}
 \usage{
 KMedoidsBasedSample(
   input_data,
@@ -32,7 +33,8 @@ Note that the results will return a rank of prioritization for all sites in the 
 
 \item{verbose}{Whether to print progress information. Will print a message on run settings, and a progress bar for the bootstraps.}
 
-\item{distance_type}{Character. Defaults to 'geographic', otherwise 'environmental'. If geogra'phic and coordinates uncertainty is greater than \code{min_jitter_dist} then coordinate jittering will be performed.}
+\item{distance_type}{Character. Defaults to 'geographic', otherwise 'environmental'.
+If geographic and coordinate uncertainty is greater than \code{min_jitter_dist} then coordinate jittering will be performed.}
 
 \item{min_jitter_dist}{Minimum coordinate uncertainty (in meters) to initiate jittering of site coordinates.}
 }
@@ -49,22 +51,23 @@ Required sites (1 - as many as < n_sites) will serve as fixed parameters in the 
 They can represent: existing collections, collections with a very strong chance of happenging due to a funding agency mechanism, or otherwise a single population closet to the geographic center of the species.
 Notably the solve will be 'around' this site, hence the solves are not purely theoretical, but linked to a pragmatic element.
 
-Theoretically one can substitute a \emph{geographic} distance matrix for an \emph{environmental} distance matrix.
+One can substitute a \emph{geographic} distance matrix for either a \emph{resistance} or \emph{environmental} distance matrix.
 However, the function will not internally recalculate distances between the bootstrapped points.
 See vignette for example of creating a quick environmental distance matrix using a simple PCA of bioclim variables.
-}
-\details{
-Select a subset of sites that maximize spatial dispersion of sites using k-medioids clustering.
+
+Note that the input data \emph{require} two boolean (TRUE/FALSE) columns, 'required' and 'certain', for the function to run.
+'required' notes sites that \strong{have} to be, or have been sampled for germplasm collections, no sites default to required.
+'certain' notes that the user is confident are of the taxon at hand; this will default to all FALSE, meaning all sites except 'required' sites will be dropped in simulations.
 }
 \examples{
 \dontrun{
 library(ggplot2)
 
- ### create sample data 
+ ### create sample data
  n_sites <- 30 # number of known populations
  df <- data.frame(
    site_id = seq_len(n_sites),
-   lat = runif(n_sites, 25, 30), # play with these to see elongated results. 
+   lat = runif(n_sites, 25, 30), # play with these to see elongated results.
    lon = runif(n_sites, -125, -120),
    required = FALSE,
    coord_uncertainty = 0
@@ -72,20 +75,20 @@ library(ggplot2)
 
 #function can accept a required point, here arbitrarily place near geographic center
  dists2c <- greatCircleDistance(
-   median(df$lat), 
-   median(df$lon), 
-   df$lat, 
+   median(df$lat),
+   median(df$lon),
+   df$lat,
    df$lon
  )
  df[order(dists2c)[1],'required'] <- TRUE
- 
- ## we will simulate coordinate uncertainty on a number of sites.  
+
+ ## we will simulate coordinate uncertainty on a number of sites.
  uncertain_sites <- sample(setdiff(seq_len(n), which(df$required)), size = min(6, n_sites-3))
  df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 5000, 100000) # meters
- 
+
  # the function can take up to take matrices. the first (required) is a geographic distance
- # matrix. calculate this with the `greatCircleDistance` fn from the package for consistency. 
- # (it will be recalculated during simulations). `sf` gives results in slightly diff units. 
+ # matrix. calculate this with the `greatCircleDistance` fn from the package for consistency.
+ # (it will be recalculated during simulations). `sf` gives results in slightly diff units.
  dist_mat <- sapply(seq_len(nrow(df)), function(i) {
    greatCircleDistance(
      df$lat[i], df$lon[i],
@@ -93,15 +96,15 @@ library(ggplot2)
    )
  })
 
- # the input data is a list, the distance matrix, and the df of actual point locations. 
+ # the input data is a list, the distance matrix, and the df of actual point locations.
  head(df)
 
  test_data <- list(distances = dist_mat, sites = df)
  rm(dist_mat, df, n, uncertain_sites, dists2c)
 
- # small quick run 
-   system.time( 
-     res <- maximizeDispersion(  ## reduce some parameters for faster run. 
+ # small quick run
+   system.time(
+     res <- maximizeDispersion(  ## reduce some parameters for faster run.
        input_data = test_data,
        n_bootstrap = 500,
        n_local_search_iter = 50,
@@ -109,33 +112,33 @@ library(ggplot2)
      )
    )
 
-### first selected 
- ggplot(data = res$input_data, 
+### first selected
+ ggplot(data = res$input_data,
    aes(
-     x = lon, 
-     y = lat, 
-     shape = required, 
+     x = lon,
+     y = lat,
+     shape = required,
      size = cooccur_strength,
      color = selected
      )
    ) +
-   geom_point() + 
- #  ggrepel::geom_label_repel(aes(label = site_id), size = 4) + 
-   theme_minimal() + 
-   labs(main = 'Priority Selection Status of Sites') 
+   geom_point() +
+ #  ggrepel::geom_label_repel(aes(label = site_id), size = 4) +
+   theme_minimal() +
+   labs(main = 'Priority Selection Status of Sites')
 
 ### order of sampling priority ranking plot.
- ggplot(data = res$input_data, 
+ ggplot(data = res$input_data,
    aes(
-     x = lon, 
-     y = lat, 
-     shape = required, 
+     x = lon,
+     y = lat,
+     shape = required,
      size = -sample_rank,
      color = sample_rank
      )
    ) +
-   geom_point() + 
+   geom_point() +
 #   ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +
-   theme_minimal()   
+   theme_minimal()
 }
 }

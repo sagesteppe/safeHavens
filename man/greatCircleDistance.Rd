@@ -27,7 +27,7 @@ calculate distances between sites (Haversine formula)
 n_sites <- 5 # number of known populations
  df <- data.frame(
    site_id = seq_len(n_sites),
-   lat = runif(n_sites, 25, 30), 
+   lat = runif(n_sites, 25, 30),
    lon = runif(n_sites, -125, -120)
  )
 

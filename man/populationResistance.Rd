@@ -85,9 +85,9 @@ Clustering is based on pairwise IBR distances and can be visualized or used to g
 \dontrun{
 # Prepare resistance raster once
 
-# this also can run internally in `population resistance`, 
+# this also can run internally in `population resistance`,
 # but for time sakes is best to prep ahead of time
-# especially if treating multiple species in the same domain. 
+# especially if treating multiple species in the same domain.
 res <- buildResistanceSurface(
   base_raster = base_rast,
   oceans = ocean_r,

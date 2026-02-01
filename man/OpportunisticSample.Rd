@@ -34,10 +34,10 @@ existing_collections <- sf::st_sample(ri, size = 5) |>
   dplyr::rename(geometry = x)
 
 system.time(
-  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999) 
-) 
-ggplot2::ggplot() + 
-  ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) + 
-  ggplot2::geom_sf(data = existing_collections) 
- 
+  out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999)
+)
+ggplot2::ggplot() +
+  ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) +
+  ggplot2::geom_sf(data = existing_collections)
+
 }

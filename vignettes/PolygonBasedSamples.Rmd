@@ -1,16 +1,25 @@
 ---
-title: "ProvisionalSTZ and Ecoregion Based Sampling"
+title: "Polygon Based Sampling"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{ProvisionalSTZ and Ecoregion Based Sampling}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Polygon Based Sampling}
+  %\VignetteEngine{knitr::rmarkdown}, 
   %\VignetteEncoding{UTF-8}
 description: >
   Sampling provisional seed transfer zones and ecoregions 
 ---
 
 A variety of methods exist for implementing naive sampling schemes for polygon based products, such as provisional and empirical Seed Transfer Zones (pSTZs, and eSTZs), as well as Ecoregion (e.g. Omernik, or Baileys). 
-The sampling of these products are all implemented using a single function in safeHavens `PolygonBasedSample` which has functionality to consider some environmental traits of the ecoregions, and size and number of polygon patches of both ecoregions and STZs. 
+The sampling of these products are all implemented using a single function in safeHavens `PolygonBasedSample` which has functionality to consider some environmental traits of the seed transfer zones, and size and number of polygon patches of both ecoregions and STZs. 
+
+The function requires modes for two main scenarios - when a user wants **more** collections than zones exist in the data the function needs to use an 'increase' method. 
+When a user wants **fewer** collections than zones exist a **decrease** method needs to be implemented. 
+Three options are available for both scenarios. 
+    1) Using the number of polygons per class
+    2) using the total area of each class
+    3) considering simple climate parameters for each class
+
+Additionally, this function can be used on the cluster groups identified using the Isolation by Distance, Resistance, and Environmental workflows, when a user wants to decouple the clustering process from the number of samples. 
 
 ```{mermaid}
 %%{init: {'theme':'dark', 'themeVariables': { 

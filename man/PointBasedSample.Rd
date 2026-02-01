@@ -28,7 +28,7 @@ ri <- spData::us_states |>
   dplyr::select(NAME) |>
   dplyr::filter(NAME == 'Rhode Island') |>
   sf::st_transform(32617)
-  
+
  system.time(
   out <- PointBasedSample(polygon = ri, reps = 10, BS.reps = 10) # set very low for example
  )

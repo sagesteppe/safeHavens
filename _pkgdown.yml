@@ -98,7 +98,7 @@ articles:
     - GettingStarted
     - IsolationByResistance
     - SpeciesDistributionModels
-    - pSTZEcoregionSampling
+    - PolygonBasedSamples
     - WorkedExample
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
