@@ -1,0 +1,114 @@
+---
+title: "Predictive Provenance"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Predictive Provenance}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+description: >
+  Predictive Provenancing using Species Distribution Models.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = ""
+)
+```
+
+```{r attach packages}
+library(geodata)
+library(safeHavens)
+library(terra)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+## Data prep
+
+Download species occurrence data
+```{r}
+cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 'acceptedScientificName', 'datasetName', 
+  'coordinateUncertaintyInMeters', 'basisOfRecord', 'institutionCode', 'catalogNumber')
+
+## download species data using scientificName, can use keys and lookup tables for automating many taxa. 
+hemi <- rgbif::occ_search(scientificName = "Helianthella microcephala")
+hemi <- hemi[['data']][,cols]  |>
+  drop_na(decimalLatitude, decimalLongitude) |> # any missing coords need dropped. 
+  distinct(decimalLatitude, decimalLongitude, .keep_all = TRUE) |> # no dupes can be present
+  st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F) 
+
+western_states <- spData::us_states |> ## for making a quick basemap. 
+  dplyr::filter(NAME %in% c('Colorado', 'Arizona', 'Utah', 'Wyoming', 'Nevada', 'New Mexico')) |>
+  dplyr::select(NAME, geometry) |>
+  st_transform(4326)
+
+ggplot() + 
+    geom_sf(data = western_states) + 
+    geom_sf(data = hemi) + 
+    theme_minimal()
+
+rm(cols)
+```
+
+```{r download data}
+# Download WorldClim bioclim at ~10 km
+bio_current <- worldclim_global(var="bioc", res=2.5)
+
+future_bio <- cmip6_world(
+  model = "CNRM-CM6-1",
+  ssp   = "245",
+  time  = "2041-2060",
+  var   = "bioc",
+  res   = 2.5
+)
+
+# Crop to domain
+bbox <- ext(vect(western_states))
+bio_current <- crop(bio_current, bbox)
+future_bio <- crop(future_bio, bbox)
+```
+
+Ensure that the names match - here we know what they look like... 
+So we can create a very simply helper function. 
+This is ESSENTIAL for the functions to work. 
+
+```{r standardize raster layer names}
+simplify_names <- function(x){
+    paste0('bio_', sprintf("%02d", as.numeric(gsub('\\D+','', names(x)))))
+}
+
+names(bio_current) <- gsub('^.*5m_', '', names(bio_current))
+names(future_bio) <- gsub('^.*2060_', '', names(future_bio))
+
+names(bio_current) <- simplify_names(bio_current)
+names(future_bio) <- simplify_names(future_bio)
+
+# TRUE means all names match, and are in the same position. 
+all(names(bio_current) == names(future_bio))
+```
+
+While the plots look very similar, when showing one raster stack after another, we can diff the two products to see where the biggest changes will occur. 
+```{r diff the raster layers to show area so difference}
+difference <- abs(bio_current - future_bio)
+plot(difference)
+```
+
+```{r remove diff and simplify_names, echo = F}
+rm(difference, simplify_names)
+```
+
+
+## Analysis
+
+
+```{r}
+hemi <- select(hemi, geometry)
+st_crs(bio_current) == st_crs(hemi) ## verify CRS match
+dat <- elasticSDM_noPCNM(x = hemi, predictors = bio_current, planar_projection = 5070)
+
+
+
+```
