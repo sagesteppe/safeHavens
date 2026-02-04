@@ -99,7 +99,7 @@ EnvironmentalBasedSample <- function(
   confusionMatrix <- final.fit$confusionMatrix
 
   # Create spatial clusters
-  spatialClusters <- terra::predict(pred_rescale, model = fit.knn, na.rm = TRUE)
+  spatialClusters <- terra::predict(pred_rescale, model = final.fit, na.rm = TRUE)
 
   # Project to planar for geometric operations
   spatialClusters_planar <- terra::project(spatialClusters, planar_proj)
@@ -127,7 +127,12 @@ EnvironmentalBasedSample <- function(
     )
   }
 
-  list(Geometry = ClusterVectors)
+  list(
+    Geometry = ClusterVectors,
+    fit.knn   = final.fit,
+    TrainData = weighted_mat
+    )
+
 }
 
 #' Add weighted coordinate layers to predictor rasters

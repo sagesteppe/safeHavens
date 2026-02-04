@@ -42,6 +42,7 @@ elasticSDM <- function(
   domain = NULL,
   quantile_v = 0.025
 ) {
+  
   # Calculate study extent
   study_extent <- calculate_study_extent(
     x,
@@ -166,16 +167,45 @@ calculate_study_extent <- function(
 #' @keywords internal
 #' @noRd
 generate_background_points <- function(predictors, occurrences) {
-  sdm::background(
-    x = predictors,
-    n = nrow(occurrences),
-    sp = occurrences,
-    method = 'eDist'
-  ) |>
+
+  bg <- tryCatch({
+
+    sdm::background(
+      x      = predictors,
+      n      = nrow(occurrences),
+      sp     = occurrences,
+      method = "eDist"
+    )
+
+  }, error = function(e) {
+
+    msg <- conditionMessage(e)
+
+    if (grepl("computationally singular|reciprocal condition number", msg)) {
+
+      warning(
+        "eDist background sampling failed due to singular covariance matrix.\n",
+        "Falling back to eRandom background sampling."
+      )
+
+      sdm::background(
+        x      = predictors,
+        n      = nrow(occurrences),
+        sp     = occurrences,
+        method = "eRandom"
+      )
+
+    } else {
+      stop(e)  # rethrow unknown errors
+    }
+  })
+
+  bg |>
     dplyr::select(lon = x, lat = y) |>
-    sf::st_as_sf(coords = c('lon', 'lat'), crs = terra::crs(predictors)) |>
+    sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
     dplyr::mutate(occurrence = 0)
 }
+
 
 #' Spatially thin occurrence points to reduce spatial autocorrelation
 #'

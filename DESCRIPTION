@@ -29,7 +29,8 @@ Suggests:
     testthat,
     covr,
     withr,
-    rlang
+    rlang,
+    safeHavens
 VignetteBuilder: knitr
 Imports: 
     caret,
