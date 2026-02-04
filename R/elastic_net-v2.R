@@ -10,9 +10,14 @@
 #' prohibited by older model selection frameworks.
 #' @param x A (simple feature) sf data set of occurrence data for the species.
 #' @param predictors A terra 'rasterstack' of variables to serve as independent predictors.
-#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.
+#' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). 
+#' Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. 
+#' The value is simply passed to sf::st_transform if you need to experiment.
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
-#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
+#' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. 
+#' If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
+#' @param PCNM Boolean, defaults to TRUE. Whether to use PCNM surfaces for fitting model.
+#' For current scenarios (e.g. EnvironmentalBasedsample) use TRUE, for predictive provenance use FALSE. 
 #' @examples \dontrun{
 #'
 #'  x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -137,11 +142,11 @@ elasticSDM <- function(
     Predictors = predictors,
     PCNM = pcnm,
     Model = mod,
-    CVStructure = cv_structure,
+    CVStructure = obs$cv_model,
     ConfusionMatrix = cm,
     TrainData = train,
     TestData = test,
-    PredictMatrix = pred_matrix
+    PredictMatrix = obs$pred_mat
   )
 }
 
@@ -183,41 +188,16 @@ calculate_study_extent <- function(
 #' @keywords internal
 #' @noRd
 generate_background_points <- function(predictors, occurrences) {
-  bg <- tryCatch({
-    suppressMessages({
-      sdm::background(
-        x      = predictors,
-        n      = nrow(occurrences),
-        sp     = occurrences,
-        method = "eDist"
-      )
-    })
-  }, error = function(e) {
-    msg <- conditionMessage(e)
-    if (grepl("computationally singular|reciprocal condition number", msg)) {
-      warning(
-        "eDist background sampling failed due to singular covariance matrix.\n",
-        "Falling back to eRandom background sampling."
-      )
-      suppressMessages({
-        sdm::background(
-          x      = predictors,
-          n      = nrow(occurrences),
-          sp     = occurrences,
-          method = "eRandom"
-        )
-      })
-    } else {
-      stop(e)
-    }
-  })
-  
-  bg |>
+  sdm::background(
+    x = predictors,
+    n = nrow(occurrences),
+    sp = occurrences,
+    method = 'eDist'
+  ) |>
     dplyr::select(lon = x, lat = y) |>
-    sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
+    sf::st_as_sf(coords = c('lon', 'lat'), crs = terra::crs(predictors)) |>
     dplyr::mutate(occurrence = 0)
 }
-
 
 #' Spatially thin occurrence points to reduce spatial autocorrelation
 #'
