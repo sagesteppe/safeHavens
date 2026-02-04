@@ -1,9 +1,5 @@
 # Species Distribution Models
 
-``` r
-#remotes::install_github('sagesteppe/safeHavens')
-```
-
 ## Species Distribution Modelling
 
 ### Background
