@@ -10,139 +10,6 @@
 # ==============================================================================
 
 
-#' Create elastic net SDM without spatial autocorrelation terms
-#'
-#' Identical to `elasticSDM()` but excludes PCNM/MEM variables. Use this when
-#' projecting to future climate scenarios — spatial autocorrelation structure
-#' is time-specific and non-transferable.
-#'
-#' @inheritParams elasticSDM
-#' @returns List identical to `elasticSDM()` but with `PCNM = NULL`.
-#' @export
-elasticSDM_noPCNM <- function(
-  x,
-  predictors,
-  planar_projection,
-  domain = NULL,
-  quantile_v = 0.025
-) {
-  # Calculate study extent
-  study_extent <- calculate_study_extent(
-    x,
-    planar_projection,
-    domain,
-    predictors
-  )
-
-  # Generate background points
-  pa <- generate_background_points(predictors, x)
-
-  # Combine presence and pseudo-absence
-  x$occurrence <- 1
-  x <- dplyr::bind_rows(x, pa) |>
-    dplyr::mutate(occurrence = factor(occurrence))
-
-  # Spatially thin points
-  x <- thin_occurrence_points(x, quantile_v)
-
-  # Extract predictor values
-  x <- extract_predictors_to_points(x, predictors)
-
-  # Create train/test split
-  index <- unlist(caret::createDataPartition(x$occurrence, p = 0.8))
-  train <- x[index, ]
-  test  <- x[-index, ]
-
-  # Create spatial CV folds
-  indices_knndm <- create_spatial_cv_folds(train, predictors, k = 5)
-
-  # Perform recursive feature elimination
-  lmProfile <- perform_feature_selection(train, indices_knndm)
-
-  # Fit elastic net model
-  model_results <- fit_elastic_net_model(
-    train,
-    predictors(lmProfile),
-    indices_knndm
-  )
-
-  mod <- model_results$glmnet_model
-
-  # Get variables from final model (drop intercept)
-  vars <- rownames(stats::coef(mod))
-  vars <- vars[2:length(vars)]
-
-  # Evaluate model on test data
-  cm <- evaluate_model_performance(mod, test, predictors, vars)
-
-  # Create spatial predictions
-  rast_cont <- create_spatial_predictions(mod, predictors, vars)
-
-  list(
-    RasterPredictions = rast_cont,
-    Predictors       = predictors,
-    PCNM             = NULL,
-    Model            = mod,                          # glmnet model
-    CVStructure      = model_results$cv_model,       # caret cv object
-    ConfusionMatrix  = cm,
-    TrainData        = train,
-    TestData         = test,
-    PredictMatrix    = model_results$selected_data
-  )
-}
-
-
-# ------------------------------------------------------------------------------
-
-
-#' Rescale future climate predictors using current model coefficients
-#'
-#' Standardises future predictors using the mean and SD from *current* climate,
-#' then applies the glmnet beta weights.  This is the same weighting applied
-#' upstream in `RescaleRasters` — here we just do it against a different
-#' raster stack.
-#'
-#' @param model glmnet model object from `elasticSDM_noPCNM()$Model`.
-#' @param future_predictors SpatRaster of future climate variables.  Names must
-#'   match those retained in `model`.
-#' @param current_predictors SpatRaster of current climate (provides the
-#'   standardisation parameters).
-#'
-#' @returns SpatRaster with rescaled future predictors (one layer per
-#'   non-zero coefficient).
-#' @export
-rescaleFuture <- function(model, future_predictors, current_predictors) {
-
-  # Extract non-zero coefficients (glmnet shrinks some to zero)
-  coefs <- as.matrix(stats::coef(model))
-  coefs <- coefs[coefs[, 1] != 0, , drop = FALSE]
-
-  # Variable names — drop intercept row
-  vars <- rownames(coefs)[-1]
-
-  # Subset both stacks to the same variables
-  future_sub  <- future_predictors[[vars]]
-  current_sub <- current_predictors[[vars]]
-
-  # Standardisation params from current climate
-  current_vals <- terra::as.data.frame(current_sub, na.rm = TRUE)
-  means <- colMeans(current_vals)
-  sds   <- apply(current_vals, 2, stats::sd)
-  sds[sds == 0] <- 1
-
-  # Standardise future using current params, then weight by betas
-  # Both operations are vectorised over layers
-  for (i in seq_along(vars)) {
-    future_sub[[i]] <- (future_sub[[i]] - means[i]) / sds[i] * coefs[vars[i], 1]
-  }
-
-  future_sub
-}
-
-
-# ------------------------------------------------------------------------------
-
-
 #' Project current environmental clusters onto a future climate scenario
 #'
 #' Main entry point for the future-projection workflow.  The steps are:
@@ -318,6 +185,51 @@ projectClusters <- function(
   )
 }
 
+# ------------------------------------------------------------------------------
+
+#' Rescale future climate predictors using current model coefficients
+#'
+#' Standardises future predictors using the mean and SD from *current* climate,
+#' then applies the glmnet beta weights.  This is the same weighting applied
+#' upstream in `RescaleRasters` — here we just do it against a different
+#' raster stack.
+#'
+#' @param model glmnet model object from `elasticSDM_noPCNM()$Model`.
+#' @param future_predictors SpatRaster of future climate variables.  Names must
+#'   match those retained in `model`.
+#' @param current_predictors SpatRaster of current climate (provides the
+#'   standardisation parameters).
+#'
+#' @returns SpatRaster with rescaled future predictors (one layer per
+#'   non-zero coefficient).
+#' @export
+rescaleFuture <- function(model, future_predictors, current_predictors) {
+
+  # Extract non-zero coefficients (glmnet shrinks some to zero)
+  coefs <- as.matrix(stats::coef(model))
+  coefs <- coefs[coefs[, 1] != 0, , drop = FALSE]
+
+  # Variable names — drop intercept row
+  vars <- rownames(coefs)[-1]
+
+  # Subset both stacks to the same variables
+  future_sub  <- future_predictors[[vars]]
+  current_sub <- current_predictors[[vars]]
+
+  # Standardisation params from current climate
+  current_vals <- terra::as.data.frame(current_sub, na.rm = TRUE)
+  means <- colMeans(current_vals)
+  sds   <- apply(current_vals, 2, stats::sd)
+  sds[sds == 0] <- 1
+
+  # Standardise future using current params, then weight by betas
+  # Both operations are vectorised over layers
+  for (i in seq_along(vars)) {
+    future_sub[[i]] <- (future_sub[[i]] - means[i]) / sds[i] * coefs[vars[i], 1]
+  }
+
+  future_sub
+}
 
 # ------------------------------------------------------------------------------
 

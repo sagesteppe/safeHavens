@@ -197,7 +197,7 @@ bio_future_rs
 Similar to how we differenced the rasters at the two time poitns above, we can take the absolute difference of the relevant raster layers to see where the largest changes will be. 
 
 ```{r rescaled raster difference }
-difference_rs <- abs(bio_current_rs - bio_future_rs)
+difference_rs <- abs(bio_current_rs$RescaledPredictors - bio_future_rs)
 plot(difference_rs)
 ```
 
@@ -211,16 +211,29 @@ Clusters can be identified using NbClust, allowing it to determine the optimal *
 To use NbClust, rather than manually specifying *n*, the argument `fixedClusters` needs to be set to FALSE. 
 
 ```{r identify current clusters}
+threshold_rasts <- PostProcessSDM(
+  rast_cont = eSDM_model$RasterPredictions, 
+  test = eSDM_model$TestData,
+  train = eSDM_model$TrainData,
+  planar_proj = 5070,
+  thresh_metric = 'sensitivity', 
+  quant_amt = 0.5
+  )
+
 ENVIbs <- EnvironmentalBasedSample(
-  pred_rescale = rr$RescaledPredictors, 
+  pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
-  f_rasts = bio_current_rs, 
+  f_rasts = threshold_rasts$FinalRasters, 
   coord_wt = 0.25, # markedly reduced, to try and keep some contiguity, or 0 to ignore. 
-  fixedClusters = FALSE,
+  fixedClusters = TRUE,
   lyr = 'Supplemented',
   n_pts = 500, 
-  planar_proj = planar_proj
+  planar_proj = "epsg:5070",
+  buffer_d = 3,
+  prop_split = 0.8
   )
+
+names(eSDM_model)
 ```
 
 We can apply the current clustering to the future scenario. 
@@ -228,6 +241,13 @@ This will show us how and where the currently identified clusters would exist in
 
 ```{r classify future climate surface with clusters}
 
+projectClusters(
+  current_model = eSDM_model, 
+  current_clusters = ENVIbs,
+  future_predictors = bio_future,
+  current_predictors = bio_current,
+  planar_proj = "epsg:5070"
+)
 ```
 
 However, our classifications cannot accomodate new climate conditions. 
