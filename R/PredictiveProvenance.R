@@ -114,10 +114,17 @@ projectClusters <- function(
     )
   )
   mess_overall <- mess_result[[terra::nlyr(mess_result)]] 
-  novel_mask <- mess_overall < mess_threshold
+  novel_climate <- mess_overall < mess_threshold
 
   # ---- 3. similar habitat to existing, but forecast ----
-  suitable_known <- suitable_habitat & !novel_mask  # Zone 1: project clusters
+  suitable_known <- terra::ifel(suitable_habitat & !novel_climate, 1, NA)
+
+  # Suitable habitat that is in NOVEL climate  
+  suitable_novel <- terra::ifel(suitable_habitat & novel_climate, 1, NA)
+
+  # Binary versions for output
+  suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
+  novel_mask_binary <- terra::ifel(novel_climate, 1, NA)
   
   # ---- 4. Rescale future for clustering (KNN needs rescaled data) ----
   future_rescaled <- rescaleFuture(
@@ -139,36 +146,45 @@ projectClusters <- function(
   )  
 
   # Restrict to suitable+known zone only
-  areas_needing_clustering <- suitable_habitat & is.na(known_clusters)
-  n_novel_cells <- terra::global(areas_needing_clustering, "sum", na.rm = TRUE)[[1]]
+  known_clusters <- terra::mask(known_clusters, suitable_known)
+  
+  # Restrict to suitable+known zone only
+  areas_needing_clustering <- terra::ifel(
+    !is.na(suitable_novel) & is.na(known_clusters),
+    1,
+    NA
+  )
+  n_novel_cells <- terra::global(suitable_novel, "sum", na.rm = TRUE)[[1]]
   
   # ---- 6. Cluster suitable+novel areas independently ----
+  suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
+
   if (cluster_novel && n_novel_cells > 0) {
 
     novel_result <- cluster_novel_areas(
       future_rescaled  = future_rescaled,
-      novel_mask       = areas_needing_clustering,  # Only suitable novel areas
+      novel_mask       = suitable_novel,  # Only suitable novel areas
       n_novel_pts      = n_novel_pts,
       next_cluster_id  = max(current_clusters$Geometry$ID) + 1,
       nbclust_args     = nbclust_args
     )
 
     novel_clusters <- novel_result$clusters_raster
-
     # ---- Merge: combine known + novel ----
-    # Start with known_clusters as base
-    final_clusters <- known_clusters
-  
+    
     # Overlay novel clusters (they should be in different areas due to masks)
     # Use terra::cover to fill NAs in known_clusters with novel values
-    final_clusters <- terra::cover(known_clusters, novel_clusters)
+    known_numeric <- terra::as.int(known_clusters)
+    novel_numeric <- terra::as.int(novel_clusters)
+    novel_numeric <- novel_numeric + max(current_clusters$Geometry$ID)
+    final_clusters <- terra::cover(known_numeric, novel_numeric)
 
     # ---- 7. Relationship analysis ----
     novel_similarity <- analyze_cluster_relationships(
       clusters_raster      = final_clusters,
       future_rescaled      = future_rescaled,
       existing_ids         = unique(current_clusters$Geometry$ID),
-      novel_ids            = unique(terra::values(novel_clusters, na.rm = TRUE)),
+      novel_ids            = as.numeric(unlist(unique(novel_numeric))),
       n_sample_per_cluster = n_sample_per_cluster
     )
 
@@ -183,7 +199,7 @@ projectClusters <- function(
 
   # ---- 8. Smooth noise ----
   template <- terra::rast(final_clusters)
-
+  final_clusters <- mask(final_clusters, suitable_habitat_binary)
   agg <- terra::aggregate(
     final_clusters,
     fact = 2,
@@ -210,8 +226,8 @@ projectClusters <- function(
   list(
     clusters_raster  = final_clean,
     clusters_sf      = clusters_sf,
-    suitable_habitat = suitable_habitat,
-    novel_mask       = novel_mask,
+    suitable_habitat = suitable_habitat_binary,
+    novel_mask       = novel_mask_binary,
     mess             = mess_overall,
     changes          = changes,
     novel_similarity = novel_similarity
@@ -445,14 +461,11 @@ analyze_cluster_relationships <- function(
   stack_for_sampling <- c(future_rescaled, clusters_cat)
   names(stack_for_sampling)[terra::nlyr(stack_for_sampling)] <- "cluster_id"
 
-  return(stack_for_sampling)
-
   # Sample (almost) equally from each cluster
   sampled <- terra::spatSample(
     stack_for_sampling,
     size   = n_sample_per_cluster,   # per stratum, 
     method = "stratified",
-    strata = clusters_raster,
     na.rm  = TRUE
   )
 
@@ -517,6 +530,8 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6   # km²
   future_p$area  <- as.numeric(sf::st_area(future_p))  / 1e6
 
+  sf::st_agr(current_p) <- 'constant'
+  sf::st_agr(future_p) <- 'constant'
   ## find geometric centroid
   current_cents <- sf::st_point_on_surface(current_p)
   future_cents  <- sf::st_point_on_surface(future_p)
