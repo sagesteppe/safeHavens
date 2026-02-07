@@ -81,19 +81,27 @@ projectClusters <- function(
     current_predictors = current_predictors
   )
 
+  # not sure rescaling is working... 
+
+
   # ---- 2. MESS — identify novel climate cells ----
   vars <- names(future_rescaled)
 
-  ref_matrix <- terra::extract(
-    current_predictors[[vars]],
-    current_clusters$TrainData
-  )
+  ref_matrix <- current_clusters$TrainData |> 
+    dplyr::select(-dplyr::any_of(c('x', 'y', 'ID')))
   ref_matrix <- ref_matrix[stats::complete.cases(ref_matrix), ]
 
-  mess_result  <- dismo::mess(x = future_predictors[[vars]], v = ref_matrix, full = TRUE)
+  mess_result  <- terra::rast(  
+    dismo::mess(
+      x = raster::stack(future_predictors[[vars]]), 
+      v = ref_matrix, 
+      full = FALSE
+    )
+  )
   mess_overall <- mess_result[[terra::nlyr(mess_result)]]   # minimum across variables
   novel_mask   <- mess_overall < mess_threshold
 
+  return(mess_result)
   # ---- 3. Add weighted coordinates ----
   future_rescaled <- add_weighted_coordinates(future_rescaled, coord_wt)
 
@@ -289,7 +297,7 @@ cluster_novel_areas <- function(
     diss     = d,
     distance = NULL,
     min.nc   = 2,
-    max.nc   = min(10, nrow(clust_data) - 1),
+    max.nc   = 20,
     method   = "ward.D2",
     index    = "all"
   )
@@ -298,9 +306,7 @@ cluster_novel_areas <- function(
     do.call(NbClust::NbClust, modifyList(nbclust_defaults, nbclust_args))
   )
 
-  optimal_k <- nb_result$Best.nc[1, "Number_clusters"]
-  message(sprintf("NbClust recommends %d novel cluster(s)", optimal_k))
-
+  optimal_k <- max(nb_result$Best.partition)
   # Cut the tree
   hc                <- stats::hclust(d, method = "ward.D2")
   cluster_assignments <- stats::cutree(hc, k = optimal_k) + next_cluster_id - 1
