@@ -65,64 +65,89 @@ projectClusters <- function(
   current_clusters,
   future_predictors,
   current_predictors,
+  test_points,           
+  train_points,        
+  predict_matrix, 
   planar_proj,
-  coord_wt            = 2.5,
+  coord_wt            = 0.01,
   mess_threshold      = 0,
   cluster_novel       = TRUE,
   n_novel_pts         = 500,
   n_sample_per_cluster = 50,
-  nbclust_args        = list()
+  nbclust_args        = list(),
+  thresh_metric       = 'sensitivity',
+  thresholds
 ) {
 
-  # ---- 1. Rescale future predictors with current betas ----
-  future_rescaled <- rescaleFuture(
-    model             = current_model,
-    future_predictors = future_predictors,
-    current_predictors = current_predictors
+  # ---- 0. Extract model variables ----
+  coef_mat <- as.matrix(stats::coef(current_model))
+  vars <- rownames(coef_mat)[coef_mat[, 1] != 0]
+  vars <- vars[vars != "(Intercept)"]
+
+  # ---- 1. SDM prediction on ORIGINAL future climate ----
+  predfun <- function(model, data, ...) {
+    stats::predict(model, newx = as.matrix(data), type = 'response')
+  }
+
+  future_sdm <- terra::predict(
+    future_predictors[[vars]], 
+    model = current_model, 
+    fun = predfun, 
+    na.rm = TRUE
   )
 
-  # not sure rescaling is working... 
+  # Threshold to binary habitat suitability
+  cut <- thresholds[[thresh_metric]] 
+  suitable_habitat <- future_sdm >= cut
 
+  # ---- 2. MESS — identify novel climate (species-relevant vars only) ----
+  ref_matrix <- terra::as.data.frame(
+    current_predictors[[vars]], 
+    na.rm = TRUE
+  )
 
-  # ---- 2. MESS — identify novel climate cells ----
-  vars <- names(future_rescaled)
-
-  ref_matrix <- current_clusters$TrainData |> 
-    dplyr::select(-dplyr::any_of(c('x', 'y', 'ID')))
-  ref_matrix <- ref_matrix[stats::complete.cases(ref_matrix), ]
-
-  mess_result  <- terra::rast(  
+  mess_result <- terra::rast(  
     dismo::mess(
-      x = raster::stack(future_predictors[[vars]]), 
-      v = ref_matrix, 
+      x = raster::stack(future_predictors[[vars]]),
+      v = ref_matrix,
       full = FALSE
     )
   )
-  mess_overall <- mess_result[[terra::nlyr(mess_result)]]   # minimum across variables
-  novel_mask   <- mess_overall < mess_threshold
+  mess_overall <- mess_result[[terra::nlyr(mess_result)]] 
+  novel_mask <- mess_overall < mess_threshold
 
-  return(mess_result)
-  # ---- 3. Add weighted coordinates ----
+  # ---- 3. similar habitat to existing, but forecast ----
+  suitable_known <- suitable_habitat & !novel_mask  # Zone 1: project clusters
+  
+  # ---- 4. Rescale future for clustering (KNN needs rescaled data) ----
+  future_rescaled <- rescaleFuture(
+    model = current_model,
+    future_predictors = future_predictors,
+    current_predictors = current_predictors, 
+    training_data = train_points,
+    pred_mat = predict_matrix
+  )
+  
+  # Add weighted coordinates
   future_rescaled <- add_weighted_coordinates(future_rescaled, coord_wt)
 
-  # ---- 4. Predict known-climate cells with existing KNN ----
+  # ---- 5. Project t0 clusters into suitable+known areas ----
   known_clusters <- terra::predict(
     future_rescaled,
     model = current_clusters$fit.knn,
     na.rm = TRUE
-  )
+  )  
 
-  # Mask out novel areas — will be filled in step 5 if requested
-  known_clusters <- terra::mask(known_clusters, novel_mask, inverse = TRUE)
-
-  # ---- 5. Cluster novel areas independently (two-tree approach) ----
-  n_novel_cells <- terra::global(novel_mask, "sum", na.rm = TRUE)[[1]]
-
+  # Restrict to suitable+known zone only
+  areas_needing_clustering <- suitable_habitat & is.na(known_clusters)
+  n_novel_cells <- terra::global(areas_needing_clustering, "sum", na.rm = TRUE)[[1]]
+  
+  # ---- 6. Cluster suitable+novel areas independently ----
   if (cluster_novel && n_novel_cells > 0) {
 
     novel_result <- cluster_novel_areas(
       future_rescaled  = future_rescaled,
-      novel_mask       = novel_mask,
+      novel_mask       = areas_needing_clustering,  # Only suitable novel areas
       n_novel_pts      = n_novel_pts,
       next_cluster_id  = max(current_clusters$Geometry$ID) + 1,
       nbclust_args     = nbclust_args
@@ -130,11 +155,15 @@ projectClusters <- function(
 
     novel_clusters <- novel_result$clusters_raster
 
-    # Merge: known cells keep their IDs, novel cells get new IDs
+    # ---- Merge: combine known + novel ----
+    # Start with known_clusters as base
     final_clusters <- known_clusters
-    final_clusters[!is.na(novel_clusters)] <- novel_clusters[!is.na(novel_clusters)]
+  
+    # Overlay novel clusters (they should be in different areas due to masks)
+    # Use terra::cover to fill NAs in known_clusters with novel values
+    final_clusters <- terra::cover(known_clusters, novel_clusters)
 
-    # ---- 6. Relationship analysis (combined tree + silhouette) ----
+    # ---- 7. Relationship analysis ----
     novel_similarity <- analyze_cluster_relationships(
       clusters_raster      = final_clusters,
       future_rescaled      = future_rescaled,
@@ -146,14 +175,13 @@ projectClusters <- function(
   } else {
     final_clusters   <- known_clusters
     novel_similarity <- tibble::tibble(
-      novel_cluster_id    = integer(),
-      nearest_existing_id = integer(),
+      novel_cluster_id     = integer(),
+      nearest_existing_id  = integer(),
       avg_silhouette_width = numeric()
     )
   }
 
-  # ---- 6b. Remove minor cell flecks / noise ----- #
-  # Preserve original geometry
+  # ---- 8. Smooth noise ----
   template <- terra::rast(final_clusters)
 
   agg <- terra::aggregate(
@@ -163,36 +191,32 @@ projectClusters <- function(
     na.rm = TRUE
   )
 
-  final_clean <- terra::resample(
-    agg,
-    template,
-    method = "near"
-  )
+  final_clean <- terra::resample(agg, template, method = "near")
   
-  # ---- 7. Polygonise ----
-  clusters_sf <- terra::as.polygons(final_clusters) |>
+  # ---- 9. Polygonize ----
+  clusters_sf <- terra::as.polygons(final_clean) |>
     sf::st_as_sf() |>
     sf::st_make_valid()
   names(clusters_sf)[1] <- "ID"
 
-  # ---- 8. Change metrics ----
+  # ---- 10. Change metrics ----
   changes <- calculate_changes(
-    current_sf = current_clusters$Geometry,
-    future_sf  = clusters_sf,
+    current_sf  = current_clusters$Geometry,
+    future_sf   = clusters_sf,
     planar_proj = planar_proj
   )
 
-  # ---- 9. Return ----
+  # ---- 11. Return ----
   list(
-    clusters_raster  = final_clusters,
+    clusters_raster  = final_clean,
     clusters_sf      = clusters_sf,
+    suitable_habitat = suitable_habitat,
     novel_mask       = novel_mask,
     mess             = mess_overall,
     changes          = changes,
     novel_similarity = novel_similarity
   )
 }
-
 # ------------------------------------------------------------------------------
 
 #' Rescale future climate predictors using current model coefficients
@@ -207,36 +231,74 @@ projectClusters <- function(
 #'   match those retained in `model`.
 #' @param current_predictors SpatRaster of current climate (provides the
 #'   standardisation parameters).
-#'
+#' @param training_data the same data that went into the glmnet model, this is used
+#' for calculating variance which is required for the scaling process. From `elasticSDM`
+#' @param pred_mat the Prediction matrix from `elasticSDM`
+#' 
 #' @returns SpatRaster with rescaled future predictors (one layer per
 #'   non-zero coefficient).
 #' @export
-rescaleFuture <- function(model, future_predictors, current_predictors) {
-
-  # Extract non-zero coefficients (glmnet shrinks some to zero)
-  coefs <- as.matrix(stats::coef(model))
-  coefs <- coefs[coefs[, 1] != 0, , drop = FALSE]
-
-  # Variable names — drop intercept row
-  vars <- rownames(coefs)[-1]
-
-  # Subset both stacks to the same variables
-  future_sub  <- future_predictors[[vars]]
-  current_sub <- current_predictors[[vars]]
-
-  # Standardisation params from current climate
-  current_vals <- terra::as.data.frame(current_sub, na.rm = TRUE)
-  means <- colMeans(current_vals)
-  sds   <- apply(current_vals, 2, stats::sd)
-  sds[sds == 0] <- 1
-
-  # Standardise future using current params, then weight by betas
-  # Both operations are vectorised over layers
-  for (i in seq_along(vars)) {
-    future_sub[[i]] <- (future_sub[[i]] - means[i]) / sds[i] * coefs[vars[i], 1]
+rescaleFuture <- function(model, future_predictors, current_predictors, training_data, pred_mat) {
+  
+  # Custom SD function (matches RescaleRasters)
+  sdN <- function(x) {
+    sqrt((1 / length(x)) * sum((x - mean(x))^2))
   }
-
-  future_sub
+  
+  # ---- 1. Extract coefficients (same as RescaleRasters) ----
+  coef_mat <- as.matrix(stats::coef(model))
+  coef_vec <- coef_mat[, 1]
+  coef_names <- rownames(coef_mat)
+  coef_tab <- data.frame(
+    Variable = coef_names,
+    Coefficient = coef_vec,
+    row.names = NULL
+  )
+  
+  # Drop intercept
+  coef_tab <- coef_tab[coef_tab$Variable != "(Intercept)", , drop = FALSE]
+  
+  # ---- 2. Response variance (from current/training) ----
+  yvar <- sdN(as.numeric(training_data$occurrence) - 1)
+  
+  # ---- 3. Predictor SDs from CURRENT pred_mat ----
+  stopifnot(all(coef_tab$Variable %in% colnames(pred_mat)))
+  
+  x_sd <- vapply(
+    coef_tab$Variable,
+    function(v) sdN(pred_mat[, v]),
+    numeric(1)
+  )
+  
+  # ---- 4. Compute beta coefficients ----
+  coef_tab$BetaCoefficient <- (coef_tab$Coefficient / yvar) * x_sd
+  
+  # ---- 5. Rescale FUTURE predictors using CURRENT parameters ----
+  future_sub <- terra::subset(future_predictors, coef_tab$Variable)
+  layer_names <- names(future_sub)
+  
+  out_layers <- lapply(layer_names, function(lyr_name) {
+    # Use CURRENT pred_mat statistics (not future!)
+    vals <- pred_mat[, lyr_name]
+    
+    scaled <- terra::app(
+      future_sub[[lyr_name]],
+      fun = function(x) {
+        (x - mean(vals)) / sdN(vals)
+      }
+    )
+    
+    beta <- abs(
+      coef_tab$BetaCoefficient[coef_tab$Variable == lyr_name]
+    )
+    
+    scaled * beta
+  })
+  
+  future_rescaled <- terra::rast(out_layers)
+  names(future_rescaled) <- layer_names
+  
+  return(future_rescaled)
 }
 
 # ------------------------------------------------------------------------------
@@ -373,26 +435,38 @@ analyze_cluster_relationships <- function(
 
   message("Analyzing relationships between existing and novel clusters...")
 
+  # ---- Convert cluster raster to categorical ----
   all_ids <- c(existing_ids, novel_ids)
+  
+  # Create a categorical version with explicit levels
+  clusters_cat <- terra::as.factor(clusters_raster)
+
+  # Stack with predictors
+  stack_for_sampling <- c(future_rescaled, clusters_cat)
+  names(stack_for_sampling)[terra::nlyr(stack_for_sampling)] <- "cluster_id"
+
+  return(stack_for_sampling)
 
   # Sample (almost) equally from each cluster
   sampled <- terra::spatSample(
-    c(future_rescaled, clusters_raster),
-    size   = n_sample_per_cluster,   # per stratum, each=TRUE is default
+    stack_for_sampling,
+    size   = n_sample_per_cluster,   # per stratum, 
     method = "stratified",
     strata = clusters_raster,
     na.rm  = TRUE
   )
 
-  all_samples <- dplyr::bind_rows(sampled)
-  all_samples <- all_samples[stats::complete.cases(all_samples), ]
+  sampled <- as.data.frame(sampled)
+  sampled <- sampled[stats::complete.cases(sampled), ]
 
-  # Distance matrix on combined sample
-  clust_data  <- all_samples[, !names(all_samples) %in% "cluster_id"]
-  cluster_ids <- all_samples$cluster_id
-  d           <- stats::dist(clust_data, method = "euclidean")
+  
+  # ---- Distance matrix ----
+  clust_data <- sampled[, !names(sampled) %in% "cluster_id"]
+  cluster_ids <- as.integer(sampled$cluster_id)
+  
+  d <- stats::dist(clust_data, method = "euclidean")
 
-  # Silhouette gives us neighbor cluster for each point
+  # ---- Silhouette ----
   sil <- cluster::silhouette(cluster_ids, d)
 
   # Aggregate: for each novel cluster, most common existing neighbor

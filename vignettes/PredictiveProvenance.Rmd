@@ -188,8 +188,10 @@ plot(bio_current_rs$RescaledPredictors)
 bio_future_rs <- rescaleFuture(
   eSDM_model$Model, 
   bio_future, 
-  eSDM_model$Predictors
-  )
+  eSDM_model$Predictors,
+  training_data = eSDM_model$Train,
+  pred_mat = eSDM_model$PredictMatrix
+)
 
 bio_future_rs
 ```
@@ -216,38 +218,56 @@ threshold_rasts <- PostProcessSDM(
   test = eSDM_model$TestData,
   train = eSDM_model$TrainData,
   planar_proj = 5070,
-  thresh_metric = 'sensitivity', 
-  quant_amt = 0.5
+  thresh_metric = 'equal_sens_spec', 
+  quant_amt = 0.25
   )
 
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
   f_rasts = threshold_rasts$FinalRasters, 
-  coord_wt = 0.25, # markedly reduced, to try and keep some contiguity, or 0 to ignore. 
-  fixedClusters = TRUE,
+  coord_wt = 0.001, 
+  fixedClusters = FALSE,
   lyr = 'Supplemented',
   n_pts = 500, 
   planar_proj = "epsg:5070",
   buffer_d = 3,
-  prop_split = 0.8
+  prop_split = 0.8,
+  min.nc = 5, 
+  max.nc = 15
   )
+plot(threshold_rasts$FinalRasters['Predictions'])
 
-names(eSDM_model)
+plot(ENVIbs$Geometry)
 ```
 
 We can apply the current clustering to the future scenario. 
 This will show us how and where the currently identified clusters would exist in future geographic space. 
 
-```{r classify future climate surface with clusters}
 
-projectClusters(
-  current_model = eSDM_model, 
+```{r classify future climate surface with clusters}
+obby <- projectClusters(
+  current_model = eSDM_model$Model, 
   current_clusters = ENVIbs,
   future_predictors = bio_future,
   current_predictors = bio_current,
-  planar_proj = "epsg:5070"
+  test_points = eSDM_model$TestData,
+  train_points = eSDM_model$TrainData,
+  thresholds = threshold_rasts$Threshold, 
+  predict_matrix = eSDM_model$PredictMatrix,
+  planar_proj = "epsg:5070", 
+  thresh_metric = 'equal_sens_spec'
 )
+
+names(obby)
+
+### need to clipt clusters sf and raster to suitable_habitat
+plot(obby$suitable_habitat)
+plot(obby$clusters_sf)
+plot(obby$novel_mask)
+
+plot(obby$mess)
+obby$changes
 ```
 
 However, our classifications cannot accomodate new climate conditions. 

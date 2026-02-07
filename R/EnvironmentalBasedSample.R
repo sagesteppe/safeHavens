@@ -72,7 +72,8 @@ EnvironmentalBasedSample <- function(
     fixedClusters = fixedClusters, 
     method = method,
     min.nc = min.nc, 
-    max.nc = max.nc, ...)
+    max.nc = max.nc,
+    ...)
 
   # Train initial KNN classifier
   weighted_mat$ID <- factor(clusterCut)
@@ -156,31 +157,35 @@ EnvironmentalBasedSample <- function(
 #' @keywords internal
 #' @noRd
 add_weighted_coordinates <- function(pred_rescale, coord_wt) {
-  ranges <- terra::global(pred_rescale, fun = 'range', na.rm = TRUE)
-  targetRangeCoords <- max(abs(ranges$min - ranges$max)) * coord_wt
 
-  pred_rescale$x <- terra::init(pred_rescale, fun = 'x')
-  pred_rescale$y <- terra::init(pred_rescale, fun = 'y')
+  if(coord_wt>0){
+    ranges <- terra::global(pred_rescale, fun = 'range', na.rm = TRUE)
+    targetRangeCoords <- max(abs(ranges$min - ranges$max)) * coord_wt
 
-  pred_rescale$x <- scale(pred_rescale$x)
-  pred_rescale$y <- scale(pred_rescale$y)
+    pred_rescale$x <- terra::init(pred_rescale, fun = 'x')
+    pred_rescale$y <- terra::init(pred_rescale, fun = 'y')
 
-  coordRanges <- rbind(
-    terra::global(pred_rescale$y, fun = 'range'),
-    terra::global(pred_rescale$x, fun = 'range')
-  )
+    pred_rescale$x <- scale(pred_rescale$x)
+    pred_rescale$y <- scale(pred_rescale$y)
 
-  coordRanges$range <- (coordRanges$min - coordRanges$max)
-  coordRanges$multiplier <- targetRangeCoords / coordRanges$range
+    coordRanges <- rbind(
+      terra::global(pred_rescale$y, fun = 'range'),
+      terra::global(pred_rescale$x, fun = 'range')
+    )
 
-  pred_rescale$x <- pred_rescale$x *
-    coordRanges[rownames(coordRanges) == 'x', 'multiplier']
-  pred_rescale$y <- pred_rescale$y *
-    coordRanges[rownames(coordRanges) == 'y', 'multiplier']
-  pred_rescale <- terra::mask(pred_rescale, pred_rescale[[1]])
+    coordRanges$range <- (coordRanges$min - coordRanges$max)
+    coordRanges$multiplier <- targetRangeCoords / coordRanges$range
 
-  # Drop predictors that were shrunk out of the model
-  pred_rescale[[c(ranges$min != ranges$max, rep(TRUE, times = 2))]]
+    pred_rescale$x <- pred_rescale$x *
+      coordRanges[rownames(coordRanges) == 'x', 'multiplier']
+    pred_rescale$y <- pred_rescale$y *
+      coordRanges[rownames(coordRanges) == 'y', 'multiplier']
+    pred_rescale <- terra::mask(pred_rescale, pred_rescale[[1]])
+
+    pred_rescale[[c(ranges$min != ranges$max, rep(TRUE, times = 2))]]
+
+  } else {pred_rescale} # not yet supported. 
+
 }
 
 #' Extract weighted matrix from rasters for clustering
