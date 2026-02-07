@@ -146,7 +146,7 @@ projectClusters <- function(
 
   # ---- 6b. Remove minor cell flecks / noise ----- #
   # Preserve original geometry
-  template <- final_clusters
+  template <- terra::rast(final_clusters)
 
   agg <- terra::aggregate(
     final_clusters,
@@ -433,11 +433,13 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   current_p <- sf::st_transform(current_sf, planar_proj)
   future_p  <- sf::st_transform(future_sf,  planar_proj)
 
+  ## calculate total areas of each class
   current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6   # km²
   future_p$area  <- as.numeric(sf::st_area(future_p))  / 1e6
 
-  current_cents <- sf::st_centroid(current_p)
-  future_cents  <- sf::st_centroid(future_p)
+  ## find geometric centroid
+  current_cents <- sf::st_point_on_surface(current_p)
+  future_cents  <- sf::st_point_on_surface(future_p)
 
   # ---------- clusters present in both ----------
   common_ids <- intersect(current_sf$ID, future_sf$ID)
@@ -481,6 +483,9 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
       centroid_shift_km = NA_real_
     )
   }
+
+  # ------- directional movement of point-on-surfaces ------- #
+ # lwgeom::st_geod_azimuth()st_centroid
 
   dplyr::bind_rows(persists, lost, gained) |>
     dplyr::arrange(cluster_id)
