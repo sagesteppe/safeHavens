@@ -231,6 +231,7 @@ perform_clustering <- function(
   max.nc,
   ...
 ) {
+  weighted_mat <- prep_for_nbclust(weighted_mat)
   w_dist <- stats::dist(weighted_mat, method = 'euclidean')
 
   if (fixedClusters) {
@@ -419,4 +420,32 @@ write_cluster_results <- function(
     append = FALSE,
     quiet = TRUE
   )
+}
+
+
+prep_for_nbclust <- function(X) {
+  # Keep only numeric columns
+  X <- X[, sapply(X, is.numeric), drop = FALSE]
+  
+  # Remove zero-variance columns
+  X <- X[, apply(X, 2, var, na.rm = TRUE) > 0, drop = FALSE]
+  
+  # Check if we have enough columns left
+  if (ncol(X) < 2) {
+    stop("Not enough variables with variance for clustering (need at least 2)")
+  }
+  
+  # Scale
+  X <- scale(X)
+  
+  # Remove linearly dependent columns via QR decomposition
+  qrX <- qr(X)
+  X_final <- X[, qrX$pivot[1:qrX$rank], drop = FALSE]
+  
+  # Final check
+  if (ncol(X_final) < 2) {
+    stop("After removing collinear variables, not enough remain for clustering")
+  }
+  
+  return(X_final)
 }

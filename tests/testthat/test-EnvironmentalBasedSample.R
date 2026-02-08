@@ -51,7 +51,7 @@ test_that("extract_weighted_matrix returns data frame with correct structure", {
   
   f_rasts <- list(Supplemented = supp)
   
-  result <- extract_weighted_matrix(r, f_rasts, n_pts = 50)
+  result <- extract_weighted_matrix(r, f_rasts, lyr = "Supplemented", n_pts = 50)
   
   expect_s3_class(result, "data.frame")
   # Should get close to 50 points since no NAs in predictor rasters
@@ -293,7 +293,7 @@ test_that("extract_weighted_matrix handles NA values correctly", {
   
   f_rasts <- list(Supplemented = supp)
   
-  result <- extract_weighted_matrix(r, f_rasts, n_pts = 100)
+  result <- extract_weighted_matrix(r, f_rasts,  lyr = "Supplemented", n_pts = 100)
   
   expect_true(all(complete.cases(result)))
   # With ~12.5% NA values in var1, expect reduced sample size
@@ -381,8 +381,8 @@ test_that("extract_weighted_matrix respects n_pts parameter", {
   
   f_rasts <- list(Supplemented = supp)
   
-  result_small <- extract_weighted_matrix(r, f_rasts, n_pts = 20)
-  result_large <- extract_weighted_matrix(r, f_rasts, n_pts = 100)
+  result_small <- extract_weighted_matrix(r, f_rasts,  lyr = "Supplemented", n_pts = 20)
+  result_large <- extract_weighted_matrix(r, f_rasts,  lyr = "Supplemented", n_pts = 100)
   
   # With no NAs, should get close to requested counts (±10%)
   expect_true(nrow(result_small) >= 18 && nrow(result_small) <= 22)
@@ -512,7 +512,7 @@ test_that("write_cluster_results handles custom paths", {
   )
   
   expect_true(file.exists(file.path(temp_path, "ClusterRasters", "custom_taxon.tif")))
-  expect_true(file.exists(file.path(temp_path, "ClusterVectors", "custom_taxon.shp")))
+  expect_true(file.exists(file.path(temp_path, "ClusterVectors", "custom_taxon.gpkg")))
   
   unlink(file.path(tempdir(), "custom_cluster_path"), recursive = TRUE)
 })
@@ -528,10 +528,10 @@ test_that("extract_weighted_matrix returns same points each time with set seed",
   names(f_rasts) <- 'Supplemented'
   
   set.seed(123)
-  result1 <- extract_weighted_matrix(r, f_rasts, n_pts = 30)
+  result1 <- extract_weighted_matrix(r, f_rasts, lyr = "Supplemented", n_pts = 30)
   
   set.seed(123)
-  result2 <- extract_weighted_matrix(r, f_rasts, n_pts = 30)
+  result2 <- extract_weighted_matrix(r, f_rasts, lyr = "Supplemented", n_pts = 30)
   
   expect_equal(result1, result2)
 })
@@ -589,4 +589,92 @@ test_that("sample_underrepresented_clusters handles CRS transformations", {
       "EPSG:32610", buffer_d = 3, n_pts = 100
     )
   )
+})
+test_that("prep_for_nbclust handles various edge cases", {
+  
+  # Test 1: Normal case - should work fine
+  set.seed(123)
+  X_normal <- data.frame(
+    a = rnorm(100),
+    b = rnorm(100),
+    c = rnorm(100)
+  )
+  result <- prep_for_nbclust(X_normal)
+  expect_equal(ncol(result), 3)
+  expect_equal(nrow(result), 100)
+  expect_true(all(apply(result, 2, sd) > 0))
+  expect_true(is.matrix(result))
+  
+  # Test 2: Mixed types - should keep only numeric
+  X_mixed <- data.frame(
+    numeric1 = rnorm(100),
+    factor1 = factor(rep(c("A", "B"), 50)),
+    numeric2 = rnorm(100),
+    char1 = rep("text", 100)
+  )
+  result <- prep_for_nbclust(X_mixed)
+  expect_equal(ncol(result), 2)
+  
+  # Test 3: Zero variance column - should be removed
+  X_zero_var <- data.frame(
+    a = rnorm(100),
+    b = rep(5, 100),
+    c = rnorm(100)
+  )
+  result <- prep_for_nbclust(X_zero_var)
+  expect_equal(ncol(result), 2)
+  
+  # Test 4: Perfectly collinear columns - should remove one
+  set.seed(456)
+  X_collinear <- data.frame(
+    a = rnorm(100),
+    b = rnorm(100)
+  )
+  X_collinear$c <- X_collinear$a + X_collinear$b
+  result <- prep_for_nbclust(X_collinear)
+  expect_equal(ncol(result), 2)
+  
+  # Test 5: Only one variable left - should error
+  X_one_var <- data.frame(
+    a = rnorm(100),
+    b = rep(1, 100)
+  )
+  expect_error(
+    prep_for_nbclust(X_one_var),
+    "Not enough variables"
+  )
+  
+  # Test 6: No numeric columns - should error
+  X_no_numeric <- data.frame(
+    a = factor(rep(c("A", "B"), 50)),
+    b = rep("text", 100)
+  )
+  expect_error(
+    prep_for_nbclust(X_no_numeric),
+    "Not enough variables"
+  )
+  
+  # Test 7: Result should be scaled (mean ~0, sd ~1)
+  X_unscaled <- data.frame(
+    a = rnorm(100, mean = 100, sd = 50),
+    b = rnorm(100, mean = -50, sd = 20),
+    c = rnorm(100, mean = 0, sd = 5)
+  )
+  result <- prep_for_nbclust(X_unscaled)
+  expect_true(all(abs(colMeans(result)) < 1e-10))
+  expect_true(all(abs(apply(result, 2, sd) - 1) < 1e-10))
+  
+  # Test 8: Handles NAs - FIXED
+  # Scale will create NAs in rows with any NA
+  # So we remove rows with NA BEFORE calling prep_for_nbclust
+  X_with_na <- data.frame(
+    a = rnorm(100),
+    b = rnorm(100),
+    c = rnorm(100)
+  )
+  X_with_na$a[1] <- NA  # Add one NA
+  
+  # Remove complete cases first
+  X_clean <- X_with_na[complete.cases(X_with_na), ]
+  expect_silent(prep_for_nbclust(X_clean))
 })

@@ -363,9 +363,16 @@ cluster_novel_areas <- function(
   if (nrow(clust_data) < 10) {
     warning("Too few novel climate points for clustering. Assigning single novel cluster.")
     novel_clusters <- novel_mask
-    novel_clusters[novel_mask == TRUE] <- next_cluster_id
-    return(list(clusters_raster = novel_clusters))
+    novel_clusters <- terra::ifel(novel_mask == 1, next_cluster_id, NA)
+    return(
+      list(
+        clusters_raster = novel_clusters
+      )
+    )
   }
+
+  # remove highly collinear features for nbclust
+  clust_data <- prep_for_nbclust(clust_data)
 
   # Distance matrix & NbClust
   d <- stats::dist(clust_data, method = "euclidean")
@@ -478,10 +485,28 @@ analyze_cluster_relationships <- function(
   # ---- Distance matrix ----
   cluster_ids <- as.integer(pts[['class']])
   
+  if (length(cluster_ids) < 2 || length(unique(cluster_ids)) < 2) {
+    warning("Insufficient data for silhouette analysis")
+    return(tibble::tibble(
+      novel_cluster_id     = integer(),
+      nearest_existing_id  = integer(),
+      avg_silhouette_width = numeric()
+    ))
+  }
+  
   d <- stats::dist(clust_data, method = "euclidean")
 
   # ---- Silhouette ----
   sil <- cluster::silhouette(cluster_ids, d)
+
+  if (!is.matrix(sil)) {
+    warning("Silhouette returned non-matrix result")
+    return(tibble::tibble(
+    novel_cluster_id     = integer(),
+    nearest_existing_id  = integer(),
+    avg_silhouette_width = numeric()
+    ))
+  }
 
   # Aggregate: for each novel cluster, most common existing neighbor
   data.frame(

@@ -177,13 +177,12 @@ eSDM_model <- elasticSDM(
     planar_projection = 5070, 
     PCNM = FALSE ## set to FALSE for this workstream!!!!!
     )
+```
 
+```{r current sdm threshold results}
+eSDM_model$ConfusionMatrix$byClass[
+  c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')]
 plot(eSDM_model$RasterPredictions)
-bmap + 
-  geom_sf(data = eSDM_model$TrainData, aes(color = occurrence), shape = 2)+ 
-  geom_sf(data = eSDM_model$TestData, aes(color = occurrence))
-
-eSDM_model$ConfusionMatrix
 ```
 
 Using the beta-coefficients from the model we will rescale both the current and future climate scenarios rasters.  
@@ -217,7 +216,7 @@ plot(difference_rs)
 ```
 
 ```{r removed rs differnce surfaces, echo = F}
-rm(difference_rs)
+rm(difference_rs, bio_future_rs, bio_current_rs)
 ```
 
 ### Cluster surfaces
@@ -235,13 +234,27 @@ threshold_rasts <- PostProcessSDM(
   quant_amt = 0.25
   )
 
+threshold_rasts$Threshold$equal_sens_spec
+
+bmap + 
+  geom_sf(data = 
+  sf::st_as_sf(
+    terra::as.polygons(
+      threshold_rasts$FinalRasters['Threshold'])
+      ), fill = 'red'
+    ) + 
+    geom_sf(data = hemi) 
+
+```
+
+```{r}
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
   f_rasts = threshold_rasts$FinalRasters, 
   coord_wt = 0.001, 
   fixedClusters = FALSE,
-  lyr = 'Supplemented',
+  lyr = 'Threshold',
   n_pts = 500, 
   planar_proj = "epsg:5070",
   buffer_d = 3,
@@ -250,15 +263,14 @@ ENVIbs <- EnvironmentalBasedSample(
   max.nc = 15
   )
 
-plot(threshold_rasts$FinalRasters['Predictions'])
 bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
-  geom_sf(data = hemi)
+  geom_sf(data = hemi) + 
+  theme(legend.position = 'bottom')
 ```
 
 We can apply the current clustering to the future scenario. 
 This will show us how and where the currently identified clusters would exist in future geographic space. 
-
 
 ```{r classify future climate surface with clusters}
 future_clusts <- projectClusters(
@@ -274,14 +286,12 @@ future_clusts <- projectClusters(
   thresh_metric = 'equal_sens_spec'
 )
 
-
 ### need to clip clusters sf and raster to suitable_habitat
 plot(future_clusts$suitable_habitat)
 plot(threshold_rasts$FinalRasters['Threshold'])
 
 plot(future_clusts$novel_mask)
 plot(future_clusts$mess)
-
 ```
 
 However, our classifications cannot accomodate new climate conditions. 
@@ -291,7 +301,8 @@ However, it seems that these will possibly be suitable habitat, and we can try t
 
 ```{r plot the mess surfaces}
 plot(future_clusts$mess)
-st_as_sf(terra::as.polygons(future_clusts$novel_mask))
+bmap +
+  geom_sf(data = st_as_sf(terra::as.polygons(future_clusts$novel_mask)), fill = 'red')
 ```
 
 Once we identify these areas, if they are sufficiently large we can pass them to a new NbClust scenario and it can cluster them anew. 
@@ -300,9 +311,6 @@ Once we identify these areas, if they are sufficiently large we can pass them to
 bmap + 
   geom_sf(data = ENVIbs$Geometry, fill = 'blue') #+ 
  # geom_sf(data = future_clusts$clusters_sf, fill = 'black')
-
-bmap + 
-  geom_sf(data = st_as_sf(terra::as.polygons(future_clusts$novel_mask)), fill = 'red')
 
 bmap + 
   geom_sf(data = future_clusts$clusters_sf, aes(fill = factor(ID)))
