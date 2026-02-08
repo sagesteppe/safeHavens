@@ -274,24 +274,6 @@ future_clusts <- projectClusters(
   thresh_metric = 'equal_sens_spec'
 )
 
-names(future_clusts)
-plot(future_clusts)
-
-future_clusts[[4]]
-
-pts <- terra::spatSample(
-    future_clusts[[4]],
-    size   = 20,   # per stratum, 
-    method = "stratified",
-    na.rm  = TRUE,
-    xy = TRUE
-  ) |>
-    as.data.frame() |>
-    sf::st_as_sf(coords = c('x', 'y'), crs = 4326)
-    sf::st_as_sf(coords = c('x', 'y'), crs = terra::crs(clusters_raster))
-
-
-terra::extract()
 
 ### need to clip clusters sf and raster to suitable_habitat
 plot(future_clusts$suitable_habitat)
@@ -316,8 +298,8 @@ Once we identify these areas, if they are sufficiently large we can pass them to
 
 ```{r identify additional clusters under future climate}
 bmap + 
- # geom_sf(data = ENVIbs$Geometry, fill = 'blue') + 
-  geom_sf(data = future_clusts$clusters_sf, fill = 'black')
+  geom_sf(data = ENVIbs$Geometry, fill = 'blue') #+ 
+ # geom_sf(data = future_clusts$clusters_sf, fill = 'black')
 
 bmap + 
   geom_sf(data = st_as_sf(terra::as.polygons(future_clusts$novel_mask)), fill = 'red')

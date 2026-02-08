@@ -462,20 +462,21 @@ analyze_cluster_relationships <- function(
   names(stack_for_sampling)[terra::nlyr(stack_for_sampling)] <- "cluster_id"
 
   # Sample (almost) equally from each cluster
-  sampled <- terra::spatSample(
-    stack_for_sampling,
-    size   = n_sample_per_cluster,   # per stratum, 
+  pts <- terra::spatSample(
+    clusters_raster,
+    size   = n_sample_per_cluster,   
     method = "stratified",
-    na.rm  = TRUE
-  )
+    na.rm  = TRUE,
+    xy = TRUE
+  ) |>
+    as.data.frame() |>
+    sf::st_as_sf(coords = c('x', 'y'), crs = terra::crs(clusters_raster))
 
-  sampled <- as.data.frame(sampled)
-  sampled <- sampled[stats::complete.cases(sampled), ]
-
+  clust_data <- terra::extract(future_rescaled, pts, ID = FALSE)
+  clust_data <- clust_data[stats::complete.cases(clust_data), ]
   
   # ---- Distance matrix ----
-  clust_data <- sampled[, !names(sampled) %in% "cluster_id"]
-  cluster_ids <- as.integer(sampled$cluster_id)
+  cluster_ids <- as.integer(pts[['class']])
   
   d <- stats::dist(clust_data, method = "euclidean")
 
@@ -530,9 +531,10 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6   # km²
   future_p$area  <- as.numeric(sf::st_area(future_p))  / 1e6
 
+  ## find geometric centroid
   sf::st_agr(current_p) <- 'constant'
   sf::st_agr(future_p) <- 'constant'
-  ## find geometric centroid
+
   current_cents <- sf::st_point_on_surface(current_p)
   future_cents  <- sf::st_point_on_surface(future_p)
 
@@ -580,8 +582,7 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   }
 
   # ------- directional movement of point-on-surfaces ------- #
- # lwgeom::st_geod_azimuth()st_centroid
 
   dplyr::bind_rows(persists, lost, gained) |>
-    dplyr::arrange(cluster_id)
+    dplyr::arrange(cluster_id) 
 }
