@@ -165,7 +165,7 @@ projectClusters <- function(
       clusters_raster      = final_clusters,
       future_rescaled      = future_rescaled,
       existing_ids         = unique(current_clusters$Geometry$ID),
-      novel_ids            = as.numeric(unlist(unique(novel_numeric))),
+      novel_ids            = as.numeric(unlist(terra::unique(novel_numeric))),
       n_sample_per_cluster = n_sample_per_cluster
     )
 

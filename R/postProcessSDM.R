@@ -97,17 +97,24 @@ PostProcessSDM <- function(
 
   outside_binary <- terra::extract(rast_binary, pres, bind = TRUE) |>
     sf::st_as_sf() |>
-    dplyr::filter(is.na(s0)) |>
-    sf::st_transform(planar_projection) |>
-    sf::st_buffer(min(dists)) |>
-    dplyr::summarize(geometry = sf::st_union(geometry)) |>
-    dplyr::mutate(occurrence = 1) |>
-    terra::vect() |>
-    terra::project(terra::crs(rast_binary)) |>
-    terra::rasterize(rast_binary, field = 'occurrence')
-
-  #return(list(rast_clipped, outside_binary))
-  rast_clipped_supplemented <- max(rast_clipped, outside_binary, na.rm = TRUE)
+    dplyr::filter(is.na(s0))
+  
+  # Check if there are any points outside the binary raster
+  if (nrow(outside_binary) > 0) {
+    outside_binary <- outside_binary |>
+      sf::st_transform(planar_projection) |>
+      sf::st_buffer(min(dists)) |>
+      dplyr::summarize(geometry = sf::st_union(geometry)) |>
+      dplyr::mutate(occurrence = 1) |>
+      terra::vect() |>
+      terra::project(terra::crs(rast_binary)) |>
+      terra::rasterize(rast_binary, field = 'occurrence')
+    
+    rast_clipped_supplemented <- max(rast_clipped, outside_binary, na.rm = TRUE)
+  } else {
+    # No points outside binary raster, so supplemented = clipped
+    rast_clipped_supplemented <- rast_clipped
+  }
 
   ##########   COMBINE ALL RASTERS TOGETHER FOR A FINAL PRODUCT      #############
   f_rasts <- c(rast_cont, rast_binary, rast_clipped, rast_clipped_supplemented)
