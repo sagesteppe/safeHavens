@@ -294,8 +294,8 @@ rescaleFuture <- function(model, future_predictors, current_predictors, training
   
   future_rescaled <- terra::rast(out_layers)
   names(future_rescaled) <- layer_names
+  future_rescaled
   
-  return(future_rescaled)
 }
 
 # ------------------------------------------------------------------------------

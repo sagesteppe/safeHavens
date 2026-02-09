@@ -30,7 +30,8 @@ Suggests:
     covr,
     withr,
     rlang,
-    safeHavens
+    safeHavens,
+    geodata
 VignetteBuilder: knitr
 Imports: 
     caret,

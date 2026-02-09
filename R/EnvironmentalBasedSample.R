@@ -448,6 +448,5 @@ prep_for_nbclust <- function(X) {
   if (ncol(X_final) < 2) {
     stop("After removing collinear variables, not enough remain for clustering")
   }
-  
-  return(X_final)
+  X_final
 }
