@@ -13,6 +13,8 @@
 #' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
+#' @param PCNM Boolean. Whether to include PCNM while fitting the model. 
+#' Defaults to TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used with `Predictive Provenance` type workstreams. 
 #' @examples \dontrun{
 #'
 #'  x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -40,8 +42,9 @@ elasticSDM <- function(
   predictors,
   planar_projection,
   domain = NULL,
-  quantile_v = 0.025
-) {
+  quantile_v = 0.025,
+  PCNM = TRUE
+  ){
   
   # Calculate study extent
   study_extent <- calculate_study_extent(
@@ -83,28 +86,43 @@ elasticSDM <- function(
     indices_knndm
   )
 
-  # Create PCNM variables and refit model
-  obs <- createPCNM_fitModel(
-    x = train,
-    ctrl = caret::rfeControl(
-      method = "LGOCV",
-      repeats = 5,
-      number = 10,
-      functions = caret::lrFuncs,
-      index = indices_knndm$indx_train,
-      verbose = FALSE
-    ),
-    indices_knndm = indices_knndm,
-    planar_proj = planar_projection,
-    sub = model_results$selected_data,
-    predictors = predictors
-  )
+  if(PCNM){
+    # Create PCNM variables and refit model
+    obs <- createPCNM_fitModel(
+      x = train,
+      ctrl = caret::rfeControl(
+        method = "LGOCV",
+        repeats = 5,
+        number = 10,
+        functions = caret::lrFuncs,
+        index = indices_knndm$indx_train,
+        verbose = FALSE
+      ),
+      indices_knndm = indices_knndm,
+      planar_proj = planar_projection,
+      sub = model_results$selected_data,
+      predictors = predictors
+    )
 
-  mod <- obs$mod
-  pcnm <- obs$pcnm
+    mod <- obs$mod
+    pcnm <- obs$pcnm
+    cv_structure <- obs$cv_model
+    pred_matrix <- obs$pred_mat
 
-  # Combine predictors with PCNM
-  predictors <- c(predictors, pcnm)
+    
+    # Combine predictors with PCNM
+    predictors <- c(predictors, pcnm)
+
+  } else { 
+    # this is the branch for predictive provenance because we can not
+    # else use the already fit model. nothing else to add.  
+    # you cannot have PCNM surfaces of theoretical scenarios.  
+    pcnm = NULL
+    mod <- model_results$glmnet_model
+    cv_structure <- model_results$cv_model
+    pred_matrix <- model_results$selected_data
+
+  }
 
   # Get variables from final model
   vars <- rownames(stats::coef(mod))
@@ -121,11 +139,11 @@ elasticSDM <- function(
     Predictors = predictors,
     PCNM = pcnm,
     Model = mod,
-    CVStructure = obs$cv_model,
+    CVStructure = cv_structure,
     ConfusionMatrix = cm,
     TrainData = train,
     TestData = test,
-    PredictMatrix = obs$pred_mat
+    PredictMatrix = pred_matrix
   )
 }
 
@@ -167,39 +185,35 @@ calculate_study_extent <- function(
 #' @keywords internal
 #' @noRd
 generate_background_points <- function(predictors, occurrences) {
-
   bg <- tryCatch({
-
-    sdm::background(
-      x      = predictors,
-      n      = nrow(occurrences),
-      sp     = occurrences,
-      method = "eDist"
-    )
-
-  }, error = function(e) {
-
-    msg <- conditionMessage(e)
-
-    if (grepl("computationally singular|reciprocal condition number", msg)) {
-
-      warning(
-        "eDist background sampling failed due to singular covariance matrix.\n",
-        "Falling back to eRandom background sampling."
-      )
-
+    suppressMessages({
       sdm::background(
         x      = predictors,
         n      = nrow(occurrences),
         sp     = occurrences,
-        method = "eRandom"
+        method = "eDist"
       )
-
+    })
+  }, error = function(e) {
+    msg <- conditionMessage(e)
+    if (grepl("computationally singular|reciprocal condition number", msg)) {
+      warning(
+        "eDist background sampling failed due to singular covariance matrix.\n",
+        "Falling back to eRandom background sampling."
+      )
+      suppressMessages({
+        sdm::background(
+          x      = predictors,
+          n      = nrow(occurrences),
+          sp     = occurrences,
+          method = "eRandom"
+        )
+      })
     } else {
-      stop(e)  # rethrow unknown errors
+      stop(e)
     }
   })
-
+  
   bg |>
     dplyr::select(lon = x, lat = y) |>
     sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>

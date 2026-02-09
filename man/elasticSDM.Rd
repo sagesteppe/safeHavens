@@ -4,7 +4,14 @@
 \alias{elasticSDM}
 \title{Create a quick SDM using elastic net regression}
 \usage{
-elasticSDM(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025)
+elasticSDM(
+  x,
+  predictors,
+  planar_projection,
+  domain = NULL,
+  quantile_v = 0.025,
+  PCNM = TRUE
+)
 }
 \arguments{
 \item{x}{A (simple feature) sf data set of occurrence data for the species.}
@@ -16,6 +23,9 @@ elasticSDM(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025)
 \item{domain}{Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in \code{x}.}
 
 \item{quantile_v}{Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5\% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.}
+
+\item{PCNM}{Boolean. Whether to include PCNM while fitting the model.
+Defaults to TRUE for use with \code{EnvironmentalBasedSample}, but FALSE should be used with \verb{Predictive Provenance} type workstreams.}
 }
 \value{
 A list of 12 objects, each of these subsequently used in the downstream SDM post processing sequence, or which we think are best written to disk.
