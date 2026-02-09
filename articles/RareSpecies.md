@@ -161,7 +161,7 @@ applications.
 ``` r
 st
    user  system elapsed 
- 27.922   0.008  27.935 
+ 26.572   0.024  26.598 
 ```
 
 ### return output structure
@@ -410,7 +410,7 @@ matrix.
 ``` r
 st
    user  system elapsed 
- 36.457   0.006  36.467 
+ 34.427   0.020  34.449 
 ```
 
 The environmental distance run takes about 10 seconds longer.

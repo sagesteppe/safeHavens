@@ -25,6 +25,11 @@ Background, installation, usage, and sampling schemas
   Creating and understanding the Species Distribution Model required for
   EnvironmentalBasedSample.
 
+- [Predictive
+  Provenance](https://sagesteppe.github.io/safeHavens/articles/PredictiveProvenance.md):
+
+  Predictive Provenancing using Species Distribution Models.
+
 - [Polygon Based
   Sampling](https://sagesteppe.github.io/safeHavens/articles/PolygonBasedSamples.md):
 

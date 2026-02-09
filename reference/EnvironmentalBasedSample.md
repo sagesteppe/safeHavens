@@ -22,6 +22,9 @@ EnvironmentalBasedSample(
   buffer_d = 3,
   prop_split = 0.8,
   write2disk = FALSE,
+  method = "complete",
+  min.nc = 3,
+  max.nc = 20,
   ...
 )
 ```
@@ -112,6 +115,20 @@ EnvironmentalBasedSample(
 - write2disk:
 
   Boolean. Whether to write results to disk or not. Defaults to FALSE.
+
+- method:
+
+  character passed onto NbClust when fixedClusters == TRUE.
+
+- min.nc:
+
+  = 3 Passed onto NbClust when fixedClusters == TRUE, minimum number of
+  clusters to accept.
+
+- max.nc:
+
+  = 20 Passed onto NbClust when fixedClusters == TRUE, maximum number of
+  clusters to accept.
 
 - ...:
 

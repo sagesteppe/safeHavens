@@ -13,7 +13,14 @@ older model selection frameworks.
 ## Usage
 
 ``` r
-elasticSDM(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025)
+elasticSDM(
+  x,
+  predictors,
+  planar_projection,
+  domain = NULL,
+  quantile_v = 0.025,
+  PCNM = TRUE
+)
 ```
 
 ## Arguments
@@ -48,6 +55,12 @@ elasticSDM(x, predictors, planar_projection, domain = NULL, quantile_v = 0.025)
   to each other iteratively, until all remaining records are further
   apart than this distance from each other. If you want essentially no
   thinning to happen just supply 0.01. Defaults to 0.025.
+
+- PCNM:
+
+  Boolean. Whether to include PCNM while fitting the model. Defaults to
+  TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used
+  with `Predictive Provenance` type workstreams.
 
 ## Value
 

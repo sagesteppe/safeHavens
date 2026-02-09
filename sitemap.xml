@@ -6,6 +6,7 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/GettingStarted.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/IsolationByResistance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/PolygonBasedSamples.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/articles/PredictiveProvenance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/RareSpecies.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/SpeciesDistributionModels.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/WorkedExample.html</loc></url>
@@ -29,7 +30,9 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/index.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/order_by_distance_variance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/populationResistance.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/projectClusters.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/reexports.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/rescaleFuture.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/split_cols.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/trainKNN.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/writeSDMresults.html</loc></url>

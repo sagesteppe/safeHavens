@@ -94,6 +94,9 @@ incorporating the PCNM/MEM data and coordinates to implement some spatial contig
 <span>  buffer_d <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  prop_split <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  write2disk <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"complete"</span>,</span>
+<span>  min.nc <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  max.nc <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -160,6 +163,18 @@ This is a reasonable default for coarsely gridded data (the most sensible grain 
 
 <dt id="arg-write-disk">write2disk<a class="anchor" aria-label="anchor" href="#arg-write-disk"></a></dt>
 <dd><p>Boolean. Whether to write results to disk or not. Defaults to FALSE.</p></dd>
+
+
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>character passed onto NbClust when fixedClusters == TRUE.</p></dd>
+
+
+<dt id="arg-min-nc">min.nc<a class="anchor" aria-label="anchor" href="#arg-min-nc"></a></dt>
+<dd><p>= 3 Passed onto NbClust when fixedClusters == TRUE, minimum number of clusters to accept.</p></dd>
+
+
+<dt id="arg-max-nc">max.nc<a class="anchor" aria-label="anchor" href="#arg-max-nc"></a></dt>
+<dd><p>= 20 Passed onto NbClust when fixedClusters == TRUE, maximum number of clusters to accept.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

@@ -95,7 +95,14 @@ prohibited by older model selection frameworks.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">elasticSDM</span><span class="op">(</span><span class="va">x</span>, <span class="va">predictors</span>, <span class="va">planar_projection</span>, domain <span class="op">=</span> <span class="cn">NULL</span>, quantile_v <span class="op">=</span> <span class="fl">0.025</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">elasticSDM</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  <span class="va">predictors</span>,</span>
+<span>  <span class="va">planar_projection</span>,</span>
+<span>  domain <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  quantile_v <span class="op">=</span> <span class="fl">0.025</span>,</span>
+<span>  PCNM <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -120,6 +127,11 @@ prohibited by older model selection frameworks.</p>
 
 <dt id="arg-quantile-v">quantile_v<a class="anchor" aria-label="anchor" href="#arg-quantile-v"></a></dt>
 <dd><p>Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.</p></dd>
+
+
+<dt id="arg-pcnm">PCNM<a class="anchor" aria-label="anchor" href="#arg-pcnm"></a></dt>
+<dd><p>Boolean. Whether to include PCNM while fitting the model.
+Defaults to TRUE for use with <code>EnvironmentalBasedSample</code>, but FALSE should be used with <code>Predictive Provenance</code> type workstreams.</p></dd>
 
 </dl></div>
     <div class="section level2">

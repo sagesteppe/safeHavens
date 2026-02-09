@@ -58,6 +58,16 @@ Preparation for Environmental Based Sampling
   Save the results of SDMs from the `elasticSDM`, `RescaleRasters` and
   `PostProcessSDM` function in safeHavens
 
+## Predictive Provenance Prep
+
+Preparation for Predictive Provenance
+
+- [`rescaleFuture()`](https://sagesteppe.github.io/safeHavens/reference/rescaleFuture.md)
+  : Rescale future climate predictors using current model coefficients
+- [`projectClusters()`](https://sagesteppe.github.io/safeHavens/reference/projectClusters.md)
+  : Project current environmental clusters onto a future climate
+  scenario
+
 ## Rare Plant Sampling
 
 Optimization based site selection helpers for known populations
