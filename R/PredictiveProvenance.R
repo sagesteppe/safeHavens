@@ -33,9 +33,9 @@
 #'   \item{suitable_habitat}{Raster of masked suitable habitat under future conditions}
 #'   \item{novel_mask}{`SpatRaster` — logical, `TRUE` where MESS < threshold.}
 #'   \item{mess}{`SpatRaster` — raw MESS scores (minimum across all variables).}
-#'   \item{changes}{`tibble` — per-cluster area and centroid-shift metrics.}
-#'   \item{novel_similarity}{`tibble` — nearest existing cluster and mean
-#'     silhouette width for each novel cluster.  Zero-row tibble if none.}
+#'   \item{changes}{`data.frame` — per-cluster area and centroid-shift metrics.}
+#'   \item{novel_similarity}{`data.frame` — nearest existing cluster and mean
+#'     silhouette width for each novel cluster.  Zero-row data frame if none.}
 #'
 #' @export
 projectClusters <- function(
@@ -171,7 +171,7 @@ projectClusters <- function(
 
   } else {
     final_clusters   <- known_clusters
-    novel_similarity <- tibble::tibble(
+    novel_similarity <- data.frame(
       novel_cluster_id     = integer(),
       nearest_existing_id  = integer(),
       avg_silhouette_width = numeric()
@@ -417,7 +417,7 @@ cluster_novel_areas <- function(
 #' @param novel_ids            Integer vector of novel cluster IDs.
 #' @param n_sample_per_cluster Points to draw from each cluster.
 #'
-#' @returns Tibble with columns `novel_cluster_id`, `nearest_existing_id`,
+#' @returns data.frame with columns `novel_cluster_id`, `nearest_existing_id`,
 #'   `avg_silhouette_width`.
 #' @keywords internal
 #' @noRd
@@ -430,7 +430,7 @@ analyze_cluster_relationships <- function(
 ) {
 
   if (length(novel_ids) == 0) {
-    return(tibble::tibble(
+    return(data.frame(
       novel_cluster_id    = integer(),
       nearest_existing_id = integer(),
       avg_silhouette_width = numeric()
@@ -468,7 +468,7 @@ analyze_cluster_relationships <- function(
   
   if (length(cluster_ids) < 2 || length(unique(cluster_ids)) < 2) {
     warning("Insufficient data for silhouette analysis")
-    return(tibble::tibble(
+    return(data.frame(
       novel_cluster_id     = integer(),
       nearest_existing_id  = integer(),
       avg_silhouette_width = numeric()
@@ -482,7 +482,7 @@ analyze_cluster_relationships <- function(
 
   if (!is.matrix(sil)) {
     warning("Silhouette returned non-matrix result")
-    return(tibble::tibble(
+    return(data.frame(
     novel_cluster_id     = integer(),
     nearest_existing_id  = integer(),
     avg_silhouette_width = numeric()
@@ -523,7 +523,7 @@ analyze_cluster_relationships <- function(
 #' @param future_sf   SF object of future clusters (must have `$ID`).
 #' @param planar_proj Planar projection for area / distance calculations.
 #'
-#' @returns Tibble with columns `cluster_id`, `current_area_km2`,
+#' @returns data.frame with columns `cluster_id`, `current_area_km2`,
 #'   `future_area_km2`, `area_change_pct`, `centroid_shift_km`.
 #' @keywords internal
 #' @noRd
@@ -546,7 +546,7 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # ---------- clusters present in both ----------
   common_ids <- intersect(current_sf$ID, future_sf$ID)
 
-  persists <- tibble::tibble(
+  persists <- data.frame(
     cluster_id       = common_ids,
     current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
     future_area_km2  = future_p$area[match(common_ids, future_sf$ID)],
@@ -565,7 +565,7 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # ---------- lost clusters ----------
   lost_ids <- setdiff(current_sf$ID, future_sf$ID)
   lost <- if (length(lost_ids) > 0) {
-    tibble::tibble(
+    data.frame(
       cluster_id       = lost_ids,
       current_area_km2 = current_p$area[match(lost_ids, current_sf$ID)],
       future_area_km2  = 0,
@@ -577,7 +577,7 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # ---------- gained clusters ----------
   gained_ids <- setdiff(future_sf$ID, current_sf$ID)
   gained <- if (length(gained_ids) > 0) {
-    tibble::tibble(
+    data.frame(
       cluster_id       = gained_ids,
       current_area_km2 = 0,
       future_area_km2  = future_p$area[match(gained_ids, future_sf$ID)],

@@ -51,7 +51,8 @@ Imports:
     vegan,
     cluster,
     igraph,
-    spdep
+    spdep,
+    raster
 URL: https://sagesteppe.github.io/safeHavens/, 
      https://github.com/sagesteppe/safeHavens
 BugReports: https://github.com/sagesteppe/safeHavens/issues
