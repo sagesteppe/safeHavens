@@ -46,6 +46,10 @@ If \code{FALSE} novel cells are left as \code{NA}.}
 
 \item{nbclust_args}{Named list of arguments forwarded to \code{NbClust::NbClust}.
 Sensible defaults are set internally (\code{min.nc = 2}, \code{max.nc = 10}, \code{method = "ward.D2"}, \code{index = "all"}).}
+
+\item{thresh_metric}{Character. Default 'sensitivity', dismo::threshold to use for cutting the future sdm into a binary surface.}
+
+\item{thresholds}{current era thresholds from \code{postProcessSDM}}
 }
 \value{
 A named list:
@@ -53,9 +57,9 @@ A named list:
 \item{suitable_habitat}{Raster of masked suitable habitat under future conditions}
 \item{novel_mask}{\code{SpatRaster} — logical, \code{TRUE} where MESS < threshold.}
 \item{mess}{\code{SpatRaster} — raw MESS scores (minimum across all variables).}
-\item{changes}{\code{tibble} — per-cluster area and centroid-shift metrics.}
-\item{novel_similarity}{\code{tibble} — nearest existing cluster and mean
-silhouette width for each novel cluster.  Zero-row tibble if none.}
+\item{changes}{\code{data.frame} — per-cluster area and centroid-shift metrics.}
+\item{novel_similarity}{\code{data.frame} — nearest existing cluster and mean
+silhouette width for each novel cluster.  Zero-row data frame if none.}
 }
 \description{
 Main entry point for the future-projection workflow.  The steps are:

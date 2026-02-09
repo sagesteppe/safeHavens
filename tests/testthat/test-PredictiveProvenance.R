@@ -194,7 +194,7 @@ test_that("analyze_cluster_relationships returns correct structure", {
     )
   )
   
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
   expect_true(all(c("novel_cluster_id", "nearest_existing_id", "avg_silhouette_width") %in% names(result)))
   expect_true(nrow(result) >= 0)
   expect_true(nrow(result) <= 2)
@@ -243,7 +243,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
     )
   )
   
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
   expect_true(nrow(result) <= 1)
   
   if (nrow(result) > 0) {
@@ -261,7 +261,7 @@ test_that("analyze_cluster_relationships handles no novel clusters", {
     n_sample_per_cluster = 20
   )
   
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 0)
   expect_true(all(c("novel_cluster_id", "nearest_existing_id", "avg_silhouette_width") %in% names(result)))
 })
@@ -307,7 +307,7 @@ test_that("analyze_cluster_relationships can return NA for isolated novel cluste
   ))
   
   # Should not error
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
   expect_true(nrow(result) <= 1)
   
   if (nrow(result) > 0) {
@@ -339,7 +339,8 @@ test_that("calculate_changes computes metrics for persisting clusters", {
     planar_proj = 3857  # Web Mercator
   )
   
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
+
 
 })
 test_that("analyze_cluster_relationships can handle isolated novel clusters", {
@@ -383,7 +384,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
   ))
   
   # Should not error
-  expect_s3_class(result, "tbl_df")
+  expect_s3_class(result, "data.frame")
   expect_true(nrow(result) <= 1)
   
   # If we got a result, check structure

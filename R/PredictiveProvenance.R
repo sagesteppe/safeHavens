@@ -17,6 +17,7 @@
 #' @param future_predictors SpatRaster of future climate.  
 #' Layer names must match those retained in `current_model`.
 #' @param current_predictors SpatRaster of current climate (used for MESS reference and for `rescaleFuture` standardisation).
+#' @param thresholds current era thresholds from `postProcessSDM`
 #' @param planar_proj EPSG code or proj4 string for a planar projection in metres (same as used in the current analysis).
 #' @param coord_wt Numeric, default `0.001`. Coordinate weighting passed to `add_weighted_coordinates`. 
 #' @param mess_threshold MESS values below this are treated as novel climate. Default `0`.
@@ -27,6 +28,7 @@
 #'   (existing *and* novel) for the relationship tree.  Default `50`.
 #' @param nbclust_args Named list of arguments forwarded to `NbClust::NbClust`.  
 #' Sensible defaults are set internally (`min.nc = 2`, `max.nc = 10`, `method = "ward.D2"`, `index = "all"`).
+#' @param thresh_metric Character. Default 'sensitivity', dismo::threshold to use for cutting the future sdm into a binary surface. 
 #'
 #' @returns A named list:
 #'   \item{clusters_sf}{`sf` polygons with column `ID`.}
@@ -180,11 +182,11 @@ projectClusters <- function(
 
   # ---- 8. Smooth noise ----
   template <- terra::rast(final_clusters)
-  final_clusters <- mask(final_clusters, suitable_habitat_binary)
+  final_clusters <- terra::mask(final_clusters, suitable_habitat_binary)
   agg <- terra::aggregate(
     final_clusters,
     fact = 2,
-    fun  = modal,
+    fun  = terra::modal,
     na.rm = TRUE
   )
 
@@ -369,7 +371,7 @@ cluster_novel_areas <- function(
   )
 
   nb_result <- suppressMessages(
-    do.call(NbClust::NbClust, modifyList(nbclust_defaults, nbclust_args))
+    do.call(NbClust::NbClust, utils::modifyList(nbclust_defaults, nbclust_args))
   )
 
   optimal_k <- max(nb_result$Best.partition)
@@ -549,7 +551,7 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   persists <- data.frame(
     cluster_id       = common_ids,
     current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
-    future_area_km2  = future_p$area[match(common_ids, future_sf$ID)],
+    future_area_km2  = future_p$area[match(common_ids, future_sf$ID)]
   ) |>
     dplyr::mutate(
       area_change_pct  = 100 * (future_area_km2 - current_area_km2) / current_area_km2,
