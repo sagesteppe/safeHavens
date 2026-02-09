@@ -1,15 +1,3 @@
-# ==============================================================================
-# projectClusters workflow
-# ==============================================================================
-# elasticSDM_noPCNM()                  - SDM without spatial autocorrelation
-# rescaleFuture()                      - apply current betas to future climate
-# projectClusters()                    - main entry point
-# cluster_novel_areas()                - NbClust on novel climate only
-# analyze_cluster_relationships()      - sample both, force tree, silhouette
-# calculate_changes()                  - area / centroid deltas
-# ==============================================================================
-
-
 #' Project current environmental clusters onto a future climate scenario
 #'
 #' Main entry point for the future-projection workflow.  The steps are:
@@ -24,35 +12,25 @@
 #'    silhouette (`analyze_cluster_relationships`).
 #' 6. Polygonise and calculate area / centroid changes.
 #'
-#' @param current_model glmnet model from `elasticSDM_noPCNM()$Model`.
-#' @param current_clusters Output list from `EnvironmentalBasedSample()`.
-#'   Must contain at minimum `$Geometry` (SF polygons with `$ID`),
-#'   `$fit.knn` (trained caret KNN), and access to the training points
-#'   used for MESS reference extraction.
-#' @param future_predictors SpatRaster of future climate.  Layer names must
-#'   match those retained in `current_model`.
-#' @param current_predictors SpatRaster of current climate (used for MESS
-#'   reference and for `rescaleFuture` standardisation).
-#' @param planar_proj EPSG code or proj4 string for a planar projection in
-#'   metres (same as used in the current analysis).
-#' @param coord_wt Coordinate weighting passed to `add_weighted_coordinates`.
-#'   Default `2.5`.
-#' @param mess_threshold MESS values below this are treated as novel climate.
-#'   Default `0`.
-#' @param cluster_novel If `TRUE` and novel cells exist, cluster them
-#'   independently with NbClust.  If `FALSE` novel cells are left as `NA`.
-#'   Default `TRUE`.
-#' @param n_novel_pts Number of points to sample from novel areas for
-#'   clustering.  Default `500`.
+#' @param eSDM_object output from `elasticSDM()`.
+#' @param current_clusters Output list from `EnvironmentalBasedSample()`. 
+#' @param future_predictors SpatRaster of future climate.  
+#' Layer names must match those retained in `current_model`.
+#' @param current_predictors SpatRaster of current climate (used for MESS reference and for `rescaleFuture` standardisation).
+#' @param planar_proj EPSG code or proj4 string for a planar projection in metres (same as used in the current analysis).
+#' @param coord_wt Numeric, default `0.001`. Coordinate weighting passed to `add_weighted_coordinates`. 
+#' @param mess_threshold MESS values below this are treated as novel climate. Default `0`.
+#' @param cluster_novel Boolean, defualt `TRUE`. If `TRUE` and novel cells exist, cluster them independently with NbClust.  
+#'  If `FALSE` novel cells are left as `NA`.
+#' @param n_novel_pts Numeric, default 500. Number of points to sample from novel areas for clustering. 
 #' @param n_sample_per_cluster Number of points to sample from each cluster
 #'   (existing *and* novel) for the relationship tree.  Default `50`.
-#' @param nbclust_args Named list of arguments forwarded to
-#'   `NbClust::NbClust`.  Sensible defaults are set internally
-#'   (`min.nc = 2`, `max.nc = 10`, `method = "ward.D2"`, `index = "all"`).
+#' @param nbclust_args Named list of arguments forwarded to `NbClust::NbClust`.  
+#' Sensible defaults are set internally (`min.nc = 2`, `max.nc = 10`, `method = "ward.D2"`, `index = "all"`).
 #'
 #' @returns A named list:
-#'   \item{clusters_raster}{`SpatRaster` — cluster IDs across the full extent.}
 #'   \item{clusters_sf}{`sf` polygons with column `ID`.}
+#'   \item{suitable_habitat}{Raster of masked suitable habitat under future conditions}
 #'   \item{novel_mask}{`SpatRaster` — logical, `TRUE` where MESS < threshold.}
 #'   \item{mess}{`SpatRaster` — raw MESS scores (minimum across all variables).}
 #'   \item{changes}{`tibble` — per-cluster area and centroid-shift metrics.}
@@ -61,15 +39,12 @@
 #'
 #' @export
 projectClusters <- function(
-  current_model,
+  eSDM_object,
   current_clusters,
   future_predictors,
   current_predictors,
-  test_points,           
-  train_points,        
-  predict_matrix, 
   planar_proj,
-  coord_wt            = 0.01,
+  coord_wt            = 0.001,
   mess_threshold      = 0,
   cluster_novel       = TRUE,
   n_novel_pts         = 500,
@@ -79,9 +54,15 @@ projectClusters <- function(
   thresholds
 ) {
 
+  ## subset some items from eSDMmodel
+  test_points = eSDM_object$TestData
+  train_points = eSDM_object$TrainData
+  predict_matrix = eSDM_object$PredictMatrix
+  current_model = eSDM_object$Model
+
   # ---- 0. Extract model variables ----
   coef_mat <- as.matrix(stats::coef(current_model))
-  vars <- rownames(coef_mat)[coef_mat[, 1] != 0]
+  vars <- rownames(coef_mat)#[coef_mat[, 1] != 0]
   vars <- vars[vars != "(Intercept)"]
 
   # ---- 1. SDM prediction on ORIGINAL future climate ----
@@ -532,7 +513,6 @@ analyze_cluster_relationships <- function(
 
 
 # ------------------------------------------------------------------------------
-
 
 #' Calculate per-cluster area and centroid-shift changes
 #'

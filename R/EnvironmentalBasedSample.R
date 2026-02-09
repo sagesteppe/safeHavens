@@ -422,7 +422,9 @@ write_cluster_results <- function(
   )
 }
 
-
+#' drop 0 variance layers from NbClust to avoid singular explosions. 
+#' @keywords internal
+#' @noRd
 prep_for_nbclust <- function(X) {
   # Keep only numeric columns
   X <- X[, sapply(X, is.numeric), drop = FALSE]

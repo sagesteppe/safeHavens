@@ -238,7 +238,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
       clusters_raster = clusters_rast,
       future_rescaled = future_rescaled,
       existing_ids = c(1, 2),
-      novel_ids = c(11),
+      novel_ids = 11,
       n_sample_per_cluster = 30
     )
   )
@@ -302,7 +302,7 @@ test_that("analyze_cluster_relationships can return NA for isolated novel cluste
     clusters_raster = clusters_rast,
     future_rescaled = future_rescaled,
     existing_ids = c(1, 2),
-    novel_ids = c(11),
+    novel_ids = 11,
     n_sample_per_cluster = 30
   ))
   
@@ -362,7 +362,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
   crs(r1) <- "EPSG:4326"
   r1_vals <- rnorm(900, mean=0, sd=1)
   
-  # FIXED: Only modify non-NA positions for cluster 11
+  # FIXED: Only modify non-NA positions for cluster 11S
   cluster_11_mask <- !is.na(vals) & vals == 11  # Boolean mask excluding NAs
   r1_vals[cluster_11_mask] <- rnorm(sum(cluster_11_mask), mean=100, sd=1)
   values(r1) <- r1_vals
@@ -378,7 +378,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
     clusters_raster = clusters_rast,
     future_rescaled = future_rescaled,
     existing_ids = c(1, 2),
-    novel_ids = c(11),
+    novel_ids = 11,
     n_sample_per_cluster = 30
   ))
   
@@ -397,7 +397,7 @@ test_that("analyze_cluster_relationships can handle isolated novel clusters", {
 
 test_that("calculate_changes handles gained clusters", {
   poly1 <- st_polygon(list(matrix(c(0,0, 10,0, 10,10, 0,10, 0,0), ncol=2, byrow=TRUE)))
-  current_sf <- st_sf(ID = c(1), geometry = st_sfc(poly1), crs = 4326)
+  current_sf <- st_sf(ID = 1, geometry = st_sfc(poly1), crs = 4326)
   
   # Future has cluster 1 and new cluster 2
   poly1_future <- st_polygon(list(matrix(c(0,0, 10,0, 10,10, 0,10, 0,0), ncol=2, byrow=TRUE)))

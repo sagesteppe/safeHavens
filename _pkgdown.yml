@@ -84,6 +84,11 @@ reference:
   - PostProcessSDM
   - RescaleRasters
   - writeSDMresults
+- title: Predictive Provenance Prep
+  desc: Preparation for Predictive Provenance 
+  contents:
+    - rescaleFuture
+    - projectClusters
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations
   contents:
@@ -98,10 +103,10 @@ articles:
     - GettingStarted
     - IsolationByResistance
     - SpeciesDistributionModels
+    - PredictiveProvenance
     - PolygonBasedSamples
     - WorkedExample
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
     contents: 
     - RareSpecies
- 
