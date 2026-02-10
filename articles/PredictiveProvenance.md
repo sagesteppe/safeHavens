@@ -50,35 +50,12 @@ lifting internally on our functions.
 ``` r
 library(safeHavens)
 library(terra)
-terra 1.8.93
 library(geodata)
 library(sf)
-Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE
 library(dplyr)
-
-Attaching package: 'dplyr'
-The following objects are masked from 'package:terra':
-
-    intersect, union
-The following objects are masked from 'package:stats':
-
-    filter, lag
-The following objects are masked from 'package:base':
-
-    intersect, setdiff, setequal, union
 library(tidyr)
-
-Attaching package: 'tidyr'
-The following object is masked from 'package:terra':
-
-    extract
 library(ggplot2)
 library(patchwork)
-
-Attaching package: 'patchwork'
-The following object is masked from 'package:terra':
-
-    area
 set.seed(22)
 ```
 
@@ -111,9 +88,9 @@ western_states <- spData::us_states |> ## for making a quick basemap.
 
 bb <- st_bbox(
   c(
-    xmin = -115, 
+    xmin = -116, 
     xmax = -105, 
-    ymax = 43, 
+    ymax = 44, 
     ymin = 33.5),
     crs = st_crs(4326)
     )
@@ -137,7 +114,7 @@ bmap <- ggplot() +
       )
 
 bmap +
-    labs(title = 'Helianthella microcephala occurrence records')
+    labs(title = 'Helianthella microcephala\noccurrence records')
 ```
 
 ![](PredictiveProvenance_files/figure-html/Download%20species%20occurrence%20data-1.png)
@@ -175,12 +152,14 @@ bio_future <- crop(bio_future, bbox)
 `safeHavens` does not offer explicit functionality to rename / align the
 naming of raster surfaces. However, the modelling process requires that
 both current and future raster products have perfectly matching raster
-names. The chunk below shows how we will standardize the names by
-extracting the bioclim variable number, at the end of the name, and pad
-‘bio\_’ back onto the front of it with a leading zero so we have:
-‘bio_01’ instead of ‘bio_1’. A minor variation of this should work for
-most data sources, after customizing the `gsub` to erase earlier
-portions of the file name.
+names.
+
+The chunk below shows how we will standardize the names by extracting
+the bioclim variable number, at the end of the name, and pad ‘bio\_’
+back onto the front of it with a leading zero so we have: ‘bio_01’
+instead of ‘bio_1’. A minor variation of this should work for most data
+sources, after customizing the `gsub` to erase earlier portions of the
+file name.
 
 ``` r
 simplify_names <- function(x){
@@ -198,7 +177,6 @@ all(names(bio_current) == names(bio_future))
 [1] TRUE
 
 ## we will also drop some variables that are essentially identical in the study area
-
 drops <- c(
   'bio_05' , 'bio_02',
   'bio_11', 'bio_12'
@@ -215,7 +193,8 @@ stack after another, we can diff the two products to see where the
 largest changes in geographic space will occur.
 
 ``` r
-difference <- abs(bio_current - bio_future)
+pct_diff <- function(x, y){((x - y)/((x + y)/2)) * 100}
+difference <- pct_diff(bio_current, bio_future)
 plot(difference)
 ```
 
@@ -229,7 +208,7 @@ MESS surfaces and a second stage clustering approach in the function.
 
 ### Analytical workstream
 
-The workflow for predictive provenance is quite similar to the
+The workflow for predictive provenance builds upon the
 `EnvironmentalBasedSample` workflow, relying on many of the same
 internal helpers, and user facing functions. Note that when using
 `elasticSDM` we need to specify the flag `pcnm = FALSE` to bypass
@@ -271,7 +250,7 @@ background points we will use the `eRandom` method instead.
 eSDM_model$ConfusionMatrix$byClass[
   c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')]
       Sensitivity       Specificity            Recall Balanced Accuracy 
-        1.0000000         0.6923077         1.0000000         0.8461538 
+        0.9200000         0.7692308         0.9200000         0.8446154 
 plot(eSDM_model$RasterPredictions)
 ```
 
@@ -279,14 +258,16 @@ plot(eSDM_model$RasterPredictions)
 
 We can view some of the results for the model, it is OK, but would
 benefit from using only a subset of the bioclim predictors to allow for
-`eDist` sampling upstream. It is a bit too generoous with classifying
-areas as being possible suitable habitat.
+`eDist` sampling upstream. It is a bit too generous with classifying
+areas as being possible suitable habitat. While this model would be
+unsuitable for applications, certain CRAN and Github checks make it
+difficult to improve upon as an example.
 
 Using the beta-coefficients from the model we will rescale both the
-current and future climate scenarios rasters.  
-This will happen internally in the next function, but it is good to see
-the different between the current and future scenarios to have an idea
-of expectations for the final results.
+current and future climate scenarios rasters. This will happen
+internally in the next function, but it is good to see the different
+between the current and future scenarios to have an idea of expectations
+for the final results.
 
 ``` r
 bio_current_rs <- RescaleRasters(
@@ -302,6 +283,7 @@ plot(bio_current_rs$RescaledPredictors)
 ![](PredictiveProvenance_files/figure-html/rescale%20rasters-1.png)
 
 ``` r
+
 bio_future_rs <- rescaleFuture(
   eSDM_model$Model, 
   bio_future, 
@@ -310,17 +292,10 @@ bio_future_rs <- rescaleFuture(
   pred_mat = eSDM_model$PredictMatrix
 )
 
-bio_future_rs
-class       : SpatRaster 
-size        : 228, 240, 8  (nrow, ncol, nlyr)
-resolution  : 0.04166667, 0.04166667  (x, y)
-extent      : -115, -105, 33.5, 43  (xmin, xmax, ymin, ymax)
-coord. ref. : lon/lat WGS 84 (EPSG:4326) 
-source(s)   : memory
-names       :    bio_03,    bio_15,    bio_14,    bio_04,     bio_06,    bio_16, ... 
-min values  : -8.757232, -8.239257, -5.973386, -3.415114, -0.7634497, -5.263755, ... 
-max values  : 10.531289, 14.357820, 19.954478,  5.006051,  1.2668881, 11.326773, ... 
+plot(bio_future_rs)
 ```
+
+![](PredictiveProvenance_files/figure-html/rescale%20rasters-2.png)
 
 If any of the layers show as a single color, and 0, it means that glmnet
 shrunk them from the model.
@@ -330,17 +305,20 @@ we can take the absolute difference of the relevant raster layers to see
 where the largest changes will be.
 
 ``` r
-difference_rs <- abs(bio_current_rs$RescaledPredictors - bio_future_rs)
+difference_rs <- pct_diff(bio_current_rs$RescaledPredictors, bio_future_rs)
 plot(difference_rs)
 ```
 
 ![](PredictiveProvenance_files/figure-html/rescaled%20raster%20difference-1.png)
 
+The above plot shows us the areas with the largest changes between
+current and predicted conditions.
+
 ### Cluster surfaces
 
 Clusters can be identified using NbClust, allowing it to determine the
 optimal *n* using the METHOD. To use NbClust, rather than manually
-specifying *n*, the argument `fixedClusters` needs to be set to FALSE.
+specifying *n*, the argument `fixedClusters` needs to be set to `FALSE`.
 When using PostProcessSDM the same threshhold metric should be used that
 will be applied to `PredictiveProvenance`.
 
@@ -350,13 +328,19 @@ threshold_rasts <- PostProcessSDM(
   test = eSDM_model$TestData,
   train = eSDM_model$TrainData,
   planar_proj = 5070,
-  thresh_metric = 'equal_sens_spec', 
+  thresh_metric =
+     'equal_sens_spec', 
   quant_amt = 0.25
   )
-1000 prediction points are sampled from the modeldomain
 
+plot(threshold_rasts$FinalRasters)
+```
+
+![](PredictiveProvenance_files/figure-html/identify%20current%20clusters-1.png)
+
+``` r
 threshold_rasts$Threshold$equal_sens_spec
-[1] 0.6195252
+[1] 0.694638
 
 bmap + 
   geom_sf(data = 
@@ -366,11 +350,9 @@ bmap +
       ), fill = 'cornsilk'
     ) + 
     geom_sf(data = hemi) 
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
-![](PredictiveProvenance_files/figure-html/identify%20current%20clusters-1.png)
+![](PredictiveProvenance_files/figure-html/identify%20current%20clusters-2.png)
 
 We will make the EnvironmentalBasedSample to find a suitable number of
 climate clusters at the current time period. When using EBS for
@@ -413,16 +395,17 @@ ENVIbs <- EnvironmentalBasedSample(
     ******************************************************************* 
     * Among all indices:                                                
     * 1 proposed 5 as the best number of clusters 
-    * 3 proposed 6 as the best number of clusters 
-    * 2 proposed 7 as the best number of clusters 
-    * 9 proposed 8 as the best number of clusters 
-    * 2 proposed 11 as the best number of clusters 
-    * 2 proposed 14 as the best number of clusters 
-    * 3 proposed 15 as the best number of clusters 
+    * 6 proposed 6 as the best number of clusters 
+    * 1 proposed 7 as the best number of clusters 
+    * 2 proposed 8 as the best number of clusters 
+    * 1 proposed 11 as the best number of clusters 
+    * 3 proposed 12 as the best number of clusters 
+    * 1 proposed 14 as the best number of clusters 
+    * 7 proposed 15 as the best number of clusters 
 
                        ***** Conclusion *****                            
      
-    * According to the majority rule, the best number of clusters is  8 
+    * According to the majority rule, the best number of clusters is  15 
      
      
     ******************************************************************* 
@@ -430,9 +413,8 @@ ENVIbs <- EnvironmentalBasedSample(
     bmap + 
       geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
       geom_sf(data = hemi) + 
-      theme(legend.position = 'bottom')
-     [1m [22mCoordinate system already present.
-     [36mℹ [39m Adding new coordinate system, which will replace the existing one.
+      theme(legend.position = 'bottom') + 
+      labs(fill = 'Cluster', title = 'Current')
 
 ![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-3.png)
 
@@ -453,13 +435,6 @@ future_clusts <- projectClusters(
   thresh_metric = 'equal_sens_spec',
   n_sample_per_cluster = 20
 )
-Clustering novel climate areas...
-Warning: [spatSample] fewer cells returned than requested
-Warning in cluster_novel_areas(future_rescaled = future_rescaled, novel_mask =
-suitable_novel, : Too few novel climate points for clustering. Assigning single
-novel cluster.
-Analyzing relationships between existing and novel clusters...
-Warning: [spatSample] not all classes have 20 cells
 ```
 
 However, our classifications cannot accomodate new climate conditions.
@@ -477,7 +452,9 @@ plot(future_clusts$mess)
 
 ``` r
 bmap +
-  geom_sf(data = st_as_sf(terra::as.polygons(future_clusts$novel_mask)), fill = 'red') + 
+  geom_sf(data = 
+    st_as_sf(terra::as.polygons(future_clusts$novel_mask)), 
+    fill = 'red') + 
   labs(title = 'MESS regions')
  [1m [22mCoordinate system already present.
  [36mℹ [39m Adding new coordinate system, which will replace the existing one.
@@ -491,15 +468,12 @@ them to a new NbClust scenario and it can cluster them anew.
 ``` r
 current = bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) +
-  labs(title = 'Current', fill = 'Cluster') 
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
+  labs(title = 'Current', fill = 'Cluster') +
+  theme(legend.position = "none")
 
 future = bmap + 
   geom_sf(data = future_clusts$clusters_sf, aes(fill = factor(ID))) + 
   labs(title = '2041-2060', fill = 'Cluster') 
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 
 current + future
 ```
@@ -514,10 +488,8 @@ method we employ to identify the most similar existing climate groups.
 
 ``` r
 future_clusts$novel_similarity
- [38;5;246m# A tibble: 1 × 3 [39m
-  novel_cluster_id nearest_existing_id avg_silhouette_width
-              [3m [38;5;246m<dbl> [39m [23m                [3m [38;5;246m<int> [39m [23m                 [3m [38;5;246m<dbl> [39m [23m
- [38;5;250m1 [39m               17                   6                0.786
+[1] novel_cluster_id     nearest_existing_id  avg_silhouette_width
+<0 rows> (or 0-length row.names)
 ```
 
 It is from these groups that we are most likely to collect germplasm
@@ -528,16 +500,38 @@ the scenarios
 
 ``` r
 future_clusts$changes
-  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
-1          1      108734.7003    129101.28754        18.73053          595.3043
-2          2       11572.9955     71886.09157       521.15372          347.1263
-3          3       42691.5031     13608.50703       -68.12362          153.2474
-4          4       28306.6855     17792.24248       -37.14473          357.6163
-5          5       63248.5674     40340.33393       -36.21937          547.6219
-6          6       41937.1189         0.00000      -100.00000                NA
-7          7         462.9198     36967.24155      7885.66838          548.8218
-8          8        6549.4579      4538.32038       -30.70693          894.5692
-9         17           0.0000        69.43873              NA                NA
+   cluster_id current_area_km2 future_area_km2 area_change_pct
+1           1        4043.3230      28300.9046       599.94172
+2           2       13170.6534        269.7564       -97.95184
+3           3        4998.7124       1407.8829       -71.83509
+4           4        4435.7130        136.0061       -96.93384
+5           5       12027.6067        872.3368       -92.74721
+6           6       15081.4257        952.5868       -93.68371
+7           7        2576.1257          0.0000      -100.00000
+8           8       33353.1496       1413.2125       -95.76288
+9           9        3958.0202       3040.5491       -23.18005
+10         10        6312.3643        747.9952       -88.15032
+11         11        1313.6535          0.0000      -100.00000
+12         12         597.1152       4630.9965       675.56168
+13         13       36782.2993       4143.2314       -88.73580
+14         14       32653.6727       1344.0688       -95.88387
+15         15           0.0000       3528.7292              NA
+   centroid_shift_km
+1           460.1072
+2           290.3649
+3           205.2148
+4           251.8769
+5           726.1748
+6           254.4887
+7                 NA
+8           330.4310
+9           494.6931
+10           14.2699
+11                NA
+12          539.5743
+13          298.5651
+14          374.5908
+15                NA
 ```
 
 ## Conclusion

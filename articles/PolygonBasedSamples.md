@@ -22,15 +22,8 @@ using the Isolation by Distance, Resistance, and Environmental
 workflows, when a user wants to decouple the clustering process from the
 number of samples.
 
-``` mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 
-    'primaryTextColor':'#000', 
-    'lineColor':'#000', 
-    'lineWidth':'24px',
-    'fontSize':'20px', 
-    'edgeSize':'20px',
-    'fontFamily':'Arial'}}}%%
-
+``` r
+DiagrammeR::mermaid("
 flowchart LR 
   A[No. of Collections <br> Requested]
   A ==> B[More collections<br> than zones<br> - Decrease]
@@ -73,6 +66,7 @@ flowchart LR
   class F,P,G,H,Q,R polygonColor
   class I,S,J,K,T,U climateColor
   class B,L decisionColor
+")
 ```
 
 See
