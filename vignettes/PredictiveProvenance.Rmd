@@ -240,7 +240,7 @@ bio_future_rs <- rescaleFuture(
   pred_mat = eSDM_model$PredictMatrix
 )
 
-plot(bio_future_rs$RescaledPredictors)
+plot(bio_future_rs)
 ```
 
 If any of the layers show as a single color, and 0, it means that glmnet shrunk them from the model. 
@@ -270,7 +270,8 @@ threshold_rasts <- PostProcessSDM(
   test = eSDM_model$TestData,
   train = eSDM_model$TrainData,
   planar_proj = 5070,
-  thresh_metric = 'equal_sens_spec', 
+  thresh_metric =
+     'equal_sens_spec', 
   quant_amt = 0.25
   )
 
@@ -312,7 +313,8 @@ ENVIbs <- EnvironmentalBasedSample(
 bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
   geom_sf(data = hemi) + 
-  theme(legend.position = 'bottom', fill = 'Cluster', title = 'Current')
+  theme(legend.position = 'bottom') + 
+  labs(fill = 'Cluster', title = 'Current')
 ```
 
 We can apply the current clustering to the future scenario. 

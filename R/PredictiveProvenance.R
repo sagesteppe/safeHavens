@@ -142,7 +142,7 @@ projectClusters <- function(
   # ---- 6. Cluster suitable+novel areas independently ----
   suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
 
-  if (cluster_novel && n_novel_cells > 0) {
+  if (cluster_novel && !is.na(n_novel_cells) && n_novel_cells > 0) {
 
     novel_result <- cluster_novel_areas(
       future_rescaled  = future_rescaled,
