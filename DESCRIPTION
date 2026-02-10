@@ -31,7 +31,8 @@ Suggests:
     withr,
     rlang,
     safeHavens,
-    geodata
+    geodata,
+    DiagrammeR
 VignetteBuilder: knitr
 Imports: 
     caret,

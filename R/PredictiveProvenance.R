@@ -142,7 +142,7 @@ projectClusters <- function(
   # ---- 6. Cluster suitable+novel areas independently ----
   suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
 
-  if (cluster_novel && n_novel_cells > 0) {
+  if (cluster_novel && !is.na(n_novel_cells) && n_novel_cells > 0) {
 
     novel_result <- cluster_novel_areas(
       future_rescaled  = future_rescaled,
@@ -548,21 +548,32 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # ---------- clusters present in both ----------
   common_ids <- intersect(current_sf$ID, future_sf$ID)
 
-  persists <- data.frame(
-    cluster_id       = common_ids,
-    current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
-    future_area_km2  = future_p$area[match(common_ids, future_sf$ID)]
-  ) |>
-    dplyr::mutate(
-      area_change_pct  = 100 * (future_area_km2 - current_area_km2) / current_area_km2,
-      centroid_shift_km = as.numeric(
-        sf::st_distance(
-          current_cents[match(common_ids, current_sf$ID), ],
-          future_cents[match(common_ids, future_sf$ID), ],
-          by_element = TRUE
-        )
-      ) / 1000
+  # Handle edge case: no common clusters
+  if (length(common_ids) == 0) {
+    persists <- data.frame(
+      cluster_id        = integer(0),
+      current_area_km2  = numeric(0),
+      future_area_km2   = numeric(0),
+      area_change_pct   = numeric(0),
+      centroid_shift_km = numeric(0)
     )
+  } else {
+    persists <- data.frame(
+      cluster_id       = common_ids,
+      current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
+      future_area_km2  = future_p$area[match(common_ids, future_sf$ID)]
+    ) |>
+      dplyr::mutate(
+        area_change_pct  = 100 * (future_area_km2 - current_area_km2) / current_area_km2,
+        centroid_shift_km = as.numeric(
+          sf::st_distance(
+            current_cents[match(common_ids, current_sf$ID), ],
+            future_cents[match(common_ids, future_sf$ID), ],
+            by_element = TRUE
+          )
+        ) / 1000
+      )
+  }
 
   # ---------- lost clusters ----------
   lost_ids <- setdiff(current_sf$ID, future_sf$ID)

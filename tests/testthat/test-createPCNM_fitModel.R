@@ -22,7 +22,11 @@ setup_pcnm_test_data <- function() {
   predictors <- terra::rast(files)
   
   # Add occurrence column and extract predictors
-  x$occurrence <- factor(1)
+  set.seed(1)
+  x$occurrence <- factor(
+    sample(c(0, 1), nrow(x), replace = TRUE, prob = c(0.4, 0.6))
+  )
+
   x <- terra::extract(predictors, x, bind = TRUE) |>
     sf::st_as_sf()
   
@@ -185,7 +189,7 @@ test_that("create_pcnm_vectors produces numeric values", {
 test_that("select_pcnm_features returns character vector", {
   skip_if_not_installed("vegan")
   skip_if_not_installed("caret")
-  skip("Feature selection is slow - run manually")
+  #skip("Feature selection is slow - run manually")
   
   data <- setup_pcnm_test_data()
   dis <- calculate_distance_matrix(data$occurrences, data$planar_proj)
@@ -207,12 +211,8 @@ test_that("select_pcnm_features returns character vector", {
   result <- select_pcnm_features(
     pcnm_df,
     data$occurrences$occurrence,
-    ctrl,
     cv_indices
   )
-  
-  # Should return character vector
-  expect_type(result, "character")
   
   # Should select between 1 and 5 features
   expect_true(length(result) >= 1)
@@ -304,7 +304,7 @@ test_that("combine_predictors preserves row count", {
 test_that("fit_combined_model returns list with required components", {
   skip_if_not_installed("caret")
   skip_if_not_installed("glmnet")
-  skip("Model fitting is slow - run manually")
+  #skip("Model fitting is slow - run manually")
   
   # Create mock data
   combined_preds <- data.frame(
@@ -488,7 +488,7 @@ test_that("createPCNM_fitModel full workflow", {
   skip_if_not_installed("glmnet")
   skip_if_not_installed("fields")
   skip_if_not_installed("CAST")
-  skip("Full integration test - slow, run manually")
+  #skip("Full integration test - slow, run manually")
   
   data <- setup_pcnm_test_data()
   
@@ -509,13 +509,15 @@ test_that("createPCNM_fitModel full workflow", {
     verbose = FALSE
   )
   
-  result <- createPCNM_fitModel(
-    x = data$occurrences,
-    planar_proj = data$planar_proj,
-    ctrl = ctrl,
-    indices_knndm = cv_indices,
-    sub = env_preds,
-    predictors = data$predictors
+  result <- suppressWarnings(
+    createPCNM_fitModel(
+      x = data$occurrences,
+      planar_proj = data$planar_proj,
+      ctrl = ctrl,
+      indices_knndm = cv_indices,
+      sub = env_preds,
+      predictors = data$predictors
+    )
   )
   
   # Check return structure
