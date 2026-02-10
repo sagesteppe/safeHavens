@@ -177,58 +177,51 @@ test_that("reorder_clusters_geographically reorders from top-left", {
 })
 
 # Integration tests ----
-
 test_that("EnvironmentalBasedSample runs complete workflow with minimal data", {
   skip_if_not_installed("sf")
   skip_if_not_installed("caret")
-  skip("Integration test - run manually")
-  
-  # Create minimal test data with realistic coordinates
-  r <- terra::rast(ncols = 20, nrows = 20, xmin = -123, xmax = -122, 
+  skip_if_not(
+    identical(Sys.getenv("RUN_INTEGRATION_TESTS"), "true"),
+    "Set RUN_INTEGRATION_TESTS=true to run"
+  )
+
+  r <- terra::rast(ncols = 20, nrows = 20, xmin = -123, xmax = -122,
                    ymin = 45, ymax = 46, crs = "EPSG:4326")
-  r$var1 <- runif(400, 0, 1)
-  r$var2 <- runif(400, 0, 1)
-  r$var3 <- runif(400, 0, 1)
-  
-  # Create Supplemented layer
-  supp <- terra::rast(ncols = 20, nrows = 20, xmin = -123, xmax = -122, 
-                      ymin = 45, ymax = 46, crs = "EPSG:4326")
+  r$var1 <- runif(400)
+  r$var2 <- runif(400)
+  r$var3 <- runif(400)
+
+  supp <- terra::rast(r)
   terra::values(supp) <- 1
   names(supp) <- "Supplemented"
-  
+
+  # Force uneven sampling
+  vals <- terra::values(supp)
+  vals[seq_along(vals) %% 5 == 0] <- NA
+  terra::values(supp) <- vals
+
   f_rasts <- list(Supplemented = supp)
-  
-  # Mock trainKNN function
-  trainKNN <- function(data, split_prop = 0.8) {
-    # Simple mock KNN model
-    list(
-      fit.knn = structure(
-        list(
-          confusionMatrix = matrix(c(10, 2, 1, 15), nrow = 2)
-        ),
-        class = "train"
-      )
+
+  result <- suppressWarnings(
+    EnvironmentalBasedSample(
+      pred_rescale = r,
+      f_rasts = f_rasts,
+      lyr = "Supplemented",
+      taxon = "test_species",
+      path = tempdir(),
+      n = 3,
+      fixedClusters = TRUE,
+      n_pts = 60,
+      planar_proj = "EPSG:32610",
+      coord_wt = 2.5,
+      buffer_d = 3,
+      prop_split = 0.8,
+      write2disk = FALSE
     )
-  }
-  
-  result <- EnvironmentalBasedSample(
-    pred_rescale = r,
-    f_rasts = f_rasts,
-    lyr = "Supplemented",
-    taxon = "test_species",
-    path = tempdir(),
-    n = 3,
-    fixedClusters = TRUE,
-    n_pts = 30,
-    planar_proj = "EPSG:32610",
-    coord_wt = 2.5,
-    buffer_d = 3,
-    prop_split = 0.8,
-    write2disk = FALSE
   )
-  
+
   expect_type(result, "list")
-  expect_named(result, "Geometry")
+  expect_named(result, c("Geometry", "fit.knn", "TrainData"))
   expect_s3_class(result$Geometry, "sf")
 })
 
@@ -275,32 +268,53 @@ test_that("add_weighted_coordinates handles single predictor", {
 })
 
 test_that("extract_weighted_matrix handles NA values correctly", {
-  r <- terra::rast(ncols = 20, nrows = 20, xmin = 0, xmax = 10, ymin = 0, ymax = 10)
-  vals <- runif(400, 0, 1)
-  vals[1:50] <- NA
-  terra::values(r) <- matrix(vals, ncol = 1)
+
+  r <- terra::rast(
+    ncols = 20, nrows = 20,
+    xmin = 0, xmax = 10,
+    ymin = 0, ymax = 10,
+    crs = "EPSG:32610"
+  )
+
+  vals1 <- runif(400)
+  vals1[1:50] <- NA   # ~12.5% NA
+
+  # First predictor
+  terra::values(r) <- vals1
   names(r) <- "var1"
-  
-  r$var2 <- runif(400, 0, 1)
-  
-  # Add x and y coordinates
-  r$x <- terra::init(r, fun = 'x')
-  r$y <- terra::init(r, fun = 'y')
-  
-  supp <- terra::rast(ncols = 20, nrows = 20, xmin = 0, xmax = 10, ymin = 0, ymax = 10)
+
+  # Second predictor — append properly
+  r2 <- terra::rast(r, vals = runif(400))
+  r <- c(r, r2)
+  names(r)[2] <- "var2"
+
+  # Coordinate layers (as in real workflow)
+  r$x <- terra::init(r, fun = "x")
+  r$y <- terra::init(r, fun = "y")
+
+  supp <- terra::rast(
+    ncols = 20, nrows = 20,
+    xmin = 0, xmax = 10,
+    ymin = 0, ymax = 10,
+    crs = "EPSG:32610"
+  )
   terra::values(supp) <- 1
   names(supp) <- "Supplemented"
-  
+
   f_rasts <- list(Supplemented = supp)
-  
-  result <- extract_weighted_matrix(r, f_rasts,  lyr = "Supplemented", n_pts = 100)
-  
+
+  result <- extract_weighted_matrix(
+    pred_rescale = r,
+    f_rasts = f_rasts,
+    lyr = "Supplemented",
+    n_pts = 100
+  )
+
   expect_true(all(complete.cases(result)))
-  # With ~12.5% NA values in var1, expect reduced sample size
-  # But should still get a reasonable number of points
-  expect_true(nrow(result) >= 70)  # At least 70% should be valid
-  expect_true(nrow(result) < 100)  # Should be less than requested due to NAs
+  expect_true(nrow(result) >= 70)
+  expect_true(nrow(result) < 100)
 })
+
 
 test_that("extract_weighted_matrix diagnostic - verify raster creation", {
   # This test helps diagnose if raster creation is the issue
@@ -678,3 +692,87 @@ test_that("prep_for_nbclust handles various edge cases", {
   X_clean <- X_with_na[complete.cases(X_with_na), ]
   expect_silent(prep_for_nbclust(X_clean))
 })
+
+
+
+# ==============================================================================
+# Tests for prep_for_nbclust() helper function
+# ==============================================================================
+
+test_that("prep_for_nbclust removes zero variance columns", {
+  X <- data.frame(
+    a = rnorm(50),
+    b = rep(5, 50),  # Zero variance
+    c = rnorm(50)
+  )
+  
+  result <- prep_for_nbclust(X)
+  
+  expect_equal(ncol(result), 2)  # Only a and c
+  expect_true(all(apply(result, 2, sd) > 0))
+})
+
+test_that("prep_for_nbclust removes highly collinear columns", {
+  set.seed(789)
+  X <- data.frame(
+    a = rnorm(100),
+    b = rnorm(100)
+  )
+  X$c <- X$a + X$b  # Perfectly collinear
+  
+  result <- prep_for_nbclust(X)
+  
+  expect_equal(ncol(result), 2)  # Should drop one of the collinear vars
+})
+
+test_that("prep_for_nbclust scales data", {
+  X <- data.frame(
+    a = rnorm(100, mean=100, sd=50),
+    b = rnorm(100, mean=-50, sd=20)
+  )
+  
+  result <- prep_for_nbclust(X)
+  
+  # Should have mean ~0 and sd ~1
+  expect_true(all(abs(colMeans(result)) < 1e-10))
+  expect_true(all(abs(apply(result, 2, sd) - 1) < 1e-10))
+})
+
+test_that("prep_for_nbclust keeps only numeric columns", {
+  X <- data.frame(
+    numeric1 = rnorm(50),
+    factor1 = factor(rep(c("A", "B"), 25)),
+    numeric2 = rnorm(50),
+    char1 = rep("text", 50)
+  )
+  
+  result <- prep_for_nbclust(X)
+  
+  expect_equal(ncol(result), 2)
+  expect_true(all(apply(result, 2, is.numeric)))
+})
+
+test_that("prep_for_nbclust errors with insufficient variables", {
+  X <- data.frame(
+    a = rnorm(50),
+    b = rep(1, 50)  # Will be dropped due to zero variance
+  )
+  
+  expect_error(
+    prep_for_nbclust(X),
+    "Not enough variables"
+  )
+})
+
+test_that("prep_for_nbclust returns matrix", {
+  X <- data.frame(
+    a = rnorm(50),
+    b = rnorm(50),
+    c = rnorm(50)
+  )
+  
+  result <- prep_for_nbclust(X)
+  
+  expect_true(is.matrix(result))
+})
+

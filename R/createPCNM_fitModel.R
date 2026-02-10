@@ -15,8 +15,8 @@
 #' For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north).
 #' Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS.
 #'  The value is simply passed to sf::st_transform if you need to experiment.
-#' @param ctrl the control object created by character in the SDM function.
-#' @param indices_knndm from sdm function
+#' @param ctrl the control object created by character in the elasticSDM function.
+#' @param indices_knndm from elasticSDM function
 #' @param sub the subset predictors from elasticSDM
 #' @param predictors Raster stack of environmental predictors (used as template)
 #' @param n_vectors Number of PCNM vectors to extract (default 10)

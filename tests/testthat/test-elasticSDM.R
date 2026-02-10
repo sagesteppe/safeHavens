@@ -342,7 +342,7 @@ test_that("perform_feature_selection returns rfe object", {
 test_that("fit_elastic_net_model returns list with required components", {
   skip_if_not_installed("caret")
   skip_if_not_installed("glmnet")
-  skip("Model fitting is slow - run manually")
+ # skip("Model fitting is slow - run manually")
   
   data <- setup_sdm_test_data()
   data$occurrences$occurrence <- factor(sample(0:1, nrow(data$occurrences), replace = TRUE))
@@ -359,31 +359,6 @@ test_that("fit_elastic_net_model returns list with required components", {
   expect_named(result, c("cv_model", "glmnet_model", "selected_data"))
   expect_s3_class(result$cv_model, "train")
   expect_s3_class(result$glmnet_model, "glmnet")
-})
-
-# ==============================================================================
-# Tests for evaluate_model_performance()
-# ==============================================================================
-
-test_that("evaluate_model_performance returns confusion matrix", {
-  skip_if_not_installed("caret")
-  skip_if_not_installed("glmnet")
-  skip("Model evaluation requires fitted model - run manually")
-  
-  # This test requires a fitted model from previous steps
-  # Would test with mock glmnet model in practice
-})
-
-# ==============================================================================
-# Tests for create_spatial_predictions()
-# ==============================================================================
-
-test_that("create_spatial_predictions returns SpatRaster", {
-  skip_if_not_installed("glmnet")
-  skip("Spatial prediction requires fitted model - run manually")
-  
-  # This test requires a fitted model from previous steps
-  # Would test with mock glmnet model in practice
 })
 
 # ==============================================================================

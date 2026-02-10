@@ -246,7 +246,7 @@ test_that("PostProcessSDM handles edge case with no outside points", {
   skip_if_not_installed("sf")
   skip_if_not_installed("dismo")
   skip_if_not_installed("CAST")
-  skip("Edge case - may not apply to all datasets")
+  #skip("Edge case - may not apply to all datasets")
   
   data <- setup_sdModel_test_data()
   

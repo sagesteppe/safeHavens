@@ -40,7 +40,7 @@ In this vignette we will use [Worldclim](https://www.worldclim.org/).
 For most `safeHavens` users around the world this may be your ideal source for climate data. 
 `geodata` is developed and maintained by Robert Hijman, similar to `terra`, and `dismo`, which are doing a ton of heavy lifting internally on our functions. 
 
-```{r attach packages}
+```{r attach packages, message = F, warning = F}
 library(safeHavens)
 library(terra)
 library(geodata)
@@ -75,9 +75,9 @@ western_states <- spData::us_states |> ## for making a quick basemap.
 
 bb <- st_bbox(
   c(
-    xmin = -115, 
+    xmin = -116, 
     xmax = -105, 
-    ymax = 43, 
+    ymax = 44, 
     ymin = 33.5),
     crs = st_crs(4326)
     )
@@ -99,7 +99,7 @@ bmap <- ggplot() +
       )
 
 bmap +
-    labs(title = 'Helianthella microcephala occurrence records')
+    labs(title = 'Helianthella microcephala\noccurrence records')
 ```
 
 ```{r remove cols and western states, echo = F}
@@ -133,6 +133,7 @@ bio_future <- crop(bio_future, bbox)
 
 `safeHavens` does not offer explicit functionality to rename / align the naming of raster surfaces. 
 However, the modelling process requires that both current and future raster products have perfectly matching raster names. 
+
 The chunk below shows how we will standardize the names by extracting the bioclim variable number, at the end of the name, and pad 'bio_' back onto the front of it with a leading zero so we have: 'bio_01' instead of 'bio_1'. 
 A minor variation of this should work for most data sources, after customizing the `gsub` to erase earlier portions of the file name. 
 
@@ -151,7 +152,6 @@ names(bio_future) <- simplify_names(bio_future)
 all(names(bio_current) == names(bio_future))
 
 ## we will also drop some variables that are essentially identical in the study area
-
 drops <- c(
   'bio_05' , 'bio_02',
   'bio_11', 'bio_12'
@@ -165,7 +165,8 @@ If you are following the vignette along locally and decided to `plot(bio_current
 While the plots look very similar, when showing one raster stack after another, we can diff the two products to see where the largest changes in geographic space will occur. 
 
 ```{r diff the raster layers to show areas of difference}
-difference <- abs(bio_current - bio_future)
+pct_diff <- function(x, y){((x - y)/((x + y)/2)) * 100}
+difference <- pct_diff(bio_current, bio_future)
 plot(difference)
 ```
 
@@ -174,12 +175,12 @@ This mismatch of conditions will almost certainly lead to *novel* climate condit
 This will be handled using MESS surfaces and a second stage clustering approach in the function. 
 
 ```{r remove diff and simplify_names, echo = F}
-rm(difference, simplify_names)
+rm(difference, simplify_names, drops)
 ```
 
 ### Analytical workstream
 
-The workflow for predictive provenance is quite similar to the `EnvironmentalBasedSample` workflow, relying on many of the same internal helpers, and user facing functions. 
+The workflow for predictive provenance builds upon the `EnvironmentalBasedSample` workflow, relying on many of the same internal helpers, and user facing functions. 
 Note that when using `elasticSDM` we need to specify the flag `pcnm = FALSE` to bypass fitting a model with PCNM surfaces - their is no analog for these under future scenarios so they must be dropped. 
 
 ### Fit SDM and rescale raster surfaces 
@@ -215,10 +216,10 @@ plot(eSDM_model$RasterPredictions)
 ```
 
 We can view some of the results for the model, it is OK, but would benefit from using only a subset of the bioclim predictors to allow for `eDist` sampling upstream. 
-It is a bit too generoous with classifying areas as being possible suitable habitat. 
+It is a bit too generous with classifying areas as being possible suitable habitat. 
+While this model would be unsuitable for applications, certain CRAN and Github checks make it difficult to improve upon as an example. 
 
-
-Using the beta-coefficients from the model we will rescale both the current and future climate scenarios rasters.  
+Using the beta-coefficients from the model we will rescale both the current and future climate scenarios rasters. 
 This will happen internally in the next function, but it is good to see the different between the current and future scenarios to have an idea of expectations for the final results. 
 
 ```{r rescale rasters}
@@ -239,7 +240,7 @@ bio_future_rs <- rescaleFuture(
   pred_mat = eSDM_model$PredictMatrix
 )
 
-bio_future_rs
+plot(bio_future_rs$RescaledPredictors)
 ```
 
 If any of the layers show as a single color, and 0, it means that glmnet shrunk them from the model. 
@@ -247,9 +248,11 @@ If any of the layers show as a single color, and 0, it means that glmnet shrunk 
 Similar to how we differenced the rasters at the two time points above, we can take the absolute difference of the relevant raster layers to see where the largest changes will be. 
 
 ```{r rescaled raster difference }
-difference_rs <- abs(bio_current_rs$RescaledPredictors - bio_future_rs)
+difference_rs <- pct_diff(bio_current_rs$RescaledPredictors, bio_future_rs)
 plot(difference_rs)
 ```
+
+The above plot shows us the areas with the largest changes between current and predicted conditions. 
 
 ```{r remove rs differnce surfaces, echo = F}
 rm(difference_rs, bio_future_rs)
@@ -258,10 +261,10 @@ rm(difference_rs, bio_future_rs)
 ### Cluster surfaces
 
 Clusters can be identified using NbClust, allowing it to determine the optimal *n* using the METHOD. 
-To use NbClust, rather than manually specifying *n*, the argument `fixedClusters` needs to be set to FALSE. 
+To use NbClust, rather than manually specifying *n*, the argument `fixedClusters` needs to be set to `FALSE`. 
 When using PostProcessSDM the same threshhold metric should be used that will be applied to `PredictiveProvenance`. 
 
-```{r identify current clusters}
+```{r identify current clusters, message = FALSE, warning = FALSE}
 threshold_rasts <- PostProcessSDM(
   rast_cont = eSDM_model$RasterPredictions, 
   test = eSDM_model$TestData,
@@ -271,6 +274,7 @@ threshold_rasts <- PostProcessSDM(
   quant_amt = 0.25
   )
 
+plot(threshold_rasts$FinalRasters)
 threshold_rasts$Threshold$equal_sens_spec
 
 bmap + 
@@ -289,7 +293,7 @@ When using EBS for predictive provencing also set the coord_wt parameter to a sm
 This will remove the effect of the spatial clustering. 
 Similar to PCNM, we cannot know the distribution of actual populations in the future.
 
-```{r EnvironmentalBasedSample}
+```{r EnvironmentalBasedSample, message=F, warning = F}
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
@@ -308,14 +312,14 @@ ENVIbs <- EnvironmentalBasedSample(
 bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
   geom_sf(data = hemi) + 
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom', fill = 'Cluster', title = 'Current')
 ```
 
 We can apply the current clustering to the future scenario. 
 This will show us how and where the currently identified clusters would exist in future geographic space. 
 `ProjectClusters` is really the whole heart of this workflow, it requires the outputs from `elasticSDM`, `PostProcessSDM`, and `EnvironmentalBasedSample`. 
 
-```{r classify future climate surface with clusters}
+```{r classify future climate surface with clusters, warning = FALSE, message = FALSE}
 future_clusts <- projectClusters(
   eSDM_object = eSDM_model, 
   current_clusters = ENVIbs,
@@ -336,16 +340,19 @@ However, it seems that these will possibly be suitable habitat, and we can try t
 ```{r plot the mess surfaces}
 plot(future_clusts$mess)
 bmap +
-  geom_sf(data = st_as_sf(terra::as.polygons(future_clusts$novel_mask)), fill = 'red') + 
+  geom_sf(data = 
+    st_as_sf(terra::as.polygons(future_clusts$novel_mask)), 
+    fill = 'red') + 
   labs(title = 'MESS regions')
 ```
 
 Once we identify these areas, if they are sufficiently large we can pass them to a new NbClust scenario and it can cluster them anew. 
 
-```{r identify additional clusters under future climate}
+```{r identify additional clusters under future climate, message=F,warning=F}
 current = bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) +
-  labs(title = 'Current', fill = 'Cluster') 
+  labs(title = 'Current', fill = 'Cluster') +
+  theme(legend.position = "none")
 
 future = bmap + 
   geom_sf(data = future_clusts$clusters_sf, aes(fill = factor(ID))) + 
