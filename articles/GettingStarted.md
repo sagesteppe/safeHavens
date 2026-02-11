@@ -8,7 +8,7 @@ same species.
 `safeHavens` can be installed directly from github.
 
 ``` r
-# remotes::install_github('sagesteppe/safeHavens@IBR') 
+# remotes::install_github('sagesteppe/safeHavens') 
 ```
 
 ``` r
