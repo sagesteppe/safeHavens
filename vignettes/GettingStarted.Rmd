@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 `safeHavens` can be installed directly from github.
 
 ```{r Install Package, message=FALSE, eval = F}
-# remotes::install_github('sagesteppe/safeHavens@IBR') 
+# remotes::install_github('sagesteppe/safeHavens') 
 ```
 
 ```{r Load Libraries, message=FALSE,warnings=FALSE}
