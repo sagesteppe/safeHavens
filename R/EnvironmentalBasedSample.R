@@ -232,6 +232,7 @@ perform_clustering <- function(
   ...
 ) {
   weighted_mat <- prep_for_nbclust(weighted_mat)
+  #w_dist <- compute_mahalanobis_dist(weighted_mat)
   w_dist <- stats::dist(weighted_mat, method = 'euclidean')
 
   if (fixedClusters) {

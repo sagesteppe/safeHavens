@@ -1,0 +1,303 @@
+---
+title: "Bayesian Approaches"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bayesian Approaches}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+description: >
+  Using Bayesian approaches for EnvironmentalBasedSample.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = ""
+)
+```
+
+# Species Distribution Modelling
+
+Please refer to all frequentist methods before viewing this vignette. 
+The rationale is roughly similar, but this approach provides better estimates of uncertainty for the processing. 
+
+## Background
+
+This vignette details the steps required to create a bayesian Species Distribution Model (SDM) using the functions provided in `safeHavens`, which form a wrapper around brms::brms(). 
+The SDM is then post-processed to create a binary raster map of suitable and unsuitable habitat, that is used to rescale the environmental predictor variables according to the parameter posteriors for the model. 
+These parameter posteriors are then used in a clustering algorithm to partition the species range into environmentally distinct regions for germplasm sampling.
+
+The goal of most SDM's is to create a model that accurately predicts where a species will be located in environmental space and can then be predicted in geographic space.
+The goal of these models is to understand the degree and direction to which various environmental features correlate with a species observed range. 
+
+## About 
+
+While the authors are prone to creating many 'advanced' SDMs models and in-house pipelines for developing them, we think that the juice is not worth the squeeze and rely on a few powerhouse R packages to do the heavy lifting.
+The main packages used are `dismo`, `caret`, `brms`, `CAST`, and `terra`. 
+
+# Steps to create an SDM
+
+### prep data 
+
+The below steps are all present at the start of the 'Predictive Provenance' vignette. 
+We will 'hide' some of the processing steps to keep this vignette entry relatively short. 
+
+```{r load libraries, message =F, warning = F}
+library(safeHavens)
+library(terra)
+library(geodata)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+```
+
+
+```{r Download species occurrence data, echo = FALSE}
+cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 'acceptedScientificName', 'datasetName', 
+  'coordinateUncertaintyInMeters', 'basisOfRecord', 'institutionCode', 'catalogNumber')
+
+## download species data using scientificName, can use keys and lookup tables for automating many taxa. 
+hemi <- rgbif::occ_search(scientificName = "Helianthella microcephala")
+hemi <- hemi[['data']][,cols]  |>
+  drop_na(decimalLatitude, decimalLongitude) |> # any missing coords need dropped. 
+  distinct(decimalLatitude, decimalLongitude, .keep_all = TRUE) |> # no dupes can be present
+  st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F) 
+```
+
+
+```{r prep basemap, echo = F}
+western_states <- spData::us_states |> ## for making a quick basemap. 
+  dplyr::filter(NAME %in% 
+    c('Utah', 'Arizona', 'Colorado', 'New Mexico', 'Wyoming', 'Nevada', 'Idaho', 'California')) |>
+  dplyr::select(NAME, geometry) |>
+  st_transform(4326)
+
+bb <- st_bbox(
+  c(
+    xmin = -116, 
+    xmax = -105, 
+    ymax = 44, 
+    ymin = 33.5),
+    crs = st_crs(4326)
+    )
+
+western_states <- st_crop(western_states, bb)
+
+bmap <- ggplot() + 
+    geom_sf(data = western_states) + 
+    geom_sf(data = hemi) +
+    theme_minimal() +
+    coord_sf(
+        xlim = c(bb[['xmin']], bb[['xmax']]), 
+        ylim = c(bb[['ymin']], bb[['ymax']])
+        )  +
+    theme(
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank()
+      )
+
+bmap +
+    labs(title = 'Helianthella microcephala\noccurrence records')
+```
+
+```{r remove cols and western states, echo = F}
+rm(cols, western_states)
+```
+
+```{r download data, echo = FALSE}
+# Download WorldClim bioclim at ~10 km
+bio_current <- worldclim_global(var="bioc", res=2.5)
+bio_future <- cmip6_world(
+  model = "CNRM-CM6-1", ## modelling method
+  ssp   = "245", ## "Middle of the Road" scenario
+  time  = "2041-2060", # time period
+  var   = "bioc", # just use the bioclim variables
+  res   = 2.5
+)
+
+# Crop to domain - use a large BB to accomodate range shift
+# under future time points. 
+# but going too large will dilute the absence records
+bbox <- ext(bb)
+
+bio_current <- crop(bio_current, bbox)
+bio_future <- crop(bio_future, bbox)
+```
+
+```{r standardize raster layer names, echo = FALSE}
+simplify_names <- function(x){
+    paste0('bio_', sprintf("%02d", as.numeric(gsub('\\D+','', names(x)))))
+}
+
+names(bio_current) <- gsub('^.*5m_', '', names(bio_current))
+names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
+
+names(bio_current) <- simplify_names(bio_current)
+names(bio_future) <- simplify_names(bio_future)
+
+rm(simplify_names))
+```
+
+
+## fit the model
+Here we fit as SDM using `bayesianSDM`. 
+For arguments it requires occurrence data `x`, a raster stack of `predictors`, a `quantile_v` that is an offset used to create pseudo-absence data, and a `planar_proj` used to calculate distances between occurrence data and possible pseudo-absence points. 
+
+```{r Create Species Distribution Model, message=F, warning=F}
+sdModel <- bayesianSDM(
+  x = hemi,
+  predictors = bio_current,
+  quantile_v = 0.025,
+  planar_proj = 5070, 
+  fact = 3.0
+  )
+```
+
+
+
+Under the hood this function uses `brms` to help out with fitting a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  
+
+### explore the output
+
+```{r Explore SDM output - Different alpha}
+sdModel$CVStructure
+coef(sdModel$Model, s = "lambda.min")
+```
+
+Here we can see how the elastic net decided that is the top model. 
+We used Accuracy rather than Kappa as the main criterion for model selection. 
+
+```{r Explore SDM output - Confusion Matrix}
+sdModel$ConfusionMatrix
+```
+
+Here we can see how our selected model works on predicting the state of test data.
+Note these accuracy results are slightly higher than those from the CV folds. 
+This is not a bug, CV folds are testing on their own holdouts, while this is a brand new set of holdouts. 
+The main reason the confusion matrix results are likely to be higher is due to spatial auto-correlation which are not address in a typical 'random split' of test and train data.
+In order to minimize the effects of spatial-autocorrelation on our model we use `CAST` under the hood which allows for spatially informed cross validation. 
+
+Consider the output from CVStructure to be a bit more realistic. 
+
+### binarize the output
+
+```{r Explore SDM output - Map of Predictions}
+terra::plot(sdModel$RasterPredictions)
+```
+
+SDM's produce continuous surfaces displaying the predicted probability of suitable habitat across a landscape. 
+However binary surfaes (Yes/No Suitable), i.e. *is it more or less probable that suitable habitat for this taxon exists in this particular location (grid cell)?* are often required from them; the function `PostProcessSDM` is used to binarize the predictions. 
+
+Going from a continuous surface to a binary surface loses information. 
+The goal of the binary surface is to understand where the species is likely to be found, and then sample germplasm from these areas. 
+There are many ways to threshold a SDM, and many caveats associated with this process; Frank Harrell has written on the topic of post-processing in statistics.
+
+Historically, when assessing probability output 0.5 probability was used as a threshold, probabilities beneath it considered 'Not Suitable / No', while probabilities above are classified as 'Suitable / Yes'. 
+This works for some cases, but thresholding is outside the domain of statistics and in the realm of practice. 
+My motto for implementing models, is a slight elaboration of George Box's aphorism, "*All models are wrong, some are useful - how do you want to be wrong?*". 
+Our goal of sampling for germplasm conservation is to maximize the representation of allelic diversity across the range of a species. 
+To achieve this, we need an understanding of the species actual range, hence it is better to predict the species present where it is not, than to predict it absent where it actually grows. 
+Accordingly, my default thresholding statistic is *Sensitivity*. 
+However, our function supports all threshold options in `dismo::threshold`. 
+
+You may be wondering why this function is named `PostProcessSDM` rather `ThresholdSDM`, the reason for this discontinuity is that the function performs additional processes after thresholding. 
+Geographic buffers are created around the intitial occurence points to ensure that none of the known occurrence points are 'missing' from the output binary map.
+This is a two edged sword, where we are again address the notion of dispersal limitation, and realize that not all suitable habitat is occupied habitat. 
+
+What the `PostProcessSDM` function does is it again creates cross validation folds, and selects all of our training data. 
+In each fold if then calculates the distance from each occurrence point to it's nearest neighbor. 
+We then summarize these distances and can understand the distribution of distances as a quantile. 
+We use a selected quantile, to then serve as a buffer. 
+Area with predicted suitable habitat outside of this buffer become 'cut off' (or masked) from the binary raster map, and areas within buffer distance from known occurrences which are currently masked are reassigned as probabilities. 
+The theory behind this process in underdeveloped and nascent, it does come down to the gut of an analyst. 
+With the *Bradypus* data set I use 0.25 as the quantile, which is saying "Neighbors are generally 100km apart, I am happy with the risk of saying that 25km within each occurrence is *occupied* suitable habitat".
+Increasing this value to say 1.0 will mean that no suitable habitat is removed, decreasing it makes maps more conservative. 
+The cost with increasing the distances greatly is that the sampling methods may then puts grids in many areas without populations to collect from. 
+
+```{r Threshold the SDM output}
+threshold_rasts <- PostProcessSDM(
+  rast_cont = sdModel$RasterPredictions, 
+  test = sdModel$TestData,
+  train = sdModel$TrainData,
+  planar_proj = planar_proj,
+  thresh_metric = 'sensitivity', 
+  quant_amt = 0.5
+  )
+```
+
+We can compare the results of applying this function side by side using the output from the function. 
+
+```{r Compare Threshold Results}
+terra::plot(threshold_rasts$FinalRasters)
+```
+
+```{r save the ouputs for vignettes, echo = F, eval = F}
+#terra::writeRaster(threshold_rasts$FinalRasters, filename = file.path('..', 'inst', 'extdata', 'SDM_thresholds.tif'))
+```
+
+### rescale predictor variables
+
+`glmnet` is used for three main reasons, 
+1) it gives directional coefficients and documents how each 1 unit increase in an independent variable varies the response. 
+2) It maintains automated feature selection reducing the work an analyst needs to do. 
+3) `glmnet` re-scales all variables before model generation combined with beta-coefficients allows for partitioning environmental space into regions that are environmentally similar *for the individual species*. 
+
+In this way our raster stack becomes representative of our model, we can then use these values as the basis for hierarchical cluster later on. 
+
+Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
+We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
+```{r Rescale Predictor Variables}
+rr <- RescaleRasters(
+  model = sdModel$Model,
+  predictors = sdModel$Predictors, 
+  training_data = sdModel$TrainData, 
+  pred_mat = sdModel$PredictMatrix)
+
+terra::plot(rr$RescaledPredictors)
+```
+
+We can see that the variables are 'close' to being on the same scale, this will work in a clustering algorithm. 
+If any of the layers are all the same color (maybe yellow?) that means they have no variance, that's a term that was shrunk from the model. 
+It will be dealt with internally in a future function. 
+The scales of the variables are not exact, because they are weighed by their \beta coefficients in the model
+
+```{r Show beta Coefficients from model
+print(rr$BetaCoefficients)
+```
+
+We can also look at the \beta coefficients for each variable. 
+`glmnet` returns the 'untransformed' variables, i.e. the coefficients on the same scale as the input rasters, we calculate the BC right afterwards. 
+
+`safeHavens` generates all kinds of things as it runs through the functions `elasticSDM`, `PostProcessSDM`, and `RescaleRasters`. 
+Given that one of these sampling scheme may be followed for quite some time, it is best practice to save many of these objects. 
+
+### save results 
+
+```{r Save SDM results, eval = F}
+bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
+
+writeSDMresults(
+  cv_model = sdModel$CVStructure, 
+  pcnm = sdModel$PCNM, 
+  model = sdModel$Model, 
+  cm = sdModel$ConfusionMatrix, 
+  coef_tab = rr$BetaCoefficients, 
+  f_rasts = threshold_rasts$FinalRasters,
+  thresh = threshold_rasts$Threshold,
+  file.path(bp, 'results', 'SDM'), 'Bradypus_test')
+
+# we can see that the files were placed here using this. 
+list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
+```
+
+### wrapping up 
+
+And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
+We will play around with it as an example data set to compare our buffered distance results to at the end - head over to the next vignette!
+
+```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
+rm(rr, predictors, files, sdModel, bp)
+```
