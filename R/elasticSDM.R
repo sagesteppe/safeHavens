@@ -190,10 +190,14 @@ calculate_study_extent <- function(
 #' @keywords internal
 #' @noRd
 generate_background_points <- function(predictors, occurrences, fact) {
+
+  vif_results <- usdm::vifcor(predictors, th=0.975)
+  pred_sub <- terra::subset(predictors, vif_results@results$Variables)
+
   bg <- tryCatch({
     suppressMessages({
       sdm::background(
-        x      = predictors,
+        x      = pred_sub,
         n      = round(nrow(occurrences)*fact, 0),
         sp     = occurrences,
         method = "eDist"

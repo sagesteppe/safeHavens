@@ -54,7 +54,8 @@ Imports:
     cluster,
     igraph,
     spdep,
-    raster
+    raster,
+    usdm
 URL: https://sagesteppe.github.io/safeHavens/, 
      https://github.com/sagesteppe/safeHavens
 BugReports: https://github.com/sagesteppe/safeHavens/issues

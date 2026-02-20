@@ -35,9 +35,11 @@ PostProcessSDM <- function(
   # we want to predict MORE habitat than exists, so we want to maximize sensitivity
   # in our classification.
 
+  names(rast_cont) <- 's0'
   test.sf <- terra::extract(rast_cont, test, bind = TRUE) |>
     sf::st_as_sf() |>
     sf::st_drop_geometry()
+
 
   eval_ob <- dismo::evaluate(
     p = test.sf[test.sf$occurrence == 1, 's0'],
@@ -92,7 +94,6 @@ PostProcessSDM <- function(
   # SUITABLE HABITAT MARKED, THEN LET'S ADD the same amount of suitable habitat
   # to each of them, that was used as the buffer for clipping suitable habitat to the
   # points above.
-
   pres <- sf::st_transform(pres, terra::crs(rast_binary))
 
   outside_binary <- terra::extract(rast_binary, pres, bind = TRUE) |>

@@ -125,14 +125,14 @@ RescaleRasters_bayes <- function(
   coef_tab <- merge(coef_tab, var_moments, by = "Variable", sort = FALSE)
 
   # ── 5. Rescale raster layers ─────────────────────────────────────────────────
-  pred_subset  <- predictors[[env_vars]]
+  pred_subset  <- terra::subset(predictors, env_vars)
   scaled_layers <- vector("list", length(env_vars))
 
   for (i in seq_along(env_vars)) {
     v      <- env_vars[i]
     mu     <- coef_tab$Mean[coef_tab$Variable == v]
     sigma  <- coef_tab$SD[coef_tab$Variable == v]
-    beta   <- abs(coef_tab$BetaWeight[coef_tab$Variable == v])
+    beta   <- abs(coef_tab$Estimate[coef_tab$Variable == v])
 
     if (sigma == 0) {
       warning(sprintf("Variable '%s' has zero SD in training data — skipping.", v))
@@ -166,7 +166,7 @@ RescaleRasters_bayes <- function(
   list(
     RescaledPredictors = pred_rescale,
     BetaCoefficients   = coef_tab[, c("Variable", "Estimate", "Est.Error",
-                                       "Q2.5", "Q97.5", "BetaWeight")],
+                                       "Q2.5", "Q97.5")],
     UncertaintyLayer   = uncertainty_rast
   )
 }

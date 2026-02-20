@@ -50,6 +50,15 @@
 #'   ecological datasets. Override only if you have strong prior knowledge about
 #'   the spatial range of your species (e.g., `prior(inv_gamma(5, 2), class = lscale, coef = "")`
 #'   for tighter spatial autocorrelation).
+#' #' @param feature_selection Character. Variable selection method to apply before
+#'   Bayesian model fitting. One of:
+#'   \describe{
+#'     \item{`"ffs"`}{Forward feature selection via CAST::ffs(). Uses spatial CV
+#'       folds to select variables. Fast and spatially-aware. Default.}
+#'     \item{`"none"`}{No feature selection; use all predictors (or all PCA axes).
+#'       Relies on horseshoe prior for shrinkage.}
+#'   }
+#' @param min_ffs_var Integer. Minium number of ffs vars to start with. 
 #' @param chains Integer. Number of MCMC chains. Defaults to `4`.
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
 #'   to `2000`.
@@ -138,9 +147,11 @@ bayesianSDM <- function(
     pca_predictors    = TRUE,
     pca_axes          = 5,
     gp_scale_prior    = NULL,
+    feature_selection = c("ffs", "none"),
+    min_ffs_var       = 5, 
     chains            = 4,
-    iter              = 1500,
-    warmup            = 750,
+    iter              = 2000,
+    warmup            = 1000,
     cores             = 4,
     k                 = 5,
     seed              = 42,
@@ -164,6 +175,8 @@ bayesianSDM <- function(
     pred_names <- names(predictors)
   }
 
+  if(min_ffs_var < terra::nlyr(predictors)){min_ffs_var = 2}
+
   # ── 1. Background points & occurrence column ────────────────────────────────
   if (!"occurrence" %in% names(x)) {
     x$occurrence <- 1L
@@ -183,12 +196,36 @@ bayesianSDM <- function(
   x          <- x[complete, ]
 
   # ── 4. Train / test split ────────────────────────────────────────────────────
-  index <- unlist(caret::createDataPartition(x$occurrence, p = 0.8))
+  index <- unlist(caret::createDataPartition(factor(x$occurrence), p = 0.8))
   train <- x[ index, ]
   test  <- x[-index, ]
 
   # ── 5. Spatial CV folds (CAST knndm) ────────────────────────────────────────
   cv_folds <- create_spatial_cv_folds(train, predictors, k = k)
+
+    # ── 6. Optional feature selection ───────────────────────────────────────────
+  feature_selection <- match.arg(feature_selection)
+  if (feature_selection != "none") {
+    message(sprintf("Running %s feature selection ...", 
+                    toupper(feature_selection)))
+    selected_vars <- perform_feature_selection_bayes(
+      train          = train,
+      pred_names     = pred_names,
+      cv_folds       = cv_folds,
+      min_ffs_var    = min_ffs_var,
+      method         = feature_selection
+    )
+    
+    if (length(selected_vars) == 0) {
+      warning("Feature selection returned 0 variables. Using all predictors.")
+    } else {
+      message(sprintf("  Selected %d of %d variables: %s",
+                      length(selected_vars), length(pred_names),
+                      paste(selected_vars, collapse = ", ")))
+      pred_names <- selected_vars
+      predictors <- predictors[[pred_names]]  # Subset raster
+    }
+  }
 
   # ── 6. Build GP coordinates (planar, scaled) ─────────────────────────────────
   # brms gp() uses raw coordinate columns; we work in km for numerical stability
@@ -199,7 +236,7 @@ bayesianSDM <- function(
   env_terms <- paste(pred_names, collapse = " + ")
   bf_formula <- stats::as.formula(
     sprintf(
-      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp', k = 40)",
+      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp', k = 50)",
       env_terms
     )
   )
@@ -227,6 +264,7 @@ bayesianSDM <- function(
     seed     = seed,
     backend  = backend,
     save_pars = brms::save_pars(all = TRUE),
+    control = list(adapt_delta = 0.99),
     ...
   )
 
@@ -244,7 +282,7 @@ bayesianSDM <- function(
 
   # ── 11. LOO cross-validation ──────────────────────────────────────────────────
   message("Computing PSIS-LOO ...")
-  loo_result <- brms::loo(fit, moment_match = TRUE)
+  loo_result <- brms::loo(fit, moment_match = TRUE, reloo = TRUE)
 
   # ── 12. Test-set confusion matrix ─────────────────────────────────────────────
   cm <- evaluate_bayes_model(fit, test, pred_names)
@@ -253,6 +291,14 @@ bayesianSDM <- function(
   message("Generating raster predictions (posterior mean & SD) ...")
   rast_list <- create_bayes_spatial_predictions(fit, predictors, 
     planar_projection = paste0('EPSG:', planar_projection), pred_names)
+
+  # -- 14. Area of Applicability surface
+ # message("Computing Area of Applicability (AOA) ...")
+ # aoa_result <- CAST::aoa(
+ #   newdata = predictors,
+ #   model      = fit,
+ #   train      = sf::st_drop_geometry(train[, pred_names])
+ # )
 
   list(
     RasterPredictions    = rast_list$mean,
@@ -266,6 +312,13 @@ bayesianSDM <- function(
     TrainData            = train,
     TestData             = test,
     PredictMatrix        = rast_list$pred_matrix,
+  #  AOA                  = aoa_result$AOA,       
+  #  DI                   = aoa_result$DI,    
+ #   AOA_Diagnostics      = list(
+ #     max_Rhat           = ...,
+ #     AOA_coverage       = sum(terra::values(aoa_result$AOA), na.rm = TRUE) / 
+ #                          sum(!is.na(terra::values(aoa_result$AOA)))
+ #   ), 
     PCAModel             = pca_model,
     Diagnostics          = diagnostics
   )
@@ -275,6 +328,49 @@ bayesianSDM <- function(
 # ══════════════════════════════════════════════════════════════════════════════
 #  Internal helpers
 # ══════════════════════════════════════════════════════════════════════════════
+
+#' Perform feature selection before Bayesian model fitting
+#'
+#' Uses either CAST forward feature selection (spatially-aware)
+#' to reduce predictor set before expensive Bayesian fitting.
+#'
+#' @param train sf object with training data
+#' @param pred_names Character vector of predictor names
+#' @param cv_folds CAST knndm object with CV fold indices
+#' @param method Currently only "ffs"
+#' @param min_ffs_var Minimum number of FFS variables to start with. 
+#' @return Character vector of selected predictor names
+#' @keywords internal
+#' @noRd
+perform_feature_selection_bayes <- function(train, pred_names, cv_folds, method, min_ffs_var) {
+  train_df <- sf::st_drop_geometry(train)
+  
+  if (method == "ffs") {
+    # Forward feature selection using spatial CV folds
+    ffs_result <- suppressMessages(
+      CAST::ffs(
+        predictors = train_df[, pred_names, drop = FALSE],
+        response   = factor(train_df$occurrence),
+        method     = "glm",
+        minVar     =  min_ffs_var, 
+        family     = stats::binomial(),
+        metric     = "Accuracy",
+        trControl  = caret::trainControl(
+          method = "cv",
+          index  = cv_folds$indx_train,
+          indexOut = cv_folds$indx_test,
+          savePredictions = FALSE,
+          verboseIter = FALSE
+        ),
+        verbose    = FALSE
+      )
+    )
+    return(ffs_result$selectedvars)
+  }
+  
+  # Fallback
+  pred_names
+}
 
 #' Add scaled planar coordinates to an sf object
 #'
@@ -379,10 +475,7 @@ build_priors <- function(prior_type, prior_scale, pred_names, n_obs, p0, gp_prio
 
   intercept_prior <- brms::set_prior("normal(0, 2.5)", class = "Intercept")
 
-  # GP marginal SD: half-normal weakly informative
-  sdgp_prior <- brms::set_prior("normal(0, 1)", class = "sdgp")
-
-  c(env_prior, intercept_prior, sdgp_prior, gp_prior)
+  c(env_prior, intercept_prior)
 }
 
 
@@ -466,7 +559,6 @@ create_bayes_spatial_predictions <- function(
     pred_names,
     planar_projection
 ) {
-  message("Generating raster predictions using terra::predict() ...")
   
   # Build coordinate rasters in planar projection (km scale)
   template <- predictors[[1]]
@@ -510,7 +602,6 @@ create_bayes_spatial_predictions <- function(
   }
   
   # Let terra handle all the chunking/memory management
-  message("  Computing posterior mean and SD (terra handles chunking automatically) ...")
   result <- terra::predict(
     pred_stack,
     model = fit,

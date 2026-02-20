@@ -1,7 +1,7 @@
 #' Cluster environmental space using posterior beta draws
 #'
 #' @description
-#' Implements option D of the Bayesian clustering workflow: draws K sets of
+#' Implements Bayesian clustering: draws K sets of
 #' beta coefficients from the posterior, produces a weighted environmental
 #' raster for each draw, samples points from each, and records how often pairs
 #' of sample points are assigned to the same cluster. The resulting co-occurrence
@@ -375,8 +375,6 @@ compute_top3_clusters <- function(draw_clusterings, n_pts, n_draws) {
     pct_matrix    = pct_matrix
   )
 }
-
-
 
 #'
 #' @param model brmsfit
