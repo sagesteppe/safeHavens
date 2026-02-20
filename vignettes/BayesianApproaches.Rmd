@@ -138,7 +138,7 @@ names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
 names(bio_current) <- simplify_names(bio_current)
 names(bio_future) <- simplify_names(bio_future)
 
-rm(simplify_names))
+rm(simplify_names)
 ```
 
 
@@ -147,15 +147,18 @@ Here we fit as SDM using `bayesianSDM`.
 For arguments it requires occurrence data `x`, a raster stack of `predictors`, a `quantile_v` that is an offset used to create pseudo-absence data, and a `planar_proj` used to calculate distances between occurrence data and possible pseudo-absence points. 
 
 ```{r Create Species Distribution Model, message=F, warning=F}
-sdModel <- bayesianSDM(
+sdModel <- system.time(
+  bayesianSDM( # start 15:58 expected end: 16:45 (latest)
   x = hemi,
   predictors = bio_current,
   quantile_v = 0.025,
   planar_proj = 5070, 
-  fact = 3.0
+  fact = 2.0, 
+  silent = 2, # print fewer messages during model fit.
+  #backend = 'mock' # only for testing . 
   )
+)
 ```
-
 
 
 Under the hood this function uses `brms` to help out with fitting a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  

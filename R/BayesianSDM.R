@@ -45,9 +45,11 @@
 #' @param pca_axes Integer. Number of PCA axes to retain when
 #'   `pca_predictors = TRUE`. Defaults to `5`.
 #' @param gp_scale_prior A `brms` prior object for the GP length-scale
-#'   parameter. Defaults to `prior(inv_gamma(3.5, 0.5), class = lscale)`, which
-#'   places most mass on moderate spatial ranges and is weakly informative for
-#'   ecological data. Override if your species has a known range.
+#'   parameter, or `NULL` to use brms default. The default `NULL` uses
+#'   `inv_gamma(3, 1)`, which is weakly informative and appropriate for most
+#'   ecological datasets. Override only if you have strong prior knowledge about
+#'   the spatial range of your species (e.g., `prior(inv_gamma(5, 2), class = lscale, coef = "")`
+#'   for tighter spatial autocorrelation).
 #' @param chains Integer. Number of MCMC chains. Defaults to `4`.
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
 #'   to `2000`.
@@ -63,9 +65,7 @@
 #'   `p0` (integer, expected non-zero predictors) for the horseshoe prior;
 #'   defaults to `floor(ncol(pred_matrix) / 2)`.
 #' @param fact Numeric, default 2.0.
-#'  Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
-
-#'
+#'  Factor to multiple the number of occurrence records by to generate the number of background (absence) points. #'
 #' @returns A named list with the following elements, mirroring [elasticSDM()]:
 #' \describe{
 #'   \item{`RasterPredictions`}{`SpatRaster` of posterior mean predicted
@@ -137,36 +137,35 @@ bayesianSDM <- function(
     prior_scale       = 1,
     pca_predictors    = TRUE,
     pca_axes          = 5,
-    gp_scale_prior    = brms::prior(inv_gamma(3.5, 0.5), class = lscale),
+    gp_scale_prior    = NULL,
     chains            = 4,
-    iter              = 2000,
-    warmup            = 1000,
-    cores             = parallel::detectCores(),
+    iter              = 1500,
+    warmup            = 750,
+    cores             = 4,
     k                 = 5,
     seed              = 42,
     backend           = "cmdstanr",
-    fact              = 2,
+    fact              = 3, 
     ...
 ) {
   prior_type <- match.arg(prior_type)
   dots       <- list(...)
 
-  # --- 0. PCA on raster surface -----------------
-  ## note doing this first with random points allows for clean eDist sampling in the presence 
-  # of autocorrelated values. 
+  # ── 0. Optional PCA on raster surface ──────────────────────────────────────
+  # Run PCA BEFORE background generation so eDist method works on orthogonal axes
+  # rather than potentially collinear raw predictors (avoids singular covariance)
   pca_model <- NULL
   if (pca_predictors) {
-    message(sprintf("Running PCA — retaining %d axes.", pca_axes))
-    pca_result <- run_pca_on_predictors(x, predictors, pca_axes)
-    x          <- pca_result$data          # sf with PC columns
-    predictors <- pca_result$raster        # SpatRaster of PC axes
-    pred_names <- pca_result$pc_names
-    pca_model  <- pca_result$pca_model
+    pca_result  <- run_pca_on_raster(predictors, pca_axes)
+    predictors  <- pca_result$raster        # SpatRaster of PC axes
+    pred_names  <- pca_result$pc_names
+    pca_model   <- pca_result$pca_model
+  } else {
+    pred_names <- names(predictors)
   }
 
   # ── 1. Background points & occurrence column ────────────────────────────────
   if (!"occurrence" %in% names(x)) {
-    message("No `occurrence` column found — generating pseudo-absences.")
     x$occurrence <- 1L
     pa <- generate_background_points(predictors, x, fact)
     x  <- dplyr::bind_rows(x, pa)
@@ -180,33 +179,32 @@ bayesianSDM <- function(
   x <- extract_predictors_to_points(x, predictors)
 
   # Drop any rows with NA in extracted predictors
-  pred_names <- names(predictors)
   complete   <- stats::complete.cases(sf::st_drop_geometry(x)[, pred_names])
   x          <- x[complete, ]
 
-  # ── 5. Train / test split ────────────────────────────────────────────────────
+  # ── 4. Train / test split ────────────────────────────────────────────────────
   index <- unlist(caret::createDataPartition(x$occurrence, p = 0.8))
   train <- x[ index, ]
   test  <- x[-index, ]
 
-  # ── 6. Spatial CV folds (CAST knndm) ────────────────────────────────────────
+  # ── 5. Spatial CV folds (CAST knndm) ────────────────────────────────────────
   cv_folds <- create_spatial_cv_folds(train, predictors, k = k)
 
-  # ── 7. Build GP coordinates (planar, scaled) ─────────────────────────────────
+  # ── 6. Build GP coordinates (planar, scaled) ─────────────────────────────────
   # brms gp() uses raw coordinate columns; we work in km for numerical stability
   train <- add_planar_coords(train, planar_projection, scale_km = TRUE)
   test  <- add_planar_coords(test,  planar_projection, scale_km = TRUE)
 
-  # ── 8. Assemble model formula ────────────────────────────────────────────────
+  # ── 7. Assemble model formula ────────────────────────────────────────────────
   env_terms <- paste(pred_names, collapse = " + ")
   bf_formula <- stats::as.formula(
     sprintf(
-      "occurrence ~ %s + gp(gp_x, gp_y, scale = FALSE, cov = 'exp_quad')",
+      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp', k = 40)",
       env_terms
     )
   )
 
-  # ── 9. Priors ────────────────────────────────────────────────────────────────
+  # ── 8. Priors ────────────────────────────────────────────────────────────────
   model_prior <- build_priors(
     prior_type  = prior_type,
     prior_scale = prior_scale,
@@ -216,8 +214,7 @@ bayesianSDM <- function(
     gp_prior    = gp_scale_prior
   )
 
-  # ── 10. Fit model ─────────────────────────────────────────────────────────────
-  message("Fitting Bayesian spatial GLMM via brms ...")
+  # ── 9. Fit model ─────────────────────────────────────────────────────────────  
   fit <- brms::brm(
     formula  = bf_formula,
     data     = sf::st_drop_geometry(train),
@@ -229,10 +226,11 @@ bayesianSDM <- function(
     cores    = cores,
     seed     = seed,
     backend  = backend,
+    save_pars = brms::save_pars(all = TRUE),
     ...
   )
 
-  # ── 11. Convergence diagnostics ───────────────────────────────────────────────
+  # ── 10. Convergence diagnostics ───────────────────────────────────────────────
   diagnostics <- check_convergence(fit)
   if (diagnostics$max_Rhat > 1.05) {
     warning(
@@ -244,25 +242,17 @@ bayesianSDM <- function(
     )
   }
 
-  # ── 12. LOO cross-validation ──────────────────────────────────────────────────
+  # ── 11. LOO cross-validation ──────────────────────────────────────────────────
   message("Computing PSIS-LOO ...")
   loo_result <- brms::loo(fit, moment_match = TRUE)
 
-  # ── 13. Test-set confusion matrix ─────────────────────────────────────────────
+  # ── 12. Test-set confusion matrix ─────────────────────────────────────────────
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
-  # -- 14. Area of Applicability surface
-  message("Computing Area of Applicability (AOA) ...")
-  aoa_result <- CAST::aoa(
-    train      = sf::st_drop_geometry(train[, pred_names]),
-    predictors = predictors[[pred_names]],
-    model      = fit
-  )
-
-  # ── 14. Spatial raster predictions ───────────────────────────────────────────
+  # ── 13. Spatial raster predictions ───────────────────────────────────────────
   message("Generating raster predictions (posterior mean & SD) ...")
-  rast_list <- create_bayes_spatial_predictions(fit, predictors, pred_names,
-                                                planar_projection)
+  rast_list <- create_bayes_spatial_predictions(fit, predictors, 
+    planar_projection = paste0('EPSG:', planar_projection), pred_names)
 
   list(
     RasterPredictions    = rast_list$mean,
@@ -276,13 +266,6 @@ bayesianSDM <- function(
     TrainData            = train,
     TestData             = test,
     PredictMatrix        = rast_list$pred_matrix,
-    AOA        = aoa_result$AOA,        # Binary raster: 1 = inside AOA
-    DI         = aoa_result$DI,         # Dissimilarity index raster
-    AOA_Diagnostics = list(
-      max_Rhat    = ...,
-      AOA_coverage = sum(terra::values(aoa_result$AOA), na.rm = TRUE) / 
-                     sum(!is.na(terra::values(aoa_result$AOA)))
-    ), 
     PCAModel             = pca_model,
     Diagnostics          = diagnostics
   )
@@ -315,22 +298,23 @@ add_planar_coords <- function(x, planar_projection, scale_km = TRUE) {
 }
 
 
-#' Run PCA on raster predictors and project both points and raster
+#' Run PCA on raster predictors only
 #'
-#' Fits PCA on the raster cell values (a random sample of up to 2500 cells
-#' to keep memory tractable), then projects both the point data and the full
-#' raster onto the retained axes.
+#' Fits PCA on a random sample of raster cells (up to 50,000 for memory),
+#' then projects the full raster onto the retained axes. This happens BEFORE
+#' any point-based operations so that background sampling (eDist method) works
+#' on orthogonal PC axes rather than potentially collinear raw predictors.
 #'
-#' @param x sf object with predictor columns already extracted
-#' @param predictors SpatRaster
+#' @param predictors SpatRaster of raw environmental variables
 #' @param pca_axes Integer, number of axes to retain
-#' @return List: `data` (sf with PC columns), `raster` (SpatRaster of PCs),
-#'   `pc_names` (character), `pca_model` (prcomp)
+#' @return List: `raster` (SpatRaster of PCs), `pc_names` (character),
+#'   `pca_model` (prcomp object)
 #' @keywords internal
 #' @noRd
-run_pca_on_predictors <- function(x, predictors, pca_axes) {
-  # Fit PCA on raster values (sample for speed)
+run_pca_on_raster <- function(predictors, pca_axes) {
   pred_names <- names(predictors)
+  
+  # Fit PCA on raster values (sample for speed)
   rast_vals <- terra::spatSample(
     predictors,
     size    = min(2500, terra::ncell(predictors)),
@@ -343,23 +327,15 @@ run_pca_on_predictors <- function(x, predictors, pca_axes) {
   pca_axes <- min(pca_axes, length(pred_names))
   pc_names <- paste0("PC", seq_len(pca_axes))
 
-  # Project point data
-  point_mat  <- as.matrix(sf::st_drop_geometry(x)[, pred_names])
-  point_pcs  <- stats::predict(pca_model, newdata = point_mat)[, seq_len(pca_axes), drop = FALSE]
-  x_pc       <- x[, setdiff(names(x), pred_names)]  # drop raw predictor cols
-  for (nm in pc_names) x_pc[[nm]] <- point_pcs[, nm]
-
-  # Project raster — process layer by layer to avoid memory blow-up
-  # We use terra::predict which calls stats::predict on a per-cell basis
+  # Project raster — terra::predict calls stats::predict on a per-cell basis
   pc_raster <- terra::predict(
-    predictors[[pred_names]],
+    predictors,
     model = pca_model,
     index = seq_len(pca_axes)
   )
   names(pc_raster) <- pc_names
 
   list(
-    data      = x_pc,
     raster    = pc_raster,
     pc_names  = pc_names,
     pca_model = pca_model
@@ -471,18 +447,16 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
   )
 }
 
-
 #' Generate posterior mean and SD raster predictions
 #'
-#' For each raster cell, obtains the full posterior predictive distribution
-#' of the occurrence probability, then summarises to mean and SD rasters.
-#' Processes the raster in row chunks to avoid exhausting memory.
+#' Uses terra::predict() with a custom wrapper function to efficiently
+#' predict across the full raster. Much faster than manual chunking because
+#' terra handles memory management and parallelization internally.
 #'
-#' @param fit brmsfit
+#' @param fit brmsfit with s(gp_x, gp_y) spatial smooth (not gp() term)
 #' @param predictors SpatRaster (possibly PCA)
 #' @param pred_names Character vector of predictor column names
 #' @param planar_projection EPSG or proj4 string
-#' @param chunk_size Integer, cells per chunk. Defaults to 10 000.
 #' @return List: `mean` SpatRaster, `sd` SpatRaster, `pred_matrix` data.frame
 #' @keywords internal
 #' @noRd
@@ -490,64 +464,73 @@ create_bayes_spatial_predictions <- function(
     fit,
     predictors,
     pred_names,
-    planar_projection,
-    chunk_size = 10000
-) {
-  # Pull predictor raster values + xy coordinates
-  pred_vals <- as.data.frame(predictors[[pred_names]], xy = TRUE, na.rm = FALSE)
-  has_data  <- stats::complete.cases(pred_vals[, pred_names])
-
-  # Planar coordinates in km for the GP term
-  coords_geo <- terra::project(
-    terra::vect(pred_vals[, c("x", "y")], crs = terra::crs(predictors),
-                geom = c("x", "y")),
     planar_projection
+) {
+  message("Generating raster predictions using terra::predict() ...")
+  
+  # Build coordinate rasters in planar projection (km scale)
+  template <- predictors[[1]]
+  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
+  
+  # Project to planar km
+  coords_vect <- terra::vect(
+    coords_lonlat,
+    geom = c("x", "y"),
+    crs = terra::crs(predictors)
   )
-  coords_km <- terra::crds(coords_geo) / 1000
-  pred_vals$gp_x <- coords_km[, 1]
-  pred_vals$gp_y <- coords_km[, 2]
-
-  # Initialise output vectors
-  mean_vec <- rep(NA_real_, nrow(pred_vals))
-  sd_vec   <- rep(NA_real_, nrow(pred_vals))
-
-  # Chunk prediction to avoid memory overload
-  valid_idx <- which(has_data)
-  chunks    <- split(valid_idx, ceiling(seq_along(valid_idx) / chunk_size))
-
-  message(sprintf(
-    "Predicting over %d valid cells in %d chunks ...",
-    length(valid_idx), length(chunks)
-  ))
-
-  for (i in seq_along(chunks)) {
-    if (i %% 10 == 0 || i == length(chunks)) {
-      message(sprintf("  Chunk %d / %d", i, length(chunks)))
-    }
-    idx   <- chunks[[i]]
-    chunk <- pred_vals[idx, c(pred_names, "gp_x", "gp_y")]
-
+  coords_proj <- terra::project(coords_vect, planar_projection)
+  coords_km <- terra::crds(coords_proj) / 1000
+  
+  # Create coordinate rasters
+  gp_x_rast <- terra::rast(template)
+  gp_y_rast <- terra::rast(template)
+  terra::values(gp_x_rast) <- coords_km[, 1]
+  terra::values(gp_y_rast) <- coords_km[, 2]
+  names(gp_x_rast) <- "gp_x"
+  names(gp_y_rast) <- "gp_y"
+  
+  # Combine predictors with coordinate rasters
+  pred_stack <- c(predictors[[pred_names]], gp_x_rast, gp_y_rast)
+  
+  # Custom predict function for terra
+  # terra passes data as a data.frame with column names matching raster layer names
+  predict_mean_sd <- function(model, data, ...) {
+    # Subsample posterior for speed 
     epred <- brms::posterior_epred(
-      fit,
-      newdata          = chunk,
-      allow_new_levels = TRUE
+      model,
+      newdata = data,
+      allow_new_levels = TRUE,
+      ndraws = 1000
     )
-    mean_vec[idx] <- colMeans(epred)
-    sd_vec[idx]   <- apply(epred, 2, stats::sd)
+    # Return both mean and sd as a 2-column matrix
+    cbind(
+      mean = colMeans(epred),
+      sd   = apply(epred, 2, stats::sd)
+    )
   }
-
-  # Rebuild rasters
-  template           <- predictors[[1]]
-  rast_mean          <- terra::rast(template)
-  rast_sd            <- terra::rast(template)
-  terra::values(rast_mean) <- mean_vec
-  terra::values(rast_sd)   <- sd_vec
-  names(rast_mean)   <- "occurrence_prob_mean"
-  names(rast_sd)     <- "occurrence_prob_sd"
-
+  
+  # Let terra handle all the chunking/memory management
+  message("  Computing posterior mean and SD (terra handles chunking automatically) ...")
+  result <- terra::predict(
+    pred_stack,
+    model = fit,
+    fun = predict_mean_sd,
+    na.rm = TRUE,
+    cores = 1  # brms isn't thread-safe for this, keep sequential
+  )
+  
+  # Split into separate rasters
+  rast_mean <- result[[1]]
+  rast_sd   <- result[[2]]
+  names(rast_mean) <- "occurrence_prob_mean"
+  names(rast_sd)   <- "occurrence_prob_sd"
+  
+  # Build pred_matrix for downstream compatibility
+  pred_vals <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
+  
   list(
     mean         = rast_mean,
     sd           = rast_sd,
-    pred_matrix  = pred_vals[, c(pred_names, "gp_x", "gp_y")]
+    pred_matrix  = pred_vals
   )
 }
