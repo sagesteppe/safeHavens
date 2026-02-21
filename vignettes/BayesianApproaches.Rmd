@@ -155,7 +155,8 @@ sdModel <- bayesianSDM(
   predictors = bio_current,
   quantile_v = 0.025,
   planar_proj = 5070, 
-  feature_selection = 'ffs',
+  resample = TRUE,
+  feature_selection = 'none',
   min_ffs_var = 5, 
   fact = 2, 
   silent = 2 # print fewer messages during model fit.
@@ -174,8 +175,14 @@ ggplot() +
 
 Plot the predictions 
 ```{r Explore SDM output - Different alpha}
-plot(sdModel$RasterPredictions_sd)
+sdm_td <- sdModel$TrainData
 plot(sdModel$RasterPredictions)
+points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black')
+points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red')
+
+plot(sdModel$RasterPredictions_sd)
+points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black')
+points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red')
 ```
 
 ```{r}
@@ -207,7 +214,6 @@ terra::plot(sdModel$RasterPredictions)
 ```
 
 
-
 ```{r Threshold the SDM output}
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
@@ -226,11 +232,6 @@ terra::plot(threshold_rasts$FinalRasters)
 ```
 
 
-
-
-```{r}
-PosteriorCluster()
-```
 
 
 
@@ -267,7 +268,20 @@ The scales of the variables are not exact, because they are weighed by their \be
 print(rr$BetaCoefficients)
 ```
 
-We can also look at the \beta coefficients for each variable. 
+
+
+
+```{r}
+PosteriorCluster(
+  model = sdModel$Model,
+  predictors = subset(rr$RescaledPredictors, 'coef_uncertainty', negate = TRUE),
+  f_rasts = threshold_rasts$FinalRasters[['Threshold']],
+  pred_mat = sdModel$PredictMatrix,
+  training_data = sdModel$Train,
+)
+```
+
+
 
 ### save results 
 

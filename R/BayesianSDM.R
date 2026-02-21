@@ -24,6 +24,7 @@
 #'   See [elasticSDM()] for guidance.
 #' @param quantile_v Numeric thinning quantile passed to [spThin::thin()].
 #'   Defaults to `0.025`. Set to `0.001` for essentially no thinning.
+#' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions. 
 #' @param prior_type Character. Prior family placed on the fixed-effect
 #'   environmental coefficients. One of:
 #'   \describe{
@@ -147,6 +148,7 @@ bayesianSDM <- function(
     pca_predictors    = TRUE,
     pca_axes          = 5,
     gp_scale_prior    = NULL,
+    resample          = FALSE,
     feature_selection = c("ffs", "none"),
     min_ffs_var       = 5, 
     chains            = 4,
@@ -180,7 +182,7 @@ bayesianSDM <- function(
   # ── 1. Background points & occurrence column ────────────────────────────────
   if (!"occurrence" %in% names(x)) {
     x$occurrence <- 1L
-    pa <- generate_background_points(predictors, x, fact)
+    pa <- generate_background_points(predictors, x, fact, resample)
     x  <- dplyr::bind_rows(x, pa)
   }
   x <- dplyr::mutate(x, occurrence = as.integer(as.character(occurrence)))
@@ -592,7 +594,7 @@ create_bayes_spatial_predictions <- function(
       model,
       newdata = data,
       allow_new_levels = TRUE,
-      ndraws = 1000
+      ndraws = 2000
     )
     # Return both mean and sd as a 2-column matrix
     cbind(

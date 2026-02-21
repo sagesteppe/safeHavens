@@ -14,8 +14,10 @@
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
 #' @param PCNM Boolean. Whether to include PCNM while fitting the model. 
-#' @param fact Numeric, default 2.0.
-#'  Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param fact Numeric, default 2.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions. 
+#' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.  
+
 #' Defaults to TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used with `Predictive Provenance` type workstreams. 
 #' @examples \dontrun{
 #'
@@ -46,7 +48,8 @@ elasticSDM <- function(
   domain = NULL,
   quantile_v = 0.025,
   PCNM = TRUE,
-  fact = 2.0
+  fact = 2.0, 
+  resample = FALSE
   ){
   
   # Calculate study extent
@@ -58,7 +61,7 @@ elasticSDM <- function(
   )
 
   # Generate background points
-  pa <- generate_background_points(predictors, x, fact)
+  pa <- generate_background_points(predictors, x, fact, resample)
 
   # Combine presence and pseudo-absence
   x$occurrence <- 1
@@ -184,21 +187,31 @@ calculate_study_extent <- function(
 #'
 #' @param predictors Raster stack of environmental predictors
 #' @param occurrences SF object with occurrence points
-#' @param fact Numeric, default 2.0.
-#'  Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param fact Numeric, default 2.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param resample Boolean, Defaults to FALSE. Used to place 20% of the requested points in areas undersampled by sdm::background functions. 
+#' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.  
 #' @return SF object with pseudo-absence points (occurrence = 0)
 #' @keywords internal
 #' @noRd
-generate_background_points <- function(predictors, occurrences, fact) {
+generate_background_points <- function(predictors, occurrences, fact, resample) {
 
   vif_results <- usdm::vifcor(predictors, th=0.975)
   pred_sub <- terra::subset(predictors, vif_results@results$Variables)
+
+  # determine allocation for resampling density. 
+  n_requested = round(nrow(occurrences)*fact, 0)
+  if(resample){
+    sdm_bg_pts_n = n_requested * 0.95
+    dens_bg_pts_n = n_requested - sdm_bg_pts_n
+  } else {
+    sdm_bg_pts_n = n_requested
+  }
 
   bg <- tryCatch({
     suppressMessages({
       sdm::background(
         x      = pred_sub,
-        n      = round(nrow(occurrences)*fact, 0),
+        n      = sdm_bg_pts_n,
         sp     = occurrences,
         method = "eDist"
       )
@@ -213,7 +226,7 @@ generate_background_points <- function(predictors, occurrences, fact) {
       suppressMessages({
         sdm::background(
           x      = predictors,
-          n      = nrow(occurrences),
+          n      = sdm_bg_pts_n,
           sp     = occurrences,
           method = "eRandom"
         )
@@ -222,11 +235,62 @@ generate_background_points <- function(predictors, occurrences, fact) {
       stop(e)
     }
   })
-  
-  bg |>
+
+  bg_1 <- bg |>
     dplyr::select(lon = x, lat = y) |>
     sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
     dplyr::mutate(occurrence = 0)
+
+  if(resample){
+
+    ## eDist is conservative in where it places points, we will top it off with some
+    ## points in lower density areas. 
+
+    # use all points for initial density, but force the points into the 
+    # species known range where the deficit tends to occurr. 
+    coords <- dplyr::bind_rows(
+      dplyr::select(occurrences), dplyr::select(bg_1)
+    ) |>
+      terra::vect()
+
+    ## rasterize the points quickly, using a coarse template. 
+    r_count <- terra::rasterize(
+      coords, 
+      terra::aggregate(predictors[[1]], 5),
+      fun="length", background=0)
+    
+    # sum points across windows for local effects
+    r_count <- terra::focal(r_count, w = 3, fun = "sum") 
+    r_count <- terra::crop(r_count, terra::ext(occurrences))
+    
+    ## now sample from the most sparsely populated areas
+    threshold <- terra::global(r_count, quantile, probs = 0.25, na.rm = TRUE)[[1]] 
+    # if many unsampled areas, cap patches at 1 record per window. 
+    if(threshold == 0){threshold <- 1}
+    
+    low_mask <- terra::mask(
+      r_count, 
+      terra::ifel(r_count < threshold, 1, NA) # mask 
+      )
+    
+    bg_2 <- suppressWarnings(
+      terra::spatSample(
+      low_mask, 
+      size = dens_bg_pts_n, #only the diff 15% of points. 
+      method = "spread",
+      xy = TRUE,
+      na.rm = TRUE
+      ) 
+    ) |>
+    dplyr::select(lon = x, lat = y) |>
+    sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
+    dplyr::mutate(occurrence = 0)
+
+    return(dplyr::bind_rows(bg_1, bg_2))
+    
+  } else {
+      return(bg_1)
+  }
 }
 
 

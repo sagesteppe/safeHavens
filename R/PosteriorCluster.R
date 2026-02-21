@@ -142,8 +142,6 @@ PosteriorCluster <- function(
 
   # ── 4. Fix sample points across all draws ────────────────────────────────────
   # Points are sampled once from the SDM prediction surface and held constant.
-  # This is essential: co-occurrence is only meaningful when comparing the
-  # same spatial locations across draws.
   message("Sampling fixed point set from prediction surface ...")
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
@@ -160,11 +158,6 @@ PosteriorCluster <- function(
   sample_pts    <- sample_pts[complete_rows, ]
   pt_env        <- pt_env[complete_rows, , drop = FALSE]
   n_pts_actual  <- nrow(pt_env)
-
-  message(sprintf(
-    "  %d of %d requested points have complete predictor data.",
-    n_pts_actual, n_pts
-  ))
 
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
@@ -322,7 +315,6 @@ train_regression_knn <- function(X, y) {
     trControl = caret::trainControl(method = "cv", number = 5)
   )
 }
-
 
 #' Extract top-3 most frequent cluster assignments per point across draws
 #'
