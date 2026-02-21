@@ -59,6 +59,7 @@
 #'     \item{`"none"`}{No feature selection; use all predictors (or all PCA axes).
 #'       Relies on horseshoe prior for shrinkage.}
 #'   }
+#' @param vif Boolean, default TRUE, Whether to run usdm::vifcor to remove highly collinear features, default theta used. 
 #' @param min_ffs_var Integer. Minium number of ffs vars to start with. 
 #' @param chains Integer. Number of MCMC chains. Defaults to `4`.
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
@@ -150,6 +151,7 @@ bayesianSDM <- function(
     gp_scale_prior    = NULL,
     resample          = FALSE,
     feature_selection = c("ffs", "none"),
+    vif               = TRUE, 
     min_ffs_var       = 5, 
     chains            = 4,
     iter              = 2000,
@@ -163,6 +165,13 @@ bayesianSDM <- function(
 ) {
   prior_type <- match.arg(prior_type)
   dots       <- list(...)
+
+  # ----0. Optional VIFcor on covariables --------------------------------------
+  # remove highly collinear features before the feature selection pass. 
+  if(vif){
+    vif_results <- usdm::vifcor(predictors)
+    predictors <- terra::subset(predictors, vif_results@results$Variables)
+  }
 
   # ── 0. Optional PCA on raster surface ──────────────────────────────────────
   # Run PCA BEFORE background generation so eDist method works on orthogonal axes

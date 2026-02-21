@@ -209,20 +209,16 @@ Consider the output from CVStructure to be a bit more realistic.
 
 ### binarize the output
 
-```{r Explore SDM output - Map of Predictions}
-terra::plot(sdModel$RasterPredictions)
-```
-
-
 ```{r Threshold the SDM output}
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
   train = sdModel$TrainData,
   planar_proj = 5070,
-  thresh_metric = 'sensitivity', 
+  thresh_metric = 'equal_sens_spec', 
   quant_amt = 0.2
   )
+threshold_rasts$Threshold
 ```
 
 We can compare the results of applying this function side by side using the output from the function. 
@@ -231,20 +227,12 @@ We can compare the results of applying this function side by side using the outp
 terra::plot(threshold_rasts$FinalRasters)
 ```
 
-
-
-
-
-
-
-
 ```{r save the ouputs for vignettes, echo = F, eval = F}
 #terra::writeRaster(threshold_rasts$FinalRasters, filename = file.path('..', 'inst', 'extdata', 'SDM_thresholds.tif'))
 ```
 
 ### rescale predictor variables
  
-
 Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
 We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
 ```{r Rescale Predictor Variables}
@@ -265,20 +253,23 @@ It will be dealt with internally in a future function.
 The scales of the variables are not exact, because they are weighed by their \beta coefficients in the model
 
 ```{r Show beta Coefficients from model
-print(rr$BetaCoefficients)
+rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ]
 ```
 
 
 
-
 ```{r}
-PosteriorCluster(
+obby <- PosteriorCluster(
   model = sdModel$Model,
   predictors = subset(rr$RescaledPredictors, 'coef_uncertainty', negate = TRUE),
-  f_rasts = threshold_rasts$FinalRasters[['Threshold']],
+  f_rasts = sdModel$RasterPredictions,
+  lyr = 'occurrence_prob_mean',
   pred_mat = sdModel$PredictMatrix,
   training_data = sdModel$Train,
+  planar_proj = 5070
 )
+
+apply(data.frame(obby$labels_matrix), MARGIN = 2, FUN = table)
 ```
 
 

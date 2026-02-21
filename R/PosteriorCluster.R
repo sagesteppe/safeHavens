@@ -15,7 +15,7 @@
 #' targeting collection effort.
 #'
 #' @param model A `brmsfit` object from [bayesianSDM()].
-#' @param predictors A `SpatRaster` stack (`$Predictors` from [bayesianSDM()]).
+#' @param predictors A `SpatRaster` stack (`$Predictors` from [RescaleRasterBayes()]).
 #' @param f_rasts The rasters output from [bayesianSDM()], used to define the
 #'   spatial mask and domain. Specifically uses `$RasterPredictions`.
 #' @param pred_mat Data frame or matrix (`$PredictMatrix` from [bayesianSDM()]).
@@ -94,7 +94,7 @@ PosteriorCluster <- function(
     training_data,
     n_draws          = 100,
     n                = 10,
-    n_pts            = 500,
+    n_pts            = 1000,
     lyr              = "occurrence_prob_mean",
     planar_proj,
     coord_wt         = 2.5,
@@ -159,6 +159,7 @@ PosteriorCluster <- function(
   pt_env        <- pt_env[complete_rows, , drop = FALSE]
   n_pts_actual  <- nrow(pt_env)
 
+  # return(pt_env) ### this is good. 
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
   pt_env_coords <- add_coord_weights_to_points(
@@ -174,10 +175,10 @@ PosteriorCluster <- function(
   )
 
   for (d in seq_len(n_draws)) {
-    if (d %% 25 == 0) message(sprintf("  Draw %d / %d", d, n_draws))
 
-    betas_d <- beta_draws[d, ]  # named vector, length = env_vars
-
+    betas_d <- beta_draws[d, , drop = FALSE]  # Keep as 1-row matrix to preserve names
+    betas_d <- as.numeric(betas_d)            # Convert to vector
+    names(betas_d) <- colnames(beta_draws)    # Restore column names as names
     # Rescale point matrix by this draw's betas
     pt_scaled <- rescale_points_by_betas(pt_env, env_vars, var_mu, var_sd, betas_d)
 
@@ -186,6 +187,7 @@ PosteriorCluster <- function(
       pt_scaled,
       pt_env_coords[, c("coord_x_w", "coord_y_w"), drop = FALSE]
     )
+
     pt_full <- pt_full[stats::complete.cases(pt_full), , drop = FALSE]
 
     # Hierarchical clustering on Euclidean distances
@@ -221,6 +223,8 @@ PosteriorCluster <- function(
   message("Computing top-3 cluster assignments per point ...")
   top3_results <- compute_top3_clusters(draw_clusterings, n_pts_actual, n_draws)
 
+#  return(top3_results)
+
   # ── 10. Project clusters back to raster ──────────────────────────────────────
   message("Projecting consensus clusters to raster ...")
   
@@ -241,6 +245,8 @@ PosteriorCluster <- function(
     mask_rast        = mask_rast,
     planar_proj      = planar_proj
   )
+
+  return(rast_list)
 
   # ── 11. Geographic reordering ─────────────────────────────────────────────────
   reordered     <- reorder_clusters_geographically(rast_list$cluster_raster)
@@ -623,23 +629,40 @@ project_consensus_to_raster <- function(
   cluster_features <- setdiff(names(pt_train), 
                                c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability"))
   
+  # Helper to check if a factor has enough levels for train/test split
+  can_train_knn <- function(y, min_per_class = 2) {
+    counts <- table(y)
+    all(counts >= min_per_class)
+  }
+  
   # Rank1 (consensus) clusters
-  knn_rank1 <- trainKNN(
-    pt_train[, c(cluster_features, "rank1_cluster")],
-    split_prop = 0.8
-  )
+  if (!can_train_knn(pt_train$rank1_cluster)) {
+    stop("Rank1 clusters: insufficient observations per cluster for KNN training. ",
+         "Try increasing n_pts or decreasing n (number of clusters).")
+  }
+  knn_data_rank1 <- pt_train[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID <- pt_train$rank1_cluster
+  knn_rank1 <- trainKNN(knn_data_rank1, split_prop = 0.8)
   
-  # Rank2 clusters (now always populated via replication)
-  knn_rank2 <- trainKNN(
-    pt_train[, c(cluster_features, "rank2_cluster")],
-    split_prop = 0.8
-  )
+  # Rank2 clusters - may have degenerate cases if all points assigned to same cluster
+  if (can_train_knn(pt_train$rank2_cluster)) {
+    knn_data_rank2 <- pt_train[, cluster_features, drop = FALSE]
+    knn_data_rank2$ID <- pt_train$rank2_cluster
+    knn_rank2 <- trainKNN(knn_data_rank2, split_prop = 0.8)
+  } else {
+    warning("Rank2 clusters: insufficient variation for KNN training. Using rank1 model.")
+    knn_rank2 <- knn_rank1  # Fallback
+  }
   
-  # Rank3 clusters (now always populated via replication)
-  knn_rank3 <- trainKNN(
-    pt_train[, c(cluster_features, "rank3_cluster")],
-    split_prop = 0.8
-  )
+  # Rank3 clusters
+  if (can_train_knn(pt_train$rank3_cluster)) {
+    knn_data_rank3 <- pt_train[, cluster_features, drop = FALSE]
+    knn_data_rank3$ID <- pt_train$rank3_cluster
+    knn_rank3 <- trainKNN(knn_data_rank3, split_prop = 0.8)
+  } else {
+    warning("Rank3 clusters: insufficient variation for KNN training. Using rank1 model.")
+    knn_rank3 <- knn_rank1  # Fallback
+  }
   
   # Stability regression
   knn_stability <- train_regression_knn(

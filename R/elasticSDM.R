@@ -249,7 +249,9 @@ generate_background_points <- function(predictors, occurrences, fact, resample) 
     # use all points for initial density, but force the points into the 
     # species known range where the deficit tends to occurr. 
     coords <- dplyr::bind_rows(
-      dplyr::select(occurrences), dplyr::select(bg_1)
+      ## not a typo, up the occurrence pt wts 2:1 against BG. 
+      dplyr::select(occurrences), dplyr::select(occurrences), 
+      dplyr::select(bg_1)
     ) |>
       terra::vect()
 
