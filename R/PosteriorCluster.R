@@ -1,7 +1,7 @@
 #' Cluster environmental space using posterior beta draws
 #'
 #' @description
-#' Implements Bayesian clustering: draws K sets of
+#' Implements option D of the Bayesian clustering workflow: draws K sets of
 #' beta coefficients from the posterior, produces a weighted environmental
 #' raster for each draw, samples points from each, and records how often pairs
 #' of sample points are assigned to the same cluster. The resulting co-occurrence
@@ -15,7 +15,7 @@
 #' targeting collection effort.
 #'
 #' @param model A `brmsfit` object from [bayesianSDM()].
-#' @param predictors A `SpatRaster` stack (`$Predictors` from [RescaleRasterBayes()]).
+#' @param predictors A `SpatRaster` stack (`$Predictors` from [bayesianSDM()]).
 #' @param f_rasts The rasters output from [bayesianSDM()], used to define the
 #'   spatial mask and domain. Specifically uses `$RasterPredictions`.
 #' @param pred_mat Data frame or matrix (`$PredictMatrix` from [bayesianSDM()]).
@@ -29,7 +29,7 @@
 #'   `500`. The same points are used across all draws (fixed spatial frame)
 #'   so co-occurrence is directly comparable.
 #' @param lyr Character. Layer name in `f_rasts` to use as the spatial domain
-#'   mask. Defaults to `"occurrence_prob_mean"` (the [bayesianSDM()] output
+#'   mask. Defaults to `"Threshold"` (the [PostProcessSDM()] output
 #'   name).
 #' @param planar_proj Numeric EPSG or proj4 string for planar projection.
 #' @param coord_wt Numeric. Coordinate weight, as in [EnvironmentalBasedSample()].
@@ -94,7 +94,7 @@ PosteriorCluster <- function(
     training_data,
     n_draws          = 100,
     n                = 10,
-    n_pts            = 1000,
+    n_pts            = 500,
     lyr              = "occurrence_prob_mean",
     planar_proj,
     coord_wt         = 2.5,
@@ -109,11 +109,13 @@ PosteriorCluster <- function(
   # Drop GP coordinate columns; keep only named fixed effects
   fe_names  <- rownames(brms::fixef(model))
   fe_names  <- sub("^b_", "", fe_names)
-  fe_names  <- fe_names[!grepl("^(Intercept|sgp|sdgp|lscale)", fe_names)]
+  # Filter out: Intercept, old GP terms (sgp/sdgp/lscale), and GAM smooth basis terms (s*)
+  fe_names  <- fe_names[!grepl("^(Intercept|sgp|sdgp|lscale|s\\(|s[gp])", fe_names)]
   env_vars  <- fe_names[fe_names %in% names(predictors)]
 
   if (length(env_vars) == 0) {
-    stop("No environmental fixed effects matched raster layer names.")
+    stop("No environmental fixed effects matched raster layer names. ",
+         "Check that predictor names in the model match raster layer names.")
   }
 
   # ── 2. Draw posterior beta samples ────────────────────────────────────────────
@@ -142,6 +144,8 @@ PosteriorCluster <- function(
 
   # ── 4. Fix sample points across all draws ────────────────────────────────────
   # Points are sampled once from the SDM prediction surface and held constant.
+  # This is essential: co-occurrence is only meaningful when comparing the
+  # same spatial locations across draws.
   message("Sampling fixed point set from prediction surface ...")
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
@@ -159,7 +163,11 @@ PosteriorCluster <- function(
   pt_env        <- pt_env[complete_rows, , drop = FALSE]
   n_pts_actual  <- nrow(pt_env)
 
-  # return(pt_env) ### this is good. 
+  message(sprintf(
+    "  %d of %d requested points have complete predictor data.",
+    n_pts_actual, n_pts
+  ))
+
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
   pt_env_coords <- add_coord_weights_to_points(
@@ -175,10 +183,12 @@ PosteriorCluster <- function(
   )
 
   for (d in seq_len(n_draws)) {
+    if (d %% 25 == 0) message(sprintf("  Draw %d / %d", d, n_draws))
 
     betas_d <- beta_draws[d, , drop = FALSE]  # Keep as 1-row matrix to preserve names
     betas_d <- as.numeric(betas_d)            # Convert to vector
     names(betas_d) <- colnames(beta_draws)    # Restore column names as names
+
     # Rescale point matrix by this draw's betas
     pt_scaled <- rescale_points_by_betas(pt_env, env_vars, var_mu, var_sd, betas_d)
 
@@ -187,7 +197,6 @@ PosteriorCluster <- function(
       pt_scaled,
       pt_env_coords[, c("coord_x_w", "coord_y_w"), drop = FALSE]
     )
-
     pt_full <- pt_full[stats::complete.cases(pt_full), , drop = FALSE]
 
     # Hierarchical clustering on Euclidean distances
@@ -223,8 +232,6 @@ PosteriorCluster <- function(
   message("Computing top-3 cluster assignments per point ...")
   top3_results <- compute_top3_clusters(draw_clusterings, n_pts_actual, n_draws)
 
-#  return(top3_results)
-
   # ── 10. Project clusters back to raster ──────────────────────────────────────
   message("Projecting consensus clusters to raster ...")
   
@@ -245,8 +252,6 @@ PosteriorCluster <- function(
     mask_rast        = mask_rast,
     planar_proj      = planar_proj
   )
-
-  return(rast_list)
 
   # ── 11. Geographic reordering ─────────────────────────────────────────────────
   reordered     <- reorder_clusters_geographically(rast_list$cluster_raster)
@@ -279,15 +284,23 @@ PosteriorCluster <- function(
 
   list(
     Geometry           = cluster_vects,
-    CoOccurrenceMatrix = co_mat,
-    StabilityRaster    = stability_final,
+
+    # Summary_rasters
+    StabilityRaster    = stability_final,## group these into raster
     ConsensusRaster    = final_raster,
-    Rank2Raster        = rank2_final,
+
+    # Addtl_rank_rasters
+    Rank2Raster        = rank2_final, ## combine these two into raster
     Rank3Raster        = rank3_final,
-    Top3Lookup         = top3_lookup,
+
+    ## Cluster_data
+    Top3Lookup         = top3_lookup, ## combine these two, two sublists
     DrawClusterings    = draw_clusterings,
+
     SamplePoints       = sample_pts_sf,
-    KNN_Cluster        = rast_list$knn_cluster,
+
+    # KNN_pixel_assign_models
+    KNN_Cluster        = rast_list$knn_cluster, ## combine these into a sublist. 
     KNN_Rank2          = rast_list$knn_rank2,
     KNN_Rank3          = rast_list$knn_rank3,
     KNN_Stability      = rast_list$knn_stability
@@ -321,6 +334,7 @@ train_regression_knn <- function(X, y) {
     trControl = caret::trainControl(method = "cv", number = 5)
   )
 }
+
 
 #' Extract top-3 most frequent cluster assignments per point across draws
 #'
@@ -373,6 +387,8 @@ compute_top3_clusters <- function(draw_clusterings, n_pts, n_draws) {
     pct_matrix    = pct_matrix
   )
 }
+
+
 
 #'
 #' @param model brmsfit
@@ -594,6 +610,10 @@ project_consensus_to_raster <- function(
     mask_rast,
     planar_proj
 ) {
+
+
+if(is.numeric(planar_proj)){planar_proj <- paste0('epsg:', planar_proj)}
+
   # ── 1. Extract raw predictor values at the 500 fixed points ────────────────
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
   
@@ -677,8 +697,13 @@ project_consensus_to_raster <- function(
   pred_rescale <- terra::rast(scaled_layers)
   names(pred_rescale) <- env_vars
   
-  # Add weighted coordinates to raster
+  # Add weighted coordinates to raster (creates 'x' and 'y' layers)
   pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
+  
+  # Rename to match what KNN expects (coord_x_w, coord_y_w from training data)
+  names(pred_rescale)[names(pred_rescale) == "x"] <- "coord_x_w"
+  names(pred_rescale)[names(pred_rescale) == "y"] <- "coord_y_w"
+  
   pred_rescale <- terra::mask(pred_rescale, mask_rast)
   
   # ── 7. Predict to full raster ──────────────────────────────────────────────

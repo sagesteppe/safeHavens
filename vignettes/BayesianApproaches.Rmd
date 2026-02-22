@@ -156,9 +156,9 @@ sdModel <- bayesianSDM(
   quantile_v = 0.025,
   planar_proj = 5070, 
   resample = TRUE,
-  feature_selection = 'none',
+  feature_selection = 'ffs',
   min_ffs_var = 5, 
-  fact = 2, 
+  fact = 3, 
   silent = 2 # print fewer messages during model fit.
   )
 ```
@@ -166,12 +166,6 @@ sdModel <- bayesianSDM(
 Under the hood this function uses `brms`, which dispatches to Stan, to fit a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  
 
 ### explore the output
-
-```{r}
-ggplot() + 
-  geom_sf(data = sdModel$TestData, aes(color = occurrence)) + 
-  geom_sf(data = sdModel$TrainData, aes(color = occurrence))
-```
 
 Plot the predictions 
 ```{r Explore SDM output - Different alpha}
@@ -185,15 +179,21 @@ points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black')
 points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red')
 ```
 
+The brms:: model summary can be accessed from the sdModel list. 
 ```{r}
 sdModel$Model
 ```
+
+THINGS TO LOOK OUT FOR: 
+
+Diagnostics can be accessed from a list, and the stan website has some information on them... 
 
 ```{r check diagnostics}
 sdModel$Diagnostics
 ```
 
-We used Accuracy rather than Kappa as the main criterion for model selection. 
+
+The confusion matrix can be accessed from the test and train splits. 
 
 ```{r Explore SDM output - Confusion Matrix}
 sdModel$ConfusionMatrix
@@ -208,6 +208,8 @@ In order to minimize the effects of spatial-autocorrelation on our model we use 
 Consider the output from CVStructure to be a bit more realistic. 
 
 ### binarize the output
+
+The bayesian sdm can be post-processed using the same function as the `elasticSDM`.
 
 ```{r Threshold the SDM output}
 threshold_rasts <- PostProcessSDM(
@@ -233,8 +235,8 @@ terra::plot(threshold_rasts$FinalRasters)
 
 ### rescale predictor variables
  
-Below we create a copy of the raster predictions where we have standardized each variable, so it is equivalent to the input to glmnet, and then mulitplied by its beta-coefficient.
-We will also write out these beta coefficients with the `writeSDMresults` function right afterwards. 
+The `bayesianSDM` requires a different function from `elasticSDM` for creating weighted surfaces, with the suffix `RescaleRasters_bayes`. 
+
 ```{r Rescale Predictor Variables}
 rr <- RescaleRasters_bayes(
   model = sdModel$Model,
@@ -247,32 +249,38 @@ rr <- RescaleRasters_bayes(
 terra::plot(rr$RescaledPredictors)
 ```
 
-We can see that the variables are 'close' to being on the same scale, this will work in a clustering algorithm. 
-If any of the layers are all the same color (maybe yellow?) that means they have no variance, that's a term that was shrunk from the model. 
-It will be dealt with internally in a future function. 
-The scales of the variables are not exact, because they are weighed by their \beta coefficients in the model
+We can also show the variables that contributed the most to the sdm models predictions. 
 
-```{r Show beta Coefficients from model
+```{r Show beta Coefficients from model}
 rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ]
 ```
 
 
 
-```{r}
+```{r posterior clustering}
 obby <- PosteriorCluster(
   model = sdModel$Model,
   predictors = subset(rr$RescaledPredictors, 'coef_uncertainty', negate = TRUE),
-  f_rasts = sdModel$RasterPredictions,
-  lyr = 'occurrence_prob_mean',
+  f_rasts = threshold_rasts$FinalRasters,
+  lyr = 'Supplemented',
   pred_mat = sdModel$PredictMatrix,
   training_data = sdModel$Train,
   planar_proj = 5070
 )
+ggplot(obby$Geometry) + W
+  geom_sf(aes(fill = factor(ID)))
 
-apply(data.frame(obby$labels_matrix), MARGIN = 2, FUN = table)
+plot(obby$StabilityRaster)
+points(obby$SamplePoints)
 ```
 
 
+
+```{r view top 3 ranks side by side. }
+plot(obby$ConsensusRaster)
+plot(obby$Rank2Raster)
+plot(obby$Rank3Raster)
+```
 
 ### save results 
 

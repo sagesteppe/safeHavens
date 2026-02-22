@@ -195,7 +195,7 @@ bayesianSDM <- function(
     x  <- dplyr::bind_rows(x, pa)
   }
   x <- dplyr::mutate(x, occurrence = as.integer(as.character(occurrence)))
-
+  
   # ── 2. Spatial thinning ─────────────────────────────────────────────────────
   x <- thin_occurrence_points(x, quantile_v)
 
@@ -214,7 +214,7 @@ bayesianSDM <- function(
   # ── 5. Spatial CV folds (CAST knndm) ────────────────────────────────────────
   cv_folds <- create_spatial_cv_folds(train, predictors, k = k)
 
-    # ── 6. Optional feature selection ───────────────────────────────────────────
+  # ── 6. Optional feature selection ───────────────────────────────────────────
   feature_selection <- match.arg(feature_selection)
   if (feature_selection != "none") {
     message(sprintf("Running %s feature selection ...", 
@@ -299,17 +299,22 @@ bayesianSDM <- function(
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
   # ── 13. Spatial raster predictions ───────────────────────────────────────────
-  message("Generating raster predictions (posterior mean & SD) ...")
   rast_list <- create_bayes_spatial_predictions(fit, predictors, 
     planar_projection = paste0('EPSG:', planar_projection), pred_names)
 
   # -- 14. Area of Applicability surface
  # message("Computing Area of Applicability (AOA) ...")
- # aoa_result <- CAST::aoa(
- #   newdata = predictors,
- #   model      = fit,
- #   train      = sf::st_drop_geometry(train[, pred_names])
- # )
+  aoa_result <- compute_aoa_bayes(
+    model = fit,
+    train = train,
+    predictors  = predictors, 
+    cv_folds = cv_folds,
+    use_posterior_mean = TRUE,
+    LPD = TRUE
+  )
+
+  aoa_surf <- c(aoa_result$AOA, aoa_result$DI, aoa_result$LPD)
+  names(aoa_surf) <- c('AOA', 'DI', 'LPD')
 
   list(
     RasterPredictions    = rast_list$mean,
@@ -323,13 +328,12 @@ bayesianSDM <- function(
     TrainData            = train,
     TestData             = test,
     PredictMatrix        = rast_list$pred_matrix,
-  #  AOA                  = aoa_result$AOA,       
-  #  DI                   = aoa_result$DI,    
- #   AOA_Diagnostics      = list(
- #     max_Rhat           = ...,
- #     AOA_coverage       = sum(terra::values(aoa_result$AOA), na.rm = TRUE) / 
- #                          sum(!is.na(terra::values(aoa_result$AOA)))
- #   ), 
+    AOA                  = aoa_surf,       
+    AOA_Diagnostics      = list(
+      threshold          = aoa_result$parameters$threshold,
+      AOA_coverage       = sum(terra::values(aoa_result$AOA), na.rm = TRUE) / 
+                           sum(!is.na(terra::values(aoa_result$AOA)))
+    ), 
     PCAModel             = pca_model,
     Diagnostics          = diagnostics
   )
@@ -634,5 +638,119 @@ create_bayes_spatial_predictions <- function(
     mean         = rast_mean,
     sd           = rast_sd,
     pred_matrix  = pred_vals
+  )
+}
+
+
+
+#' Compute Area of Applicability for Bayesian SDM
+#'
+#' @description
+#' Computes the Area of Applicability (AOA) for a Bayesian SDM fitted with
+#' [bayesianSDM()]. This is a wrapper around [CAST::aoa()] that extracts the
+#' necessary components from the brmsfit object and formats them for CAST.
+#'
+#' @param sdm_result List output from [bayesianSDM()]. Must contain `Model`,
+#'   `TrainData`, `Predictors`, and `CVStructure`.
+#' @param newdata SpatRaster of predictors for which to compute AOA. Typically
+#'   this is `sdm_result$Predictors`.
+#' @param use_posterior_mean Logical. If `TRUE` (default), weights variables
+#'   by posterior mean coefficient values. If `FALSE`, all variables weighted
+#'   equally.
+#' @param LPD Logical. Compute Local Point Density? Defaults to `TRUE`.
+#' @param maxLPD Numeric or integer. Number of nearest neighbors for LPD.
+#'   See [CAST::aoa()]. Defaults to `1` (use all training data).
+#' @param ... Additional arguments passed to [CAST::aoa()].
+#'
+#' @details
+#' The function extracts environmental predictor names from the brmsfit object,
+#' computes variable weights from posterior mean coefficients (if
+#' `use_posterior_mean = TRUE`), and formats the spatial CV folds from CAST
+#' knndm for the AOA calculation.
+#'
+#' @returns An object of class `aoa` from CAST. See [CAST::aoa()] for details.
+#'
+#' @export
+compute_aoa_bayes <- function(
+    model,
+    train,
+    predictors, 
+    cv_folds,
+    newdata = NULL,
+    use_posterior_mean = TRUE,
+    LPD = TRUE,
+    maxLPD = 1,
+    ...
+) {
+
+  # ── 1. Extract environmental variable names ────────────────────────────────
+  fe_names <- rownames(brms::fixef(model))
+  fe_names <- sub("^b_", "", fe_names)
+  # Filter out: Intercept and GAM smooth basis terms
+  fe_names <- fe_names[!grepl("^(Intercept|s\\(|s[gp])", fe_names)]
+  env_vars <- fe_names[fe_names %in% names(predictors)]
+  
+  if (length(env_vars) == 0) {
+    stop("No environmental predictors matched between model and raster stack.")
+  }
+  
+  message(sprintf("Using %d environmental variables: %s",
+                  length(env_vars), paste(env_vars, collapse = ", ")))
+  
+  # ── 2. Extract variable weights from posterior mean coefficients ───────────
+  if (use_posterior_mean) {
+    # Get posterior means (analogous to variable importance)
+    fixef_summary <- brms::fixef(model, summary = TRUE)
+    fixef_df <- as.data.frame(fixef_summary)
+    fixef_df$Variable <- rownames(fixef_df)
+    
+    # Filter to env vars only
+    fixef_df <- fixef_df[fixef_df$Variable %in% env_vars, ]
+    
+    # Use absolute value of Estimate as weight (like variable importance)
+    weights <- abs(fixef_df$Estimate)
+    names(weights) <- fixef_df$Variable
+    
+    # Normalize so they sum to something reasonable (optional, but helps interpretation)
+    weights <- weights / sum(weights) * length(weights)
+    
+    # Format as data frame with one row (CAST expects this)
+    weight_df <- as.data.frame(t(weights))
+    
+  } else {
+    # Equal weights
+    weight_df <- as.data.frame(t(rep(1, length(env_vars))))
+    names(weight_df) <- env_vars
+    message("Variables weighted equally.")
+  }
+  
+  # ── 3. Format CV folds for CAST ────────────────────────────────────────────
+  # CAST expects:
+  # CVtest: list where each element contains row indices of held-out data
+  # CVtrain: list where each element contains row indices of training data
+  
+  CVtest <- cv_folds$indx_test
+  CVtrain <- cv_folds$indx_train
+  
+  # ── 4. Prepare training data ────────────────────────────────────────────────
+  # CAST needs only the predictor columns, not occurrence
+  train_predictors <- train[, env_vars, drop = FALSE] |> 
+    sf::st_drop_geometry()
+  
+  # ── 5. Call CAST::aoa ───────────────────────────────────────────────────────  
+  aoa_result <- CAST::aoa(
+    newdata   = predictors,
+    train     = train_predictors,
+    variables = env_vars,
+    weight    = weight_df,
+    CVtest    = CVtest,
+    CVtrain   = CVtrain,
+    method    = "L2", 
+    useWeight = use_posterior_mean,
+    useCV     = TRUE,
+    LPD       = LPD,
+    maxLPD    = maxLPD,
+    verbose = FALSE,
+    ...
   )
 }

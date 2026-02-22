@@ -360,7 +360,7 @@ extract_predictors_to_points <- function(occurrences, predictors) {
 #' @keywords internal
 #' @noRd
 create_spatial_cv_folds <- function(train_data, predictors, k = 5) {
-  CAST::knndm(train_data, predictors, k = k)
+  suppressMessages(CAST::knndm(train_data, predictors, k = k))
 }
 
 #' Perform recursive feature elimination to select important predictors

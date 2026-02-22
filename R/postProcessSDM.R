@@ -77,7 +77,9 @@ PostProcessSDM <- function(
     dplyr::filter(occurrence == 1)
   pres <- sf::st_transform(pres, planar_projection)
 
-  indices_knndm <- CAST::knndm(tpoints = pres, modeldomain = rast_cont, k = 10)
+  indices_knndm <- suppressMessages(
+    CAST::knndm(tpoints = pres, modeldomain = rast_cont, k = 10)
+  )
 
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
   dists <- unlist(list(lapply(nn_dist, stats::quantile, quant_amt)))
