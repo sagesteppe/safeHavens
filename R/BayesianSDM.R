@@ -154,8 +154,8 @@ bayesianSDM <- function(
     vif               = TRUE, 
     min_ffs_var       = 5, 
     chains            = 4,
-    iter              = 2000,
-    warmup            = 1000,
+    iter              = 4000,
+    warmup            = 2000,
     cores             = 4,
     k                 = 5,
     seed              = 42,
@@ -300,7 +300,7 @@ bayesianSDM <- function(
 
   # ── 13. Spatial raster predictions ───────────────────────────────────────────
   rast_list <- create_bayes_spatial_predictions(fit, predictors, 
-    planar_projection = paste0('EPSG:', planar_projection), pred_names)
+    planar_projection = paste0('EPSG:', planar_projection), pred_names, iter)
 
   # -- 14. Area of Applicability surface
  # message("Computing Area of Applicability (AOA) ...")
@@ -565,6 +565,7 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
 #' @param predictors SpatRaster (possibly PCA)
 #' @param pred_names Character vector of predictor column names
 #' @param planar_projection EPSG or proj4 string
+#' @param iter Number of iterations from parent function
 #' @return List: `mean` SpatRaster, `sd` SpatRaster, `pred_matrix` data.frame
 #' @keywords internal
 #' @noRd
@@ -572,7 +573,8 @@ create_bayes_spatial_predictions <- function(
     fit,
     predictors,
     pred_names,
-    planar_projection
+    planar_projection, 
+    iter
 ) {
   
   # Build coordinate rasters in planar projection (km scale)
@@ -607,7 +609,7 @@ create_bayes_spatial_predictions <- function(
       model,
       newdata = data,
       allow_new_levels = TRUE,
-      ndraws = 2000
+      ndraws = round(iter / 2, 0)
     )
     # Return both mean and sd as a 2-column matrix
     cbind(

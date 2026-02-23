@@ -110,17 +110,8 @@ rm(cols, western_states)
 ```{r download data, echo = FALSE}
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
-bio_future <- cmip6_world(
-  model = "CNRM-CM6-1", ## modelling method
-  ssp   = "245", ## "Middle of the Road" scenario
-  time  = "2041-2060", # time period
-  var   = "bioc", # just use the bioclim variables
-  res   = 2.5
-)
 
-# Crop to domain - use a large BB to accomodate range shift
-# under future time points. 
-# but going too large will dilute the absence records
+# Crop to domain 
 bbox <- ext(bb)
 
 bio_current <- crop(bio_current, bbox)
@@ -229,10 +220,6 @@ We can compare the results of applying this function side by side using the outp
 terra::plot(threshold_rasts$FinalRasters)
 ```
 
-```{r save the ouputs for vignettes, echo = F, eval = F}
-#terra::writeRaster(threshold_rasts$FinalRasters, filename = file.path('..', 'inst', 'extdata', 'SDM_thresholds.tif'))
-```
-
 ### rescale predictor variables
  
 The `bayesianSDM` requires a different function from `elasticSDM` for creating weighted surfaces, with the suffix `RescaleRasters_bayes`. 
@@ -254,7 +241,6 @@ We can also show the variables that contributed the most to the sdm models predi
 ```{r Show beta Coefficients from model}
 rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ]
 ```
-
 
 
 ```{r posterior clustering}
@@ -303,8 +289,10 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 
 ### wrapping up 
 
-And there you have it, all the steps to make a species distribution model - or rather to get the coefficients from a species distribution model!
-We will play around with it as an example data set to compare our buffered distance results to at the end - head over to the next vignette!
+While the bayesian hierarchical GLM does not produce excellent predictions of suitable habitat, it has several advantages. 
+  1) It can incorporate spatial smoothers (splines) from mcgv to reduce the effects of spatial-autocorrelation on model parameter estimates. 
+  2) It provides uncertainty around the contribution of each selected predictor (i.e. many predictors can be weighed differently to get similar results)
+  3) 
 
 ```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
 rm(rr, predictors, files, sdModel, bp)

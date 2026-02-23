@@ -14,7 +14,7 @@
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
 #' @param PCNM Boolean. Whether to include PCNM while fitting the model. 
-#' @param fact Numeric, default 2.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param fact Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
 #' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions. 
 #' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.  
 
@@ -48,7 +48,7 @@ elasticSDM <- function(
   domain = NULL,
   quantile_v = 0.025,
   PCNM = TRUE,
-  fact = 2.0, 
+  fact = 1.0, 
   resample = FALSE
   ){
   
@@ -61,7 +61,7 @@ elasticSDM <- function(
   )
 
   # Generate background points
-  pa <- generate_background_points(predictors, x, fact, resample)
+  pa <- generate_background_points(predictors, x, fact = 1, resample = FALSE)
 
   # Combine presence and pseudo-absence
   x$occurrence <- 1
@@ -187,13 +187,13 @@ calculate_study_extent <- function(
 #'
 #' @param predictors Raster stack of environmental predictors
 #' @param occurrences SF object with occurrence points
-#' @param fact Numeric, default 2.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
+#' @param fact Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points. 
 #' @param resample Boolean, Defaults to FALSE. Used to place 20% of the requested points in areas undersampled by sdm::background functions. 
 #' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.  
 #' @return SF object with pseudo-absence points (occurrence = 0)
 #' @keywords internal
 #' @noRd
-generate_background_points <- function(predictors, occurrences, fact, resample) {
+generate_background_points <- function(predictors, occurrences, fact = 1.0, resample = FALSE) {
 
   vif_results <- usdm::vifcor(predictors, th=0.975)
   pred_sub <- terra::subset(predictors, vif_results@results$Variables)
