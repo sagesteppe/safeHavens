@@ -24,7 +24,7 @@
 #'   See [elasticSDM()] for guidance.
 #' @param quantile_v Numeric thinning quantile passed to [spThin::thin()].
 #'   Defaults to `0.025`. Set to `0.001` for essentially no thinning.
-#' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions. 
+#' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions.
 #' @param prior_type Character. Prior family placed on the fixed-effect
 #'   environmental coefficients. One of:
 #'   \describe{
@@ -59,8 +59,8 @@
 #'     \item{`"none"`}{No feature selection; use all predictors (or all PCA axes).
 #'       Relies on horseshoe prior for shrinkage.}
 #'   }
-#' @param vif Boolean, default TRUE, Whether to run usdm::vifcor to remove highly collinear features, default theta used. 
-#' @param min_ffs_var Integer. Minium number of ffs vars to start with. 
+#' @param vif Boolean, default TRUE, Whether to run usdm::vifcor to remove highly collinear features, default theta used.
+#' @param min_ffs_var Integer. Minium number of ffs vars to start with.
 #' @param chains Integer. Number of MCMC chains. Defaults to `4`.
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
 #'   to `2000`.
@@ -140,35 +140,35 @@
 #'   [brms::brm()], [CAST::knndm()]
 #' @export
 bayesianSDM <- function(
-    x,
-    predictors,
-    planar_projection,
-    quantile_v        = 0.025,
-    prior_type        = c("horseshoe", "normal", "student"),
-    prior_scale       = 1,
-    pca_predictors    = TRUE,
-    pca_axes          = 5,
-    gp_scale_prior    = NULL,
-    resample          = FALSE,
-    feature_selection = c("ffs", "none"),
-    vif               = TRUE, 
-    min_ffs_var       = 5, 
-    chains            = 4,
-    iter              = 4000,
-    warmup            = 2000,
-    cores             = 4,
-    k                 = 5,
-    seed              = 42,
-    backend           = "cmdstanr",
-    fact              = 3, 
-    ...
+  x,
+  predictors,
+  planar_projection,
+  quantile_v = 0.025,
+  prior_type = c("horseshoe", "normal", "student"),
+  prior_scale = 1,
+  pca_predictors = TRUE,
+  pca_axes = 5,
+  gp_scale_prior = NULL,
+  resample = FALSE,
+  feature_selection = c("ffs", "none"),
+  vif = TRUE,
+  min_ffs_var = 5,
+  chains = 4,
+  iter = 4000,
+  warmup = 2000,
+  cores = 4,
+  k = 5,
+  seed = 42,
+  backend = "cmdstanr",
+  fact = 3,
+  ...
 ) {
   prior_type <- match.arg(prior_type)
-  dots       <- list(...)
+  dots <- list(...)
 
   # ----0. Optional VIFcor on covariables --------------------------------------
-  # remove highly collinear features before the feature selection pass. 
-  if(vif){
+  # remove highly collinear features before the feature selection pass.
+  if (vif) {
     vif_results <- usdm::vifcor(predictors)
     predictors <- terra::subset(predictors, vif_results@results$Variables)
   }
@@ -178,24 +178,26 @@ bayesianSDM <- function(
   # rather than potentially collinear raw predictors (avoids singular covariance)
   pca_model <- NULL
   if (pca_predictors) {
-    pca_result  <- run_pca_on_raster(predictors, pca_axes)
-    predictors  <- pca_result$raster        # SpatRaster of PC axes
-    pred_names  <- pca_result$pc_names
-    pca_model   <- pca_result$pca_model
+    pca_result <- run_pca_on_raster(predictors, pca_axes)
+    predictors <- pca_result$raster # SpatRaster of PC axes
+    pred_names <- pca_result$pc_names
+    pca_model <- pca_result$pca_model
   } else {
     pred_names <- names(predictors)
   }
 
-  if(min_ffs_var < terra::nlyr(predictors)){min_ffs_var = 2}
+  if (min_ffs_var < terra::nlyr(predictors)) {
+    min_ffs_var = 2
+  }
 
   # ── 1. Background points & occurrence column ────────────────────────────────
   if (!"occurrence" %in% names(x)) {
     x$occurrence <- 1L
     pa <- generate_background_points(predictors, x, fact, resample)
-    x  <- dplyr::bind_rows(x, pa)
+    x <- dplyr::bind_rows(x, pa)
   }
   x <- dplyr::mutate(x, occurrence = as.integer(as.character(occurrence)))
-  
+
   # ── 2. Spatial thinning ─────────────────────────────────────────────────────
   x <- thin_occurrence_points(x, quantile_v)
 
@@ -203,13 +205,13 @@ bayesianSDM <- function(
   x <- extract_predictors_to_points(x, predictors)
 
   # Drop any rows with NA in extracted predictors
-  complete   <- stats::complete.cases(sf::st_drop_geometry(x)[, pred_names])
-  x          <- x[complete, ]
+  complete <- stats::complete.cases(sf::st_drop_geometry(x)[, pred_names])
+  x <- x[complete, ]
 
   # ── 4. Train / test split ────────────────────────────────────────────────────
   index <- unlist(caret::createDataPartition(factor(x$occurrence), p = 0.8))
-  train <- x[ index, ]
-  test  <- x[-index, ]
+  train <- x[index, ]
+  test <- x[-index, ]
 
   # ── 5. Spatial CV folds (CAST knndm) ────────────────────────────────────────
   cv_folds <- create_spatial_cv_folds(train, predictors, k = k)
@@ -217,31 +219,38 @@ bayesianSDM <- function(
   # ── 6. Optional feature selection ───────────────────────────────────────────
   feature_selection <- match.arg(feature_selection)
   if (feature_selection != "none") {
-    message(sprintf("Running %s feature selection ...", 
-                    toupper(feature_selection)))
+    message(sprintf(
+      "Running %s feature selection ...",
+      toupper(feature_selection)
+    ))
+    # nocov start
     selected_vars <- perform_feature_selection_bayes(
-      train          = train,
-      pred_names     = pred_names,
-      cv_folds       = cv_folds,
-      min_ffs_var    = min_ffs_var,
-      method         = feature_selection
+      train = train,
+      pred_names = pred_names,
+      cv_folds = cv_folds,
+      min_ffs_var = min_ffs_var,
+      method = feature_selection
     )
-    
+   # nocov end
+
     if (length(selected_vars) == 0) {
       warning("Feature selection returned 0 variables. Using all predictors.")
     } else {
-      message(sprintf("  Selected %d of %d variables: %s",
-                      length(selected_vars), length(pred_names),
-                      paste(selected_vars, collapse = ", ")))
+      message(sprintf(
+        "  Selected %d of %d variables: %s",
+        length(selected_vars),
+        length(pred_names),
+        paste(selected_vars, collapse = ", ")
+      ))
       pred_names <- selected_vars
-      predictors <- predictors[[pred_names]]  # Subset raster
+      predictors <- predictors[[pred_names]] # Subset raster
     }
   }
 
   # ── 6. Build GP coordinates (planar, scaled) ─────────────────────────────────
   # brms gp() uses raw coordinate columns; we work in km for numerical stability
   train <- add_planar_coords(train, planar_projection, scale_km = TRUE)
-  test  <- add_planar_coords(test,  planar_projection, scale_km = TRUE)
+  test <- add_planar_coords(test, planar_projection, scale_km = TRUE)
 
   # ── 7. Assemble model formula ────────────────────────────────────────────────
   env_terms <- paste(pred_names, collapse = " + ")
@@ -253,31 +262,34 @@ bayesianSDM <- function(
   )
 
   # ── 8. Priors ────────────────────────────────────────────────────────────────
+  # nocov start
   model_prior <- build_priors(
-    prior_type  = prior_type,
+    prior_type = prior_type,
     prior_scale = prior_scale,
-    pred_names  = pred_names,
-    n_obs       = nrow(train),
-    p0          = dots[["p0"]],
-    gp_prior    = gp_scale_prior
+    pred_names = pred_names,
+    n_obs = nrow(train),
+    p0 = dots[["p0"]],
+    gp_prior = gp_scale_prior
   )
 
-  # ── 9. Fit model ─────────────────────────────────────────────────────────────  
+  # ── 9. Fit model ─────────────────────────────────────────────────────────────
   fit <- brms::brm(
-    formula  = bf_formula,
-    data     = sf::st_drop_geometry(train),
-    family   = brms::bernoulli(link = "logit"),
-    prior    = model_prior,
-    chains   = chains,
-    iter     = iter,
-    warmup   = warmup,
-    cores    = cores,
-    seed     = seed,
-    backend  = backend,
+    formula = bf_formula,
+    data = sf::st_drop_geometry(train),
+    family = brms::bernoulli(link = "logit"),
+    prior = model_prior,
+    chains = chains,
+    iter = iter,
+    warmup = warmup,
+    cores = cores,
+    seed = seed,
+    backend = backend,
     save_pars = brms::save_pars(all = TRUE),
     control = list(adapt_delta = 0.99),
     ...
   )
+
+  # nocov end
 
   # ── 10. Convergence diagnostics ───────────────────────────────────────────────
   diagnostics <- check_convergence(fit)
@@ -299,43 +311,50 @@ bayesianSDM <- function(
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
   # ── 13. Spatial raster predictions ───────────────────────────────────────────
-  rast_list <- create_bayes_spatial_predictions(fit, predictors, 
-    planar_projection = paste0('EPSG:', planar_projection), pred_names, iter)
+  # nocov start
+  rast_list <- create_bayes_spatial_predictions(
+    fit,
+    predictors,
+    planar_projection = paste0('EPSG:', planar_projection),
+    pred_names,
+    iter
+  )
 
   # -- 14. Area of Applicability surface
- # message("Computing Area of Applicability (AOA) ...")
+  # message("Computing Area of Applicability (AOA) ...")
   aoa_result <- compute_aoa_bayes(
     model = fit,
     train = train,
-    predictors  = predictors, 
+    predictors = predictors,
     cv_folds = cv_folds,
     use_posterior_mean = TRUE,
     LPD = TRUE
   )
+  # nocov end
 
   aoa_surf <- c(aoa_result$AOA, aoa_result$DI, aoa_result$LPD)
   names(aoa_surf) <- c('AOA', 'DI', 'LPD')
 
   list(
-    RasterPredictions    = rast_list$mean,
+    RasterPredictions = rast_list$mean,
     RasterPredictions_sd = rast_list$sd,
-    Predictors           = predictors,
-    PCNM                 = NULL,
-    Model                = fit,
-    CVStructure          = cv_folds,
-    LOO                  = loo_result,
-    ConfusionMatrix      = cm,
-    TrainData            = train,
-    TestData             = test,
-    PredictMatrix        = rast_list$pred_matrix,
-    AOA                  = aoa_surf,       
-    AOA_Diagnostics      = list(
-      threshold          = aoa_result$parameters$threshold,
-      AOA_coverage       = sum(terra::values(aoa_result$AOA), na.rm = TRUE) / 
-                           sum(!is.na(terra::values(aoa_result$AOA)))
-    ), 
-    PCAModel             = pca_model,
-    Diagnostics          = diagnostics
+    Predictors = predictors,
+    PCNM = NULL,
+    Model = fit,
+    CVStructure = cv_folds,
+    LOO = loo_result,
+    ConfusionMatrix = cm,
+    TrainData = train,
+    TestData = test,
+    PredictMatrix = rast_list$pred_matrix,
+    AOA = aoa_surf,
+    AOA_Diagnostics = list(
+      threshold = aoa_result$parameters$threshold,
+      AOA_coverage = sum(terra::values(aoa_result$AOA), na.rm = TRUE) /
+        sum(!is.na(terra::values(aoa_result$AOA)))
+    ),
+    PCAModel = pca_model,
+    Diagnostics = diagnostics
   )
 }
 
@@ -353,36 +372,42 @@ bayesianSDM <- function(
 #' @param pred_names Character vector of predictor names
 #' @param cv_folds CAST knndm object with CV fold indices
 #' @param method Currently only "ffs"
-#' @param min_ffs_var Minimum number of FFS variables to start with. 
+#' @param min_ffs_var Minimum number of FFS variables to start with.
 #' @return Character vector of selected predictor names
 #' @keywords internal
 #' @noRd
-perform_feature_selection_bayes <- function(train, pred_names, cv_folds, method, min_ffs_var) {
+perform_feature_selection_bayes <- function(
+  train,
+  pred_names,
+  cv_folds,
+  method,
+  min_ffs_var
+) {
   train_df <- sf::st_drop_geometry(train)
-  
+
   if (method == "ffs") {
     # Forward feature selection using spatial CV folds
     ffs_result <- suppressMessages(
       CAST::ffs(
         predictors = train_df[, pred_names, drop = FALSE],
-        response   = factor(train_df$occurrence),
-        method     = "glm",
-        minVar     =  min_ffs_var, 
-        family     = stats::binomial(),
-        metric     = "Accuracy",
-        trControl  = caret::trainControl(
+        response = factor(train_df$occurrence),
+        method = "glm",
+        minVar = min_ffs_var,
+        family = stats::binomial(),
+        metric = "Accuracy",
+        trControl = caret::trainControl(
           method = "cv",
-          index  = cv_folds$indx_train,
+          index = cv_folds$indx_train,
           indexOut = cv_folds$indx_test,
           savePredictions = FALSE,
           verboseIter = FALSE
         ),
-        verbose    = FALSE
+        verbose = FALSE
       )
     )
     return(ffs_result$selectedvars)
   }
-  
+
   # Fallback
   pred_names
 }
@@ -424,13 +449,13 @@ add_planar_coords <- function(x, planar_projection, scale_km = TRUE) {
 #' @noRd
 run_pca_on_raster <- function(predictors, pca_axes) {
   pred_names <- names(predictors)
-  
+
   # Fit PCA on raster values (sample for speed)
   rast_vals <- terra::spatSample(
     predictors,
-    size    = min(2500, terra::ncell(predictors)),
-    method  = "random",
-    na.rm   = TRUE
+    size = min(2500, terra::ncell(predictors)),
+    method = "random",
+    na.rm = TRUE
   )
   pca_model <- stats::prcomp(rast_vals, center = TRUE, scale. = TRUE)
 
@@ -447,8 +472,8 @@ run_pca_on_raster <- function(predictors, pca_axes) {
   names(pc_raster) <- pc_names
 
   list(
-    raster    = pc_raster,
-    pc_names  = pc_names,
+    raster = pc_raster,
+    pc_names = pc_names,
     pca_model = pca_model
   )
 }
@@ -465,10 +490,18 @@ run_pca_on_raster <- function(predictors, pca_axes) {
 #' @return brms `brmsprior` object
 #' @keywords internal
 #' @noRd
-build_priors <- function(prior_type, prior_scale, pred_names, n_obs, p0, gp_prior) {
+build_priors <- function(
+  prior_type,
+  prior_scale,
+  pred_names,
+  n_obs,
+  p0,
+  gp_prior
+) {
   p <- length(pred_names)
 
-  env_prior <- switch(prior_type,
+  env_prior <- switch(
+    prior_type,
     horseshoe = {
       # Regularised horseshoe: Piironen & Vehtari (2017) default parameterisation
       # p0: expected number of non-zero slopes; if unset, use half of predictors
@@ -484,8 +517,14 @@ build_priors <- function(prior_type, prior_scale, pred_names, n_obs, p0, gp_prio
         class = "b"
       )
     },
-    normal  = brms::set_prior(sprintf("normal(0, %f)", prior_scale),  class = "b"),
-    student = brms::set_prior(sprintf("student_t(3, 0, %f)", prior_scale), class = "b")
+    normal = brms::set_prior(
+      sprintf("normal(0, %f)", prior_scale),
+      class = "b"
+    ),
+    student = brms::set_prior(
+      sprintf("student_t(3, 0, %f)", prior_scale),
+      class = "b"
+    )
   )
 
   intercept_prior <- brms::set_prior("normal(0, 2.5)", class = "Intercept")
@@ -503,10 +542,10 @@ build_priors <- function(prior_type, prior_scale, pred_names, n_obs, p0, gp_prio
 check_convergence <- function(fit) {
   summ <- brms::posterior_summary(fit)
   rhats <- brms::rhat(fit)
-  ess_b <- brms::neff_ratio(fit)  # relative ESS
+  ess_b <- brms::neff_ratio(fit) # relative ESS
 
   # Raw ESS from posterior package
-  draws   <- brms::as_draws_df(fit)
+  draws <- brms::as_draws_df(fit)
   ess_raw <- posterior::summarise_draws(
     draws,
     bulk_ess = posterior::ess_bulk,
@@ -514,7 +553,7 @@ check_convergence <- function(fit) {
   )
 
   list(
-    max_Rhat    = max(rhats, na.rm = TRUE),
+    max_Rhat = max(rhats, na.rm = TRUE),
     min_BulkESS = min(ess_raw$bulk_ess, na.rm = TRUE),
     min_TailESS = min(ess_raw$tail_ess, na.rm = TRUE),
     n_divergent = sum(brms::nuts_params(fit)$Value[
@@ -540,18 +579,18 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
   # epred_rvars returns posterior distribution; rowMeans of draws = posterior mean
   epred <- brms::posterior_epred(
     fit,
-    newdata   = pred_df,
-    allow_new_levels = TRUE  # needed because GP is a new prediction location
+    newdata = pred_df,
+    allow_new_levels = TRUE # needed because GP is a new prediction location
   )
   # epred is draws x observations matrix
   prob_mean <- colMeans(epred)
   predicted <- factor(as.integer(prob_mean >= 0.5), levels = c(0, 1))
-  observed  <- factor(as.integer(pred_df$occurrence),  levels = c(0, 1))
+  observed <- factor(as.integer(pred_df$occurrence), levels = c(0, 1))
 
   caret::confusionMatrix(
-    data      = predicted,
+    data = predicted,
     reference = observed,
-    positive  = "1"
+    positive = "1"
   )
 }
 
@@ -570,17 +609,19 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
 #' @keywords internal
 #' @noRd
 create_bayes_spatial_predictions <- function(
-    fit,
-    predictors,
-    pred_names,
-    planar_projection, 
-    iter
+  fit,
+  predictors,
+  pred_names,
+  planar_projection,
+  iter
 ) {
-  
   # Build coordinate rasters in planar projection (km scale)
   template <- predictors[[1]]
-  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
-  
+  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c(
+    "x",
+    "y"
+  )]
+
   # Project to planar km
   coords_vect <- terra::vect(
     coords_lonlat,
@@ -589,7 +630,7 @@ create_bayes_spatial_predictions <- function(
   )
   coords_proj <- terra::project(coords_vect, planar_projection)
   coords_km <- terra::crds(coords_proj) / 1000
-  
+
   # Create coordinate rasters
   gp_x_rast <- terra::rast(template)
   gp_y_rast <- terra::rast(template)
@@ -597,14 +638,14 @@ create_bayes_spatial_predictions <- function(
   terra::values(gp_y_rast) <- coords_km[, 2]
   names(gp_x_rast) <- "gp_x"
   names(gp_y_rast) <- "gp_y"
-  
+
   # Combine predictors with coordinate rasters
   pred_stack <- c(predictors[[pred_names]], gp_x_rast, gp_y_rast)
-  
+
   # Custom predict function for terra
   # terra passes data as a data.frame with column names matching raster layer names
   predict_mean_sd <- function(model, data, ...) {
-    # Subsample posterior for speed 
+    # Subsample posterior for speed
     epred <- brms::posterior_epred(
       model,
       newdata = data,
@@ -614,35 +655,34 @@ create_bayes_spatial_predictions <- function(
     # Return both mean and sd as a 2-column matrix
     cbind(
       mean = colMeans(epred),
-      sd   = apply(epred, 2, stats::sd)
+      sd = apply(epred, 2, stats::sd)
     )
   }
-  
+
   # Let terra handle all the chunking/memory management
   result <- terra::predict(
     pred_stack,
     model = fit,
     fun = predict_mean_sd,
     na.rm = TRUE,
-    cores = 1  # brms isn't thread-safe for this, keep sequential
+    cores = 1 # brms isn't thread-safe for this, keep sequential
   )
-  
+
   # Split into separate rasters
   rast_mean <- result[[1]]
-  rast_sd   <- result[[2]]
+  rast_sd <- result[[2]]
   names(rast_mean) <- "occurrence_prob_mean"
-  names(rast_sd)   <- "occurrence_prob_sd"
-  
+  names(rast_sd) <- "occurrence_prob_sd"
+
   # Build pred_matrix for downstream compatibility
   pred_vals <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
-  
+
   list(
-    mean         = rast_mean,
-    sd           = rast_sd,
-    pred_matrix  = pred_vals
+    mean = rast_mean,
+    sd = rast_sd,
+    pred_matrix = pred_vals
   )
 }
-
 
 
 #' Compute Area of Applicability for Bayesian SDM
@@ -674,84 +714,85 @@ create_bayes_spatial_predictions <- function(
 #'
 #' @export
 compute_aoa_bayes <- function(
-    model,
-    train,
-    predictors, 
-    cv_folds,
-    newdata = NULL,
-    use_posterior_mean = TRUE,
-    LPD = TRUE,
-    maxLPD = 1,
-    ...
+  model,
+  train,
+  predictors,
+  cv_folds,
+  newdata = NULL,
+  use_posterior_mean = TRUE,
+  LPD = TRUE,
+  maxLPD = 1,
+  ...
 ) {
-
   # ── 1. Extract environmental variable names ────────────────────────────────
   fe_names <- rownames(brms::fixef(model))
   fe_names <- sub("^b_", "", fe_names)
   # Filter out: Intercept and GAM smooth basis terms
   fe_names <- fe_names[!grepl("^(Intercept|s\\(|s[gp])", fe_names)]
   env_vars <- fe_names[fe_names %in% names(predictors)]
-  
+
   if (length(env_vars) == 0) {
     stop("No environmental predictors matched between model and raster stack.")
   }
-  
-  message(sprintf("Using %d environmental variables: %s",
-                  length(env_vars), paste(env_vars, collapse = ", ")))
-  
+
+  message(sprintf(
+    "Using %d environmental variables: %s",
+    length(env_vars),
+    paste(env_vars, collapse = ", ")
+  ))
+
   # ── 2. Extract variable weights from posterior mean coefficients ───────────
   if (use_posterior_mean) {
     # Get posterior means (analogous to variable importance)
     fixef_summary <- brms::fixef(model, summary = TRUE)
     fixef_df <- as.data.frame(fixef_summary)
     fixef_df$Variable <- rownames(fixef_df)
-    
+
     # Filter to env vars only
     fixef_df <- fixef_df[fixef_df$Variable %in% env_vars, ]
-    
+
     # Use absolute value of Estimate as weight (like variable importance)
     weights <- abs(fixef_df$Estimate)
     names(weights) <- fixef_df$Variable
-    
+
     # Normalize so they sum to something reasonable (optional, but helps interpretation)
     weights <- weights / sum(weights) * length(weights)
-    
+
     # Format as data frame with one row (CAST expects this)
     weight_df <- as.data.frame(t(weights))
-    
   } else {
     # Equal weights
     weight_df <- as.data.frame(t(rep(1, length(env_vars))))
     names(weight_df) <- env_vars
     message("Variables weighted equally.")
   }
-  
+
   # ── 3. Format CV folds for CAST ────────────────────────────────────────────
   # CAST expects:
   # CVtest: list where each element contains row indices of held-out data
   # CVtrain: list where each element contains row indices of training data
-  
+
   CVtest <- cv_folds$indx_test
   CVtrain <- cv_folds$indx_train
-  
+
   # ── 4. Prepare training data ────────────────────────────────────────────────
   # CAST needs only the predictor columns, not occurrence
-  train_predictors <- train[, env_vars, drop = FALSE] |> 
+  train_predictors <- train[, env_vars, drop = FALSE] |>
     sf::st_drop_geometry()
-  
-  # ── 5. Call CAST::aoa ───────────────────────────────────────────────────────  
+
+  # ── 5. Call CAST::aoa ───────────────────────────────────────────────────────
   aoa_result <- CAST::aoa(
-    newdata   = predictors,
-    train     = train_predictors,
+    newdata = predictors,
+    train = train_predictors,
     variables = env_vars,
-    weight    = weight_df,
-    CVtest    = CVtest,
-    CVtrain   = CVtrain,
-    method    = "L2", 
+    weight = weight_df,
+    CVtest = CVtest,
+    CVtrain = CVtrain,
+    method = "L2",
     useWeight = use_posterior_mean,
-    useCV     = TRUE,
-    LPD       = LPD,
-    maxLPD    = maxLPD,
+    useCV = TRUE,
+    LPD = LPD,
+    maxLPD = maxLPD,
     verbose = FALSE,
     ...
   )

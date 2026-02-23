@@ -73,13 +73,15 @@ buildResistanceSurface <- function(
     if (!is.null(tri)) {
       res <- res + w_tri * terra::setValues(res, scale(terra::values(tri)))
     }
-    if (!is.null(habitat)) res <- res + w_habitat * habitat
-    
+    if (!is.null(habitat)) {
+      res <- res + w_habitat * habitat
+    }
+
     ## additional layers if supplied
     if (!is.null(addtl_r)) {
-      if(terra::nlyr(addtl_r)==length(addtl_w)){
-      for (i in seq_along(addtl_w)){
-        res <- res + addtl_r[[i]] * addtl_w[i]
+      if (terra::nlyr(addtl_r) == length(addtl_w)) {
+        for (i in seq_along(addtl_w)) {
+          res <- res + addtl_r[[i]] * addtl_w[i]
         }
       }
     }
@@ -93,4 +95,4 @@ buildResistanceSurface <- function(
 
   # convert to integer for memory and calculation efficiency.
   res <- terra::as.int(res)
-  }
+}

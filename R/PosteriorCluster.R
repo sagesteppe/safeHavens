@@ -87,35 +87,39 @@
 #'   [bayesianSDM()]
 #' @export
 PosteriorCluster <- function(
-    model,
-    predictors,
-    f_rasts,
-    pred_mat,
-    training_data,
-    n_draws          = 100,
-    n                = 10,
-    n_pts            = 500,
-    lyr              = "occurrence_prob_mean",
-    planar_proj,
-    coord_wt         = 2.5,
-    consensus_method = c("hierarchical", "pam"),
-    beta_draws       = NULL,
-    seed             = 42
+  model,
+  predictors,
+  f_rasts,
+  pred_mat,
+  training_data,
+  n_draws = 100,
+  n = 10,
+  n_pts = 500,
+  lyr = "occurrence_prob_mean",
+  planar_proj,
+  coord_wt = 2.5,
+  consensus_method = c("hierarchical", "pam"),
+  beta_draws = NULL,
+  seed = 42
 ) {
   set.seed(seed)
   consensus_method <- match.arg(consensus_method)
 
   # ── 1. Identify environmental predictor names ────────────────────────────────
   # Drop GP coordinate columns; keep only named fixed effects
-  fe_names  <- rownames(brms::fixef(model))
-  fe_names  <- sub("^b_", "", fe_names)
+  fe_names <- rownames(brms::fixef(model))
+  fe_names <- sub("^b_", "", fe_names)
   # Filter out: Intercept, old GP terms (sgp/sdgp/lscale), and GAM smooth basis terms (s*)
-  fe_names  <- fe_names[!grepl("^(Intercept|sgp|sdgp|lscale|s\\(|s[gp])", fe_names)]
-  env_vars  <- fe_names[fe_names %in% names(predictors)]
+  fe_names <- fe_names[
+    !grepl("^(Intercept|sgp|sdgp|lscale|s\\(|s[gp])", fe_names)
+  ]
+  env_vars <- fe_names[fe_names %in% names(predictors)]
 
   if (length(env_vars) == 0) {
-    stop("No environmental fixed effects matched raster layer names. ",
-         "Check that predictor names in the model match raster layer names.")
+    stop(
+      "No environmental fixed effects matched raster layer names. ",
+      "Check that predictor names in the model match raster layer names."
+    )
   }
 
   # ── 2. Draw posterior beta samples ────────────────────────────────────────────
@@ -127,18 +131,22 @@ PosteriorCluster <- function(
 
   # ── 3. Compute training-data moments (fixed across draws) ────────────────────
   sdN <- function(x) sqrt(mean((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE))
-  pm  <- as.data.frame(pred_mat)[, env_vars, drop = FALSE]
-  var_mu <- vapply(env_vars, function(v) mean(pm[[v]], na.rm = TRUE), numeric(1))
-  var_sd <- vapply(env_vars, function(v) sdN(pm[[v]]),                 numeric(1))
+  pm <- as.data.frame(pred_mat)[, env_vars, drop = FALSE]
+  var_mu <- vapply(
+    env_vars,
+    function(v) mean(pm[[v]], na.rm = TRUE),
+    numeric(1)
+  )
+  var_sd <- vapply(env_vars, function(v) sdN(pm[[v]]), numeric(1))
   zero_sd <- var_sd == 0
   if (any(zero_sd)) {
     warning(sprintf(
       "Variable(s) with zero SD excluded from draw clustering: %s",
       paste(env_vars[zero_sd], collapse = ", ")
     ))
-    env_vars  <- env_vars[!zero_sd]
-    var_mu    <- var_mu[!zero_sd]
-    var_sd    <- var_sd[!zero_sd]
+    env_vars <- env_vars[!zero_sd]
+    var_mu <- var_mu[!zero_sd]
+    var_sd <- var_sd[!zero_sd]
     beta_draws <- beta_draws[, env_vars, drop = FALSE]
   }
 
@@ -150,28 +158,32 @@ PosteriorCluster <- function(
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
     mask_rast,
-    size      = n_pts,
-    method    = "random",
+    size = n_pts,
+    method = "random",
     as.points = TRUE,
-    na.rm     = TRUE
+    na.rm = TRUE
   )
 
   # Extract predictor values at these fixed points
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
   complete_rows <- stats::complete.cases(pt_env)
-  sample_pts    <- sample_pts[complete_rows, ]
-  pt_env        <- pt_env[complete_rows, , drop = FALSE]
-  n_pts_actual  <- nrow(pt_env)
+  sample_pts <- sample_pts[complete_rows, ]
+  pt_env <- pt_env[complete_rows, , drop = FALSE]
+  n_pts_actual <- nrow(pt_env)
 
   message(sprintf(
     "  %d of %d requested points have complete predictor data.",
-    n_pts_actual, n_pts
+    n_pts_actual,
+    n_pts
   ))
 
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
   pt_env_coords <- add_coord_weights_to_points(
-    sample_pts, pt_env, coord_wt, env_vars
+    sample_pts,
+    pt_env,
+    coord_wt,
+    env_vars
   )
 
   # ── 6. Cluster over posterior draws ──────────────────────────────────────────
@@ -183,14 +195,22 @@ PosteriorCluster <- function(
   )
 
   for (d in seq_len(n_draws)) {
-    if (d %% 25 == 0) message(sprintf("  Draw %d / %d", d, n_draws))
+    if (d %% 25 == 0) {
+      message(sprintf("  Draw %d / %d", d, n_draws))
+    }
 
-    betas_d <- beta_draws[d, , drop = FALSE]  # Keep as 1-row matrix to preserve names
-    betas_d <- as.numeric(betas_d)            # Convert to vector
-    names(betas_d) <- colnames(beta_draws)    # Restore column names as names
+    betas_d <- beta_draws[d, , drop = FALSE] # Keep as 1-row matrix to preserve names
+    betas_d <- as.numeric(betas_d) # Convert to vector
+    names(betas_d) <- colnames(beta_draws) # Restore column names as names
 
     # Rescale point matrix by this draw's betas
-    pt_scaled <- rescale_points_by_betas(pt_env, env_vars, var_mu, var_sd, betas_d)
+    pt_scaled <- rescale_points_by_betas(
+      pt_env,
+      env_vars,
+      var_mu,
+      var_sd,
+      betas_d
+    )
 
     # Append (already-weighted) coordinates — same across draws
     pt_full <- cbind(
@@ -200,8 +220,8 @@ PosteriorCluster <- function(
     pt_full <- pt_full[stats::complete.cases(pt_full), , drop = FALSE]
 
     # Hierarchical clustering on Euclidean distances
-    dist_d  <- stats::dist(pt_full, method = "euclidean")
-    hc_d    <- stats::hclust(dist_d, method = "ward.D2")
+    dist_d <- stats::dist(pt_full, method = "euclidean")
+    hc_d <- stats::hclust(dist_d, method = "ward.D2")
     draw_clusterings[seq_len(nrow(pt_full)), d] <- stats::cutree(hc_d, k = n)
   }
 
@@ -211,7 +231,7 @@ PosteriorCluster <- function(
 
   # ── 8. Consensus clustering ───────────────────────────────────────────────────
   message("Deriving consensus clustering ...")
-  diss_mat         <- stats::as.dist(1 - co_mat)
+  diss_mat <- stats::as.dist(1 - co_mat)
   consensus_labels <- switch(
     consensus_method,
     hierarchical = {
@@ -227,83 +247,86 @@ PosteriorCluster <- function(
   # For each point, stability = mean co-occurrence with all other points
   # sharing its consensus cluster label (its "within-cluster cohesion")
   stability_scores <- compute_stability_scores(co_mat, consensus_labels)
-  
+
   # ── 9b. Top-3 cluster rankings ───────────────────────────────────────────────
   message("Computing top-3 cluster assignments per point ...")
   top3_results <- compute_top3_clusters(draw_clusterings, n_pts_actual, n_draws)
 
   # ── 10. Project clusters back to raster ──────────────────────────────────────
   message("Projecting consensus clusters to raster ...")
-  
+
   # Compute posterior mean betas
   mean_betas <- colMeans(beta_draws)
-  
+
   rast_list <- project_consensus_to_raster(
-    sample_pts       = sample_pts,
+    sample_pts = sample_pts,
     consensus_labels = consensus_labels,
     stability_scores = stability_scores,
-    top3_labels      = top3_results$labels_matrix,  # n_pts × 3 matrix
-    predictors       = predictors,
-    env_vars         = env_vars,
-    var_mu           = var_mu,
-    var_sd           = var_sd,
-    mean_betas       = mean_betas,
-    coord_wt         = coord_wt,
-    mask_rast        = mask_rast,
-    planar_proj      = planar_proj
+    top3_labels = top3_results$labels_matrix, # n_pts × 3 matrix
+    predictors = predictors,
+    env_vars = env_vars,
+    var_mu = var_mu,
+    var_sd = var_sd,
+    mean_betas = mean_betas,
+    coord_wt = coord_wt,
+    mask_rast = mask_rast,
+    planar_proj = planar_proj
   )
 
   # ── 11. Geographic reordering ─────────────────────────────────────────────────
-  reordered     <- reorder_clusters_geographically(rast_list$cluster_raster)
-  final_raster  <- terra::project(reordered$raster, terra::crs(f_rasts))
+  reordered <- reorder_clusters_geographically(rast_list$cluster_raster)
+  final_raster <- terra::project(reordered$raster, terra::crs(f_rasts))
   cluster_vects <- sf::st_transform(reordered$vectors, terra::crs(f_rasts))
-  
+
   # Project stability raster back to original CRS
-  stability_final <- terra::project(rast_list$stability_raster, terra::crs(f_rasts))
-  
+  stability_final <- terra::project(
+    rast_list$stability_raster,
+    terra::crs(f_rasts)
+  )
+
   # Project top-3 rasters
   rank2_final <- terra::project(rast_list$rank2_raster, terra::crs(f_rasts))
   rank3_final <- terra::project(rast_list$rank3_raster, terra::crs(f_rasts))
-  
+
   # Build tabular lookup with sample point coordinates and top-3 assignments
   sample_pts_sf <- sf::st_as_sf(sample_pts)
   coords_df <- as.data.frame(sf::st_coordinates(sample_pts_sf))
-  
+
   top3_lookup <- data.frame(
-    point_id      = seq_len(nrow(top3_results$labels_matrix)),
-    x             = coords_df$X,
-    y             = coords_df$Y,
+    point_id = seq_len(nrow(top3_results$labels_matrix)),
+    x = coords_df$X,
+    y = coords_df$Y,
     rank1_cluster = top3_results$labels_matrix[, 1],
-    rank1_pct     = round(top3_results$pct_matrix[, 1], 1),
+    rank1_pct = round(top3_results$pct_matrix[, 1], 1),
     rank2_cluster = top3_results$labels_matrix[, 2],
-    rank2_pct     = round(top3_results$pct_matrix[, 2], 1),
+    rank2_pct = round(top3_results$pct_matrix[, 2], 1),
     rank3_cluster = top3_results$labels_matrix[, 3],
-    rank3_pct     = round(top3_results$pct_matrix[, 3], 1),
-    uncertainty   = round(100 - top3_results$pct_matrix[, 1], 1)  # 1 - rank1_pct
+    rank3_pct = round(top3_results$pct_matrix[, 3], 1),
+    uncertainty = round(100 - top3_results$pct_matrix[, 1], 1) # 1 - rank1_pct
   )
 
   list(
-    Geometry           = cluster_vects,
+    Geometry = cluster_vects,
 
     # Summary_rasters
-    StabilityRaster    = stability_final,## group these into raster
-    ConsensusRaster    = final_raster,
+    StabilityRaster = stability_final, ## group these into raster
+    ConsensusRaster = final_raster,
 
     # Addtl_rank_rasters
-    Rank2Raster        = rank2_final, ## combine these two into raster
-    Rank3Raster        = rank3_final,
+    Rank2Raster = rank2_final, ## combine these two into raster
+    Rank3Raster = rank3_final,
 
     ## Cluster_data
-    Top3Lookup         = top3_lookup, ## combine these two, two sublists
-    DrawClusterings    = draw_clusterings,
+    Top3Lookup = top3_lookup, ## combine these two, two sublists
+    DrawClusterings = draw_clusterings,
 
-    SamplePoints       = sample_pts_sf,
+    SamplePoints = sample_pts_sf,
 
     # KNN_pixel_assign_models
-    KNN_Cluster        = rast_list$knn_cluster, ## combine these into a sublist. 
-    KNN_Rank2          = rast_list$knn_rank2,
-    KNN_Rank3          = rast_list$knn_rank3,
-    KNN_Stability      = rast_list$knn_stability
+    KNN_Cluster = rast_list$knn_cluster, ## combine these into a sublist.
+    KNN_Rank2 = rast_list$knn_rank2,
+    KNN_Rank3 = rast_list$knn_rank3,
+    KNN_Stability = rast_list$knn_stability
   )
 }
 
@@ -325,10 +348,10 @@ PosteriorCluster <- function(
 train_regression_knn <- function(X, y) {
   data_for_knn <- X
   data_for_knn$y <- y
-  
+
   caret::train(
     y ~ .,
-    data   = data_for_knn,
+    data = data_for_knn,
     method = "knn",
     tuneGrid = data.frame(k = c(3, 5, 7, 9)),
     trControl = caret::trainControl(method = "cv", number = 5)
@@ -351,43 +374,44 @@ train_regression_knn <- function(X, y) {
 #' @noRd
 compute_top3_clusters <- function(draw_clusterings, n_pts, n_draws) {
   labels_matrix <- matrix(NA_integer_, nrow = n_pts, ncol = 3)
-  pct_matrix    <- matrix(NA_real_,    nrow = n_pts, ncol = 3)
-  
+  pct_matrix <- matrix(NA_real_, nrow = n_pts, ncol = 3)
+
   for (i in seq_len(n_pts)) {
     # Tally cluster assignments for point i across all draws
     assignments <- draw_clusterings[i, ]
     assignments <- assignments[!is.na(assignments)]
-    
-    if (length(assignments) == 0) next
-    
+
+    if (length(assignments) == 0) {
+      next
+    }
+
     freq_table <- table(assignments)
     freq_table <- sort(freq_table, decreasing = TRUE)
-    
+
     # Extract top 3 (or fewer if < 3 unique clusters were ever assigned)
     top_n <- min(3, length(freq_table))
     top_clusters <- as.integer(names(freq_table)[seq_len(top_n)])
-    top_counts   <- as.numeric(freq_table[seq_len(top_n)])
-    top_pcts     <- (top_counts / length(assignments)) * 100
-    
+    top_counts <- as.numeric(freq_table[seq_len(top_n)])
+    top_pcts <- (top_counts / length(assignments)) * 100
+
     # Fill in the matrices
     labels_matrix[i, seq_len(top_n)] <- top_clusters
-    pct_matrix[i, seq_len(top_n)]    <- top_pcts
-    
+    pct_matrix[i, seq_len(top_n)] <- top_pcts
+
     # If fewer than 3 unique clusters, replicate rank1 into empty slots
     if (top_n < 3) {
       for (j in (top_n + 1):3) {
         labels_matrix[i, j] <- top_clusters[1]
-        pct_matrix[i, j]    <- top_pcts[1]
+        pct_matrix[i, j] <- top_pcts[1]
       }
     }
   }
-  
+
   list(
     labels_matrix = labels_matrix,
-    pct_matrix    = pct_matrix
+    pct_matrix = pct_matrix
   )
 }
-
 
 
 #'
@@ -402,7 +426,7 @@ extract_beta_draws <- function(model, env_vars, n_draws) {
 
   # brms stores fixed effects as "b_varname"
   b_cols <- paste0("b_", env_vars)
-  found  <- b_cols[b_cols %in% colnames(all_draws)]
+  found <- b_cols[b_cols %in% colnames(all_draws)]
 
   if (length(found) == 0) {
     stop("No posterior draw columns matched environmental variable names.")
@@ -417,8 +441,8 @@ extract_beta_draws <- function(model, env_vars, n_draws) {
   }
 
   n_total <- nrow(all_draws)
-  idx     <- sample.int(n_total, size = min(n_draws, n_total), replace = FALSE)
-  out     <- all_draws[idx, found, drop = FALSE]
+  idx <- sample.int(n_total, size = min(n_draws, n_total), replace = FALSE)
+  out <- all_draws[idx, found, drop = FALSE]
   colnames(out) <- sub("^b_", "", colnames(out))
   as.matrix(out)
 }
@@ -436,7 +460,9 @@ extract_beta_draws <- function(model, env_vars, n_draws) {
 #' @noRd
 rescale_points_by_betas <- function(pt_env, env_vars, var_mu, var_sd, betas) {
   out <- as.data.frame(matrix(
-    NA_real_, nrow = nrow(pt_env), ncol = length(env_vars)
+    NA_real_,
+    nrow = nrow(pt_env),
+    ncol = length(env_vars)
   ))
   colnames(out) <- env_vars
 
@@ -459,19 +485,27 @@ rescale_points_by_betas <- function(pt_env, env_vars, var_mu, var_sd, betas) {
 #' @return data frame with additional columns coord_x_w and coord_y_w
 #' @keywords internal
 #' @noRd
-add_coord_weights_to_points <- function(sample_pts, pt_env, coord_wt, env_vars) {
-  coords  <- terra::crds(sample_pts)
-  sdN     <- function(x) sqrt(mean((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE))
+add_coord_weights_to_points <- function(
+  sample_pts,
+  pt_env,
+  coord_wt,
+  env_vars
+) {
+  coords <- terra::crds(sample_pts)
+  sdN <- function(x) sqrt(mean((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE))
 
   # Range of env variables (used as reference for weighting)
-  env_ranges <- apply(pt_env[, env_vars, drop = FALSE], 2,
-                      function(x) diff(range(x, na.rm = TRUE)))
+  env_ranges <- apply(pt_env[, env_vars, drop = FALSE], 2, function(x) {
+    diff(range(x, na.rm = TRUE))
+  })
   target_range <- max(env_ranges, na.rm = TRUE) * coord_wt
 
   # Scale each coordinate axis to target range
   scale_to_range <- function(v, tgt) {
     rng <- diff(range(v, na.rm = TRUE))
-    if (rng == 0) return(rep(0, length(v)))
+    if (rng == 0) {
+      return(rep(0, length(v)))
+    }
     (v - mean(v, na.rm = TRUE)) / rng * tgt
   }
 
@@ -497,7 +531,7 @@ build_cooccurrence_matrix <- function(draw_clusterings, n_pts, n_draws) {
   co_mat <- matrix(0.0, nrow = n_pts, ncol = n_pts)
 
   for (d in seq_len(n_draws)) {
-    labels   <- draw_clusterings[, d]
+    labels <- draw_clusterings[, d]
     # outer() produces an n_pts × n_pts logical matrix of same-cluster pairs
     same_clust <- outer(labels, labels, FUN = "==")
     same_clust[is.na(same_clust)] <- FALSE
@@ -520,16 +554,16 @@ build_cooccurrence_matrix <- function(draw_clusterings, n_pts, n_draws) {
 #' @keywords internal
 #' @noRd
 compute_stability_scores <- function(co_mat, consensus_labels) {
-  n_pts    <- nrow(co_mat)
+  n_pts <- nrow(co_mat)
   stability <- numeric(n_pts)
 
   for (i in seq_len(n_pts)) {
-    cluster_i  <- consensus_labels[i]
+    cluster_i <- consensus_labels[i]
     same_cluster <- which(consensus_labels == cluster_i)
-    same_cluster <- setdiff(same_cluster, i)  # exclude self
+    same_cluster <- setdiff(same_cluster, i) # exclude self
 
     if (length(same_cluster) == 0) {
-      stability[i] <- 1.0  # singleton: assign maximum stability
+      stability[i] <- 1.0 # singleton: assign maximum stability
     } else {
       stability[i] <- mean(co_mat[i, same_cluster], na.rm = TRUE)
     }
@@ -549,14 +583,18 @@ compute_stability_scores <- function(co_mat, consensus_labels) {
 #' @return SpatRaster named "cluster_stability", values in [0, 1]
 #' @keywords internal
 #' @noRd
-interpolate_stability_to_raster <- function(sample_pts, stability_scores, mask_rast) {
+interpolate_stability_to_raster <- function(
+  sample_pts,
+  stability_scores,
+  mask_rast
+) {
   pts_df <- as.data.frame(terra::crds(sample_pts))
   pts_df$stability <- stability_scores
 
   stability_vect <- terra::vect(
     pts_df,
-    geom  = c("x", "y"),
-    crs   = terra::crs(mask_rast)
+    geom = c("x", "y"),
+    crs = terra::crs(mask_rast)
   )
 
   stab_rast <- terra::interpIDW(
@@ -564,7 +602,7 @@ interpolate_stability_to_raster <- function(sample_pts, stability_scores, mask_r
     mask_rast,
     field = "stability",
     radius = terra::xres(mask_rast) * 10,
-    power  = 2
+    power = 2
   )
   stab_rast <- terra::mask(stab_rast, mask_rast)
   names(stab_rast) <- "cluster_stability"
@@ -597,170 +635,190 @@ interpolate_stability_to_raster <- function(sample_pts, stability_scores, mask_r
 #' @keywords internal
 #' @noRd
 project_consensus_to_raster <- function(
-    sample_pts,
-    consensus_labels,
-    stability_scores,
-    top3_labels,
-    predictors,
-    env_vars,
-    var_mu,
-    var_sd,
-    mean_betas,
-    coord_wt,
-    mask_rast,
-    planar_proj
+  sample_pts,
+  consensus_labels,
+  stability_scores,
+  top3_labels,
+  predictors,
+  env_vars,
+  var_mu,
+  var_sd,
+  mean_betas,
+  coord_wt,
+  mask_rast,
+  planar_proj
 ) {
-
-
-if(is.numeric(planar_proj)){planar_proj <- paste0('epsg:', planar_proj)}
+  if (is.numeric(planar_proj)) {
+    planar_proj <- paste0('epsg:', planar_proj)
+  }
 
   # ── 1. Extract raw predictor values at the 500 fixed points ────────────────
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
-  
+
   # ── 2. Rescale using posterior mean betas ──────────────────────────────────
   pt_rescaled <- as.data.frame(matrix(
-    NA_real_, nrow = nrow(pt_env), ncol = length(env_vars)
+    NA_real_,
+    nrow = nrow(pt_env),
+    ncol = length(env_vars)
   ))
   colnames(pt_rescaled) <- env_vars
-  
+
   for (v in env_vars) {
-    pt_rescaled[[v]] <- ((pt_env[[v]] - var_mu[v]) / var_sd[v]) * abs(mean_betas[v])
+    pt_rescaled[[v]] <- ((pt_env[[v]] - var_mu[v]) / var_sd[v]) *
+      abs(mean_betas[v])
   }
-  
+
   # ── 3. Add weighted coordinates ────────────────────────────────────────────
   pt_rescaled <- add_coord_weights_to_points(
-    sample_pts, pt_rescaled, coord_wt, env_vars
+    sample_pts,
+    pt_rescaled,
+    coord_wt,
+    env_vars
   )
-  
+
   # ── 4. Attach response variables and filter complete cases ─────────────────
   pt_rescaled$rank1_cluster <- factor(consensus_labels)
   pt_rescaled$rank2_cluster <- factor(top3_labels[, 2])
   pt_rescaled$rank3_cluster <- factor(top3_labels[, 3])
   pt_rescaled$stability <- stability_scores
-  
+
   complete_rows <- stats::complete.cases(pt_rescaled)
   pt_train <- pt_rescaled[complete_rows, ]
-  
+
   if (nrow(pt_train) < 50) {
     stop("Fewer than 50 complete cases for KNN training. Check for NA values.")
   }
-  
+
   # ── 5. Train KNNs ───────────────────────────────────────────────────────────
-  cluster_features <- setdiff(names(pt_train), 
-                               c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability"))
-  
+  cluster_features <- setdiff(
+    names(pt_train),
+    c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
+  )
+
   # Helper to check if a factor has enough levels for train/test split
   can_train_knn <- function(y, min_per_class = 2) {
     counts <- table(y)
     all(counts >= min_per_class)
   }
-  
+
   # Rank1 (consensus) clusters
   if (!can_train_knn(pt_train$rank1_cluster)) {
-    stop("Rank1 clusters: insufficient observations per cluster for KNN training. ",
-         "Try increasing n_pts or decreasing n (number of clusters).")
+    stop(
+      "Rank1 clusters: insufficient observations per cluster for KNN training. ",
+      "Try increasing n_pts or decreasing n (number of clusters)."
+    )
   }
   knn_data_rank1 <- pt_train[, cluster_features, drop = FALSE]
   knn_data_rank1$ID <- pt_train$rank1_cluster
   knn_rank1 <- trainKNN(knn_data_rank1, split_prop = 0.8)
-  
+
   # Rank2 clusters - may have degenerate cases if all points assigned to same cluster
   if (can_train_knn(pt_train$rank2_cluster)) {
     knn_data_rank2 <- pt_train[, cluster_features, drop = FALSE]
     knn_data_rank2$ID <- pt_train$rank2_cluster
     knn_rank2 <- trainKNN(knn_data_rank2, split_prop = 0.8)
   } else {
-    warning("Rank2 clusters: insufficient variation for KNN training. Using rank1 model.")
-    knn_rank2 <- knn_rank1  # Fallback
+    warning(
+      "Rank2 clusters: insufficient variation for KNN training. Using rank1 model."
+    )
+    knn_rank2 <- knn_rank1 # Fallback
   }
-  
+
   # Rank3 clusters
   if (can_train_knn(pt_train$rank3_cluster)) {
     knn_data_rank3 <- pt_train[, cluster_features, drop = FALSE]
     knn_data_rank3$ID <- pt_train$rank3_cluster
     knn_rank3 <- trainKNN(knn_data_rank3, split_prop = 0.8)
   } else {
-    warning("Rank3 clusters: insufficient variation for KNN training. Using rank1 model.")
-    knn_rank3 <- knn_rank1  # Fallback
+    warning(
+      "Rank3 clusters: insufficient variation for KNN training. Using rank1 model."
+    )
+    knn_rank3 <- knn_rank1 # Fallback
   }
-  
+
   # Stability regression
   knn_stability <- train_regression_knn(
     X = pt_train[, cluster_features, drop = FALSE],
     y = pt_train$stability
   )
-  
+
   # ── 6. Build posterior-mean-rescaled raster stack ──────────────────────────
   scaled_layers <- lapply(env_vars, function(v) {
     ((predictors[[v]] - var_mu[v]) / var_sd[v]) * abs(mean_betas[v])
   })
   pred_rescale <- terra::rast(scaled_layers)
   names(pred_rescale) <- env_vars
-  
+
   # Add weighted coordinates to raster (creates 'x' and 'y' layers)
   pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
-  
+
   # Rename to match what KNN expects (coord_x_w, coord_y_w from training data)
   names(pred_rescale)[names(pred_rescale) == "x"] <- "coord_x_w"
   names(pred_rescale)[names(pred_rescale) == "y"] <- "coord_y_w"
-  
+
   pred_rescale <- terra::mask(pred_rescale, mask_rast)
-  
+
   # ── 7. Predict to full raster ──────────────────────────────────────────────
   cluster_raster <- terra::predict(
-    pred_rescale, 
-    model = knn_rank1$fit.knn, 
+    pred_rescale,
+    model = knn_rank1$fit.knn,
     na.rm = TRUE
   )
-  
+
   rank2_raster <- terra::predict(
-    pred_rescale, 
-    model = knn_rank2$fit.knn, 
+    pred_rescale,
+    model = knn_rank2$fit.knn,
     na.rm = TRUE
   )
   names(rank2_raster) <- "rank2_cluster"
-  
+
   rank3_raster <- terra::predict(
-    pred_rescale, 
-    model = knn_rank3$fit.knn, 
+    pred_rescale,
+    model = knn_rank3$fit.knn,
     na.rm = TRUE
   )
   names(rank3_raster) <- "rank3_cluster"
-  
+
   stability_raster <- terra::predict(
     pred_rescale,
     model = knn_stability,
     na.rm = TRUE
   )
   names(stability_raster) <- "cluster_stability"
-  
+
   # ── 8. Project to planar CRS ────────────────────────────────────────────────
   cluster_raster <- terra::project(cluster_raster, planar_proj)
   cluster_raster <- terra::mask(
     cluster_raster,
     terra::project(mask_rast, planar_proj)
   )
-  
+
   stability_raster <- terra::project(stability_raster, planar_proj)
   stability_raster <- terra::mask(
     stability_raster,
     terra::project(mask_rast, planar_proj)
   )
-  
+
   rank2_raster <- terra::project(rank2_raster, planar_proj)
-  rank2_raster <- terra::mask(rank2_raster, terra::project(mask_rast, planar_proj))
-  
+  rank2_raster <- terra::mask(
+    rank2_raster,
+    terra::project(mask_rast, planar_proj)
+  )
+
   rank3_raster <- terra::project(rank3_raster, planar_proj)
-  rank3_raster <- terra::mask(rank3_raster, terra::project(mask_rast, planar_proj))
-  
+  rank3_raster <- terra::mask(
+    rank3_raster,
+    terra::project(mask_rast, planar_proj)
+  )
+
   list(
-    cluster_raster   = cluster_raster,
+    cluster_raster = cluster_raster,
     stability_raster = stability_raster,
-    rank2_raster     = rank2_raster,
-    rank3_raster     = rank3_raster,
-    knn_cluster      = knn_rank1$fit.knn,
-    knn_rank2        = knn_rank2$fit.knn,
-    knn_rank3        = knn_rank3$fit.knn,
-    knn_stability    = knn_stability
+    rank2_raster = rank2_raster,
+    rank3_raster = rank3_raster,
+    knn_cluster = knn_rank1$fit.knn,
+    knn_rank2 = knn_rank2$fit.knn,
+    knn_rank3 = knn_rank3$fit.knn,
+    knn_stability = knn_stability
   )
 }

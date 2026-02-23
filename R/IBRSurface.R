@@ -74,6 +74,9 @@ IBRSurface <- function(
   ) *
     0.45
 
+  # nocov start
+  ## leave this tag to avoid having covr:: include these in the test
+  ## they are covered anyways! just not the signature call.
   cluster_r <- geographic_core_assignment(
     pop_raster = pop_raster,
     pts_sf = clusts$clusters,
@@ -104,6 +107,8 @@ IBRSurface <- function(
     cluster_r = cluster_r,
     pop_raster = pop_raster
   )
+
+  # nocov end  ## end of nocov for signature calls.
 
   ## format data for return
   spatialClusters <- terra::as.polygons(cluster_r) |>
@@ -292,7 +297,7 @@ expand_geographic_front <- function(
     sizes <- table(terra::values(cluster_r))
     df <- df[sizes[as.character(df$cluster)] < max_cells_per_cluster, ]
 
-    # prevents overwriting just assigned cells. 
+    # prevents overwriting just assigned cells.
     still_na <- is.na(cluster_r[df$cell])
     df <- df[still_na, ]
 

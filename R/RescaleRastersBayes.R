@@ -5,7 +5,6 @@
 #' Each predictor raster is centred and scaled using training-data moments, then
 #' multiplied by the absolute value of its posterior beta coefficient, so that
 #' the resulting layers are on a common scale weighted by ecological importance.
-#' The rescaled stack can be passed directly into [EnvironmentalBasedSample()].
 #'
 #' Because `brms` uses `autoscale = TRUE` by default for regularising priors
 #' (horseshoe, normal, student), the posterior betas are already on a
@@ -29,10 +28,7 @@
 #' When `include_uncertainty = TRUE` an additional raster layer is appended
 #' whose values are the *posterior SD of the linear predictor* at each cell,
 #' propagated through all environmental betas. This encodes where the model is
-#' most uncertain about environmental conditions, and can be used as an
-#' optional extra input to [EnvironmentalBasedSample()] to bias cluster
-#' sampling toward uncertain regions. Set `uncertainty_wt` to control its
-#' influence relative to environmental layers (analogous to `coord_wt`).
+#' most uncertain about environmental conditions,
 #'
 #' @param model A `brmsfit` object from [bayesianSDM()].
 #' @param predictors A `SpatRaster` stack. Should be the `$Predictors` element
@@ -69,15 +65,16 @@
 #'
 #' @seealso [RescaleRasters()] for the glmnet equivalent,
 #'   [bayesianSDM()], [EnvironmentalBasedSample()]
+#' @importFrom brms fixef
 #' @export
 RescaleRasters_bayes <- function(
-    model,
-    predictors,
-    training_data,
-    pred_mat,
-    beta_summary      = c("mean", "median", "Q2.5", "Q97.5"),
-    include_uncertainty = FALSE,
-    uncertainty_wt    = 1
+  model,
+  predictors,
+  training_data,
+  pred_mat,
+  beta_summary = c("mean", "median", "Q2.5", "Q97.5"),
+  include_uncertainty = FALSE,
+  uncertainty_wt = 1
 ) {
   beta_summary <- match.arg(beta_summary)
 
@@ -116,8 +113,12 @@ RescaleRasters_bayes <- function(
 
   var_moments <- data.frame(
     Variable = env_vars,
-    Mean     = vapply(env_vars, function(v) mean(pm[[v]], na.rm = TRUE), numeric(1)),
-    SD       = vapply(env_vars, function(v) sdN(pm[[v]]),                 numeric(1)),
+    Mean = vapply(
+      env_vars,
+      function(v) mean(pm[[v]], na.rm = TRUE),
+      numeric(1)
+    ),
+    SD = vapply(env_vars, function(v) sdN(pm[[v]]), numeric(1)),
     row.names = NULL
   )
 
@@ -125,17 +126,20 @@ RescaleRasters_bayes <- function(
   coef_tab <- merge(coef_tab, var_moments, by = "Variable", sort = FALSE)
 
   # ── 5. Rescale raster layers ─────────────────────────────────────────────────
-  pred_subset  <- terra::subset(predictors, env_vars)
+  pred_subset <- terra::subset(predictors, env_vars)
   scaled_layers <- vector("list", length(env_vars))
 
   for (i in seq_along(env_vars)) {
-    v      <- env_vars[i]
-    mu     <- coef_tab$Mean[coef_tab$Variable == v]
-    sigma  <- coef_tab$SD[coef_tab$Variable == v]
-    beta   <- abs(coef_tab$Estimate[coef_tab$Variable == v])
+    v <- env_vars[i]
+    mu <- coef_tab$Mean[coef_tab$Variable == v]
+    sigma <- coef_tab$SD[coef_tab$Variable == v]
+    beta <- abs(coef_tab$Estimate[coef_tab$Variable == v])
 
     if (sigma == 0) {
-      warning(sprintf("Variable '%s' has zero SD in training data — skipping.", v))
+      warning(sprintf(
+        "Variable '%s' has zero SD in training data — skipping.",
+        v
+      ))
       # Produce a zero layer so downstream clustering ignores it
       scaled_layers[[i]] <- pred_subset[[v]] * 0
     } else {
@@ -144,19 +148,19 @@ RescaleRasters_bayes <- function(
     }
   }
 
-  pred_rescale        <- terra::rast(scaled_layers)
+  pred_rescale <- terra::rast(scaled_layers)
   names(pred_rescale) <- env_vars
 
   # ── 6. Optional uncertainty layer ────────────────────────────────────────────
   uncertainty_rast <- NULL
   if (include_uncertainty) {
     uncertainty_rast <- build_uncertainty_layer(
-      model        = model,
-      pred_mat     = pred_mat,
-      predictors   = predictors,
-      env_vars     = env_vars,
+      model = model,
+      pred_mat = pred_mat,
+      predictors = predictors,
+      env_vars = env_vars,
       pred_rescale = pred_rescale,
-      coef_tab     = coef_tab,
+      coef_tab = coef_tab,
       uncertainty_wt = uncertainty_wt
     )
     pred_rescale <- c(pred_rescale, uncertainty_rast)
@@ -165,9 +169,14 @@ RescaleRasters_bayes <- function(
   # ── 7. Return ─────────────────────────────────────────────────────────────────
   list(
     RescaledPredictors = pred_rescale,
-    BetaCoefficients   = coef_tab[, c("Variable", "Estimate", "Est.Error",
-                                       "Q2.5", "Q97.5")],
-    UncertaintyLayer   = uncertainty_rast
+    BetaCoefficients = coef_tab[, c(
+      "Variable",
+      "Estimate",
+      "Est.Error",
+      "Q2.5",
+      "Q97.5"
+    )],
+    UncertaintyLayer = uncertainty_rast
   )
 }
 
@@ -194,7 +203,7 @@ extract_posterior_betas <- function(model, beta_summary) {
 
   # Drop intercept and any GP-related parameters
   # GP smooth parameters appear as "sgp(...)" or contain "gp(" in the name
-  gp_pattern  <- "^(Intercept|sgp|sdgp|lscale)"
+  gp_pattern <- "^(Intercept|sgp|sdgp|lscale)"
   fe <- fe[!grepl(gp_pattern, fe$Variable), , drop = FALSE]
 
   # brms uses b_ prefix internally; fixef() strips it — but double-check
@@ -238,38 +247,48 @@ extract_posterior_betas <- function(model, beta_summary) {
 #' @keywords internal
 #' @noRd
 build_uncertainty_layer <- function(
-    model, pred_mat, predictors, env_vars,
-    pred_rescale, coef_tab, uncertainty_wt
+  model,
+  pred_mat,
+  predictors,
+  env_vars,
+  pred_rescale,
+  coef_tab,
+  uncertainty_wt
 ) {
   # For each variable: (standardised_raster * Est.Error)^2 — then sqrt of sum
   sq_layers <- vector("list", length(env_vars))
 
   for (i in seq_along(env_vars)) {
-    v         <- env_vars[i]
-    mu        <- coef_tab$Mean[coef_tab$Variable == v]
-    sigma     <- coef_tab$SD[coef_tab$Variable == v]
-    beta_sd   <- coef_tab$Est.Error[coef_tab$Variable == v]
+    v <- env_vars[i]
+    mu <- coef_tab$Mean[coef_tab$Variable == v]
+    sigma <- coef_tab$SD[coef_tab$Variable == v]
+    beta_sd <- coef_tab$Est.Error[coef_tab$Variable == v]
 
     if (sigma == 0) {
       sq_layers[[i]] <- predictors[[v]] * 0
     } else {
-      std_rast       <- (predictors[[v]] - mu) / sigma
+      std_rast <- (predictors[[v]] - mu) / sigma
       sq_layers[[i]] <- (std_rast * beta_sd)^2
     }
   }
 
-  uncertainty_rast <- sqrt(terra::app(terra::rast(sq_layers), sum, na.rm = TRUE))
+  uncertainty_rast <- sqrt(terra::app(
+    terra::rast(sq_layers),
+    sum,
+    na.rm = TRUE
+  ))
 
   # Rescale to match the maximum range across environmental layers, * wt
-  env_ranges       <- terra::global(pred_rescale, fun = "range", na.rm = TRUE)
-  target_range     <- max(abs(env_ranges$min - env_ranges$max)) * uncertainty_wt
+  env_ranges <- terra::global(pred_rescale, fun = "range", na.rm = TRUE)
+  target_range <- max(abs(env_ranges$min - env_ranges$max)) * uncertainty_wt
 
   u_range <- terra::global(uncertainty_rast, fun = "range", na.rm = TRUE)
-  u_span  <- as.numeric(u_range$max - u_range$min)
+  u_span <- as.numeric(u_range$max - u_range$min)
 
   if (u_span > 0) {
     uncertainty_rast <- (uncertainty_rast - u_range$min) /
-      u_span * target_range
+      u_span *
+      target_range
   }
 
   names(uncertainty_rast) <- "coef_uncertainty"
