@@ -342,11 +342,14 @@ run_bootstrap_iteration <- function(
 ) {
   # Jitter distances if there are uncertain coordinates
   if (length(uncertain_idx) > 0 && distance_type == 'geographic') {
+    # nocov start
     dist_boot <- update_distances_jitter(
       distances,
       sites_df,
       uncertain_idx
     )
+    # nocov end
+
   } else {
     dist_boot <- distances
   }

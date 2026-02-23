@@ -10,7 +10,9 @@ elasticSDM(
   planar_projection,
   domain = NULL,
   quantile_v = 0.025,
-  PCNM = TRUE
+  PCNM = TRUE,
+  fact = 1,
+  resample = FALSE
 )
 }
 \arguments{
@@ -24,7 +26,12 @@ elasticSDM(
 
 \item{quantile_v}{Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5\% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.}
 
-\item{PCNM}{Boolean. Whether to include PCNM while fitting the model.
+\item{PCNM}{Boolean. Whether to include PCNM while fitting the model.}
+
+\item{fact}{Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points.}
+
+\item{resample}{Boolean, Defaults to FALSE. Used to place 15\% of the requested points in areas undersampled by sdm::background functions.
+This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.
 Defaults to TRUE for use with \code{EnvironmentalBasedSample}, but FALSE should be used with \verb{Predictive Provenance} type workstreams.}
 }
 \value{

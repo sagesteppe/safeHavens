@@ -9,3 +9,4 @@
 ^data-raw$
 robots.txt
 ^update_readme\.sh$
+.covr.yml

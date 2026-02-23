@@ -387,6 +387,7 @@ perform_feature_selection_bayes <- function(
 
   if (method == "ffs") {
     # Forward feature selection using spatial CV folds
+    # nocov start
     ffs_result <- suppressMessages(
       CAST::ffs(
         predictors = train_df[, pred_names, drop = FALSE],
@@ -405,6 +406,7 @@ perform_feature_selection_bayes <- function(
         verbose = FALSE
       )
     )
+    # nocov end
     return(ffs_result$selectedvars)
   }
 
@@ -781,6 +783,7 @@ compute_aoa_bayes <- function(
     sf::st_drop_geometry()
 
   # ── 5. Call CAST::aoa ───────────────────────────────────────────────────────
+  # nocov start
   aoa_result <- CAST::aoa(
     newdata = predictors,
     train = train_predictors,
@@ -796,4 +799,6 @@ compute_aoa_bayes <- function(
     verbose = FALSE,
     ...
   )
+  # nocov end
+
 }

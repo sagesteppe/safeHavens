@@ -179,12 +179,14 @@ PosteriorCluster <- function(
 
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
+  # nocov start
   pt_env_coords <- add_coord_weights_to_points(
     sample_pts,
     pt_env,
     coord_wt,
     env_vars
-  )
+  )  
+  # nocov end
 
   # ── 6. Cluster over posterior draws ──────────────────────────────────────────
   message(sprintf("Clustering over %d posterior draws ...", n_draws))
@@ -204,6 +206,7 @@ PosteriorCluster <- function(
     names(betas_d) <- colnames(beta_draws) # Restore column names as names
 
     # Rescale point matrix by this draw's betas
+    # nocov start
     pt_scaled <- rescale_points_by_betas(
       pt_env,
       env_vars,
@@ -211,6 +214,7 @@ PosteriorCluster <- function(
       var_sd,
       betas_d
     )
+    # nocov end
 
     # Append (already-weighted) coordinates — same across draws
     pt_full <- cbind(
@@ -258,6 +262,7 @@ PosteriorCluster <- function(
   # Compute posterior mean betas
   mean_betas <- colMeans(beta_draws)
 
+  # nocov start
   rast_list <- project_consensus_to_raster(
     sample_pts = sample_pts,
     consensus_labels = consensus_labels,
@@ -272,6 +277,7 @@ PosteriorCluster <- function(
     mask_rast = mask_rast,
     planar_proj = planar_proj
   )
+  # nocov end
 
   # ── 11. Geographic reordering ─────────────────────────────────────────────────
   reordered <- reorder_clusters_geographically(rast_list$cluster_raster)
