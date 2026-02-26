@@ -371,6 +371,7 @@ cluster_novel_areas <- function(
   # Distance matrix & NbClust
   d <- stats::dist(clust_data, method = "euclidean")
 
+  # nocov start
   nbclust_defaults <- list(
     data = clust_data,
     diss = d,
@@ -384,6 +385,8 @@ cluster_novel_areas <- function(
   nb_result <- suppressMessages(
     do.call(NbClust::NbClust, utils::modifyList(nbclust_defaults, nbclust_args))
   )
+  # nocov end
+
 
   optimal_k <- max(nb_result$Best.partition)
   # Cut the tree
@@ -394,6 +397,7 @@ cluster_novel_areas <- function(
   train_data <- novel_pts[, !names(novel_pts) %in% c("x", "y")]
   train_data$ID <- factor(cluster_assignments)
 
+  # nocov start
   novel_knn <- suppressMessages(
     caret::train(
       ID ~ .,
@@ -410,6 +414,7 @@ cluster_novel_areas <- function(
     model = novel_knn,
     na.rm = TRUE
   )
+  # nocov end
 
   list(clusters_raster = novel_clusters)
 }

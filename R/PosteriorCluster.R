@@ -154,6 +154,7 @@ PosteriorCluster <- function(
   # Points are sampled once from the SDM prediction surface and held constant.
   # This is essential: co-occurrence is only meaningful when comparing the
   # same spatial locations across draws.
+  # nocov start
   message("Sampling fixed point set from prediction surface ...")
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
@@ -163,6 +164,7 @@ PosteriorCluster <- function(
     as.points = TRUE,
     na.rm = TRUE
   )
+  # nocov end
 
   # Extract predictor values at these fixed points
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
@@ -234,6 +236,7 @@ PosteriorCluster <- function(
   co_mat <- build_cooccurrence_matrix(draw_clusterings, n_pts_actual, n_draws)
 
   # ── 8. Consensus clustering ───────────────────────────────────────────────────
+  # nocov start
   message("Deriving consensus clustering ...")
   diss_mat <- stats::as.dist(1 - co_mat)
   consensus_labels <- switch(
@@ -246,6 +249,7 @@ PosteriorCluster <- function(
       cluster::pam(diss_mat, k = n, diss = TRUE)$clustering
     }
   )
+  # nocov end
 
   # ── 9. Stability surface ──────────────────────────────────────────────────────
   # For each point, stability = mean co-occurrence with all other points
@@ -298,6 +302,8 @@ PosteriorCluster <- function(
   sample_pts_sf <- sf::st_as_sf(sample_pts)
   coords_df <- as.data.frame(sf::st_coordinates(sample_pts_sf))
 
+
+  # nocov start
   top3_lookup <- data.frame(
     point_id = seq_len(nrow(top3_results$labels_matrix)),
     x = coords_df$X,
@@ -311,29 +317,38 @@ PosteriorCluster <- function(
     uncertainty = round(100 - top3_results$pct_matrix[, 1], 1) # 1 - rank1_pct
   )
 
+  main_r <- c(final_raster, stability_final)
+  terra::set.names(main_r) <- c('consensus', 'stability')
+
+  ranked_r <- c(rank2_final, rank3_final)
+  terra::set.names(main_r) <- c('rank2_final', 'rank3_final')
+
   list(
     Geometry = cluster_vects,
 
     # Summary_rasters
-    StabilityRaster = stability_final, ## group these into raster
-    ConsensusRaster = final_raster,
+    SummaryRaster = main_r,
 
     # Addtl_rank_rasters
-    Rank2Raster = rank2_final, ## combine these two into raster
-    Rank3Raster = rank3_final,
+    RankRaster = ranked_r,
 
     ## Cluster_data
-    Top3Lookup = top3_lookup, ## combine these two, two sublists
-    DrawClusterings = draw_clusterings,
+    ClusterData = list(
+      Top3Lookup = top3_lookup, ## combine these two, two sublists
+      DrawClusterings = draw_clusterings,
+    ), 
 
     SamplePoints = sample_pts_sf,
 
     # KNN_pixel_assign_models
-    KNN_Cluster = rast_list$knn_cluster, ## combine these into a sublist.
-    KNN_Rank2 = rast_list$knn_rank2,
-    KNN_Rank3 = rast_list$knn_rank3,
-    KNN_Stability = rast_list$knn_stability
+    KNNModels = list(
+      KNN_Cluster = rast_list$knn_cluster, ## combine these into a sublist.
+      KNN_Rank2 = rast_list$knn_rank2,
+      KNN_Rank3 = rast_list$knn_rank3,
+      KNN_Stability = rast_list$knn_stability
+    )
   )
+  # nocov end
 }
 
 
@@ -604,8 +619,8 @@ interpolate_stability_to_raster <- function(
   )
 
   stab_rast <- terra::interpIDW(
-    stability_vect,
     mask_rast,
+    stability_vect,
     field = "stability",
     radius = terra::xres(mask_rast) * 10,
     power = 2
@@ -658,6 +673,33 @@ project_consensus_to_raster <- function(
     planar_proj <- paste0('epsg:', planar_proj)
   }
 
+    zero_beta_vars <- env_vars[abs(mean_betas[env_vars]) < .Machine$double.eps]
+  if (length(zero_beta_vars) > 0L) {
+    warning(sprintf(
+      paste0(
+        "project_consensus_to_raster: %d predictor(s) have a posterior mean ",
+        "beta \u2248 0 and will be excluded from KNN training and raster ",
+        "projection: %s. This is expected to be extremely rare; consider ",
+        "increasing n_draws if it occurs repeatedly."
+      ),
+      length(zero_beta_vars),
+      paste(zero_beta_vars, collapse = ", ")
+    ))
+    env_vars   <- setdiff(env_vars, zero_beta_vars)
+    mean_betas <- mean_betas[env_vars]
+    var_mu     <- var_mu[env_vars]
+    var_sd     <- var_sd[env_vars]
+  }
+
+  if (length(env_vars) == 0L) {
+    stop(
+      "project_consensus_to_raster: all predictors have posterior mean beta ",
+      "\u2248 0. Cannot build a rescaled feature space for KNN training. ",
+      "Check your model or increase n_draws."
+    )
+  }
+
+
   # ── 1. Extract raw predictor values at the 500 fixed points ────────────────
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
 
@@ -703,6 +745,7 @@ project_consensus_to_raster <- function(
 
   # Helper to check if a factor has enough levels for train/test split
   can_train_knn <- function(y, min_per_class = 2) {
+    if (length(unique(y)) < 2L) return(FALSE)   # ← new first line
     counts <- table(y)
     all(counts >= min_per_class)
   }

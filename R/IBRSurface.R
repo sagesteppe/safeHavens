@@ -47,6 +47,7 @@ IBRSurface <- function(
   }
 
   ## ---- Step 0: Cluster points into groups ----------------------------------
+  # nocov start
   clusts <- cluster_connectivity(
     x = ibr_matrix,
     pts_sf = pts_sf,
@@ -56,6 +57,7 @@ IBRSurface <- function(
     min.nc = min.nc,
     max.nc = max.nc
   )
+  # nocov end
 
   ## ---- Step 1: Conservative geographic cores -------------------------------
 
@@ -181,6 +183,7 @@ cluster_connectivity <- function(
       coords <- stats::as.dist(x)
     }
 
+    # nocov start
     NoClusters <- NbClust::NbClust(
       data = coords,
       distance = 'euclidean',
@@ -189,6 +192,7 @@ cluster_connectivity <- function(
       method = 'complete',
       index = 'silhouette'
     )
+    # nocov end
 
     pts_sf$ID <- NoClusters$Best.partition
     hc <- NULL

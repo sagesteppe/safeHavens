@@ -89,6 +89,10 @@ reference:
   contents:
     - rescaleFuture
     - projectClusters
+- title: Bayesian Approaches
+    - BayesianSDM
+    - RescaleRastersBayes
+    - PosteriorCluster
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations
   contents:
@@ -106,6 +110,7 @@ articles:
     - PredictiveProvenance
     - PolygonBasedSamples
     - WorkedExample
+    - BayesianApproaches
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
     contents: 
