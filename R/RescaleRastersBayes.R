@@ -8,7 +8,7 @@
 #'
 #' Because `brms` uses `autoscale = TRUE` by default for regularising priors
 #' (horseshoe, normal, student), the posterior betas are already on a
-#' standardised scale and are directly comparable across predictors — no
+#' standardised scale and are directly comparable across predictors - no
 #' additional correction is needed beyond what [RescaleRasters()] applies to
 #' glmnet output.
 #'
@@ -78,12 +78,12 @@ RescaleRasters_bayes <- function(
 ) {
   beta_summary <- match.arg(beta_summary)
 
-  # ── 1. Extract fixed-effect posterior summaries ──────────────────────────────
+  # --- 1. Extract fixed-effect posterior summaries --------------------
   coef_tab <- extract_posterior_betas(model, beta_summary)
 
-  # ── 2. Identify environmental predictors (drop GP columns) ──────────────────
+  # --- 2. Identify environmental predictors (drop GP columns) --------------------
   env_vars <- coef_tab$Variable
-  # pred_mat may contain gp_x, gp_y — ignore those
+  # pred_mat may contain gp_x, gp_y -- ignore those
   env_vars <- env_vars[env_vars %in% colnames(pred_mat)]
   env_vars <- env_vars[!env_vars %in% c("gp_x", "gp_y")]
   coef_tab <- coef_tab[coef_tab$Variable %in% env_vars, , drop = FALSE]
@@ -95,7 +95,7 @@ RescaleRasters_bayes <- function(
     )
   }
 
-  # ── 3. Validate raster and pred_mat alignment ────────────────────────────────
+  # ---- 3. Validate raster and pred_mat alignment --------------------
   missing_rast <- setdiff(env_vars, names(predictors))
   if (length(missing_rast) > 0) {
     stop(
@@ -104,7 +104,7 @@ RescaleRasters_bayes <- function(
     )
   }
 
-  # ── 4. Compute training-data moments for centring/scaling ───────────────────
+  # ---- 4. Compute training-data moments for centring/scaling --------------------
   # Use pred_mat (same data that entered the model) for consistency
   pm <- as.data.frame(pred_mat)[, env_vars, drop = FALSE]
 
@@ -125,7 +125,7 @@ RescaleRasters_bayes <- function(
   # Merge moments into coef_tab
   coef_tab <- merge(coef_tab, var_moments, by = "Variable", sort = FALSE)
 
-  # ── 5. Rescale raster layers ─────────────────────────────────────────────────
+  # ---- 5. Rescale raster layers --------------------
   pred_subset <- terra::subset(predictors, env_vars)
   scaled_layers <- vector("list", length(env_vars))
 
@@ -137,7 +137,7 @@ RescaleRasters_bayes <- function(
 
     if (sigma == 0) {
       warning(sprintf(
-        "Variable '%s' has zero SD in training data — skipping.",
+        "Variable '%s' has zero SD in training data. skipping.",
         v
       ))
       # Produce a zero layer so downstream clustering ignores it
@@ -151,7 +151,7 @@ RescaleRasters_bayes <- function(
   pred_rescale <- terra::rast(scaled_layers)
   names(pred_rescale) <- env_vars
 
-  # ── 6. Optional uncertainty layer ────────────────────────────────────────────
+  # ---- 6. Optional uncertainty layer --------------------
   uncertainty_rast <- NULL
   if (include_uncertainty) {
     uncertainty_rast <- build_uncertainty_layer(
@@ -166,7 +166,7 @@ RescaleRasters_bayes <- function(
     pred_rescale <- c(pred_rescale, uncertainty_rast)
   }
 
-  # ── 7. Return ─────────────────────────────────────────────────────────────────
+  # ---- 7. Return --------------------
   list(
     RescaledPredictors = pred_rescale,
     BetaCoefficients = coef_tab[, c(
@@ -181,9 +181,9 @@ RescaleRasters_bayes <- function(
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# --------------------------------------------------------------------
 #  Internal helpers
-# ══════════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------
 
 #' Extract and tidy posterior fixed-effect summaries from a brmsfit
 #'
@@ -206,7 +206,7 @@ extract_posterior_betas <- function(model, beta_summary) {
   gp_pattern <- "^(Intercept|sgp|sdgp|lscale)"
   fe <- fe[!grepl(gp_pattern, fe$Variable), , drop = FALSE]
 
-  # brms uses b_ prefix internally; fixef() strips it — but double-check
+  # brms uses b_ prefix internally; fixef() strips it -- but double-check
   # and strip any residual "b_" prefix so names match raster layer names
   fe$Variable <- sub("^b_", "", fe$Variable)
 
@@ -255,7 +255,7 @@ build_uncertainty_layer <- function(
   coef_tab,
   uncertainty_wt
 ) {
-  # For each variable: (standardised_raster * Est.Error)^2 — then sqrt of sum
+  # For each variable: (standardised_raster * Est.Error)^2 then sqrt of sum
   sq_layers <- vector("list", length(env_vars))
 
   for (i in seq_along(env_vars)) {

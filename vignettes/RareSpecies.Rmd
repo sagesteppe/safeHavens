@@ -414,10 +414,10 @@ map +
     aes(x = lon, y = lat),
     col = '#FF1493', size = 4
     ) + 
-  ggrepel::geom_label_repel(
-    data = centers, 
-    aes(label = type, x = lon, y = lat)
-    ) + 
+ # ggrepel::geom_label_repel(
+ #   data = centers, 
+ #   aes(label = type, x = lon, y = lat)
+ #   ) + 
   theme_minimal() + 
   labs(title = 'Possbilities for centers')
 

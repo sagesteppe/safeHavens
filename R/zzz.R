@@ -47,8 +47,12 @@ utils::globalVariables(c(
   "x",
   "y",
 
-  # dplyr placeholder (rare but legit)
+  # dplyr placeholder 
   ".",
+
+  # bayeisna
+  "horseshoe",
+  "b",
 
   # random
   'NewAssigned',

@@ -90,8 +90,8 @@ reference:
     - rescaleFuture
     - projectClusters
 - title: Bayesian Approaches
-    - BayesianSDM
-    - RescaleRastersBayes
+    - bayesianSDM
+    - RescaleRasters_bayes
     - PosteriorCluster
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations

@@ -253,16 +253,16 @@ obby <- PosteriorCluster(
   training_data = sdModel$Train,
   planar_proj = 5070
 )
-ggplot(obby$Geometry) + W
+ggplot(obby$Geometry) + 
   geom_sf(aes(fill = factor(ID)))
 
-plot(obby$StabilityRaster)
-points(obby$SamplePoints)
+#plot(obby$StabilityRaster)
+#points(obby$SamplePoints)
 ```
 
 
 
-```{r view top 3 ranks side by side. }
+```{r view top 3 ranks side by side,eval=F}
 plot(obby$ConsensusRaster)
 plot(obby$Rank2Raster)
 plot(obby$Rank3Raster)

@@ -9,7 +9,7 @@ EqualAreaSample(
   n = 20,
   pts = 5000,
   planar_proj,
-  returnProjected,
+  returnProjected = FALSE,
   reps = 100,
   BS.reps = 9999
 )

@@ -75,12 +75,12 @@ A list:
 \describe{
 \item{\code{Geometry}}{\code{sf} polygon layer of consensus clusters (compatible
 with \code{\link[=EnvironmentalBasedSample]{EnvironmentalBasedSample()}} \verb{$Geometry} output).}
-\item{\code{CoOccurrenceMatrix}}{Numeric matrix (n_pts × n_pts). Entry \link{i,j}
+\item{\code{CoOccurrenceMatrix}}{Numeric matrix (n_pts × n_pts). Each tupple
 is the proportion of draws in which points i and j were assigned to the
 same cluster.}
 \item{\code{StabilityRaster}}{\code{SpatRaster} of per-cell cluster-assignment
 stability, predicted via KNN regression from the sample point stability
-scores. Values in \link{0,1}; low values flag environmentally ambiguous
+scores. Values in (0,1); low values flag environmentally ambiguous
 boundary regions.}
 \item{\code{ConsensusRaster}}{\code{SpatRaster} of final consensus (rank1) cluster
 IDs, geographically reordered.}

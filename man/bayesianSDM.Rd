@@ -72,8 +72,11 @@ parameter, or \code{NULL} to use brms default. The default \code{NULL} uses
 \code{inv_gamma(3, 1)}, which is weakly informative and appropriate for most
 ecological datasets. Override only if you have strong prior knowledge about
 the spatial range of your species (e.g., \code{prior(inv_gamma(5, 2), class = lscale, coef = "")}
-for tighter spatial autocorrelation).
-#' @param feature_selection Character. Variable selection method to apply before
+for tighter spatial autocorrelation).}
+
+\item{resample}{Boolean, Defaults to FALSE. Used to place 15\% of the requested points in areas undersampled by sdm::background functions.}
+
+\item{feature_selection}{Character. Variable selection method to apply before
 Bayesian model fitting. One of:
 \describe{
 \item{\code{"ffs"}}{Forward feature selection via CAST::ffs(). Uses spatial CV
@@ -81,8 +84,6 @@ folds to select variables. Fast and spatially-aware. Default.}
 \item{\code{"none"}}{No feature selection; use all predictors (or all PCA axes).
 Relies on horseshoe prior for shrinkage.}
 }}
-
-\item{resample}{Boolean, Defaults to FALSE. Used to place 15\% of the requested points in areas undersampled by sdm::background functions.}
 
 \item{vif}{Boolean, default TRUE, Whether to run usdm::vifcor to remove highly collinear features, default theta used.}
 

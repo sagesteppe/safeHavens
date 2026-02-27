@@ -63,7 +63,7 @@ the resulting layers are on a common scale weighted by ecological importance.
 
 Because \code{brms} uses \code{autoscale = TRUE} by default for regularising priors
 (horseshoe, normal, student), the posterior betas are already on a
-standardised scale and are directly comparable across predictors — no
+standardised scale and are directly comparable across predictors - no
 additional correction is needed beyond what \code{\link[=RescaleRasters]{RescaleRasters()}} applies to
 glmnet output.
 }

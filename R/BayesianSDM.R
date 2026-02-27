@@ -51,7 +51,7 @@
 #'   ecological datasets. Override only if you have strong prior knowledge about
 #'   the spatial range of your species (e.g., `prior(inv_gamma(5, 2), class = lscale, coef = "")`
 #'   for tighter spatial autocorrelation).
-#' #' @param feature_selection Character. Variable selection method to apply before
+#' @param feature_selection Character. Variable selection method to apply before
 #'   Bayesian model fitting. One of:
 #'   \describe{
 #'     \item{`"ffs"`}{Forward feature selection via CAST::ffs(). Uses spatial CV
@@ -713,8 +713,8 @@ create_bayes_spatial_predictions <- function(
 #' knndm for the AOA calculation.
 #'
 #' @returns An object of class `aoa` from CAST. See [CAST::aoa()] for details.
-#'
-#' @export
+#' @keywords internal
+#' @noRd
 compute_aoa_bayes <- function(
   model,
   train,
