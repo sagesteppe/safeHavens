@@ -56,6 +56,10 @@ jobs:
             any::cmdstanr
           needs: check
 
+      - name: Install CmdStan toolchain
+        run: |
+            Rscript -e 'cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)'
+
       #  spatial-libs install & sf build for Linux
       - name: Install spatial system libs (Ubuntu 24.04+)
         if: runner.os == 'Linux'
