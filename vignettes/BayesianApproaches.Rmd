@@ -115,7 +115,7 @@ bio_current <- worldclim_global(var="bioc", res=2.5)
 bbox <- ext(bb)
 
 bio_current <- crop(bio_current, bbox)
-bio_future <- crop(bio_future, bbox)
+#bio_future <- crop(bio_future, bbox)
 ```
 
 ```{r standardize raster layer names, echo = FALSE}
@@ -124,10 +124,10 @@ simplify_names <- function(x){
 }
 
 names(bio_current) <- gsub('^.*5m_', '', names(bio_current))
-names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
+#names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
 
 names(bio_current) <- simplify_names(bio_current)
-names(bio_future) <- simplify_names(bio_future)
+#names(bio_future) <- simplify_names(bio_future)
 
 rm(simplify_names)
 ```

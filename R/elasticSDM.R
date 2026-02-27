@@ -297,9 +297,10 @@ generate_background_points <- function(
       sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
       dplyr::mutate(occurrence = 0)
 
-    return(dplyr::bind_rows(bg_1, bg_2))
+    dplyr::bind_rows(bg_1, bg_2)
+    
   } else {
-    return(bg_1)
+    bg_1
   }
 }
 

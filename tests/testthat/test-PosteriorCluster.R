@@ -1706,7 +1706,7 @@ test_that("ebd: requesting more draws than exist returns at most n_total rows", 
 # =============================================================================
 test_that("ebd: n_draws == n_total returns exactly n_total rows", {
   n_total <- 50
-  model   <- make_fake_model(n_total = n_total, env_vars = c("bio1"))
+  model   <- make_fake_model(n_total = n_total, env_vars = "bio1")
   res     <- extract_beta_draws(model, env_vars = "bio1", n_draws = n_total)
 
   expect_equal(nrow(res), n_total)
@@ -1791,7 +1791,7 @@ test_that("ebd: output is a plain numeric matrix", {
 # F9.  Row count is exactly min(n_draws, n_total)
 # =============================================================================
 test_that("ebd: row count is exactly min(n_draws, n_total) in all cases", {
-  model <- make_fake_model(n_total = 100, env_vars = c("bio1"))
+  model <- make_fake_model(n_total = 100, env_vars = "bio1")
 
   expect_equal(nrow(extract_beta_draws(model, "bio1", n_draws = 10)),  10)
   expect_equal(nrow(extract_beta_draws(model, "bio1", n_draws = 100)), 100)
@@ -1845,7 +1845,7 @@ test_that("ebd: same seed produces identical row selection", {
 # F13. Single env_var, single draw → 1×1 matrix with correct colname
 # =============================================================================
 test_that("ebd: single var and single draw returns a 1x1 named matrix", {
-  model <- make_fake_model(n_total = 50, env_vars = c("bio1"))
+  model <- make_fake_model(n_total = 50, env_vars = "bio1")
   res   <- extract_beta_draws(model, env_vars = "bio1", n_draws = 1)
 
   expect_equal(dim(res), c(1L, 1L))
@@ -1963,7 +1963,7 @@ make_pc_pts <- function(mask, n = 60, seed = 1) {
 # Minimal named matrix that looks like brms::fixef() output
 # (row names = parameter names, cols = Estimate/Est.Error/Q2.5/Q97.5)
 make_fixef_matrix <- function(env_vars = c("bio1", "bio2"),
-                               extra    = c("Intercept")) {
+                               extra    = "Intercept") {
   all_pars <- c(extra, env_vars)
   m <- matrix(
     rnorm(length(all_pars) * 4),

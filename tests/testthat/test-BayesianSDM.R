@@ -276,7 +276,7 @@ test_that("build_priors creates valid prior objects", {
   student_prior <- build_priors(
     prior_type = "student",
     prior_scale = 1.5,
-    pred_names = c("var1"),
+    pred_names = "var1",
     n_obs = 75,
     p0 = NULL,
     gp_prior = NULL
@@ -643,7 +643,7 @@ test_that("build_priors creates valid prior objects", {
   student_prior <- build_priors(
     prior_type = "student",
     prior_scale = 1.5,
-    pred_names = c("var1"),
+    pred_names = "var1",
     n_obs = 75,
     p0 = NULL,
     gp_prior = NULL
