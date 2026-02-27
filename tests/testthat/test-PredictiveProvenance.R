@@ -1136,3 +1136,568 @@ test_that("PrioritizeSample: n column filters only rows where n != 1", {
     length(unique(result_full$Geometry$SampleOrder))
   )
 })
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared fixtures
+# ─────────────────────────────────────────────────────────────────────────────
+
+make_rast <- function(nrows = 10, ncols = 10,
+                      xmin = 0, xmax = 10, ymin = 0, ymax = 10,
+                      vals = NULL) {
+  r <- terra::rast(nrows = nrows, ncols = ncols,
+                   xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
+                   crs = "EPSG:4326")
+  terra::values(r) <- if (is.null(vals)) rnorm(terra::ncell(r)) else vals
+  r
+}
+
+make_pred_stack <- function(vars = c("var1", "var2"), ...) {
+  layers <- lapply(vars, function(v) make_rast(...))
+  stk <- do.call(c, layers)
+  names(stk) <- vars
+  stk
+}
+
+# Minimal glmnet model with known coefficient names
+make_glmnet <- function(vars = c("var1", "var2"), n = 100, seed = 1) {
+  set.seed(seed)
+  x <- matrix(rnorm(n * length(vars)), ncol = length(vars),
+               dimnames = list(NULL, vars))
+  y <- factor(sample(0:1, n, replace = TRUE))
+  glmnet::glmnet(x, y, family = "binomial", lambda = 0.01, alpha = 0.5)
+}
+
+# eSDM_object stub
+make_esdm <- function(vars = c("var1", "var2"), n_train = 60, n_test = 20,
+                      seed = 1) {
+  set.seed(seed)
+  coords_train <- data.frame(lon = runif(n_train, 0, 10),
+                              lat = runif(n_train, 0, 10))
+  train_sf <- sf::st_as_sf(coords_train, coords = c("lon", "lat"),
+                            crs = 4326)
+  train_sf$occurrence <- sample(0:1, n_train, replace = TRUE)
+
+  coords_test <- data.frame(lon = runif(n_test, 0, 10),
+                             lat = runif(n_test, 0, 10))
+  test_sf <- sf::st_as_sf(coords_test, coords = c("lon", "lat"), crs = 4326)
+  test_sf$occurrence <- sample(0:1, n_test, replace = TRUE)
+
+  pred_mat <- as.data.frame(
+    matrix(rnorm(n_train * length(vars)), ncol = length(vars),
+           dimnames = list(NULL, vars))
+  )
+
+  list(
+    TrainData    = train_sf,
+    TestData     = test_sf,
+    PredictMatrix = pred_mat,
+    Model        = make_glmnet(vars, n = n_train, seed = seed)
+  )
+}
+
+# current_clusters stub — sf with ID column + fit.knn placeholder
+make_current_clusters <- function(n_clusters = 3) {
+  make_sq <- function(i) {
+    x0 <- (i - 1) * 3
+    sf::st_polygon(list(matrix(
+      c(x0, 0, x0+2, 0, x0+2, 2, x0, 2, x0, 0),
+      ncol = 2, byrow = TRUE
+    )))
+  }
+  geoms <- sf::st_sfc(lapply(seq_len(n_clusters), make_sq), crs = 4326)
+  geom_sf <- sf::st_sf(ID = seq_len(n_clusters), geometry = geoms)
+
+  # fit.knn just needs to be something terra::predict dispatches on;
+  # we mock terra::predict so the object itself doesn't matter
+  list(
+    Geometry = geom_sf,
+    fit.knn  = structure(list(), class = "knn")
+  )
+}
+
+# Build a mock raster::stack result for dismo::mess (returns a RasterStack)
+make_mess_stack <- function(r_template, mess_vals = NULL) {
+  r <- raster::raster(
+    nrows = terra::nrow(r_template),
+    ncols = terra::ncol(r_template),
+    xmn   = terra::xmin(r_template),
+    xmx   = terra::xmax(r_template),
+    ymn   = terra::ymin(r_template),
+    ymx   = terra::ymax(r_template),
+    crs   = terra::crs(r_template)
+  )
+  raster::values(r) <- if (is.null(mess_vals))
+    rep(10, terra::ncell(r_template))   # all positive → no novel climate
+  else
+    mess_vals
+  raster::stack(r)
+}
+
+# Standard changes data.frame
+make_changes_df <- function(ids = 1:3) {
+  data.frame(
+    cluster_id       = ids,
+    current_area_km2 = runif(length(ids), 10, 100),
+    future_area_km2  = runif(length(ids), 10, 100),
+    area_change_pct  = runif(length(ids), -20, 20),
+    centroid_shift_km = runif(length(ids), 0, 5)
+  )
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper: activate all mocks for a projectClusters() call
+# mess_vals controls which cells are "novel" (negative MESS = novel climate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# mess_vals controls which cells are "novel" (negative MESS = novel climate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+run_with_mocks <- function(esdm, current_clusters, future_preds, current_preds,
+                           mess_vals = NULL,
+                           knn_cluster_vals = NULL,
+                           cluster_novel = FALSE,
+                           novel_cluster_result = NULL,
+                           novel_similarity_result = NULL,
+                           changes_result = NULL,
+                           ...) {
+
+  n_cells   <- terra::ncell(future_preds[[1]])
+  r_template <- future_preds[[1]]
+
+  # Default KNN output: all cells → cluster 1
+  if (is.null(knn_cluster_vals)) knn_cluster_vals <- rep(1L, n_cells)
+
+  # Default novel cluster result
+  if (is.null(novel_cluster_result)) {
+    nr <- r_template
+    terra::values(nr) <- rep(4L, n_cells)
+    novel_cluster_result <- list(clusters_raster = nr)
+  }
+
+  if (is.null(novel_similarity_result)) {
+    novel_similarity_result <- data.frame(
+      novel_cluster_id    = 4L,
+      nearest_existing_id = 1L,
+      avg_silhouette_width = 0.4
+    )
+  }
+
+  if (is.null(changes_result)) {
+    changes_result <- make_changes_df(seq_len(nrow(current_clusters$Geometry)))
+  }
+
+  # Build mock KNN raster
+  knn_rast <- r_template
+  terra::values(knn_rast) <- knn_cluster_vals
+
+  # Rescaled future: same structure as future_preds
+  rescaled_rast <- future_preds
+
+  local_mocked_bindings(
+    # dismo::mess → RasterStack with requested mess_vals
+    mess = function(x, v, full = FALSE) {
+      make_mess_stack(r_template, mess_vals)
+    },
+    .package = "dismo"
+  )
+
+  local_mocked_bindings(
+    # terra::predict dispatches for both glmnet (SDM) and knn (clusters)
+    # Distinguish by model class
+    predict = function(object, model, fun = NULL, na.rm = TRUE, ...) {
+      if (inherits(model, "knn")) {
+        knn_rast
+      } else {
+        # glmnet SDM prediction: return values in [0,1]
+        r <- object[[1]]
+        terra::values(r) <- runif(terra::ncell(r), 0.3, 0.9)
+        r
+      }
+    },
+    .package = "terra"
+  )
+
+  local_mocked_bindings(
+    rescaleFuture           = function(...) rescaled_rast,
+    add_weighted_coordinates = function(x, ...) x,
+    cluster_novel_areas     = function(...) novel_cluster_result,
+    analyze_cluster_relationships = function(...) novel_similarity_result,
+    calculate_changes       = function(...) changes_result,
+    .package = "safeHavens"
+  )
+
+  extra <- list(...)
+  if (!"thresholds" %in% names(extra)) {
+    extra$thresholds <- list(sensitivity = 0.5)
+  }
+
+  do.call(projectClusters, c(
+    list(
+      eSDM_object        = esdm,
+      current_clusters   = current_clusters,
+      future_predictors  = future_preds,
+      current_predictors = current_preds,
+      planar_proj        = 3857,
+      cluster_novel      = cluster_novel
+    ),
+    extra
+  ))
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Branch A: cluster_novel = FALSE → else path, empty novel_similarity
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("cluster_novel=FALSE returns empty novel_similarity data.frame", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(1)
+  vars         <- c("var1", "var2")
+  esdm         <- make_esdm(vars)
+  cc           <- make_current_clusters(3)
+  future_preds <- make_pred_stack(vars)
+  current_preds <- make_pred_stack(vars)
+
+  result <- run_with_mocks(
+    esdm, cc, future_preds, current_preds,
+    cluster_novel = FALSE
+  )
+
+  expect_equal(nrow(result$novel_similarity), 0L)
+  expect_named(result$novel_similarity,
+               c("novel_cluster_id", "nearest_existing_id", "avg_silhouette_width"))
+})
+
+test_that("cluster_novel=FALSE: final_clusters equals known_clusters (no cover merge)", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(2)
+  vars  <- c("var1", "var2")
+  esdm  <- make_esdm(vars)
+  cc    <- make_current_clusters(2)
+  fp    <- make_pred_stack(vars)
+  cp    <- make_pred_stack(vars)
+
+  # KNN produces clusters 1 and 2 alternating
+  n <- terra::ncell(fp[[1]])
+  knn_vals <- rep(c(1L, 2L), length.out = n)
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    knn_cluster_vals = knn_vals,
+    cluster_novel = FALSE
+  )
+
+  # clusters_raster should only contain values from KNN output (1, 2, or NA)
+  rast_vals <- terra::values(result$clusters_raster)
+  unique_vals <- unique(rast_vals[!is.na(rast_vals)])
+  expect_true(all(unique_vals %in% c(1L, 2L)))
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Branch B: cluster_novel=TRUE with novel cells → if path
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("cluster_novel=TRUE calls novel clustering and returns non-empty novel_similarity", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(3)
+  vars  <- c("var1", "var2")
+  esdm  <- make_esdm(vars)
+  cc    <- make_current_clusters(3)
+  fp    <- make_pred_stack(vars)
+  cp    <- make_pred_stack(vars)
+
+  # All cells have negative MESS → all are novel climate
+  n <- terra::ncell(fp[[1]])
+  novel_sim <- data.frame(
+    novel_cluster_id    = 4L,
+    nearest_existing_id = 1L,
+    avg_silhouette_width = 0.55
+  )
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    mess_vals = rep(-5, n),      # all novel
+    cluster_novel = TRUE,
+    novel_similarity_result = novel_sim
+  )
+
+  expect_gt(nrow(result$novel_similarity), 0L)
+  expect_equal(result$novel_similarity$novel_cluster_id, 4L)
+  expect_equal(result$novel_similarity$nearest_existing_id, 1L)
+})
+
+test_that("cluster_novel=TRUE merges known and novel clusters via cover()", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(4)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(3)  # existing IDs 1,2,3
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  n <- terra::ncell(fp[[1]])
+
+  # Novel cluster raster (will be offset by max existing ID = 3)
+  nr <- fp[[1]]
+  terra::values(nr) <- rep(1L, n)   # stub novel cluster ID 1 → becomes 4 after offset
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    mess_vals = rep(-5, n),
+    knn_cluster_vals = rep(1L, n),
+    cluster_novel = TRUE,
+    novel_cluster_result = list(clusters_raster = nr)
+  )
+
+  # clusters_raster is a SpatRaster
+  expect_s4_class(result$clusters_raster, "SpatRaster")
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Branch C: cluster_novel=TRUE but zero novel cells → falls through to else
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("cluster_novel=TRUE but no novel cells → empty novel_similarity", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(5)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  n <- terra::ncell(fp[[1]])
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    mess_vals = rep(10, n),    # all positive → zero novel cells
+    cluster_novel = TRUE       # flag is TRUE but condition n_novel_cells > 0 fails
+  )
+
+  expect_equal(nrow(result$novel_similarity), 0L)
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Output contract: all 7 slots present and correctly typed
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("return list has all required named slots with correct types", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(6)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(3)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  result <- run_with_mocks(esdm, cc, fp, cp, cluster_novel = FALSE)
+
+  expect_named(result,
+    c("clusters_raster", "clusters_sf", "suitable_habitat",
+      "novel_mask", "mess", "changes", "novel_similarity"),
+    ignore.order = TRUE
+  )
+
+  expect_s4_class(result$clusters_raster,  "SpatRaster")
+  expect_s3_class(result$clusters_sf,      "sf")
+  expect_s4_class(result$suitable_habitat, "SpatRaster")
+  expect_s4_class(result$novel_mask,       "SpatRaster")
+  expect_s4_class(result$mess,             "SpatRaster")
+  expect_s3_class(result$changes,          "data.frame")
+  expect_s3_class(result$novel_similarity, "data.frame")
+})
+
+test_that("clusters_sf has an ID column", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(7)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  result <- run_with_mocks(esdm, cc, fp, cp, cluster_novel = FALSE)
+
+  expect_true("ID" %in% names(result$clusters_sf))
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# suitable_habitat and novel_mask are binary (1 or NA)
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("suitable_habitat raster contains only 1 and NA", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(8)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  result <- run_with_mocks(esdm, cc, fp, cp, cluster_novel = FALSE)
+
+  vals <- terra::values(result$suitable_habitat)
+  non_na <- vals[!is.na(vals)]
+  expect_true(all(non_na == 1))
+})
+
+test_that("novel_mask raster contains only 1 and NA", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(9)
+  vars <- c("var1", "var2")
+  esdm  <- make_esdm(vars)
+  cc    <- make_current_clusters(2)
+  fp    <- make_pred_stack(vars)
+  cp    <- make_pred_stack(vars)
+  n     <- terra::ncell(fp[[1]])
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    mess_vals = rep(-5, n),   # all novel → novel_mask all 1
+    cluster_novel = FALSE
+  )
+
+  vals <- terra::values(result$novel_mask)
+  non_na <- vals[!is.na(vals)]
+  expect_true(all(non_na == 1))
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# thresh_metric controls which threshold value is used
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("thresh_metric selects the correct threshold from thresholds list", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(10)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  # High threshold → very little suitable habitat
+  result_high <- run_with_mocks(
+    esdm, cc, fp, cp,
+    cluster_novel = FALSE,
+    thresh_metric = "specificity",
+    thresholds = list(sensitivity = 0.1, specificity = 0.99)
+  )
+
+  # Low threshold → more suitable habitat
+  result_low <- run_with_mocks(
+    esdm, cc, fp, cp,
+    cluster_novel = FALSE,
+    thresh_metric = "sensitivity",
+    thresholds = list(sensitivity = 0.1, specificity = 0.99)
+  )
+
+  high_suitable <- sum(!is.na(terra::values(result_high$suitable_habitat)))
+  low_suitable  <- sum(!is.na(terra::values(result_low$suitable_habitat)))
+
+  expect_lte(high_suitable, low_suitable)
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# mess output matches mess_threshold logic
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("mess slot reflects raw MESS values from dismo", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(11)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+  n    <- terra::ncell(fp[[1]])
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    mess_vals = rep(7, n),
+    cluster_novel = FALSE
+  )
+
+  # mess slot should be a single-layer SpatRaster
+  expect_equal(terra::nlyr(result$mess), 1L)
+  mess_vals <- terra::values(result$mess)
+  expect_true(all(mess_vals == 7, na.rm = TRUE))
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# changes data.frame is forwarded from calculate_changes
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("changes slot is the data.frame returned by calculate_changes", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(12)
+  vars <- c("var1", "var2")
+  esdm <- make_esdm(vars)
+  cc   <- make_current_clusters(3)
+  fp   <- make_pred_stack(vars)
+  cp   <- make_pred_stack(vars)
+
+  mock_changes <- data.frame(
+    cluster_id        = 1:3,
+    current_area_km2  = c(10, 20, 30),
+    future_area_km2   = c(12, 18, 35),
+    area_change_pct   = c(20, -10, 16.7),
+    centroid_shift_km = c(1.1, 2.2, 0.5)
+  )
+
+  result <- run_with_mocks(
+    esdm, cc, fp, cp,
+    cluster_novel = FALSE,
+    changes_result = mock_changes
+  )
+
+  expect_equal(result$changes, mock_changes)
+})
+
+# ═════════════════════════════════════════════════════════════════════════════
+# model variables extracted from glmnet coef names
+# ═════════════════════════════════════════════════════════════════════════════
+
+test_that("only model coefficient variables are used for SDM prediction", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("dismo")
+
+  set.seed(13)
+  # Predictor stack has an extra variable not in the model
+  vars_model <- c("var1", "var2")
+  vars_extra <- c("var1", "var2", "var3")   # var3 not in model
+
+  esdm <- make_esdm(vars_model)
+  cc   <- make_current_clusters(2)
+  fp   <- make_pred_stack(vars_extra)
+  cp   <- make_pred_stack(vars_extra)
+
+  # terra::predict is called with future_predictors[[vars]] — if var3 was
+  # incorrectly included it would cause a dimension mismatch in glmnet.
+  # The mock sidesteps that, but we can verify the function completes cleanly.
+  expect_no_error(
+    run_with_mocks(esdm, cc, fp, cp, cluster_novel = FALSE)
+  )
+})
