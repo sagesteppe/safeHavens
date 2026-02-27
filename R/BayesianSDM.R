@@ -186,7 +186,7 @@ bayesianSDM <- function(
     pred_names <- names(predictors)
   }
 
-  if (min_ffs_var < terra::nlyr(predictors)) {
+  if (min_ffs_var > terra::nlyr(predictors)) {
     min_ffs_var = 2
   }
 
