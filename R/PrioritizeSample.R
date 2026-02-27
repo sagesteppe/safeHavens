@@ -70,8 +70,9 @@ PrioritizeSample <- function(
   # can be submitted to the function. We can detect these samples by a unique column name
   # which they feature. We will remove the rows which should not receive samples now. They
   # will not be reattached to the ouput object as they are by default non-target sample areas.
-  if (any(grepl('^n$', colnames(x)) == TRUE)) {
-    x <- x[x[, grep('^n$', colnames(x))] == 1, ]
+  if (any(grepl('^n$', colnames(x)))) {
+    n_col <- grep('^n$', colnames(x), value = TRUE)[1]
+    x <- x[sf::st_drop_geometry(x)[[n_col]] == 1, ]
   }
 
   sf::st_agr(x) <- 'constant'
@@ -151,7 +152,8 @@ order_by_distance_variance <- function(
   metric = c("var", "sd", "energy", "cv")
 ) {
   ## create distance matrix
-  dist_mat <- as.matrix(sf::st_distance(sf::st_point_on_surface(x)))
+  dist_mat <- as.numeric(as.matrix(sf::st_distance(sf::st_point_on_surface(x))))
+  dim(dist_mat) <- c(nrow(x), nrow(x))   # as.numeric flattens; restore dims
 
   metric <- match.arg(metric)
   n <- nrow(x)
