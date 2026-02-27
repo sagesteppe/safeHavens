@@ -50,7 +50,10 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, checkhelper
+          extra-packages: |
+            any::rcmdcheck
+            any::checkhelper
+            any::cmdstanr
           needs: check
 
       #  spatial-libs install & sf build for Linux
