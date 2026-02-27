@@ -1889,3 +1889,468 @@ test_that("ebd: output values are a verbatim row-subset of the input draws", {
       info = sprintf("Row %d of output not found in original draws matrix", i))
   }
 })
+
+
+library(testthat)
+library(terra)
+
+# =============================================================================
+# Tests for PosteriorCluster() — top-level exported function
+#
+# Coverage strategy
+# -----------------
+# Most of PosteriorCluster() is wrapped in # nocov (spatSample, the KNN
+# projection, the final list assembly) because those paths require a live
+# brmsfit and are covered by integration tests elsewhere.
+#
+# The lines that ARE coverable without a real brmsfit are:
+#
+#   G1.  set.seed() + match.arg(consensus_method)
+#   G2.  fe_names filtering logic (grepl pattern)
+#   G3.  length(env_vars) == 0 → stop()
+#   G4.  is.null(beta_draws) bypass — supply beta_draws directly
+#   G5.  var_mu / var_sd computation from pred_mat
+#   G6.  zero SD warning + variable drop
+#   G7.  terra::extract + complete.cases filtering of sample_pts
+#   G8.  Draw loop body + the d %% 25 == 0 message branch
+#   G9.  colMeans(beta_draws) + calls to compute_stability_scores /
+#        compute_top3_clusters
+#
+# Mocking approach
+# ----------------
+# - brms::fixef        → local_mocked_bindings returns a named matrix
+# - terra::spatSample  → local_mocked_bindings returns pre-built SpatVector
+#   (avoids the nocov spatSample block while keeping terra::extract real)
+# - beta_draws supplied directly → skips extract_beta_draws entirely
+# - project_consensus_to_raster → mocked to return a minimal list so the
+#   nocov projection block never executes and we don't need KNN/caret
+# - reorder_clusters_geographically, sf::st_transform, terra::project →
+#   mocked with identity-like stubs for the same reason
+# =============================================================================
+
+# ── Shared synthetic raster + points fixture ─────────────────────────────────
+make_pc_raster <- function(seed = 1) {
+  set.seed(seed)
+  r <- terra::rast(
+    nrows = 10, ncols = 10,
+    xmin = 0, xmax = 1,
+    ymin = 0, ymax = 1,
+    crs  = "EPSG:4326"
+  )
+  terra::values(r) <- 1
+  names(r) <- 'occurrence_prob_mean'
+  r
+}
+
+make_pc_predictors <- function(mask, env_vars = c("bio1", "bio2"), seed = 1) {
+  set.seed(seed)
+  layers <- lapply(env_vars, function(v) {
+    r <- mask
+    terra::values(r) <- runif(terra::ncell(mask), 1, 10)
+    r
+  })
+  pred <- terra::rast(layers)
+  names(pred) <- env_vars
+  pred
+}
+
+make_pc_pts <- function(mask, n = 60, seed = 1) {
+  set.seed(seed)
+  terra::spatSample(mask, size = n, method = "random",
+                    as.points = TRUE, na.rm = TRUE)
+}
+
+# Minimal named matrix that looks like brms::fixef() output
+# (row names = parameter names, cols = Estimate/Est.Error/Q2.5/Q97.5)
+make_fixef_matrix <- function(env_vars = c("bio1", "bio2"),
+                               extra    = c("Intercept")) {
+  all_pars <- c(extra, env_vars)
+  m <- matrix(
+    rnorm(length(all_pars) * 4),
+    nrow     = length(all_pars),
+    ncol     = 4,
+    dimnames = list(all_pars, c("Estimate", "Est.Error", "Q2.5", "Q97.5"))
+  )
+  m
+}
+
+# beta_draws matrix: n_draws rows, one col per env_var
+make_beta_draws <- function(env_vars = c("bio1", "bio2"),
+                             n_draws  = 30,
+                             seed     = 1) {
+  set.seed(seed)
+  m <- matrix(
+    rnorm(n_draws * length(env_vars), mean = 0.5, sd = 0.2),
+    nrow     = n_draws,
+    ncol     = length(env_vars),
+    dimnames = list(NULL, env_vars)
+  )
+  m
+}
+
+# Minimal stub for project_consensus_to_raster — returns the skeleton list
+# shape the caller expects so we never enter the nocov projection block
+make_rast_list_stub <- function(mask) {
+  dummy <- mask
+  terra::values(dummy) <- 1L
+  names(dummy) <- "cluster"
+  stab <- mask; terra::values(stab) <- 0.8; names(stab) <- "cluster_stability"
+  r2   <- mask; terra::values(r2)   <- 1L;  names(r2)   <- "rank2_cluster"
+  r3   <- mask; terra::values(r3)   <- 1L;  names(r3)   <- "rank3_cluster"
+  list(
+    cluster_raster   = dummy,
+    stability_raster = stab,
+    rank2_raster     = r2,
+    rank3_raster     = r3,
+    knn_cluster      = structure(list(), class = "train"),
+    knn_rank2        = structure(list(), class = "train"),
+    knn_rank3        = structure(list(), class = "train"),
+    knn_stability    = structure(list(), class = "train")
+  )
+}
+
+# Stub for reorder_clusters_geographically
+make_reorder_stub <- function(rast) {
+  vect_stub <- sf::st_sfc(sf::st_point(c(0.5, 0.5)), crs = "EPSG:4326") |>
+    sf::st_sf(geometry = _, cluster_id = 1L)
+  list(raster = rast, vectors = vect_stub)
+}
+
+# =============================================================================
+# G1.  match.arg: invalid consensus_method is caught immediately
+# =============================================================================
+test_that("pc: invalid consensus_method is rejected by match.arg", {
+  expect_error(
+    PosteriorCluster(
+      model            = NULL,
+      predictors       = make_pc_predictors(make_pc_raster()),
+      f_rasts          = make_pc_raster(),
+      pred_mat         = data.frame(bio1 = 1, bio2 = 1),
+      training_data    = NULL,
+      consensus_method = "kmeans",   # not in c("hierarchical", "pam")
+      planar_proj      = "EPSG:32632",
+      beta_draws       = make_beta_draws()
+    ),
+    regexp = "arg.*should be one of"
+  )
+})
+
+# =============================================================================
+# G2 + G3.  fe_names filtering: no env vars matched → stop()
+# =============================================================================
+test_that("pc: no env_vars matching raster layers triggers stop()", {
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = c("bio1", "bio2"))
+
+  # fixef returns only "Intercept" + GP terms — none match raster layer names
+  fixef_mat <- make_fixef_matrix(env_vars = character(0),
+                                  extra    = c("Intercept", "sgp_lat", "sdgp_lat"))
+
+  local_mocked_bindings(
+    fixef = function(model, ...) fixef_mat,
+    .package = "brms"
+  )
+
+  expect_error(
+    PosteriorCluster(
+      model         = NULL,
+      predictors    = predictors,
+      f_rasts       = mask,
+      pred_mat      = data.frame(bio1 = rnorm(20), bio2 = rnorm(20)),
+      training_data = NULL,
+      planar_proj   = "EPSG:32632",
+      beta_draws    = make_beta_draws()
+    ),
+    regexp = "No environmental fixed effects matched"
+  )
+})
+
+# =============================================================================
+# G4.  beta_draws supplied → is.null(beta_draws) branch NOT taken
+#      (extract_beta_draws never called, no brms::fixef needed for draws step)
+# =============================================================================
+test_that("pc: supplying beta_draws bypasses extract_beta_draws", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+
+  set.seed(1)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+  pts        <- make_pc_pts(mask, n = 60)
+  bd         <- make_beta_draws(env_vars = env_vars, n_draws = 30)
+  pred_mat   <- as.data.frame(terra::extract(predictors, pts, ID = FALSE))
+  fixef_mat  <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub  <- make_rast_list_stub(mask)
+
+  called_extract <- FALSE
+
+  local_mocked_bindings(
+    fixef              = function(model, ...) fixef_mat,
+    .package           = "brms"
+  )
+  local_mocked_bindings(
+    spatSample = function(...) pts,
+    .package   = "terra"
+  )
+  local_mocked_bindings(
+    project_consensus_to_raster      = function(...) rast_stub,
+    reorder_clusters_geographically  = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(
+    project   = function(x, ...) x,
+    .package  = "terra"
+  )
+  local_mocked_bindings(
+    st_transform = function(x, ...) x,
+    .package     = "sf"
+  )
+
+  # If extract_beta_draws were called it would error (model = NULL, no draws).
+  # Completing without error confirms the bypass branch was taken.
+  expect_no_error(
+    PosteriorCluster(
+      model         = NULL,
+      predictors    = predictors,
+      f_rasts       = mask,
+      pred_mat      = pred_mat,
+      training_data = NULL,
+      n_draws       = 30,
+      n             = 3,
+      n_pts         = 60,
+      planar_proj   = "EPSG:32632",
+      beta_draws    = bd          # <── supplied directly
+    )
+  )
+})
+
+# =============================================================================
+# G5.  var_mu / var_sd computed correctly from pred_mat
+#      (tested indirectly: if wrong, draw clustering diverges visibly)
+# =============================================================================
+test_that("pc: var_mu and var_sd are computed from pred_mat columns", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+
+  set.seed(2)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+  pts        <- make_pc_pts(mask, n = 60)
+  # pred_mat with known mean/sd — bio1 centred on 5, bio2 on 50
+  pred_mat   <- data.frame(
+    bio1 = rnorm(100, mean = 5,  sd = 1),
+    bio2 = rnorm(100, mean = 50, sd = 10)
+  )
+  bd        <- make_beta_draws(env_vars = env_vars, n_draws = 10)
+  fixef_mat <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub <- make_rast_list_stub(mask)
+
+  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
+  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
+  local_mocked_bindings(
+    project_consensus_to_raster     = function(...) rast_stub,
+    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
+  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
+
+  # Should complete — if var_sd computation errored we'd see NaN/Inf
+  expect_no_error(
+    PosteriorCluster(
+      model = NULL, predictors = predictors, f_rasts = mask,
+      pred_mat = pred_mat, training_data = NULL,
+      n_draws = 10, n = 3, n_pts = 60,
+      planar_proj = "EPSG:32632", beta_draws = bd
+    )
+  )
+})
+
+# =============================================================================
+# G6.  Zero-SD variable → warning + dropped from env_vars
+# =============================================================================
+test_that("pc: constant predictor column emits zero-SD warning and is dropped", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+
+  set.seed(3)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+  pts        <- make_pc_pts(mask, n = 60)
+  # bio2 is constant → SD = 0
+  pred_mat   <- data.frame(
+    bio1 = rnorm(100, 5, 1),
+    bio2 = rep(7.0, 100)        # constant
+  )
+  bd        <- make_beta_draws(env_vars = env_vars, n_draws = 10)
+  fixef_mat <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub <- make_rast_list_stub(mask)
+
+  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
+  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
+  local_mocked_bindings(
+    project_consensus_to_raster     = function(...) rast_stub,
+    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
+  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
+
+  expect_warning(
+    PosteriorCluster(
+      model = NULL, predictors = predictors, f_rasts = mask,
+      pred_mat = pred_mat, training_data = NULL,
+      n_draws = 10, n = 3, n_pts = 60,
+      planar_proj = "EPSG:32632", beta_draws = bd
+    ),
+    regexp = "zero SD"
+  )
+})
+
+# =============================================================================
+# G7.  terra::extract + complete.cases filtering
+#      Inject NAs into the predictor raster so some rows are dropped.
+# ==============================f===============================================
+test_that("pc: complete.cases filtering reduces n_pts_actual when NAs present", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+
+  set.seed(4)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+
+  # Corrupt half of bio1 with NAs so ~half of extracted rows are incomplete
+  terra::values(predictors[[1]])[1:50] <- NA_real_
+
+  pts        <- make_pc_pts(mask, n = 60)
+  pred_mat   <- data.frame(bio1 = rnorm(100, 5, 1), bio2 = rnorm(100, 5, 1))
+  bd         <- make_beta_draws(env_vars = env_vars, n_draws = 10)
+  fixef_mat  <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub  <- make_rast_list_stub(mask)
+
+  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
+  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
+  local_mocked_bindings(
+    project_consensus_to_raster     = function(...) rast_stub,
+    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
+  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
+
+  # Capture the "N of N_requested points have complete predictor data" message
+  msgs <- character(0)
+  withCallingHandlers(
+    PosteriorCluster(
+      model = NULL, predictors = predictors, f_rasts = mask,
+      pred_mat = pred_mat, training_data = NULL,
+      n_draws = 10, n = 3, n_pts = 60,
+      planar_proj = "EPSG:32632", beta_draws = bd
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  # The message should report fewer than 60 complete points
+  complete_msg <- msgs[grepl("complete predictor data", msgs)]
+  expect_length(complete_msg, 1L)
+  n_complete <- as.integer(regmatches(
+    complete_msg,
+    regexpr("^\\s*\\d+", complete_msg)
+  ))
+  expect_lt(n_complete, 60L)
+})
+
+# =============================================================================
+# G8.  Draw loop: d %% 25 == 0 message fires on draw 25
+# =============================================================================
+test_that("pc: draw progress message emitted at draw 25 when n_draws >= 25", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+
+  set.seed(5)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+  pts        <- make_pc_pts(mask, n = 60)
+  pred_mat   <- data.frame(bio1 = rnorm(100, 5, 1), bio2 = rnorm(100, 5, 1))
+  bd         <- make_beta_draws(env_vars = env_vars, n_draws = 26)
+  fixef_mat  <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub  <- make_rast_list_stub(mask)
+
+  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
+  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
+  local_mocked_bindings(
+    project_consensus_to_raster     = function(...) rast_stub,
+    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
+  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
+
+  msgs <- character(0)
+  withCallingHandlers(
+    PosteriorCluster(
+      model = NULL, predictors = predictors, f_rasts = mask,
+      pred_mat = pred_mat, training_data = NULL,
+      n_draws = 26, n = 3, n_pts = 60,
+      planar_proj = "EPSG:32632", beta_draws = bd
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  # "Draw 25 / 26" should appear
+  expect_true(
+    any(grepl("Draw 25", msgs)),
+    info = paste("Messages seen:", paste(msgs, collapse = " | "))
+  )
+})
+
+# =============================================================================
+# G9.  PAM consensus method branch is reached
+# =============================================================================
+test_that("pc: consensus_method = 'pam' runs without error", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("caret")
+  skip_if_not_installed("cluster")
+
+  set.seed(6)
+  env_vars   <- c("bio1", "bio2")
+  mask       <- make_pc_raster()
+  predictors <- make_pc_predictors(mask, env_vars = env_vars)
+  pts        <- make_pc_pts(mask, n = 60)
+  pred_mat   <- data.frame(bio1 = rnorm(100, 5, 1), bio2 = rnorm(100, 5, 1))
+  bd         <- make_beta_draws(env_vars = env_vars, n_draws = 10)
+  fixef_mat  <- make_fixef_matrix(env_vars = env_vars)
+  rast_stub  <- make_rast_list_stub(mask)
+
+  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
+  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
+  local_mocked_bindings(
+    project_consensus_to_raster     = function(...) rast_stub,
+    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .package = 'safeHavens'
+  )
+  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
+  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
+
+  expect_no_error(
+    PosteriorCluster(
+      model = NULL, predictors = predictors, f_rasts = mask,
+      pred_mat = pred_mat, training_data = NULL,
+      n_draws = 10, n = 3, n_pts = 60,
+      planar_proj   = "EPSG:32632",
+      beta_draws    = bd,
+      consensus_method = "pam"    # <── exercises the switch() pam branch
+    )
+  )
+})

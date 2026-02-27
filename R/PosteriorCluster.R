@@ -154,7 +154,6 @@ PosteriorCluster <- function(
   # Points are sampled once from the SDM prediction surface and held constant.
   # This is essential: co-occurrence is only meaningful when comparing the
   # same spatial locations across draws.
-  # nocov start
   message("Sampling fixed point set from prediction surface ...")
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
@@ -164,7 +163,6 @@ PosteriorCluster <- function(
     as.points = TRUE,
     na.rm = TRUE
   )
-  # nocov end
 
   # Extract predictor values at these fixed points
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
@@ -181,14 +179,12 @@ PosteriorCluster <- function(
 
   # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
   # Coordinates are added once (they don't vary across beta draws)
-  # nocov start
   pt_env_coords <- add_coord_weights_to_points(
     sample_pts,
     pt_env,
     coord_wt,
     env_vars
   )  
-  # nocov end
 
   # ── 6. Cluster over posterior draws ──────────────────────────────────────────
   message(sprintf("Clustering over %d posterior draws ...", n_draws))
@@ -208,7 +204,6 @@ PosteriorCluster <- function(
     names(betas_d) <- colnames(beta_draws) # Restore column names as names
 
     # Rescale point matrix by this draw's betas
-    # nocov start
     pt_scaled <- rescale_points_by_betas(
       pt_env,
       env_vars,
@@ -216,7 +211,6 @@ PosteriorCluster <- function(
       var_sd,
       betas_d
     )
-    # nocov end
 
     # Append (already-weighted) coordinates — same across draws
     pt_full <- cbind(
@@ -236,7 +230,6 @@ PosteriorCluster <- function(
   co_mat <- build_cooccurrence_matrix(draw_clusterings, n_pts_actual, n_draws)
 
   # ── 8. Consensus clustering ───────────────────────────────────────────────────
-  # nocov start
   message("Deriving consensus clustering ...")
   diss_mat <- stats::as.dist(1 - co_mat)
   consensus_labels <- switch(
@@ -249,8 +242,6 @@ PosteriorCluster <- function(
       cluster::pam(diss_mat, k = n, diss = TRUE)$clustering
     }
   )
-  # nocov end
-
   # ── 9. Stability surface ──────────────────────────────────────────────────────
   # For each point, stability = mean co-occurrence with all other points
   # sharing its consensus cluster label (its "within-cluster cohesion")
@@ -266,7 +257,6 @@ PosteriorCluster <- function(
   # Compute posterior mean betas
   mean_betas <- colMeans(beta_draws)
 
-  # nocov start
   rast_list <- project_consensus_to_raster(
     sample_pts = sample_pts,
     consensus_labels = consensus_labels,
@@ -281,7 +271,6 @@ PosteriorCluster <- function(
     mask_rast = mask_rast,
     planar_proj = planar_proj
   )
-  # nocov end
 
   # ── 11. Geographic reordering ─────────────────────────────────────────────────
   reordered <- reorder_clusters_geographically(rast_list$cluster_raster)
@@ -302,8 +291,6 @@ PosteriorCluster <- function(
   sample_pts_sf <- sf::st_as_sf(sample_pts)
   coords_df <- as.data.frame(sf::st_coordinates(sample_pts_sf))
 
-
-  # nocov start
   top3_lookup <- data.frame(
     point_id = seq_len(nrow(top3_results$labels_matrix)),
     x = coords_df$X,
@@ -318,10 +305,10 @@ PosteriorCluster <- function(
   )
 
   main_r <- c(final_raster, stability_final)
-  terra::set.names(main_r) <- c('consensus', 'stability')
+  names(main_r) <- c('consensus', 'stability')
 
   ranked_r <- c(rank2_final, rank3_final)
-  terra::set.names(main_r) <- c('rank2_final', 'rank3_final')
+  names(ranked_r) <- c('rank2_final', 'rank3_final')
 
   list(
     Geometry = cluster_vects,
@@ -335,7 +322,7 @@ PosteriorCluster <- function(
     ## Cluster_data
     ClusterData = list(
       Top3Lookup = top3_lookup, ## combine these two, two sublists
-      DrawClusterings = draw_clusterings,
+      DrawClusterings = draw_clusterings
     ), 
 
     SamplePoints = sample_pts_sf,
@@ -348,7 +335,6 @@ PosteriorCluster <- function(
       KNN_Stability = rast_list$knn_stability
     )
   )
-  # nocov end
 }
 
 
