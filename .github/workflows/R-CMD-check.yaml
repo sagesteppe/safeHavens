@@ -89,9 +89,10 @@ jobs:
 
       - name: Install CmdStan
         run: |
-          if (!dir.exists(cmdstanr::cmdstan_path())) {
-            cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
-          }
+          needs_install <- tryCatch({
+            !dir.exists(cmdstanr::cmdstan_path())
+          }, error = function(e) TRUE)
+          if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
         shell: Rscript {0}
 
       #  spatial-libs install & sf build for Linux
