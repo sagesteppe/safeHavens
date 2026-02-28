@@ -501,18 +501,20 @@ add_coord_weights_to_points <- function(
   coords <- terra::crds(sample_pts)
   sdN <- function(x) sqrt(mean((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE))
 
-  # Range of env variables (used as reference for weighting)
   env_ranges <- apply(pt_env[, env_vars, drop = FALSE], 2, function(x) {
-    diff(range(x, na.rm = TRUE))
+    x <- x[is.finite(x)]          # strip NA/NaN/Inf before range()
+    if (length(x) < 2L) return(0) # nothing left to compute a range from
+    diff(range(x))
   })
-  target_range <- max(env_ranges, na.rm = TRUE) * coord_wt
+  target_range <- if (length(env_ranges) == 0L || all(env_ranges == 0)) {
+    1
+  } else {
+    max(env_ranges) * coord_wt
+  }
 
-  # Scale each coordinate axis to target range
   scale_to_range <- function(v, tgt) {
     rng <- diff(range(v, na.rm = TRUE))
-    if (rng == 0) {
-      return(rep(0, length(v)))
-    }
+    if (!is.finite(rng) || rng == 0) return(rep(0, length(v)))
     (v - mean(v, na.rm = TRUE)) / rng * tgt
   }
 
@@ -520,7 +522,6 @@ add_coord_weights_to_points <- function(
   pt_env$coord_y_w <- scale_to_range(coords[, 2], target_range)
   pt_env
 }
-
 
 #' Build symmetric co-occurrence probability matrix from draw clusterings
 #'

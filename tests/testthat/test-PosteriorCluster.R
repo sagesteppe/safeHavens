@@ -1302,27 +1302,27 @@ test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
   skip_if_not_installed("terra")
   skip_if_not_installed("caret")
   f <- make_pcr_fixture(n_pts = 80, n_clust = 3)
-
-  # Force all 80 points into 80 unique clusters → no cluster has >= 2 members
   degenerate_labels <- seq_len(f$n_pts)
   degenerate_top3   <- cbind(degenerate_labels,
-                              degenerate_labels,
-                              degenerate_labels)
-
+                             degenerate_labels,
+                             degenerate_labels)
   expect_error(
-    project_consensus_to_raster(
-      sample_pts       = f$sample_pts,
-      consensus_labels = degenerate_labels,
-      stability_scores = f$stability_scores,
-      top3_labels      = degenerate_top3,
-      predictors       = f$predictors,
-      env_vars         = f$env_vars,
-      var_mu           = f$var_mu,
-      var_sd           = f$var_sd,
-      mean_betas       = f$mean_betas,
-      coord_wt         = f$coord_wt,
-      mask_rast        = f$mask_rast,
-      planar_proj      = f$planar_proj
+    withCallingHandlers(
+      project_consensus_to_raster(
+        sample_pts       = f$sample_pts,
+        consensus_labels = degenerate_labels,
+        stability_scores = f$stability_scores,
+        top3_labels      = degenerate_top3,
+        predictors       = f$predictors,
+        env_vars         = f$env_vars,
+        var_mu           = f$var_mu,
+        var_sd           = f$var_sd,
+        mean_betas       = f$mean_betas,
+        coord_wt         = f$coord_wt,
+        mask_rast        = f$mask_rast,
+        planar_proj      = f$planar_proj
+      ),
+      warning = function(w) invokeRestart("muffleWarning")
     ),
     regexp = "insufficient observations per cluster"
   )
