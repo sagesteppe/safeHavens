@@ -65,6 +65,8 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::checkhelper
+          ignored-packages: |
+            cmdstanr
           needs: check
 
       # cmdstanr must be installed from the Stan r-universe, not CRAN/RSPM
