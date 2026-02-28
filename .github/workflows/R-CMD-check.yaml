@@ -65,6 +65,8 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::checkhelper
+            any::BH
+            any::rstan
           ignored-packages: |
             cmdstanr
           needs: check
@@ -78,8 +80,18 @@ jobs:
           )
         shell: Rscript {0}
 
+      - name: Cache CmdStan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
+          restore-keys: cmdstan-${{ runner.os }}-
+
       - name: Install CmdStan
-        run: cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        run: |
+          if (!dir.exists(cmdstanr::cmdstan_path())) {
+            cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+          }
         shell: Rscript {0}
 
       #  spatial-libs install & sf build for Linux
