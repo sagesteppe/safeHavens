@@ -19,12 +19,12 @@ jobs:
       matrix:
         config:
           - {os: macos-latest,   r: 'release'}
-          - {os: macos-latest, r: 'oldrel-1'}
+          - {os: macos-latest,   r: 'oldrel-1'}
           - {os: windows-latest, r: 'release'}
           - {os: windows-latest, r: 'oldrel-1'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install mermaid-cli
         run: npm install -g @mermaid-js/mermaid-cli
 
@@ -48,17 +48,37 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      # Windows: ensure RTools C++ compiler is on PATH for CmdStan compilation
+      - name: Set up RTools compiler (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # r-lib/actions/setup-r already installs RTools; this ensures the
+          # mingw64 bin directory is on PATH so CmdStan's Makefile can find g++
+          $rtoolsPath = "C:\rtools44\x86_64-w64-mingw32.static.posix\bin"
+          if (Test-Path $rtoolsPath) {
+            echo "$rtoolsPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          }
+        shell: pwsh
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
             any::rcmdcheck
             any::checkhelper
-            any::cmdstanr
           needs: check
 
-      - name: Install CmdStan toolchain
+      # cmdstanr must be installed from the Stan r-universe, not CRAN/RSPM
+      - name: Install cmdstanr
         run: |
-            Rscript -e 'cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)'
+          install.packages(
+            "cmdstanr",
+            repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
+          )
+        shell: Rscript {0}
+
+      - name: Install CmdStan
+        run: cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        shell: Rscript {0}
 
       #  spatial-libs install & sf build for Linux
       - name: Install spatial system libs (Ubuntu 24.04+)
@@ -72,7 +92,7 @@ jobs:
             libproj-dev proj-bin \
             libgeos-dev \
             libgeos++-dev
-      
+
       - name: Compile sf from source
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
@@ -89,4 +109,3 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
-
