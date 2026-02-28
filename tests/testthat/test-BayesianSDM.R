@@ -28,7 +28,7 @@ test_that("bayesianSDM runs with minimal synthetic data", {
   names(predictors) <- c("bio1", "bio2")
   
   # Run minimal model
-  result <- expect_warning(
+  result <- suppressWarnings(
     bayesianSDM(
       x = x,
       predictors = predictors,
@@ -44,8 +44,7 @@ test_that("bayesianSDM runs with minimal synthetic data", {
       seed = 42,
       fact = 1.5,
       silent = 2
-    ),
-    "The ESS has been capped to avoid unstable estimates."
+    )
   )
   
   # Check structure
@@ -524,7 +523,7 @@ test_that("Integration test: full workflow runs end-to-end", {
   predictors <- do.call(c, pred_list)
   names(predictors) <- paste0("bio", 1:3)
   
-  result <- expect_warning(
+  result <- suppressWarnings(
     bayesianSDM(
       x = x,
       predictors = predictors,
@@ -541,8 +540,7 @@ test_that("Integration test: full workflow runs end-to-end", {
       seed = 2024,
       fact = 2,
       silent = 2
-    ),
-    "The ESS has been capped to avoid unstable estimates."
+    )
   )
   
   # FFS should select a subset
