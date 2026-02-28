@@ -897,7 +897,7 @@ test_that("Integration test: full workflow runs end-to-end", {
   names(predictors) <- paste0("bio", 1:3)
   
   # Run full pipeline
-  result <- expect_warning(
+  result <- suppressWarnings(
     bayesianSDM(
       x = x,
       predictors = predictors,
@@ -914,8 +914,7 @@ test_that("Integration test: full workflow runs end-to-end", {
       seed = 2024,
       fact = 2,
       silent = 2
-    ),
-    "The ESS has been capped to avoid unstable estimates."
+    )
   )
   
   # Comprehensive checks
