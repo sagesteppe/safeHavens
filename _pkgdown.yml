@@ -90,6 +90,7 @@ reference:
     - rescaleFuture
     - projectClusters
 - title: Bayesian Approaches
+  desc: Bayesian approaches for generating clusters in light of uncertainty
     - bayesianSDM
     - RescaleRasters_bayes
     - PosteriorCluster
