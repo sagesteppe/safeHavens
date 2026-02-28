@@ -91,6 +91,7 @@ reference:
     - projectClusters
 - title: Bayesian Approaches
   desc: Bayesian approaches for generating clusters in light of uncertainty
+  contents:
     - bayesianSDM
     - RescaleRasters_bayes
     - PosteriorCluster
