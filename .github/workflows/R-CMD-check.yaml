@@ -65,11 +65,21 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::checkhelper
-            any::BH
-            any::rstan
+  
           ignored-packages: |
             cmdstanr
           needs: check
+
+      # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
+      # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
+      - name: Install rstan and Stan C++ dependencies
+        run: |
+          install.packages(
+            "rstan",
+            dependencies = c("Depends", "Imports", "LinkingTo"),
+            repos = getOption("repos")
+          )
+        shell: Rscript {0}
 
       # cmdstanr must be installed from the Stan r-universe, not CRAN/RSPM
       - name: Install cmdstanr

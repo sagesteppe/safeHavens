@@ -23,7 +23,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr
+          extra-packages: |
+            any::covr
+
           ignored-packages: cmdstanr
           needs: coverage
 
@@ -41,6 +43,17 @@ jobs:
 
       - name: Compile sf from source
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
+        shell: Rscript {0}
+
+      # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
+      # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
+      - name: Install rstan and Stan C++ dependencies
+        run: |
+          install.packages(
+            "rstan",
+            dependencies = c("Depends", "Imports", "LinkingTo"),
+            repos = getOption("repos")
+          )
         shell: Rscript {0}
 
       - name: Install cmdstanr
