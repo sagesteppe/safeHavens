@@ -1,32 +1,22 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# .github/workflows/test-coverage.yaml
+name: test-coverage
+
 on:
   push:
-    branches: main
+    branches: [main]
   pull_request:
-    branches: main
-  release:
-    types: [published]
-  workflow_dispatch:
-
-name: pkgdown.yaml
-permissions: read-all
+    branches: [main]
 
 jobs:
-  pkgdown:
+  test-coverage:
     runs-on: ubuntu-latest
-    concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_LIBS_USER: ${{ github.workspace }}/R/library
-    permissions:
-      contents: write
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -34,11 +24,15 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::.
-          ignored-packages: cmdstanr
-          needs: website
+          extra-packages: |
+            any::covr
+            any::testthat
 
-      - name: Install spatial system libs (Ubuntu 24.04+)
+          needs: coverage
+          dependencies: '"hard"' 
+
+      # Install spatial system libs needed for sf
+      - name: Install spatial system libs
         run: |
           sudo rm -f /etc/apt/sources.list.d/*ubuntugis*.list \
                      /etc/apt/sources.list.d/*ubuntugis*.sources || true
@@ -64,7 +58,6 @@ jobs:
           )
         shell: Rscript {0}
 
-      # cmdstanr must be installed from the Stan r-universe, not CRAN/RSPM
       - name: Install cmdstanr
         run: |
           install.packages(
@@ -88,14 +81,13 @@ jobs:
           if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
         shell: Rscript {0}
 
-      - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+      - name: Test coverage
+        run: |
+          covr::codecov(
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+          )
         shell: Rscript {0}
-
-      - name: Deploy to GitHub pages
-        if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4.5.0
-        with:
-          clean: false
-          branch: gh-pages
-          folder: docs
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
