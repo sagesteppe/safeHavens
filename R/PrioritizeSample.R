@@ -152,6 +152,7 @@ order_by_distance_variance <- function(
   metric = c("var", "sd", "energy", "cv")
 ) {
   ## create distance matrix
+  sf::st_agr(x) <- 'constant'
   dist_mat <- as.numeric(as.matrix(sf::st_distance(sf::st_point_on_surface(x))))
   dim(dist_mat) <- c(nrow(x), nrow(x))   # as.numeric flattens; restore dims
 

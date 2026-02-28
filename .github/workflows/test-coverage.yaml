@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_LIBS_USER: ${{ github.workspace }}/R/library
 
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +27,8 @@ jobs:
           extra-packages: |
             any::covr
 
-          ignored-packages: cmdstanr
           needs: coverage
+          dependencies: '"hard"' 
 
       # Install spatial system libs needed for sf
       - name: Install spatial system libs

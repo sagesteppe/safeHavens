@@ -10,19 +10,19 @@ on:
   workflow_dispatch:
 
 name: pkgdown.yaml
-
 permissions: read-all
 
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    # Only restrict concurrency for non-PR jobs
     concurrency:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_LIBS_USER: ${{ github.workspace }}/R/library
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,17 +32,13 @@ jobs:
         with:
           use-public-rspm: true
 
-      - name: Install dependencies
-        run: |
-          Rscript -e 'install.packages(c("pkgdown", "quarto"))'
-
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pkgdown, local::.
+          ignored-packages: cmdstanr
           needs: website
 
       - name: Install spatial system libs (Ubuntu 24.04+)
-        if: runner.os == 'Linux'
         run: |
           sudo rm -f /etc/apt/sources.list.d/*ubuntugis*.list \
                      /etc/apt/sources.list.d/*ubuntugis*.sources || true
@@ -54,8 +50,42 @@ jobs:
             libgeos++-dev
 
       - name: Compile sf from source
-        if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
+        shell: Rscript {0}
+
+      # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
+      # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
+      - name: Install rstan and Stan C++ dependencies
+        run: |
+          install.packages(
+            "rstan",
+            dependencies = c("Depends", "Imports", "LinkingTo"),
+            repos = getOption("repos")
+          )
+        shell: Rscript {0}
+
+      # cmdstanr must be installed from the Stan r-universe, not CRAN/RSPM
+      - name: Install cmdstanr
+        run: |
+          install.packages(
+            "cmdstanr",
+            repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
+          )
+        shell: Rscript {0}
+
+      - name: Cache CmdStan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
+          restore-keys: cmdstan-${{ runner.os }}-
+
+      - name: Install CmdStan
+        run: |
+          needs_install <- tryCatch({
+            !dir.exists(cmdstanr::cmdstan_path())
+          }, error = function(e) TRUE)
+          if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
         shell: Rscript {0}
 
       - name: Build site
