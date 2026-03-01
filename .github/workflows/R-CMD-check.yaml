@@ -29,7 +29,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      R_LIBS_USER: ${{ github.workspace }}/R/library
+      # Use a temp dir that R itself sets, guaranteed cross-platform
+      R_LIBS_USER: ${{ runner.temp }}/R/library
+      CMDSTAN: ${{ runner.temp }}/cmdstan
 
     steps:
       - uses: actions/checkout@v4
@@ -49,21 +51,15 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Set up R library path
-        run: |
-          lib <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "R", "library")
-          dir.create(lib, recursive = TRUE, showWarnings = FALSE)
-          cat(sprintf('.libPaths(c("%s", .libPaths()))', lib),
-              file = path.expand("~/.Rprofile"), append = TRUE)
-          message("Library path set: ", lib)
-        shell: Rscript {0}
+      # Create the library dir so R and pak can write to it immediately
+      - name: Create R library dir
+        run: mkdir -p "${{ runner.temp }}/R/library"
+        shell: bash
 
       # Windows: ensure RTools C++ compiler is on PATH for CmdStan compilation
       - name: Set up RTools compiler (Windows)
         if: runner.os == 'Windows'
         run: |
-          # r-lib/actions/setup-r already installs RTools; this ensures the
-          # mingw64 bin directory is on PATH so CmdStan's Makefile can find g++
           $rtoolsPath = "C:\rtools44\x86_64-w64-mingw32.static.posix\bin"
           if (Test-Path $rtoolsPath) {
             echo "$rtoolsPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -82,9 +78,8 @@ jobs:
             any::ggplot2
             any::patchwork
             any::DiagrammeR
-  
           needs: check
-          dependencies: '"hard"' 
+          dependencies: '"hard"'
 
       # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
       # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
@@ -109,7 +104,7 @@ jobs:
       - name: Cache CmdStan
         uses: actions/cache@v4
         with:
-          path: ~/.cmdstan
+          path: ${{ runner.temp }}/cmdstan
           key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
           restore-keys: cmdstan-${{ runner.os }}-
 
@@ -118,7 +113,13 @@ jobs:
           needs_install <- tryCatch({
             !dir.exists(cmdstanr::cmdstan_path())
           }, error = function(e) TRUE)
-          if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+          if (needs_install) {
+            cmdstanr::install_cmdstan(
+              dir = Sys.getenv("CMDSTAN"),
+              cores = 2,
+              quiet = TRUE
+            )
+          }
         shell: Rscript {0}
 
       #  spatial-libs install & sf build for Linux
@@ -152,16 +153,10 @@ jobs:
           library(cmdstanr)
           message("cmdstanr path: ", cmdstanr::cmdstan_path())
         shell: Rscript {0}
-        env:
-          R_LIBS: ${{ github.workspace }}/R/library
-          R_LIBS_USER: ${{ github.workspace }}/R/library
-          CMDSTAN: ~/.cmdstan
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
         env:
-          R_LIBS: ${{ github.workspace }}/R/library
-          R_LIBS_USER: ${{ github.workspace }}/R/library
-          CMDSTAN: ~/.cmdstan
+          CMDSTAN: ${{ runner.temp }}/cmdstan
