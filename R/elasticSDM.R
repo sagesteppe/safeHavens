@@ -136,6 +136,23 @@ elasticSDM <- function(
   # Create spatial predictions
   rast_cont <- create_spatial_predictions(mod, predictors, vars)
 
+  aoa_result <- CAST::aoa(
+    newdata   = predictors,
+    model     = NA,              
+    train     = pred_matrix[, vars, drop = FALSE],   
+    variables = vars,  
+    useWeight = FALSE,
+    CVtest    = indices_knndm$indx_test,
+    CVtrain   = indices_knndm$indx_train,
+    method    = "L2",
+    useCV     = TRUE,
+    LPD       = TRUE,
+    verbose   = FALSE
+  )
+
+  aoa_surf <- c(aoa_result$AOA, aoa_result$DI, aoa_result$LPD)
+  names(aoa_surf) <- c('AOA', 'DI', 'LPD')
+
   list(
     RasterPredictions = rast_cont,
     Predictors = predictors,
@@ -145,7 +162,13 @@ elasticSDM <- function(
     ConfusionMatrix = cm,
     TrainData = train,
     TestData = test,
-    PredictMatrix = pred_matrix
+    PredictMatrix = pred_matrix,
+    AOA = aoa_surf,
+    AOA_Diagnostics = list(
+      threshold = aoa_result$parameters$threshold,
+      AOA_coverage = sum(terra::values(aoa_result$AOA), na.rm = TRUE) /
+        sum(!is.na(terra::values(aoa_result$AOA)))
+    )
   )
 }
 
