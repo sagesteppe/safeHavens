@@ -34,16 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up R library path
-        run: |
-          lib <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "R", "library")
-          dir.create(lib, recursive = TRUE, showWarnings = FALSE)
-          # Write to .Rprofile so every R subprocess in this job inherits the path
-          cat(sprintf('.libPaths(c("%s", .libPaths()))\n', lib),
-              file = path.expand("~/.Rprofile"), append = TRUE)
-          message("Library path set: ", lib)
-        shell: Rscript {0}
-
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: actions/setup-node@v4
@@ -58,6 +48,15 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+
+      - name: Set up R library path
+        run: |
+          lib <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "R", "library")
+          dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+          cat(sprintf('.libPaths(c("%s", .libPaths()))', lib),
+              file = path.expand("~/.Rprofile"), append = TRUE)
+          message("Library path set: ", lib)
+        shell: Rscript {0}
 
       # Windows: ensure RTools C++ compiler is on PATH for CmdStan compilation
       - name: Set up RTools compiler (Windows)
