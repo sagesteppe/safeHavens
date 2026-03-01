@@ -82,6 +82,19 @@ jobs:
           # selectively below where they matter (rstan, cmdstanr)
           dependencies: '"hard"'
 
+      # ── Suggests needed by vignettes (skipped by dependencies: '"hard"') ───
+      # geodata, DiagrammeR, rgbif etc. are Suggests so setup-r-dependencies
+      # won't install them under hard mode — install them explicitly here.
+      - name: Install vignette Suggests
+        run: |
+          install.packages(c(
+            "geodata", "ggplot2", "patchwork", "spData",
+            "DiagrammeR", "rgbif", "purrr", "tidyr",
+            "sp", "lwgeom", "gstat", "MASS", "lattice",
+            "withr", "rlang"
+          ), repos = getOption("repos"))
+        shell: Rscript {0}
+
       # ── sf: must be compiled from source on Linux to pick up system GDAL ──
       - name: Compile sf from source (Linux)
         if: runner.os == 'Linux'
