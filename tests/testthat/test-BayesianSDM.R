@@ -71,6 +71,7 @@ test_that("bayesianSDM runs with minimal synthetic data", {
 test_that("bayesianSDM works with PCA", {
   skip_on_cran()
   skip_if_not_installed("brms")
+  skip_if_not_installed("rcmdstan")
   
   set.seed(123)
   n_pts <- 100
