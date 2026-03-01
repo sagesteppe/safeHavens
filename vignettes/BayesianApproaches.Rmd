@@ -3,7 +3,7 @@ title: "Bayesian Approaches"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bayesian Approaches}
-  %\VignetteEngine{knitr::rmarkdown}
+  `%\VignetteEngine{knitr::rmarkdown_notangle}`
   %\VignetteEncoding{UTF-8}
 description: >
   Using Bayesian approaches for EnvironmentalBasedSample.
@@ -43,6 +43,7 @@ The below steps are all present at the start of the 'Predictive Provenance' vign
 We will 'hide' some of the processing steps to keep this vignette entry relatively short. 
 
 ```{r load libraries, message =F, warning = F}
+#remotes::install_github('sagesteppe/safeHavens@bayes')
 library(safeHavens)
 library(terra)
 library(geodata)
@@ -79,7 +80,8 @@ bb <- st_bbox(
     xmin = -114.5, 
     xmax = -106, 
     ymax = 42, 
-    ymin = 33.5),
+    ymin = 33.5
+    ),
     crs = st_crs(4326)
     )
 
@@ -211,7 +213,7 @@ threshold_rasts <- PostProcessSDM(
   thresh_metric = 'equal_sens_spec', 
   quant_amt = 0.2
   )
-threshold_rasts$Threshold
+knitr::kable(threshold_rasts$Threshold)
 ```
 
 We can compare the results of applying this function side by side using the output from the function. 
@@ -239,7 +241,7 @@ terra::plot(rr$RescaledPredictors)
 We can also show the variables that contributed the most to the sdm models predictions. 
 
 ```{r Show beta Coefficients from model}
-rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ]
+knitr::kable(rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ])
 ```
 
 
@@ -253,19 +255,22 @@ obby <- PosteriorCluster(
   training_data = sdModel$Train,
   planar_proj = 5070
 )
-ggplot(obby$Geometry) + 
-  geom_sf(aes(fill = factor(ID)))
-
-#plot(obby$StabilityRaster)
-#points(obby$SamplePoints)
 ```
 
+```{r plot stability raster with sample points}
+plot(obby$StabilityRaster)
+points(obby$SamplePoints)
+```
 
+```{r show posterior clusters}
+ggplot(obby$Geometry) + 
+  geom_sf(aes(fill = factor(ID)))
+```
 
-```{r view top 3 ranks side by side,eval=F}
-plot(obby$ConsensusRaster)
-plot(obby$Rank2Raster)
-plot(obby$Rank3Raster)
+```{r view top 3 ranks side by side}
+plot(obby$SummaryRaster$consensus)
+plot(obby$RankRaster$rank2_final)
+plot(obby$RankRaster$rank3_final)
 ```
 
 ### save results 
@@ -275,7 +280,6 @@ bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
 
 writeSDMresults(
   cv_model = sdModel$CVStructure, 
-  pcnm = sdModel$PCNM, 
   model = sdModel$Model, 
   cm = sdModel$ConfusionMatrix, 
   coef_tab = rr$BetaCoefficients, 
