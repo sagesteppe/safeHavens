@@ -78,6 +78,18 @@ jobs:
             any::ggplot2
             any::patchwork
             any::DiagrammeR
+            any::lattice
+            any::spData
+            any::MASS
+            any::lwgeom
+            any::gstat
+            any::rgbif
+            any::purrr
+            any::sp
+            any::tidyr
+            any::covr
+            any::rlang
+            any::geodata
           needs: check
           dependencies: '"hard"'
 
