@@ -66,10 +66,16 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::checkhelper
+            any::testthat
+            any::withr
+            any::knitr
+            any::rmarkdown
+            any::ggplot2
+            any::patchwork
+            any::DiagrammeR
   
-          ignored-packages: |
-            cmdstanr
           needs: check
+          dependencies: '"hard"' 
 
       # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
       # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
@@ -131,7 +137,22 @@ jobs:
           brew install proj
           echo "PROJ_LIB=$(brew --prefix)/share/proj" >> $GITHUB_ENV
 
+      - name: Verify cmdstanr is findable
+        run: |
+          message(".libPaths(): ", paste(.libPaths(), collapse = ", "))
+          library(cmdstanr)
+          message("cmdstanr path: ", cmdstanr::cmdstan_path())
+        shell: Rscript {0}
+        env:
+          R_LIBS: ${{ github.workspace }}/R/library
+          R_LIBS_USER: ${{ github.workspace }}/R/library
+          CMDSTAN: ~/.cmdstan
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+        env:
+          R_LIBS: ${{ github.workspace }}/R/library
+          R_LIBS_USER: ${{ github.workspace }}/R/library
+          CMDSTAN: ~/.cmdstan

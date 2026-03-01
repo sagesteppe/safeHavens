@@ -132,6 +132,8 @@ test_that("bayesianSDM works with feature selection", {
   skip_on_cran()
   skip_if_not_installed("brms")
   skip_if_not_installed("CAST")
+  skip_if_not_installed("cmdstanr")
+
   
   set.seed(456)
   n_pts <- 100
