@@ -29,9 +29,6 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      # Use a temp dir that R itself sets, guaranteed cross-platform
-      R_LIBS_USER: ${{ runner.temp }}/R/library
-      CMDSTAN: ${{ runner.temp }}/cmdstan
 
     steps:
       - uses: actions/checkout@v4
@@ -51,9 +48,12 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      # Create the library dir so R and pak can write to it immediately
-      - name: Create R library dir
-        run: mkdir -p "${{ runner.temp }}/R/library"
+      # Set R_LIBS_USER and CMDSTAN using RUNNER_TEMP (available as env var on all platforms)
+      - name: Set cross-platform library paths
+        run: |
+          echo "R_LIBS_USER=${RUNNER_TEMP}/R/library" >> "${GITHUB_ENV}"
+          echo "CMDSTAN=${RUNNER_TEMP}/cmdstan" >> "${GITHUB_ENV}"
+          mkdir -p "${RUNNER_TEMP}/R/library"
         shell: bash
 
       # Windows: ensure RTools C++ compiler is on PATH for CmdStan compilation
@@ -104,7 +104,7 @@ jobs:
       - name: Cache CmdStan
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/cmdstan
+          path: ${{ env.CMDSTAN }}
           key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
           restore-keys: cmdstan-${{ runner.os }}-
 
@@ -159,4 +159,4 @@ jobs:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
         env:
-          CMDSTAN: ${{ runner.temp }}/cmdstan
+          CMDSTAN: ${{ env.CMDSTAN }}
