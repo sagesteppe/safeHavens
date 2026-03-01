@@ -114,6 +114,7 @@ jobs:
             !dir.exists(cmdstanr::cmdstan_path())
           }, error = function(e) TRUE)
           if (needs_install) {
+            dir.create(Sys.getenv("CMDSTAN"), recursive = TRUE, showWarnings = FALSE)
             cmdstanr::install_cmdstan(
               dir = Sys.getenv("CMDSTAN"),
               cores = 2,
