@@ -3,7 +3,7 @@ title: "Bayesian Approaches"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bayesian Approaches}
-  `%\VignetteEngine{knitr::rmarkdown_notangle}`
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 description: >
   Using Bayesian approaches for EnvironmentalBasedSample.
@@ -30,12 +30,9 @@ These parameter posteriors are then used in a clustering algorithm to partition 
 The goal of most SDM's is to create a model that accurately predicts where a species will be located in environmental space and can then be predicted in geographic space.
 The goal of these models is to understand the degree and direction to which various environmental features correlate with a species observed range. 
 
-## About 
+## About
 
-While the authors are prone to creating many 'advanced' SDMs models and in-house pipelines for developing them, we think that the juice is not worth the squeeze and rely on a few powerhouse R packages to do the heavy lifting.
-The main packages used are `dismo`, `caret`, `brms`, `CAST`, and `terra`. 
-
-# Steps to create an SDM
+Here we use bayesian hierarchical models to estimate coefficient uncertainty to use for clustering climatically similar areas via an SDM approach. 
 
 ### prep data 
 
@@ -54,7 +51,6 @@ library(ggplot2)
 library(patchwork)
 ```
 
-
 ```{r Download species occurrence data, echo = FALSE}
 cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 'acceptedScientificName', 'datasetName', 
   'coordinateUncertaintyInMeters', 'basisOfRecord', 'institutionCode', 'catalogNumber')
@@ -66,7 +62,6 @@ hemi <- hemi[['data']][,cols]  |>
   distinct(decimalLatitude, decimalLongitude, .keep_all = TRUE) |> # no dupes can be present
   st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F) 
 ```
-
 
 ```{r prep basemap, echo = F}
 western_states <- spData::us_states |> ## for making a quick basemap. 
@@ -150,7 +145,7 @@ sdModel <- bayesianSDM(
   planar_proj = 5070, 
   resample = TRUE,
   feature_selection = 'ffs',
-  min_ffs_var = 5, 
+  min_ffs_var = 4, 
   fact = 3, 
   silent = 2 # print fewer messages during model fit.
   )
@@ -163,30 +158,42 @@ Under the hood this function uses `brms`, which dispatches to Stan, to fit a bay
 Plot the predictions 
 ```{r Explore SDM output - Different alpha}
 sdm_td <- sdModel$TrainData
-plot(sdModel$RasterPredictions)
-points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black')
-points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red')
 
-plot(sdModel$RasterPredictions_sd)
-points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black')
-points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red')
+par(mfrow = c(1, 2))
+plot(sdModel$RasterPredictions, main = 'mean prediction')
+points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black', cex = 0.5)
+points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
+
+plot(sdModel$RasterPredictions_sd, main = 'sd prediction')
+points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black', cex = 0.5)
+points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
 ```
 
 The brms:: model summary can be accessed from the sdModel list. 
-```{r}
+```{r general moel overview}
 sdModel$Model
 ```
 
-THINGS TO LOOK OUT FOR: 
+rHat <1.01 ideal, <1.05 acceptable, both ESS should be greater than 400 increase iterations to achieve this. 
+Divergence of 0 is ideal, any divergences are flags for a possibly misspecified model. 
 
-Diagnostics can be accessed from a list, and the stan website has some information on them... 
+Diagnostics can be accessed from a list, and the stan website has some information on them here as well as warnings (as may be depicted above) https://mc-stan.org/misc/warnings/ 
+
+rHat <1.01 ideal, <1.05 acceptable, both ESS should be greater than 400 increase iterations to achieve this. 
+Divergence of 0 is ideal, any divergences are flags for a possibly misspecified model. 
+
+
+Similar to `elasticSDM` we also have area of applicabality and other surfaces from CAST
+```{r plot aoa}
+plot(sdModel$AOA)
+```
 
 ```{r check diagnostics}
 sdModel$Diagnostics
 ```
 
-
-The confusion matrix can be accessed from the test and train splits. 
+To view how well the model is able to predict suitable habitat of the hold out sample the confusion matrix can be accessed from the test and train splits. 
+While balanced accuracy for these is generally low, as these models are not intended for prediction, so much as understanding the relationships between environmental variables driving the species distribution, the results show the model was able to learn some important characteristics of the species. 
 
 ```{r Explore SDM output - Confusion Matrix}
 sdModel$ConfusionMatrix
@@ -202,7 +209,7 @@ Consider the output from CVStructure to be a bit more realistic.
 
 ### binarize the output
 
-The bayesian sdm can be post-processed using the same function as the `elasticSDM`.
+The bayesian sdm is post-processed using the same function as is used by the `elasticSDM` workflow.
 
 ```{r Threshold the SDM output}
 threshold_rasts <- PostProcessSDM(
@@ -217,7 +224,6 @@ knitr::kable(threshold_rasts$Threshold)
 ```
 
 We can compare the results of applying this function side by side using the output from the function. 
-
 ```{r Compare Threshold Results}
 terra::plot(threshold_rasts$FinalRasters)
 ```
@@ -225,7 +231,6 @@ terra::plot(threshold_rasts$FinalRasters)
 ### rescale predictor variables
  
 The `bayesianSDM` requires a different function from `elasticSDM` for creating weighted surfaces, with the suffix `RescaleRasters_bayes`. 
-
 ```{r Rescale Predictor Variables}
 rr <- RescaleRasters_bayes(
   model = sdModel$Model,
@@ -238,12 +243,21 @@ rr <- RescaleRasters_bayes(
 terra::plot(rr$RescaledPredictors)
 ```
 
-We can also show the variables that contributed the most to the sdm models predictions. 
-
-```{r Show beta Coefficients from model}
-knitr::kable(rr$BetaCoefficients[ order(rr$BetaCoefficients$Estimate), ])
+An optionally returned layer (via include_uncertainty = TRUE), depicts areas with greater uncertainty towards the prediction. 
+```{r plot coef uncertainty layer}
+plot(subset(rr$RescaledPredictors, 'coef_uncertainty'))
 ```
 
+We can also show the variables that contributed the most to the sdm models predictions, along with their signs.  
+```{r Show beta Coefficients from model}
+knitr::kable(
+  rr$BetaCoefficients[ 
+    order(abs(rr$BetaCoefficients$Estimate),decreasing = T), 
+    ])
+```
+
+To delineate putative seed collection zones we use the `PosteriorCluster` function. 
+It will use the raster surfaces of mean beta coefficient importance 
 
 ```{r posterior clustering}
 obby <- PosteriorCluster(
@@ -257,23 +271,36 @@ obby <- PosteriorCluster(
 )
 ```
 
+Using the Bayesian posteriors and clustering allows us to determine areas that have higher and lower uncertainty for clustering assignments. 
+Values with a higher proportion had greater colocation scores than areas with lower proportions. 
+
 ```{r plot stability raster with sample points}
-plot(obby$StabilityRaster)
-points(obby$SamplePoints)
+par(mfrow=c(1,1))
+plot(obby$SummaryRaster$stability)
+points(obby$SamplePoints, cex = 0.5)
 ```
+
+As with the other sampling functions, spatial polygons are returned for use with other applications. 
 
 ```{r show posterior clusters}
-ggplot(obby$Geometry) + 
-  geom_sf(aes(fill = factor(ID)))
+bmap +
+  geom_sf(data = obby$Geometry, aes(fill = factor(ID))) + 
+  labs(fill = 'Cluster')
 ```
 
+Interested users can see what the second most and third most stable clustering scenarios would look like via the following ranks. 
+Do note that the renumbering of clusters from NW to SE (left to right, like many language groups read books) has not occurred on these rasters yet, so the numbers differ from the consensus surface. 
+
 ```{r view top 3 ranks side by side}
+par(mfrow = c(1, 3))
 plot(obby$SummaryRaster$consensus)
 plot(obby$RankRaster$rank2_final)
 plot(obby$RankRaster$rank3_final)
 ```
 
 ### save results 
+
+writeSDMresults can be used to save most of the core SDM output from the bayesian work flow as well. 
 
 ```{r Save SDM results, eval = F}
 bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
@@ -290,6 +317,7 @@ writeSDMresults(
 # we can see that the files were placed here using this. 
 list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```
+
 
 ### wrapping up 
 
