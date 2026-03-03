@@ -19,7 +19,7 @@ bayesianSDM(
   vif = TRUE,
   min_ffs_var = 5,
   chains = 4,
-  iter = 4000,
+  iter = 5000,
   warmup = 2000,
   cores = 4,
   k = 5,
