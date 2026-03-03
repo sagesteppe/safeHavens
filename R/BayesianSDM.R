@@ -63,7 +63,7 @@
 #' @param min_ffs_var Integer. Minium number of ffs vars to start with.
 #' @param chains Integer. Number of MCMC chains. Defaults to `4`.
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
-#'   to `2000`.
+#'   to `5000`.
 #' @param warmup Integer. Warmup iterations per chain. Defaults to `1000`.
 #' @param cores Integer. Parallel cores. Defaults to `parallel::detectCores()`.
 #' @param k Integer. Number of spatial CV folds (CAST `knndm`). Defaults to
