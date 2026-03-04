@@ -201,6 +201,28 @@ eSDM_model <- elasticSDM(
     planar_projection = 5070, 
     PCNM = FALSE ## set to FALSE for this workstream!!!!!
     )
+
+# Test with just 3 runs to see variability quickly
+run1 <- elasticSDM(hemi, bio_current, 5070)
+run2 <- elasticSDM(hemi, bio_current, 5070)
+run3 <- elasticSDM(hemi, bio_current, 5070)
+
+# Compare coefficients
+coef1 <- as.matrix(coef(run1$Model))
+coef2 <- as.matrix(coef(run2$Model))
+coef3 <- as.matrix(coef(run3$Model))
+
+# Quick comparison
+all_vars <- unique(c(rownames(coef1), rownames(coef2), rownames(coef3)))
+compare <- data.frame(
+  var = all_vars,
+  run1 = coef1[match(all_vars, rownames(coef1)), 1],
+  run2 = coef2[match(all_vars, rownames(coef2)), 1],
+  run3 = coef3[match(all_vars, rownames(coef3)), 1]
+)
+compare[is.na(compare)] <- 0
+compare$cv <- apply(compare[,-1], 1, function(x) sd(x)/mean(x))
+print(compare)
 ```
 
 We will use the eSDM_model function for this workstream, however is is essential that PCNM is set to FALSE. 

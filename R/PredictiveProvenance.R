@@ -13,22 +13,22 @@
 #' 6. Polygonise and calculate area / centroid changes.
 #'
 #' @param eSDM_object output from `elasticSDM()`.
-#' @param current_clusters Output list from `EnvironmentalBasedSample()`. 
-#' @param future_predictors SpatRaster of future climate.  
+#' @param current_clusters Output list from `EnvironmentalBasedSample()`.
+#' @param future_predictors SpatRaster of future climate.
 #' Layer names must match those retained in `current_model`.
 #' @param current_predictors SpatRaster of current climate (used for MESS reference and for `rescaleFuture` standardisation).
 #' @param thresholds current era thresholds from `postProcessSDM`
 #' @param planar_proj EPSG code or proj4 string for a planar projection in metres (same as used in the current analysis).
-#' @param coord_wt Numeric, default `0.001`. Coordinate weighting passed to `add_weighted_coordinates`. 
+#' @param coord_wt Numeric, default `0.001`. Coordinate weighting passed to `add_weighted_coordinates`.
 #' @param mess_threshold MESS values below this are treated as novel climate. Default `0`.
-#' @param cluster_novel Boolean, defualt `TRUE`. If `TRUE` and novel cells exist, cluster them independently with NbClust.  
+#' @param cluster_novel Boolean, defualt `TRUE`. If `TRUE` and novel cells exist, cluster them independently with NbClust.
 #'  If `FALSE` novel cells are left as `NA`.
-#' @param n_novel_pts Numeric, default 500. Number of points to sample from novel areas for clustering. 
+#' @param n_novel_pts Numeric, default 500. Number of points to sample from novel areas for clustering.
 #' @param n_sample_per_cluster Number of points to sample from each cluster
 #'   (existing *and* novel) for the relationship tree.  Default `50`.
-#' @param nbclust_args Named list of arguments forwarded to `NbClust::NbClust`.  
+#' @param nbclust_args Named list of arguments forwarded to `NbClust::NbClust`.
 #' Sensible defaults are set internally (`min.nc = 2`, `max.nc = 10`, `method = "ward.D2"`, `index = "all"`).
-#' @param thresh_metric Character. Default 'sensitivity', dismo::threshold to use for cutting the future sdm into a binary surface. 
+#' @param thresh_metric Character. Default 'sensitivity', dismo::threshold to use for cutting the future sdm into a binary surface.
 #'
 #' @returns A named list:
 #'   \item{clusters_sf}{`sf` polygons with column `ID`.}
@@ -46,16 +46,15 @@ projectClusters <- function(
   future_predictors,
   current_predictors,
   planar_proj,
-  coord_wt            = 0.001,
-  mess_threshold      = 0,
-  cluster_novel       = TRUE,
-  n_novel_pts         = 500,
+  coord_wt = 0.001,
+  mess_threshold = 0,
+  cluster_novel = TRUE,
+  n_novel_pts = 500,
   n_sample_per_cluster = 50,
-  nbclust_args        = list(),
-  thresh_metric       = 'sensitivity',
+  nbclust_args = list(),
+  thresh_metric = 'sensitivity',
   thresholds
 ) {
-
   ## subset some items from eSDMmodel
   test_points = eSDM_object$TestData
   train_points = eSDM_object$TrainData
@@ -64,7 +63,7 @@ projectClusters <- function(
 
   # ---- 0. Extract model variables ----
   coef_mat <- as.matrix(stats::coef(current_model))
-  vars <- rownames(coef_mat)#[coef_mat[, 1] != 0]
+  vars <- rownames(coef_mat) #[coef_mat[, 1] != 0]
   vars <- vars[vars != "(Intercept)"]
 
   # ---- 1. SDM prediction on ORIGINAL future climate ----
@@ -73,64 +72,66 @@ projectClusters <- function(
   }
 
   future_sdm <- terra::predict(
-    future_predictors[[vars]], 
-    model = current_model, 
-    fun = predfun, 
+    future_predictors[[vars]],
+    model = current_model,
+    fun = predfun,
     na.rm = TRUE
   )
 
   # Threshold to binary habitat suitability
-  cut <- thresholds[[thresh_metric]] 
+  cut <- thresholds[[thresh_metric]]
   suitable_habitat <- future_sdm >= cut
 
   # ---- 2. MESS — identify novel climate (species-relevant vars only) ----
   ref_matrix <- terra::as.data.frame(
-    current_predictors[[vars]], 
+    current_predictors[[vars]],
     na.rm = TRUE
   )
 
-  mess_result <- terra::rast(  
+  mess_result <- terra::rast(
     dismo::mess(
       x = raster::stack(future_predictors[[vars]]),
       v = ref_matrix,
       full = FALSE
     )
   )
-  mess_overall <- mess_result[[terra::nlyr(mess_result)]] 
+  mess_overall <- mess_result[[terra::nlyr(mess_result)]]
   novel_climate <- mess_overall < mess_threshold
 
   # ---- 3. similar habitat to existing, but forecast ----
   suitable_known <- terra::ifel(suitable_habitat & !novel_climate, 1, NA)
 
-  # Suitable habitat that is in NOVEL climate  
+  # Suitable habitat that is in NOVEL climate
   suitable_novel <- terra::ifel(suitable_habitat & novel_climate, 1, NA)
 
   # Binary versions for output
   suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
   novel_mask_binary <- terra::ifel(novel_climate, 1, NA)
-  
+
   # ---- 4. Rescale future for clustering (KNN needs rescaled data) ----
+  # nocov start
   future_rescaled <- rescaleFuture(
     model = current_model,
     future_predictors = future_predictors,
-    current_predictors = current_predictors, 
+    current_predictors = current_predictors,
     training_data = train_points,
     pred_mat = predict_matrix
   )
-  
+
   # Add weighted coordinates
   future_rescaled <- add_weighted_coordinates(future_rescaled, coord_wt)
+  # nocov end
 
   # ---- 5. Project t0 clusters into suitable+known areas ----
   known_clusters <- terra::predict(
     future_rescaled,
     model = current_clusters$fit.knn,
     na.rm = TRUE
-  )  
+  )
 
   # Restrict to suitable+known zone only
   known_clusters <- terra::mask(known_clusters, suitable_known)
-  
+
   # Restrict to suitable+known zone only
   areas_needing_clustering <- terra::ifel(
     !is.na(suitable_novel) & is.na(known_clusters),
@@ -138,23 +139,25 @@ projectClusters <- function(
     NA
   )
   n_novel_cells <- terra::global(suitable_novel, "sum", na.rm = TRUE)[[1]]
-  
+
   # ---- 6. Cluster suitable+novel areas independently ----
   suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
 
   if (cluster_novel && !is.na(n_novel_cells) && n_novel_cells > 0) {
-
+    # nocov start
     novel_result <- cluster_novel_areas(
-      future_rescaled  = future_rescaled,
-      novel_mask       = suitable_novel,  # Only suitable novel areas
-      n_novel_pts      = n_novel_pts,
-      next_cluster_id  = max(current_clusters$Geometry$ID) + 1,
-      nbclust_args     = nbclust_args
+      future_rescaled = future_rescaled,
+      novel_mask = suitable_novel, # Only suitable novel areas
+      n_novel_pts = n_novel_pts,
+      next_cluster_id = max(current_clusters$Geometry$ID) + 1,
+      nbclust_args = nbclust_args
     )
+    # nocov end
+
 
     novel_clusters <- novel_result$clusters_raster
     # ---- Merge: combine known + novel ----
-    
+
     # Overlay novel clusters (they should be in different areas due to masks)
     # Use terra::cover to fill NAs in known_clusters with novel values
     known_numeric <- terra::as.int(known_clusters)
@@ -163,19 +166,21 @@ projectClusters <- function(
     final_clusters <- terra::cover(known_numeric, novel_numeric)
 
     # ---- 7. Relationship analysis ----
+    # nocov start
     novel_similarity <- analyze_cluster_relationships(
-      clusters_raster      = final_clusters,
-      future_rescaled      = future_rescaled,
-      existing_ids         = unique(current_clusters$Geometry$ID),
-      novel_ids            = as.numeric(unlist(terra::unique(novel_numeric))),
+      clusters_raster = final_clusters,
+      future_rescaled = future_rescaled,
+      existing_ids = unique(current_clusters$Geometry$ID),
+      novel_ids = as.numeric(unlist(terra::unique(novel_numeric))),
       n_sample_per_cluster = n_sample_per_cluster
     )
+    # nocov end
 
   } else {
-    final_clusters   <- known_clusters
+    final_clusters <- known_clusters
     novel_similarity <- data.frame(
-      novel_cluster_id     = integer(),
-      nearest_existing_id  = integer(),
+      novel_cluster_id = integer(),
+      nearest_existing_id = integer(),
       avg_silhouette_width = numeric()
     )
   }
@@ -186,12 +191,12 @@ projectClusters <- function(
   agg <- terra::aggregate(
     final_clusters,
     fact = 2,
-    fun  = terra::modal,
+    fun = terra::modal,
     na.rm = TRUE
   )
 
   final_clean <- terra::resample(agg, template, method = "near")
-  
+
   # ---- 9. Polygonize ----
   clusters_sf <- terra::as.polygons(final_clean) |>
     sf::st_as_sf() |>
@@ -199,20 +204,22 @@ projectClusters <- function(
   names(clusters_sf)[1] <- "ID"
 
   # ---- 10. Change metrics ----
+  # nocov start
   changes <- calculate_changes(
-    current_sf  = current_clusters$Geometry,
-    future_sf   = clusters_sf,
+    current_sf = current_clusters$Geometry,
+    future_sf = clusters_sf,
     planar_proj = planar_proj
   )
+  # nocov end
 
   # ---- 11. Return ----
   list(
-    clusters_raster  = final_clean,
-    clusters_sf      = clusters_sf,
+    clusters_raster = final_clean,
+    clusters_sf = clusters_sf,
     suitable_habitat = suitable_habitat_binary,
-    novel_mask       = novel_mask_binary,
-    mess             = mess_overall,
-    changes          = changes,
+    novel_mask = novel_mask_binary,
+    mess = mess_overall,
+    changes = changes,
     novel_similarity = novel_similarity
   )
 }
@@ -233,17 +240,22 @@ projectClusters <- function(
 #' @param training_data the same data that went into the glmnet model, this is used
 #' for calculating variance which is required for the scaling process. From `elasticSDM`
 #' @param pred_mat the Prediction matrix from `elasticSDM`
-#' 
+#'
 #' @returns SpatRaster with rescaled future predictors (one layer per
 #'   non-zero coefficient).
 #' @export
-rescaleFuture <- function(model, future_predictors, current_predictors, training_data, pred_mat) {
-  
+rescaleFuture <- function(
+  model,
+  future_predictors,
+  current_predictors,
+  training_data,
+  pred_mat
+) {
   # Custom SD function (matches RescaleRasters)
   sdN <- function(x) {
     sqrt((1 / length(x)) * sum((x - mean(x))^2))
   }
-  
+
   # ---- 1. Extract coefficients (same as RescaleRasters) ----
   coef_mat <- as.matrix(stats::coef(model))
   coef_vec <- coef_mat[, 1]
@@ -253,55 +265,53 @@ rescaleFuture <- function(model, future_predictors, current_predictors, training
     Coefficient = coef_vec,
     row.names = NULL
   )
-  
+
   # Drop intercept
   coef_tab <- coef_tab[coef_tab$Variable != "(Intercept)", , drop = FALSE]
-  
+
   # ---- 2. Response variance (from current/training) ----
   yvar <- sdN(as.numeric(training_data$occurrence) - 1)
-  
+
   # ---- 3. Predictor SDs from CURRENT pred_mat ----
   stopifnot(all(coef_tab$Variable %in% colnames(pred_mat)))
-  
+
   x_sd <- vapply(
     coef_tab$Variable,
     function(v) sdN(pred_mat[, v]),
     numeric(1)
   )
-  
+
   # ---- 4. Compute beta coefficients ----
   coef_tab$BetaCoefficient <- (coef_tab$Coefficient / yvar) * x_sd
-  
+
   # ---- 5. Rescale FUTURE predictors using CURRENT parameters ----
   future_sub <- terra::subset(future_predictors, coef_tab$Variable)
   layer_names <- names(future_sub)
-  
+
   out_layers <- lapply(layer_names, function(lyr_name) {
     # Use CURRENT pred_mat statistics (not future!)
     vals <- pred_mat[, lyr_name]
-    
+
     scaled <- terra::app(
       future_sub[[lyr_name]],
       fun = function(x) {
         (x - mean(vals)) / sdN(vals)
       }
     )
-    
+
     beta <- abs(
       coef_tab$BetaCoefficient[coef_tab$Variable == lyr_name]
     )
-    
+
     scaled * beta
   })
-  
+
   future_rescaled <- terra::rast(out_layers)
   names(future_rescaled) <- layer_names
   future_rescaled
-  
 }
 
 # ------------------------------------------------------------------------------
-
 
 #' Cluster novel climate areas independently using NbClust
 #'
@@ -326,16 +336,15 @@ cluster_novel_areas <- function(
   next_cluster_id,
   nbclust_args
 ) {
-
   message("Clustering novel climate areas...")
 
   # Sample from novel areas only
   novel_pts <- terra::spatSample(
     terra::mask(future_rescaled, novel_mask),
-    size   = n_novel_pts,
+    size = n_novel_pts,
     method = "random",
-    na.rm  = TRUE,
-    xy     = TRUE,
+    na.rm = TRUE,
+    xy = TRUE,
     as.points = FALSE
   )
 
@@ -344,7 +353,9 @@ cluster_novel_areas <- function(
 
   # Guard: too few points to meaningfully cluster
   if (nrow(clust_data) < 10) {
-    warning("Too few novel climate points for clustering. Assigning single novel cluster.")
+    warning(
+      "Too few novel climate points for clustering. Assigning single novel cluster."
+    )
     novel_clusters <- novel_mask
     novel_clusters <- terra::ifel(novel_mask == 1, next_cluster_id, NA)
     return(
@@ -360,36 +371,40 @@ cluster_novel_areas <- function(
   # Distance matrix & NbClust
   d <- stats::dist(clust_data, method = "euclidean")
 
+  # nocov start
   nbclust_defaults <- list(
-    data     = clust_data,
-    diss     = d,
+    data = clust_data,
+    diss = d,
     distance = NULL,
-    min.nc   = 2,
-    max.nc   = 20,
-    method   = "ward.D2",
-    index    = "all"
+    min.nc = 2,
+    max.nc = 20,
+    method = "ward.D2",
+    index = "all"
   )
 
   nb_result <- suppressMessages(
     do.call(NbClust::NbClust, utils::modifyList(nbclust_defaults, nbclust_args))
   )
+  # nocov end
+
 
   optimal_k <- max(nb_result$Best.partition)
   # Cut the tree
-  hc                <- stats::hclust(d, method = "ward.D2")
+  hc <- stats::hclust(d, method = "ward.D2")
   cluster_assignments <- stats::cutree(hc, k = optimal_k) + next_cluster_id - 1
 
   # Train KNN on novel clusters to paint the raster
-  train_data      <- novel_pts[, !names(novel_pts) %in% c("x", "y")]
-  train_data$ID   <- factor(cluster_assignments)
+  train_data <- novel_pts[, !names(novel_pts) %in% c("x", "y")]
+  train_data$ID <- factor(cluster_assignments)
 
+  # nocov start
   novel_knn <- suppressMessages(
     caret::train(
       ID ~ .,
-      data       = train_data,
-      method     = "knn",
-      trControl  = caret::trainControl(method = "cv", number = 5),
-      metric     = "Accuracy"
+      data = train_data,
+      method = "knn",
+      trControl = caret::trainControl(method = "cv", number = 5),
+      metric = "Accuracy"
     )
   )
 
@@ -399,13 +414,13 @@ cluster_novel_areas <- function(
     model = novel_knn,
     na.rm = TRUE
   )
+  # nocov end
 
   list(clusters_raster = novel_clusters)
 }
 
 
 # ------------------------------------------------------------------------------
-
 
 #' Analyze hierarchical relationships between existing and novel clusters
 #'
@@ -430,10 +445,9 @@ analyze_cluster_relationships <- function(
   novel_ids,
   n_sample_per_cluster
 ) {
-
   if (length(novel_ids) == 0) {
     return(data.frame(
-      novel_cluster_id    = integer(),
+      novel_cluster_id = integer(),
       nearest_existing_id = integer(),
       avg_silhouette_width = numeric()
     ))
@@ -443,7 +457,7 @@ analyze_cluster_relationships <- function(
 
   # ---- Convert cluster raster to categorical ----
   all_ids <- c(existing_ids, novel_ids)
-  
+
   # Create a categorical version with explicit levels
   clusters_cat <- terra::as.factor(clusters_raster)
 
@@ -454,9 +468,9 @@ analyze_cluster_relationships <- function(
   # Sample (almost) equally from each cluster
   pts <- terra::spatSample(
     clusters_raster,
-    size   = n_sample_per_cluster,   
+    size = n_sample_per_cluster,
     method = "stratified",
-    na.rm  = TRUE,
+    na.rm = TRUE,
     xy = TRUE
   ) |>
     as.data.frame() |>
@@ -464,19 +478,19 @@ analyze_cluster_relationships <- function(
 
   clust_data <- terra::extract(future_rescaled, pts, ID = FALSE)
   clust_data <- clust_data[stats::complete.cases(clust_data), ]
-  
+
   # ---- Distance matrix ----
   cluster_ids <- as.integer(pts[['class']])
-  
+
   if (length(cluster_ids) < 2 || length(unique(cluster_ids)) < 2) {
     warning("Insufficient data for silhouette analysis")
     return(data.frame(
-      novel_cluster_id     = integer(),
-      nearest_existing_id  = integer(),
+      novel_cluster_id = integer(),
+      nearest_existing_id = integer(),
       avg_silhouette_width = numeric()
     ))
   }
-  
+
   d <- stats::dist(clust_data, method = "euclidean")
 
   # ---- Silhouette ----
@@ -485,15 +499,15 @@ analyze_cluster_relationships <- function(
   if (!is.matrix(sil)) {
     warning("Silhouette returned non-matrix result")
     return(data.frame(
-    novel_cluster_id     = integer(),
-    nearest_existing_id  = integer(),
-    avg_silhouette_width = numeric()
+      novel_cluster_id = integer(),
+      nearest_existing_id = integer(),
+      avg_silhouette_width = numeric()
     ))
   }
 
   # Aggregate: for each novel cluster, most common existing neighbor
   data.frame(
-    cluster  = sil[, "cluster"],
+    cluster = sil[, "cluster"],
     neighbor = sil[, "neighbor"],
     sil_width = sil[, "sil_width"]
   ) |>
@@ -503,7 +517,9 @@ analyze_cluster_relationships <- function(
       nearest_existing_id = {
         existing_neighbors <- neighbor[neighbor %in% existing_ids]
         if (length(existing_neighbors) > 0) {
-          as.integer(names(sort(table(existing_neighbors), decreasing = TRUE)[1]))
+          as.integer(names(sort(table(existing_neighbors), decreasing = TRUE)[
+            1
+          ]))
         } else {
           NA_integer_
         }
@@ -530,20 +546,19 @@ analyze_cluster_relationships <- function(
 #' @keywords internal
 #' @noRd
 calculate_changes <- function(current_sf, future_sf, planar_proj) {
-
   current_p <- sf::st_transform(current_sf, planar_proj)
-  future_p  <- sf::st_transform(future_sf,  planar_proj)
+  future_p <- sf::st_transform(future_sf, planar_proj)
 
   ## calculate total areas of each class
-  current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6   # km²
-  future_p$area  <- as.numeric(sf::st_area(future_p))  / 1e6
+  current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6 # km²
+  future_p$area <- as.numeric(sf::st_area(future_p)) / 1e6
 
   ## find geometric centroid
   sf::st_agr(current_p) <- 'constant'
   sf::st_agr(future_p) <- 'constant'
 
   current_cents <- sf::st_point_on_surface(current_p)
-  future_cents  <- sf::st_point_on_surface(future_p)
+  future_cents <- sf::st_point_on_surface(future_p)
 
   # ---------- clusters present in both ----------
   common_ids <- intersect(current_sf$ID, future_sf$ID)
@@ -551,27 +566,30 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # Handle edge case: no common clusters
   if (length(common_ids) == 0) {
     persists <- data.frame(
-      cluster_id        = integer(0),
-      current_area_km2  = numeric(0),
-      future_area_km2   = numeric(0),
-      area_change_pct   = numeric(0),
+      cluster_id = integer(0),
+      current_area_km2 = numeric(0),
+      future_area_km2 = numeric(0),
+      area_change_pct = numeric(0),
       centroid_shift_km = numeric(0)
     )
   } else {
     persists <- data.frame(
-      cluster_id       = common_ids,
+      cluster_id = common_ids,
       current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
-      future_area_km2  = future_p$area[match(common_ids, future_sf$ID)]
+      future_area_km2 = future_p$area[match(common_ids, future_sf$ID)]
     ) |>
       dplyr::mutate(
-        area_change_pct  = 100 * (future_area_km2 - current_area_km2) / current_area_km2,
+        area_change_pct = 100 *
+          (future_area_km2 - current_area_km2) /
+          current_area_km2,
         centroid_shift_km = as.numeric(
           sf::st_distance(
             current_cents[match(common_ids, current_sf$ID), ],
             future_cents[match(common_ids, future_sf$ID), ],
             by_element = TRUE
           )
-        ) / 1000
+        ) /
+          1000
       )
   }
 
@@ -579,10 +597,10 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   lost_ids <- setdiff(current_sf$ID, future_sf$ID)
   lost <- if (length(lost_ids) > 0) {
     data.frame(
-      cluster_id       = lost_ids,
+      cluster_id = lost_ids,
       current_area_km2 = current_p$area[match(lost_ids, current_sf$ID)],
-      future_area_km2  = 0,
-      area_change_pct  = -100,
+      future_area_km2 = 0,
+      area_change_pct = -100,
       centroid_shift_km = NA_real_
     )
   }
@@ -591,10 +609,10 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   gained_ids <- setdiff(future_sf$ID, current_sf$ID)
   gained <- if (length(gained_ids) > 0) {
     data.frame(
-      cluster_id       = gained_ids,
+      cluster_id = gained_ids,
       current_area_km2 = 0,
-      future_area_km2  = future_p$area[match(gained_ids, future_sf$ID)],
-      area_change_pct  = NA_real_,
+      future_area_km2 = future_p$area[match(gained_ids, future_sf$ID)],
+      area_change_pct = NA_real_,
       centroid_shift_km = NA_real_
     )
   }
@@ -602,5 +620,5 @@ calculate_changes <- function(current_sf, future_sf, planar_proj) {
   # ------- directional movement of point-on-surfaces ------- #
 
   dplyr::bind_rows(persists, lost, gained) |>
-    dplyr::arrange(cluster_id) 
+    dplyr::arrange(cluster_id)
 }

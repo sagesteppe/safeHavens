@@ -57,6 +57,10 @@ template:
       <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
       <meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package">
       <meta name="author" content="Reed Benkendorf">
+      <meta property="og:title" content="safeHavens: Ex Situ Plant Germplasm Sampling Strategies">
+      <meta property="og:description" content="R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation.">
+      <meta property="og:url" content="https://sagesteppe.github.io/safeHavens/">
+      <meta property="og:type" content="website">
       <link rel="canonical" href="https://sagesteppe.github.io/safeHavens/">
 
 reference:
@@ -89,6 +93,12 @@ reference:
   contents:
     - rescaleFuture
     - projectClusters
+- title: Bayesian Approaches
+  desc: Bayesian approaches for generating clusters in light of uncertainty
+  contents:
+    - bayesianSDM
+    - RescaleRasters_bayes
+    - PosteriorCluster
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations
   contents:
@@ -106,6 +116,7 @@ articles:
     - PredictiveProvenance
     - PolygonBasedSamples
     - WorkedExample
+    - BayesianApproaches
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
     contents: 

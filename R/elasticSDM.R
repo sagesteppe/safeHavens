@@ -13,8 +13,12 @@
 #' @param planar_projection Numeric, or character vector. An EPSG code, or a proj4 string, for a planar coordinate projection, in meters, for use with the function. For species with very narrow ranges a UTM zone may be best (e.g. 32611 for WGS84 zone 11 north, or 29611 for NAD83 zone 11 north). Otherwise a continental scale projection like 5070 See https://projectionwizard.org/ for more information on CRS. The value is simply passed to sf::st_transform if you need to experiment.
 #' @param domain Numeric, how many times larger to make the entire domain of analysis than a simple bounding box around the occurrence data in `x`.
 #' @param quantile_v Numeric, this variable is used in thinning the input data, e.g. quantile = 0.05 will remove records within the lowest 5% of distance to each other iteratively, until all remaining records are further apart than this distance from each other. If you want essentially no thinning to happen just supply 0.01. Defaults to 0.025.
-#' @param PCNM Boolean. Whether to include PCNM while fitting the model. 
-#' Defaults to TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used with `Predictive Provenance` type workstreams. 
+#' @param PCNM Boolean. Whether to include PCNM while fitting the model.
+#' @param fact Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points.
+#' @param resample Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions.
+#' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.
+
+#' Defaults to TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used with `Predictive Provenance` type workstreams.
 #' @examples \dontrun{
 #'
 #'  x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -43,9 +47,10 @@ elasticSDM <- function(
   planar_projection,
   domain = NULL,
   quantile_v = 0.025,
-  PCNM = TRUE
-  ){
-  
+  PCNM = TRUE,
+  fact = 1.0,
+  resample = FALSE
+) {
   # Calculate study extent
   study_extent <- calculate_study_extent(
     x,
@@ -55,7 +60,7 @@ elasticSDM <- function(
   )
 
   # Generate background points
-  pa <- generate_background_points(predictors, x)
+  pa <- generate_background_points(predictors, x, fact = 1, resample = FALSE)
 
   # Combine presence and pseudo-absence
   x$occurrence <- 1
@@ -86,7 +91,7 @@ elasticSDM <- function(
     indices_knndm
   )
 
-  if(PCNM){
+  if (PCNM) {
     # Create PCNM variables and refit model
     obs <- createPCNM_fitModel(
       x = train,
@@ -109,19 +114,16 @@ elasticSDM <- function(
     cv_structure <- obs$cv_model
     pred_matrix <- obs$pred_mat
 
-    
     # Combine predictors with PCNM
     predictors <- c(predictors, pcnm)
-
-  } else { 
+  } else {
     # this is the branch for predictive provenance because we can not
-    # else use the already fit model. nothing else to add.  
-    # you cannot have PCNM surfaces of theoretical scenarios.  
+    # else use the already fit model. nothing else to add.
+    # you cannot have PCNM surfaces of theoretical scenarios.
     pcnm = NULL
     mod <- model_results$glmnet_model
     cv_structure <- model_results$cv_model
     pred_matrix <- model_results$selected_data
-
   }
 
   # Get variables from final model
@@ -134,6 +136,23 @@ elasticSDM <- function(
   # Create spatial predictions
   rast_cont <- create_spatial_predictions(mod, predictors, vars)
 
+  aoa_result <- CAST::aoa(
+    newdata   = predictors,
+    model     = NA,              
+    train     = pred_matrix[, vars, drop = FALSE],   
+    variables = vars,  
+    useWeight = FALSE,
+    CVtest    = indices_knndm$indx_test,
+    CVtrain   = indices_knndm$indx_train,
+    method    = "L2",
+    useCV     = TRUE,
+    LPD       = TRUE,
+    verbose   = FALSE
+  )
+
+  aoa_surf <- c(aoa_result$AOA, aoa_result$DI, aoa_result$LPD)
+  names(aoa_surf) <- c('AOA', 'DI', 'LPD')
+
   list(
     RasterPredictions = rast_cont,
     Predictors = predictors,
@@ -143,7 +162,13 @@ elasticSDM <- function(
     ConfusionMatrix = cm,
     TrainData = train,
     TestData = test,
-    PredictMatrix = pred_matrix
+    PredictMatrix = pred_matrix,
+    AOA = aoa_surf,
+    AOA_Diagnostics = list(
+      threshold = aoa_result$parameters$threshold,
+      AOA_coverage = sum(terra::values(aoa_result$AOA), na.rm = TRUE) /
+        sum(!is.na(terra::values(aoa_result$AOA)))
+    )
   )
 }
 
@@ -181,43 +206,125 @@ calculate_study_extent <- function(
 #'
 #' @param predictors Raster stack of environmental predictors
 #' @param occurrences SF object with occurrence points
+#' @param fact Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points.
+#' @param resample Boolean, Defaults to FALSE. Used to place 20% of the requested points in areas undersampled by sdm::background functions.
+#' This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.
 #' @return SF object with pseudo-absence points (occurrence = 0)
 #' @keywords internal
 #' @noRd
-generate_background_points <- function(predictors, occurrences) {
-  bg <- tryCatch({
-    suppressMessages({
-      sdm::background(
-        x      = predictors,
-        n      = nrow(occurrences),
-        sp     = occurrences,
-        method = "eDist"
-      )
-    })
-  }, error = function(e) {
-    msg <- conditionMessage(e)
-    if (grepl("computationally singular|reciprocal condition number", msg)) {
-      warning(
-        "eDist background sampling failed due to singular covariance matrix.\n",
-        "Falling back to eRandom background sampling."
-      )
+generate_background_points <- function(
+  predictors,
+  occurrences,
+  fact = 1.0,
+  resample = FALSE
+) {
+  vif_results <- usdm::vifcor(predictors, th = 0.975)
+  pred_sub <- terra::subset(predictors, vif_results@results$Variables)
+
+  # determine allocation for resampling density.
+  n_requested = round(nrow(occurrences) * fact, 0)
+  if (resample) {
+    sdm_bg_pts_n = n_requested * 0.95
+    dens_bg_pts_n = n_requested - sdm_bg_pts_n
+  } else {
+    sdm_bg_pts_n = n_requested
+  }
+
+  bg <- tryCatch(
+    {
       suppressMessages({
         sdm::background(
-          x      = predictors,
-          n      = nrow(occurrences),
-          sp     = occurrences,
-          method = "eRandom"
+          x = pred_sub,
+          n = sdm_bg_pts_n,
+          sp = occurrences,
+          method = "eDist"
         )
       })
-    } else {
-      stop(e)
+    },
+    error = function(e) {
+      msg <- conditionMessage(e)
+      if (grepl("computationally singular|reciprocal condition number", msg)) {
+        warning(
+          "eDist background sampling failed due to singular covariance matrix.\n",
+          "Falling back to eRandom background sampling."
+        )
+        suppressMessages({
+          sdm::background(
+            x = predictors,
+            n = sdm_bg_pts_n,
+            sp = occurrences,
+            method = "eRandom"
+          )
+        })
+      } else {
+        stop(e)
+      }
     }
-  })
-  
-  bg |>
+  )
+
+  bg_1 <- bg |>
     dplyr::select(lon = x, lat = y) |>
     sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
     dplyr::mutate(occurrence = 0)
+
+  if (resample) {
+    ## eDist is conservative in where it places points, we will top it off with some
+    ## points in lower density areas.
+
+    # use all points for initial density, but force the points into the
+    # species known range where the deficit tends to occurr.
+    coords <- dplyr::bind_rows(
+      ## not a typo, up the occurrence pt wts 2:1 against BG.
+      dplyr::select(occurrences),
+      dplyr::select(occurrences),
+      dplyr::select(bg_1)
+    ) |>
+      terra::vect()
+
+    ## rasterize the points quickly, using a coarse template.
+    r_count <- terra::rasterize(
+      coords,
+      terra::aggregate(predictors[[1]], 5),
+      fun = "length",
+      background = 0
+    )
+
+    # sum points across windows for local effects
+    r_count <- terra::focal(r_count, w = 3, fun = "sum")
+    r_count <- terra::crop(r_count, terra::ext(occurrences))
+
+    ## now sample from the most sparsely populated areas
+    threshold <- terra::global(r_count, quantile, probs = 0.25, na.rm = TRUE)[[
+      1
+    ]]
+    # if many unsampled areas, cap patches at 1 record per window.
+    if (threshold == 0) {
+      threshold <- 1
+    }
+
+    low_mask <- terra::mask(
+      r_count,
+      terra::ifel(r_count < threshold, 1, NA) # mask
+    )
+
+    bg_2 <- suppressWarnings(
+      terra::spatSample(
+        low_mask,
+        size = dens_bg_pts_n, #only the diff 15% of points.
+        method = "spread",
+        xy = TRUE,
+        na.rm = TRUE
+      )
+    ) |>
+      dplyr::select(lon = x, lat = y) |>
+      sf::st_as_sf(coords = c("lon", "lat"), crs = terra::crs(predictors)) |>
+      dplyr::mutate(occurrence = 0)
+
+    dplyr::bind_rows(bg_1, bg_2)
+    
+  } else {
+    bg_1
+  }
 }
 
 
@@ -285,7 +392,7 @@ extract_predictors_to_points <- function(occurrences, predictors) {
 #' @keywords internal
 #' @noRd
 create_spatial_cv_folds <- function(train_data, predictors, k = 5) {
-  CAST::knndm(train_data, predictors, k = k)
+  suppressMessages(CAST::knndm(train_data, predictors, k = k))
 }
 
 #' Perform recursive feature elimination to select important predictors

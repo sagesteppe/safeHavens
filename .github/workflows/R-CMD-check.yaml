@@ -1,6 +1,5 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
-# .github/workflows/R-CMD-check.yaml  (modified)
+# .github/workflows/R-CMD-check.yaml  (modified for safeHavens)
 on:
   push:
     branches: [main, master]
@@ -19,16 +18,18 @@ jobs:
       matrix:
         config:
           - {os: macos-latest,   r: 'release'}
-          - {os: macos-latest, r: 'oldrel-1'}
+          - {os: macos-latest,   r: 'oldrel-1'}
           - {os: windows-latest, r: 'release'}
           - {os: windows-latest, r: 'oldrel-1'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # Tell cmdstanr where to look; safe no-op if not installed yet
+      CMDSTAN: ~/.cmdstan
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install mermaid-cli
         run: npm install -g @mermaid-js/mermaid-cli
 
@@ -48,15 +49,11 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck, checkhelper
-          needs: check
-
-      #  spatial-libs install & sf build for Linux
-      - name: Install spatial system libs (Ubuntu 24.04+)
+      # ── Linux: spatial system libraries ───────────────────────────────────
+      - name: Install spatial system libs (Linux)
         if: runner.os == 'Linux'
         run: |
+          # Remove any stale ubuntugis PPA entries that cause version conflicts
           sudo rm -f /etc/apt/sources.list.d/*ubuntugis*.list \
                      /etc/apt/sources.list.d/*ubuntugis*.sources || true
           sudo apt-get update
@@ -65,21 +62,97 @@ jobs:
             libproj-dev proj-bin \
             libgeos-dev \
             libgeos++-dev
-      
-      - name: Compile sf from source
+
+      # ── macOS: spatial system libraries via Homebrew ──────────────────────
+      - name: Install spatial system libs (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install gdal proj geos
+          # Export PROJ_LIB so sf/rgdal can find projection data
+          echo "PROJ_LIB=$(brew --prefix)/share/proj" >> $GITHUB_ENV
+          # Help pkg-config and configure scripts find the brew libraries
+          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+
+      # ── R package dependencies ────────────────────────────────────────────
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, checkhelper
+          needs: check
+          # Use "hard" deps only for speed; soft deps (Suggests) installed
+          # selectively below where they matter (rstan, cmdstanr)
+          dependencies: '"hard"'
+
+      # ── Suggests needed by vignettes (skipped by dependencies: '"hard"') ───
+      # geodata, DiagrammeR, rgbif etc. are Suggests so setup-r-dependencies
+      # won't install them under hard mode — install them explicitly here.
+      - name: Install vignette Suggests
+        run: |
+          install.packages(c(
+            "geodata", "ggplot2", "patchwork", "spData",
+            "DiagrammeR", "rgbif", "purrr", "tidyr",
+            "sp", "lwgeom", "gstat", "MASS", "lattice",
+            "withr", "rlang"
+          ), repos = getOption("repos"))
+        shell: Rscript {0}
+
+      # ── sf: must be compiled from source on Linux to pick up system GDAL ──
+      - name: Compile sf from source (Linux)
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
         shell: Rscript {0}
 
-      # configure proj for macOS
-      - name: Configure PROJ (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install proj
-          echo "PROJ_LIB=$(brew --prefix)/share/proj" >> $GITHUB_ENV
+      # ── sf: install binary on macOS (brew gdal satisfies linking) ─────────
+      # Binary wheels on macOS are built against their own bundled GDAL, so
+      # a plain install.packages() works fine there.
 
+      # ── rstan: install with full C++ header tree (all platforms) ──────────
+      # brms depends on rstan; rstan's StanHeaders/BH/RcppEigen headers must
+      # all be present or compilation of Stan models fails at runtime.
+      - name: Install rstan and Stan C++ dependencies
+        run: |
+          install.packages(
+            "rstan",
+            dependencies = c("Depends", "Imports", "LinkingTo"),
+            repos = getOption("repos")
+          )
+        shell: Rscript {0}
+
+      # ── cmdstanr ──────────────────────────────────────────────────────────
+      - name: Install cmdstanr
+        run: |
+          install.packages(
+            "cmdstanr",
+            repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
+          )
+        shell: Rscript {0}
+
+      # Cache the CmdStan toolchain installation (~400 MB) so subsequent runs
+      # skip the 5-minute compile step.  The cache key is OS + a version pin
+      # file if you have one; otherwise it rebuilds when the runner image
+      # rotates (acceptable).
+      - name: Cache CmdStan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-${{ matrix.config.r }}-${{ hashFiles('**/.cmdstan_version') }}
+          restore-keys: |
+            cmdstan-${{ runner.os }}-${{ matrix.config.r }}-
+            cmdstan-${{ runner.os }}-
+
+      - name: Install CmdStan
+        run: |
+          needs_install <- tryCatch({
+            !dir.exists(cmdstanr::cmdstan_path())
+          }, error = function(e) TRUE)
+          if (needs_install) {
+            cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+          } else {
+            message("CmdStan already cached at: ", cmdstanr::cmdstan_path())
+          }
+        shell: Rscript {0}
+
+      # ── R CMD check ───────────────────────────────────────────────────────
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
-

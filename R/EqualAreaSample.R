@@ -31,7 +31,7 @@ EqualAreaSample <- function(
   n = 20,
   pts = 5000,
   planar_proj,
-  returnProjected,
+  returnProjected = FALSE,
   reps = 100,
   BS.reps = 9999
 ) {
@@ -39,9 +39,6 @@ EqualAreaSample <- function(
     stop(
       'Argument to `planar_proj` is required. A suitable choice for all of North America is 5070.'
     )
-  }
-  if (missing(returnProjected)) {
-    returnProjected <- FALSE
   }
 
   if (returnProjected == TRUE) {

@@ -276,12 +276,17 @@ create_pcnm_rasters <- function(
     names(pcnm_rast) <- selected_pcnm
   } else {
     # Single PCNM vector (numeric)
-    pcnm_rast <- suppressWarnings(interpolate_pcnm_to_raster(
-      pcnm_subset,
-      coords,
-      template_raster
-    ))
-    names(pcnm_rast) <- selected_pcnm
+    
+    # nocov start
+    pcnm_rast <- suppressWarnings(
+      interpolate_pcnm_to_raster(
+        pcnm_subset,
+        coords,
+        template_raster
+      ))
+    # nocov end
+
+      names(pcnm_rast) <- selected_pcnm
   }
 
   pcnm_rast

@@ -1,10 +1,3 @@
-# tests/testthat/test-EnvironmentalBasedSample.R
-
-# NOTE: Spatial sampling functions (terra::spatSample, sf::st_sample) do not guarantee
-# exact sample sizes. Tests use ±10% tolerance to account for this variation.
-# Additionally, complete.cases() filtering can reduce sample size if predictor rasters
-# have NAs or mismatched extents. Tests ensure all predictor layers are complete.
-
 # Test helper functions first ----
 
 test_that("add_weighted_coordinates adds x and y layers", {

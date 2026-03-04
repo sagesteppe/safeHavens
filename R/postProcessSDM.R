@@ -35,6 +35,7 @@ PostProcessSDM <- function(
   # we want to predict MORE habitat than exists, so we want to maximize sensitivity
   # in our classification.
 
+  names(rast_cont) <- 's0'
   test.sf <- terra::extract(rast_cont, test, bind = TRUE) |>
     sf::st_as_sf() |>
     sf::st_drop_geometry()
@@ -44,7 +45,7 @@ PostProcessSDM <- function(
     a = test.sf[test.sf$occurrence == 0, 's0']
   )
   thresh <- dismo::threshold(eval_ob)
-  cut <- thresh[[thresh_metric]] 
+  cut <- thresh[[thresh_metric]]
 
   m <- matrix(
     # use this to reclassiy data to a binary raster
@@ -75,7 +76,9 @@ PostProcessSDM <- function(
     dplyr::filter(occurrence == 1)
   pres <- sf::st_transform(pres, planar_projection)
 
-  indices_knndm <- CAST::knndm(tpoints = pres, modeldomain = rast_cont, k = 10)
+  indices_knndm <- suppressMessages(
+    CAST::knndm(tpoints = pres, modeldomain = rast_cont, k = 10)
+  )
 
   nn_dist <- lapply(indices_knndm[['indx_train']], nn_distribution, y = pres)
   dists <- unlist(list(lapply(nn_dist, stats::quantile, quant_amt)))
@@ -92,13 +95,12 @@ PostProcessSDM <- function(
   # SUITABLE HABITAT MARKED, THEN LET'S ADD the same amount of suitable habitat
   # to each of them, that was used as the buffer for clipping suitable habitat to the
   # points above.
-
   pres <- sf::st_transform(pres, terra::crs(rast_binary))
 
   outside_binary <- terra::extract(rast_binary, pres, bind = TRUE) |>
     sf::st_as_sf() |>
     dplyr::filter(is.na(s0))
-  
+
   # Check if there are any points outside the binary raster
   if (nrow(outside_binary) > 0) {
     outside_binary <- outside_binary |>
@@ -109,7 +111,7 @@ PostProcessSDM <- function(
       terra::vect() |>
       terra::project(terra::crs(rast_binary)) |>
       terra::rasterize(rast_binary, field = 'occurrence')
-    
+
     rast_clipped_supplemented <- max(rast_clipped, outside_binary, na.rm = TRUE)
   } else {
     # No points outside binary raster, so supplemented = clipped

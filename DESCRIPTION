@@ -18,7 +18,6 @@ Suggests:
     patchwork,
     rmarkdown,
     spData, 
-    ggrepel,
     MASS,
     lwgeom,
     gstat,
@@ -35,6 +34,7 @@ Suggests:
     DiagrammeR
 VignetteBuilder: knitr
 Imports: 
+    brms,
     caret,
     CAST,
     dismo,
@@ -44,6 +44,7 @@ Imports:
     magrittr,
     NbClust,
     nptest,
+    posterior,
     sdm,
     sf,
     spThin,
@@ -53,7 +54,8 @@ Imports:
     cluster,
     igraph,
     spdep,
-    raster
+    raster,
+    usdm
 URL: https://sagesteppe.github.io/safeHavens/, 
      https://github.com/sagesteppe/safeHavens
 BugReports: https://github.com/sagesteppe/safeHavens/issues

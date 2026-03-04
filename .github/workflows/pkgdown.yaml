@@ -1,48 +1,38 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# .github/workflows/test-coverage.yaml
+name: test-coverage
+
 on:
   push:
-    branches: main
+    branches: [main]
   pull_request:
-    branches: main
-  release:
-    types: [published]
-  workflow_dispatch:
-
-name: pkgdown.yaml
-
-permissions: read-all
+    branches: [main]
 
 jobs:
-  pkgdown:
+  test-coverage:
     runs-on: ubuntu-latest
-    # Only restrict concurrency for non-PR jobs
-    concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: write
+      R_LIBS_USER: ${{ github.workspace }}/R/library
+
     steps:
       - uses: actions/checkout@v4
-
-      - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
-      - name: Install dependencies
-        run: |
-          Rscript -e 'install.packages(c("pkgdown", "quarto"))'
-
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::.
-          needs: website
+          extra-packages: |
+            any::covr
+            any::testthat
 
-      - name: Install spatial system libs (Ubuntu 24.04+)
-        if: runner.os == 'Linux'
+          needs: coverage
+          dependencies: '"hard"' 
+
+      # Install spatial system libs needed for sf
+      - name: Install spatial system libs
         run: |
           sudo rm -f /etc/apt/sources.list.d/*ubuntugis*.list \
                      /etc/apt/sources.list.d/*ubuntugis*.sources || true
@@ -54,18 +44,50 @@ jobs:
             libgeos++-dev
 
       - name: Compile sf from source
-        if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
         shell: Rscript {0}
 
-      - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+      # Install rstan with full LinkingTo/Depends/Imports tree to satisfy
+      # Stan C++ header dependencies (BH, RcppEigen, RcppParallel, StanHeaders etc.)
+      - name: Install rstan and Stan C++ dependencies
+        run: |
+          install.packages(
+            "rstan",
+            dependencies = c("Depends", "Imports", "LinkingTo"),
+            repos = getOption("repos")
+          )
         shell: Rscript {0}
 
-      - name: Deploy to GitHub pages
-        if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4.5.0
+      - name: Install cmdstanr
+        run: |
+          install.packages(
+            "cmdstanr",
+            repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
+          )
+        shell: Rscript {0}
+
+      - name: Cache CmdStan
+        uses: actions/cache@v4
         with:
-          clean: false
-          branch: gh-pages
-          folder: docs
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
+          restore-keys: cmdstan-${{ runner.os }}-
+
+      - name: Install CmdStan
+        run: |
+          needs_install <- tryCatch({
+            !dir.exists(cmdstanr::cmdstan_path())
+          }, error = function(e) TRUE)
+          if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        shell: Rscript {0}
+
+      - name: Test coverage
+        run: |
+          covr::codecov(
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+          )
+        shell: Rscript {0}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
