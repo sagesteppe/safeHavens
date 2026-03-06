@@ -145,7 +145,8 @@ IBRSurface <- function(
 
   list(
     points = clusts$clusters,
-    geometry = spatialClusters
+    geometry = spatialClusters, 
+    silhouette = clusts$silhouette
   )
 }
 
@@ -163,26 +164,19 @@ cluster_connectivity <- function(
 ) {
   input <- match.arg(input)
 
-  # drop incomplete cases (rows only)
   x <- x[stats::complete.cases(x), , drop = FALSE]
+  d <- stats::as.dist(x)
 
-  # --- CLUSTERING ---
   if (fixedClusters == TRUE) {
-    if (is.null(n)) {
-      stop("n must be provided when fixedClusters = TRUE")
-    }
-
-    d <- stats::as.dist(x)
+    if (is.null(n)) stop("n must be provided when fixedClusters = TRUE")
     hc <- stats::hclust(d, method = 'complete')
     pts_sf$ID <- stats::cutree(hc, n)
   } else {
-    if (length(unique(pop_res_graphs$ibr_matrix[1, ]))) {
-      # have to perform 2d embedding for nbclust metho on delaunay
+    if (length(unique(x$ibr_matrix[1, ]))) {
       coords <- stats::cmdscale(x, k = 2)
     } else {
-      coords <- stats::as.dist(x)
+      coords <- d
     }
-
     # nocov start
     NoClusters <- NbClust::NbClust(
       data = coords,
@@ -193,15 +187,17 @@ cluster_connectivity <- function(
       index = 'silhouette'
     )
     # nocov end
-
     pts_sf$ID <- NoClusters$Best.partition
     hc <- NULL
   }
 
+  sil <- cluster::silhouette(pts_sf$ID, d)
+
   list(
-    clusters = pts_sf,
-    hclust = hc,
-    input = input
+    clusters  = pts_sf,
+    hclust    = hc,
+    input     = input,
+    silhouette = summary(sil)
   )
 }
 

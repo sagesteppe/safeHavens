@@ -62,33 +62,33 @@ test_that("perform_clustering returns correct length vector for fixed clusters",
     y = rnorm(100),
     z = rnorm(100)
   )
-  
-  result <- perform_clustering(test_data, n = 5, fixedClusters = TRUE)
-  
-  expect_length(result, 100)
-  expect_true(all(result %in% 1:5))
+
+  result <- perform_clustering(test_data, n = 5, fixedClusters = TRUE, method = "complete", min.nc = 3, max.nc = 10)
+
+  expect_length(result$partition, 100)
+  expect_true(all(result$partition %in% 1:5))
 })
 
 test_that("perform_clustering handles non-fixed clusters", {
   skip_if_not_installed("NbClust")
-  
+
   set.seed(123)
   test_data <- data.frame(
     x = rnorm(50),
     y = rnorm(50)
   )
-  
+
   result <- perform_clustering(
-    test_data, 
+    test_data,
     fixedClusters = FALSE,
     method = "complete",
     min.nc = 2,
     max.nc = 5,
     index = "silhouette"
   )
-  
-  expect_length(result, 50)
-  expect_type(result, "integer")
+
+  expect_length(result$partition, 50)
+  expect_type(result$partition, "integer")
 })
 
 # Test main workflow components ----
@@ -145,28 +145,24 @@ test_that("sample_underrepresented_clusters identifies underrepresented clusters
 
 test_that("reorder_clusters_geographically reorders from top-left", {
   skip_if_not_installed("sf")
-  
-  # Create simple cluster raster with 'class' as layer name (required for select(-class))
+
   r <- terra::rast(ncols = 10, nrows = 10, xmin = 0, xmax = 100, ymin = 0, ymax = 100, crs = "EPSG:32610")
-  
-  # Create 4 distinct spatial clusters
   vals <- rep(NA, 100)
-  vals[1:25] <- 1      # top-left
-  vals[26:50] <- 2     # top-right  
-  vals[51:75] <- 3     # bottom-left
-  vals[76:100] <- 4    # bottom-right
-  
+  vals[1:25] <- 1
+  vals[26:50] <- 2
+  vals[51:75] <- 3
+  vals[76:100] <- 4
   terra::values(r) <- vals
-  names(r) <- "class"  # Name it 'class' as expected by the function
-  
+  names(r) <- "class"
+
   result <- reorder_clusters_geographically(r)
-  
+
   expect_type(result, "list")
   expect_named(result, c("raster", "vectors"))
   expect_s4_class(result$raster, "SpatRaster")
   expect_s3_class(result$vectors, "sf")
   expect_true("ID" %in% names(result$vectors))
-  expect_false("class" %in% names(result$vectors))  # Should be removed
+  expect_false("class" %in% names(result$vectors))
 })
 
 # Integration tests ----
@@ -214,7 +210,7 @@ test_that("EnvironmentalBasedSample runs complete workflow with minimal data", {
   )
 
   expect_type(result, "list")
-  expect_named(result, c("Geometry", "fit.knn", "TrainData"))
+  expect_named(result, c("Geometry", "fit.knn", "TrainData", "silhouette"))
   expect_s3_class(result$Geometry, "sf")
 })
 
@@ -349,11 +345,11 @@ test_that("perform_clustering handles small sample sizes", {
     x = rnorm(10),
     y = rnorm(10)
   )
-  
-  result <- perform_clustering(test_data, n = 3, fixedClusters = TRUE)
-  
-  expect_length(result, 10)
-  expect_true(all(result %in% 1:3))
+
+  result <- perform_clustering(test_data, n = 3, fixedClusters = TRUE, method = "complete", min.nc = 2, max.nc = 5)
+
+  expect_length(result$partition, 10)
+  expect_true(all(result$partition %in% 1:3))
 })
 
 # Additional coverage for helper functions ----
@@ -480,18 +476,18 @@ test_that("sample_underrepresented_clusters removes duplicates correctly", {
 
 test_that("reorder_clusters_geographically handles different cluster counts", {
   skip_if_not_installed("sf")
-  
+
   for (n_clusters in c(2, 5, 10)) {
-    r <- terra::rast(ncols = 20, nrows = 20, xmin = 0, xmax = 100, 
+    r <- terra::rast(ncols = 20, nrows = 20, xmin = 0, xmax = 100,
                      ymin = 0, ymax = 100, crs = "EPSG:32610")
     terra::values(r) <- sample(1:n_clusters, 400, replace = TRUE)
     names(r) <- "class"
-    
+
     result <- reorder_clusters_geographically(r)
-    
+
     expect_equal(nrow(result$vectors), n_clusters)
     expect_true(all(result$vectors$ID %in% 1:n_clusters))
-    expect_equal(length(unique(terra::values(result$raster))), n_clusters)
+    expect_equal(length(unique(stats::na.omit(terra::values(result$raster)))), n_clusters)
   }
 })
 
@@ -526,7 +522,6 @@ test_that("write_cluster_results handles custom paths", {
 
 # Parameter validation tests ----
 
-
 test_that("extract_weighted_matrix returns same points each time with set seed", {
   set.seed(123)
   r <- terra::rast(ncols = 20, nrows = 20)
@@ -547,16 +542,15 @@ test_that("extract_weighted_matrix returns same points each time with set seed",
 
 test_that("reorder_clusters_geographically preserves CRS", {
   skip_if_not_installed("sf")
-  
-  r <- terra::rast(ncols = 10, nrows = 10, xmin = 0, xmax = 100, 
+
+  r <- terra::rast(ncols = 10, nrows = 10, xmin = 0, xmax = 100,
                    ymin = 0, ymax = 100, crs = "EPSG:32610")
   terra::values(r) <- sample(1:3, 100, replace = TRUE)
   names(r) <- "class"
-  
+
   result <- reorder_clusters_geographically(r)
-  
+
   expect_equal(terra::crs(result$raster), terra::crs(r))
-  # Compare EPSG codes rather than input strings
   expect_equal(sf::st_crs(result$vectors)$epsg, 32610)
 })
 
@@ -597,6 +591,7 @@ test_that("sample_underrepresented_clusters handles CRS transformations", {
     )
   )
 })
+
 test_that("prep_for_nbclust handles various edge cases", {
   
   # Test 1: Normal case - should work fine

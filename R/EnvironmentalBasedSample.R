@@ -78,6 +78,8 @@ EnvironmentalBasedSample <- function(
     ...
   )
   # nocov end
+  partition  <- clustering_result$partition
+  silhouette  <- clustering_result$silhouette
 
   # Train initial KNN classifier
   weighted_mat$ID <- factor(clusterCut)
@@ -133,7 +135,10 @@ EnvironmentalBasedSample <- function(
   )
 
   # Reorder clusters geographically
-  reordered <- reorder_clusters_geographically(spatialClusters_planar)
+  reordered <- reorder_clusters_geographically(
+    spatialClusters_planar, 
+    return_raster = TRUE
+  )
 
   # back to in crs for writeout.
   spatialClusters <- terra::project(reordered$raster, terra::crs(f_rasts))
@@ -156,7 +161,8 @@ EnvironmentalBasedSample <- function(
   list(
     Geometry = ClusterVectors,
     fit.knn = final.fit,
-    TrainData = weighted_mat
+    TrainData = weighted_mat,
+    silhouette = silhouette
   )
 }
 
@@ -247,7 +253,7 @@ perform_clustering <- function(
 
   if (fixedClusters) {
     clusters <- stats::hclust(w_dist, method = 'ward.D2')
-    stats::cutree(clusters, n)
+    partition <- stats::cutree(clusters, n)
   } else {
     NoClusters <- NbClust::NbClust(
       data = weighted_mat,
@@ -258,8 +264,14 @@ perform_clustering <- function(
       max.nc = max.nc,
       ...
     )
-    NoClusters$Best.partition
+    partition <- NoClusters$Best.partition
   }
+
+  sil <- cluster::silhouette(partition, w_dist)
+  list(
+    partition  = partition,
+    silhouette = summary(sil)
+  )
 }
 
 #' Sample additional points from underrepresented clusters
@@ -352,6 +364,8 @@ sample_underrepresented_clusters <- function(
 #' @keywords internal
 #' @noRd
 reorder_clusters_geographically <- function(spatialClusters) {
+  template <- spatialClusters
+
   ClusterVectors <- terra::as.polygons(spatialClusters) |>
     sf::st_as_sf() |>
     sf::st_make_valid() |>
@@ -378,8 +392,8 @@ reorder_clusters_geographically <- function(spatialClusters) {
     dplyr::arrange(ID)
 
   spatialClusters <- terra::rasterize(
-    ClusterVectors,
-    spatialClusters,
+    terra::vect(ClusterVectors),
+    template,
     field = 'ID'
   )
 

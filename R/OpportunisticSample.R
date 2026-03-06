@@ -59,6 +59,9 @@ OpportunisticSample <- function(
   # try and number all of the polygons from one direction, should help with their
   # usage in the field.
   ss_cents <- sf::st_point_on_surface(SelectedSample)
+
+  
+
   ss_cents <- ss_cents |>
     dplyr::mutate(
       X = sf::st_coordinates(ss_cents)[, 1],
