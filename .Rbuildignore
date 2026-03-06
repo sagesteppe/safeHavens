@@ -11,3 +11,4 @@ robots.txt
 ^update_readme\.sh$
 .covr.yml
 .cmdstan_version
+BayesianApproaches.html

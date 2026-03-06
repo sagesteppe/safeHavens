@@ -78,9 +78,11 @@ EnvironmentalBasedSample <- function(
     ...
   )
   # nocov end
+  partition  <- clusterCut$partition
+  silhouette  <- clusterCut$silhouette
 
   # Train initial KNN classifier
-  weighted_mat$ID <- factor(clusterCut)
+  weighted_mat$ID <- factor(partition)
   weighted_mat <- weighted_mat[stats::complete.cases(weighted_mat), ]
   firstKNN <- trainKNN(weighted_mat, split_prop = prop_split)
   fit.knn <- firstKNN$fit.knn
@@ -88,7 +90,7 @@ EnvironmentalBasedSample <- function(
   # Sample additional points from underrepresented clusters
   # nocov start
   sampling_result <- sample_underrepresented_clusters(
-    clusterCut,
+    partition,
     pts,
     weighted_mat,
     pred_rescale,
@@ -156,7 +158,8 @@ EnvironmentalBasedSample <- function(
   list(
     Geometry = ClusterVectors,
     fit.knn = final.fit,
-    TrainData = weighted_mat
+    TrainData = weighted_mat,
+    silhouette = silhouette
   )
 }
 
@@ -247,7 +250,7 @@ perform_clustering <- function(
 
   if (fixedClusters) {
     clusters <- stats::hclust(w_dist, method = 'ward.D2')
-    stats::cutree(clusters, n)
+    partition <- stats::cutree(clusters, n)
   } else {
     NoClusters <- NbClust::NbClust(
       data = weighted_mat,
@@ -258,8 +261,14 @@ perform_clustering <- function(
       max.nc = max.nc,
       ...
     )
-    NoClusters$Best.partition
+    partition <- NoClusters$Best.partition
   }
+
+  sil <- cluster::silhouette(partition, w_dist)
+  list(
+    partition  = partition,
+    silhouette = summary(sil)
+  )
 }
 
 #' Sample additional points from underrepresented clusters
@@ -352,6 +361,8 @@ sample_underrepresented_clusters <- function(
 #' @keywords internal
 #' @noRd
 reorder_clusters_geographically <- function(spatialClusters) {
+  template <- spatialClusters
+
   ClusterVectors <- terra::as.polygons(spatialClusters) |>
     sf::st_as_sf() |>
     sf::st_make_valid() |>
@@ -378,8 +389,8 @@ reorder_clusters_geographically <- function(spatialClusters) {
     dplyr::arrange(ID)
 
   spatialClusters <- terra::rasterize(
-    ClusterVectors,
-    spatialClusters,
+    terra::vect(ClusterVectors),
+    template,
     field = 'ID'
   )
 

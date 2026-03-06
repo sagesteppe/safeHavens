@@ -90,7 +90,7 @@ df <- data.frame(
   lat = sf::st_coordinates(x)[,2]
 )
 
-head(df)
+knitr::kable(head(df))
 ```
 
 The second required element, the distance matrix, can be calculated with the `greatCircleDistance` function in the package. 
@@ -187,24 +187,24 @@ str(geo_res)
 
 The stability score shows how often the most frquently selected network of sites was selected from the bootstrapped runs. 
 ```{r}
-head(geo_res$stability_score)
+knitr::kable(head(geo_res$stability_score))
 ```
 
 The stability data frame shows how often each site was selected across all bootstrap runs. 
 ```{r}
-head(geo_res$stability)
+knitr::kable(head(geo_res$stability))
 ```
 
 Many users may find the combindation of their input data with a few columns, to be all they need to carry on after the results. 
 
 ```{r}
-head(geo_res$input_data)
+knitr::kable(head(geo_res$input_data))
 ```
 
 Run parameters are saved in the settings element.
 
 ```{r}
-head(geo_res$settings)
+knitr::kable(head(geo_res$settings))
 ```
 
 ### visualize the selection results
@@ -284,6 +284,9 @@ From the above we see that the first two PCA axes explain a large amount of the 
 
 ```{r plot pca layers}
 terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a new raster
+```
+
+```{r, echo = F}
 rm(pts, predictors, pca_results)
 ```
 
@@ -310,7 +313,9 @@ We'll ensure that these data are in a proper matrix format for feeding into the 
 env_dist_mat <- as.matrix(
     dist(env_values)
   )
+```
 
+```{r,echo=F}
 rm(pca_raster)
 ```
 
@@ -340,13 +345,13 @@ rm(dist_mat, env_dist_mat)
 This run takes longer than the runs with only the geographic distance matrix. 
 
 ```{r}
-st
+knitr::kable(st)
 ```
 
 The environmental distance run takes about 10 seconds longer. 
 
 ```{r}
-head(env_res$stability_score)
+knitr::kable(head(env_res$stability_score))
 ```
 
 The overall stability score is similar to from the geographic score. 
@@ -420,6 +425,8 @@ map +
  #   ) + 
   theme_minimal() + 
   labs(title = 'Possbilities for centers')
+```
 
+```{r,echo=F}
 rm(env_centered_id, env_centered, pop_centered_id)
 ```

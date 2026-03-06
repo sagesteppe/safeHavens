@@ -87,7 +87,8 @@ ggplot() +
 
 ## check the outlying record. 
 arrange(spp, by = decimalLatitude, desc=FALSE) |>
-  head(5)
+  head(5) |>
+  knitr::kable()
 
 ## remove it based on it's latitude. 
 spp <- filter(spp, decimalLatitude <= 40)
@@ -221,7 +222,9 @@ ibd_samples <- spp_concave |>
 
 base + ## visualize for a single taxon. 
   geom_sf(data = ibd_samples[[1]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
+```
 
+```{r, echo = F}
 rm(spp_concave)
 ```
 
@@ -293,6 +296,6 @@ for(i in seq_along(sppL)){
 }
 ```
 
-```{r clean up environment, echo = F}
+```{r clean up environment, echo = F, warning = F}
 rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base, template, p2Collections, fp, i)
 ```
