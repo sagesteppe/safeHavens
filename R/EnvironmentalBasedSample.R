@@ -78,11 +78,11 @@ EnvironmentalBasedSample <- function(
     ...
   )
   # nocov end
-  partition  <- clustering_result$partition
-  silhouette  <- clustering_result$silhouette
+  partition  <- clusterCut$partition
+  silhouette  <- clusterCut$silhouette
 
   # Train initial KNN classifier
-  weighted_mat$ID <- factor(clusterCut)
+  weighted_mat$ID <- factor(partition)
   weighted_mat <- weighted_mat[stats::complete.cases(weighted_mat), ]
   firstKNN <- trainKNN(weighted_mat, split_prop = prop_split)
   fit.knn <- firstKNN$fit.knn
@@ -90,7 +90,7 @@ EnvironmentalBasedSample <- function(
   # Sample additional points from underrepresented clusters
   # nocov start
   sampling_result <- sample_underrepresented_clusters(
-    clusterCut,
+    partition,
     pts,
     weighted_mat,
     pred_rescale,
@@ -135,10 +135,7 @@ EnvironmentalBasedSample <- function(
   )
 
   # Reorder clusters geographically
-  reordered <- reorder_clusters_geographically(
-    spatialClusters_planar, 
-    return_raster = TRUE
-  )
+  reordered <- reorder_clusters_geographically(spatialClusters_planar)
 
   # back to in crs for writeout.
   spatialClusters <- terra::project(reordered$raster, terra::crs(f_rasts))

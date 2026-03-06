@@ -232,8 +232,8 @@ If a warning is emitted here it is likely due to collinearity in the bioclim var
 Rather than using `eDist` from sdm for generating background points we will use the `eRandom` method instead. 
 
 ```{r current sdm threshold results}
-eSDM_model$ConfusionMatrix$byClass[
-  c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')]
+knitr::kable(eSDM_model$ConfusionMatrix$byClass[
+  c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')])
 plot(eSDM_model$RasterPredictions)
 ```
 
@@ -298,7 +298,7 @@ threshold_rasts <- PostProcessSDM(
   )
 
 plot(threshold_rasts$FinalRasters)
-threshold_rasts$Threshold$equal_sens_spec
+knitr::kable(threshold_rasts$Threshold$equal_sens_spec)
 
 bmap + 
   geom_sf(data = 
@@ -316,7 +316,7 @@ When using EBS for predictive provencing also set the coord_wt parameter to a sm
 This will remove the effect of the spatial clustering. 
 Similar to PCNM, we cannot know the distribution of actual populations in the future.
 
-```{r EnvironmentalBasedSample, message=F, warning = F}
+```{r EnvironmentalBasedSample, message=F, warning = F, results='hide'}
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
@@ -331,7 +331,9 @@ ENVIbs <- EnvironmentalBasedSample(
   min.nc = 5, 
   max.nc = 15
   )
+```
 
+```{r, message=F,warning=F}
 bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
   geom_sf(data = hemi) + 
@@ -361,7 +363,7 @@ We can identify these areas, which are outside of the training conditions for ou
 Note that in these areas our SDM *is* extrapolating, so it's performance cannot be evaluated. 
 However, it seems that these will possibly be suitable habitat, and we can try to plan for that scenario. 
 
-```{r plot the mess surfaces}
+```{r plot the mess surfaces,message=F,warning=F}
 plot(future_clusts$mess)
 bmap +
   geom_sf(data = 
@@ -390,7 +392,7 @@ We can take values from both classifcation scenarios, and cluster them, and iden
 This is the method we employ to identify the most similar existing climate groups. 
 
 ```{r determine analog current climate clusters for the novel groups}
-future_clusts$novel_similarity
+knitr::kable(future_clusts$novel_similarity)
 ```
 
 It is from these groups that we are most likely to collect germplasm relevant for the future scenarios. 

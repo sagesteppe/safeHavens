@@ -276,7 +276,9 @@ neo_eco <- sf::st_read(
   file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'), 
   quiet = TRUE) |>
   dplyr::rename(geometry = geom)
-head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')])
+
+head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')]) |>
+  knitr::kable()
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 20, zone_key = 'Provincias')

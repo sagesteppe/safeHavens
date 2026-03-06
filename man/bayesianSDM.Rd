@@ -92,7 +92,7 @@ Relies on horseshoe prior for shrinkage.}
 \item{chains}{Integer. Number of MCMC chains. Defaults to \code{4}.}
 
 \item{iter}{Integer. Total iterations per chain (including warmup). Defaults
-to \code{2000}.}
+to \code{5000}.}
 
 \item{warmup}{Integer. Warmup iterations per chain. Defaults to \code{1000}.}
 
