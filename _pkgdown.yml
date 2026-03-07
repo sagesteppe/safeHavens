@@ -121,3 +121,10 @@ articles:
     desc: "A supplemental schema for rare species"
     contents: 
     - RareSpecies
+
+figures:
+  dev: grDevices::png
+  dpi: 96
+
+deploy:
+  install_metadata: true

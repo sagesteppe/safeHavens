@@ -34,11 +34,10 @@ This package helps germplasm curators communicate areas of interest to collectio
 `safeHavens` is available only on github. 
 It can be installed using `remotes` or `devtools` like so:
 ```
-install.packages('devtools')
-devtools::install_github('sagesteppe/safeHavens')
-
-install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
+install.packages('remotes') 
 remotes::install_github('sagesteppe/safeHavens')
+#devtools::install_github('sagesteppe/safeHavens') # if needed
+
 ```
 
 Once installed it can be attached for use like any other package from github or CRAN

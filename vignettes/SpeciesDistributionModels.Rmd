@@ -85,12 +85,12 @@ sdModel <- elasticSDM(
 
 
 ```{r save sdmodel for getting started vignette, echo =F, eval=F}
-sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
-sdModel$Predictors <- terra::wrap(sdModel$Predictors)
-sdModel$PCNM <- terra::wrap(sdModel$PCNM)
+#sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+#sdModel$Predictors <- terra::wrap(sdModel$Predictors)
+#sdModel$PCNM <- terra::wrap(sdModel$PCNM)
 ### this is only for vignette setup!!!!!!!!!!!!!!!!!!!
-setwd('~/Documents/assoRted/safeHavens/vignettes')
-saveRDS(sdModel, '../inst/extdata/sdModel.rds')
+#setwd('~/Documents/assoRted/safeHavens/vignettes')
+#saveRDS(sdModel, '../inst/extdata/sdModel.rds')
 
 sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
 sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
