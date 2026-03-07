@@ -52,16 +52,6 @@ jobs:
             libproj-dev proj-bin \
             libgeos-dev \
             libgeos++-dev
-            
-      - name: Install dependencies
-        run: |
-          Rscript -e 'install.packages(c("pkgdown", "quarto"))'
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::pkgdown, local::.
-          needs: website
-
 
       - name: Compile sf from source
         if: runner.os == 'Linux'

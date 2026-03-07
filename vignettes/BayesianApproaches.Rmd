@@ -217,7 +217,7 @@ To view how well the model is able to predict suitable habitat of the hold out s
 While balanced accuracy for these is generally low, as these models are not intended for prediction, so much as understanding the relationships between environmental variables driving the species distribution, the results show the model was able to learn some important characteristics of the species. 
 
 ```{r Explore SDM output - Confusion Matrix}
-sdModel$ConfusionMatrix
+knitr::kable(sdModel$ConfusionMatrix$byClass)
 ```
 
 Here we can see how our selected model works on predicting the state of test data.
