@@ -308,14 +308,21 @@ neo_eco <- sf::st_read(
   file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'), 
   quiet = TRUE) |>
   dplyr::rename(geometry = geom)
-head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')])
-                 Provincias      Dominio                      Subregion
-1 Araucaria Forest province       Parana                        Chacoan
-2          Atacama province         <NA> South American Transition Zone
-3         Atlantic province       Parana                        Chacoan
-4           Bahama province         <NA>                      Antillean
-5     Balsas Basin province Mesoamerican                      Brazilian
-6         Caatinga province      Chacoan                        Chacoan
+
+head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')]) |>
+  knitr::kable()
+```
+
+| Provincias                | Dominio      | Subregion                      |
+|:--------------------------|:-------------|:-------------------------------|
+| Araucaria Forest province | Parana       | Chacoan                        |
+| Atacama province          | NA           | South American Transition Zone |
+| Atlantic province         | Parana       | Chacoan                        |
+| Bahama province           | NA           | Antillean                      |
+| Balsas Basin province     | Mesoamerican | Brazilian                      |
+| Caatinga province         | Chacoan      | Chacoan                        |
+
+``` r
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 20, zone_key = 'Provincias')

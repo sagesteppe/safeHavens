@@ -59,6 +59,10 @@
 </script><!-- Additional SEO Meta Tags --><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package">
 <meta name="author" content="Reed Benkendorf">
+<meta property="og:title" content="safeHavens: Ex Situ Plant Germplasm Sampling Strategies">
+<meta property="og:description" content="R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation.">
+<meta property="og:url" content="https://sagesteppe.github.io/safeHavens/">
+<meta property="og:type" content="website">
 <link rel="canonical" href="https://sagesteppe.github.io/safeHavens/">
 </head>
 <body>
@@ -328,7 +332,78 @@ our species.</p>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    <span class="at">predictors =</span> bio_current, </span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    <span class="at">planar_projection =</span> <span class="dv">5070</span>, </span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="at">PCNM =</span> <span class="cn">FALSE</span> <span class="do">## set to FALSE for this workstream!!!!!</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    )</span></code></pre></div>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    )</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co"># Test with just 3 runs to see variability quickly</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>run1 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.915674e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.6507</span> )</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.915674e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.6507</span> )</span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>run2 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a>run3 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
+<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
+<span id="cb6-52"><a href="#cb6-52" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">6.456425e-09</span> (eff. <span class="at">df=</span> <span class="fl">196.65</span> )</span>
+<span id="cb6-53"><a href="#cb6-53" tabindex="-1"></a></span>
+<span id="cb6-54"><a href="#cb6-54" tabindex="-1"></a><span class="co"># Compare coefficients</span></span>
+<span id="cb6-55"><a href="#cb6-55" tabindex="-1"></a>coef1 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run1<span class="sc">$</span>Model))</span>
+<span id="cb6-56"><a href="#cb6-56" tabindex="-1"></a>coef2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run2<span class="sc">$</span>Model))</span>
+<span id="cb6-57"><a href="#cb6-57" tabindex="-1"></a>coef3 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run3<span class="sc">$</span>Model))</span>
+<span id="cb6-58"><a href="#cb6-58" tabindex="-1"></a></span>
+<span id="cb6-59"><a href="#cb6-59" tabindex="-1"></a><span class="co"># Quick comparison</span></span>
+<span id="cb6-60"><a href="#cb6-60" tabindex="-1"></a>all_vars <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">c</span>(<span class="fu">rownames</span>(coef1), <span class="fu">rownames</span>(coef2), <span class="fu">rownames</span>(coef3)))</span>
+<span id="cb6-61"><a href="#cb6-61" tabindex="-1"></a>compare <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-62"><a href="#cb6-62" tabindex="-1"></a>  <span class="at">var =</span> all_vars,</span>
+<span id="cb6-63"><a href="#cb6-63" tabindex="-1"></a>  <span class="at">run1 =</span> coef1[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef1)), <span class="dv">1</span>],</span>
+<span id="cb6-64"><a href="#cb6-64" tabindex="-1"></a>  <span class="at">run2 =</span> coef2[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef2)), <span class="dv">1</span>],</span>
+<span id="cb6-65"><a href="#cb6-65" tabindex="-1"></a>  <span class="at">run3 =</span> coef3[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef3)), <span class="dv">1</span>]</span>
+<span id="cb6-66"><a href="#cb6-66" tabindex="-1"></a>)</span>
+<span id="cb6-67"><a href="#cb6-67" tabindex="-1"></a>compare[<span class="fu">is.na</span>(compare)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb6-68"><a href="#cb6-68" tabindex="-1"></a>compare<span class="sc">$</span>cv <span class="ot">&lt;-</span> <span class="fu">apply</span>(compare[,<span class="sc">-</span><span class="dv">1</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">sd</span>(x)<span class="sc">/</span><span class="fu">mean</span>(x))</span>
+<span id="cb6-69"><a href="#cb6-69" tabindex="-1"></a><span class="fu">print</span>(compare)</span>
+<span id="cb6-70"><a href="#cb6-70" tabindex="-1"></a>           var        run1        run2        run3         cv</span>
+<span id="cb6-71"><a href="#cb6-71" tabindex="-1"></a><span class="dv">1</span>  (Intercept)  <span class="fl">0.96113097</span>  <span class="fl">1.63123032</span>  <span class="fl">1.63123032</span>  <span class="fl">0.2748007</span></span>
+<span id="cb6-72"><a href="#cb6-72" tabindex="-1"></a><span class="dv">2</span>       bio_03 <span class="sc">-</span><span class="fl">0.03427818</span> <span class="sc">-</span><span class="fl">0.05265923</span> <span class="sc">-</span><span class="fl">0.05265923</span> <span class="sc">-</span><span class="fl">0.2280635</span></span>
+<span id="cb6-73"><a href="#cb6-73" tabindex="-1"></a><span class="dv">3</span>       bio_15  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-74"><a href="#cb6-74" tabindex="-1"></a><span class="dv">4</span>       bio_14  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-75"><a href="#cb6-75" tabindex="-1"></a><span class="dv">5</span>       bio_16  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-76"><a href="#cb6-76" tabindex="-1"></a><span class="dv">6</span>       bio_04  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-77"><a href="#cb6-77" tabindex="-1"></a><span class="dv">7</span>       bio_08  <span class="fl">0.02953027</span>  <span class="fl">0.03609195</span>  <span class="fl">0.03609195</span>  <span class="fl">0.1117363</span></span>
+<span id="cb6-78"><a href="#cb6-78" tabindex="-1"></a><span class="dv">8</span>       bio_13  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-79"><a href="#cb6-79" tabindex="-1"></a><span class="dv">9</span>       bio_07  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-80"><a href="#cb6-80" tabindex="-1"></a><span class="dv">10</span>      bio_06  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-81"><a href="#cb6-81" tabindex="-1"></a><span class="dv">11</span>      bio_01  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-82"><a href="#cb6-82" tabindex="-1"></a><span class="dv">12</span>      bio_10  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-83"><a href="#cb6-83" tabindex="-1"></a><span class="dv">13</span>       PCNM4 <span class="fl">18.21217064</span> <span class="fl">15.51873762</span> <span class="fl">15.51873762</span>  <span class="fl">0.0947248</span></span>
+<span id="cb6-84"><a href="#cb6-84" tabindex="-1"></a><span class="dv">14</span>       PCNM9  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
+<span id="cb6-85"><a href="#cb6-85" tabindex="-1"></a><span class="dv">15</span>       PCNM2  <span class="fl">0.00000000</span> <span class="sc">-</span><span class="fl">4.77088330</span> <span class="sc">-</span><span class="fl">4.77088330</span> <span class="sc">-</span><span class="fl">0.8660254</span></span>
+<span id="cb6-86"><a href="#cb6-86" tabindex="-1"></a><span class="dv">16</span>       PCNM1  <span class="fl">0.00000000</span>  <span class="fl">6.78260982</span>  <span class="fl">6.78260982</span>  <span class="fl">0.8660254</span></span></code></pre></div>
 <p>We will use the eSDM_model function for this workstream, however is
 is essential that PCNM is set to FALSE. There is no way to forecast of
 predict PCNM to future scenarios, so we cannot fit models with it.</p>
@@ -336,11 +411,35 @@ predict PCNM to future scenarios, so we cannot fit models with it.</p>
 bioclim variables. Rather than using <code>eDist</code> from sdm for
 generating background points we will use the <code>eRandom</code> method
 instead.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>eSDM_model<span class="sc">$</span>ConfusionMatrix<span class="sc">$</span>byClass[</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">'Sensitivity'</span>, <span class="st">'Specificity'</span>, <span class="st">'Recall'</span>, <span class="st">'Balanced Accuracy'</span>)]</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>      Sensitivity       Specificity            Recall Balanced Accuracy </span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>        <span class="fl">0.9200000</span>         <span class="fl">0.7692308</span>         <span class="fl">0.9200000</span>         <span class="fl">0.8446154</span> </span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">plot</span>(eSDM_model<span class="sc">$</span>RasterPredictions)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">eSDM_model</span><span class="op">$</span><span class="va">ConfusionMatrix</span><span class="op">$</span><span class="va">byClass</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Sensitivity'</span>, <span class="st">'Specificity'</span>, <span class="st">'Recall'</span>, <span class="st">'Balanced Accuracy'</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sensitivity</td>
+<td align="right">0.7200000</td>
+</tr>
+<tr class="even">
+<td align="left">Specificity</td>
+<td align="right">0.8461538</td>
+</tr>
+<tr class="odd">
+<td align="left">Recall</td>
+<td align="right">0.7200000</td>
+</tr>
+<tr class="even">
+<td align="left">Balanced Accuracy</td>
+<td align="right">0.7830769</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">eSDM_model</span><span class="op">$</span><span class="va">RasterPredictions</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/current%20sdm%20threshold%20results-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can view some of the results for the model, it is OK, but would
 benefit from using only a subset of the bioclim predictors to allow for
@@ -353,7 +452,7 @@ current and future climate scenarios rasters. This will happen
 internally in the next function, but it is good to see the different
 between the current and future scenarios to have an idea of expectations
 for the final results.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bio_current_rs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">Model</span>, </span>
 <span>    predictors <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">Predictors</span>,</span>
@@ -363,7 +462,7 @@ for the final results.</p>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">bio_current_rs</span><span class="op">$</span><span class="va">RescaledPredictors</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/rescale%20rasters-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">bio_future_rs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rescaleFuture.html">rescaleFuture</a></span><span class="op">(</span></span>
 <span>  <span class="va">eSDM_model</span><span class="op">$</span><span class="va">Model</span>, </span>
@@ -380,7 +479,7 @@ glmnet shrunk them from the model.</p>
 <p>Similar to how we differenced the rasters at the two time points
 above, we can take the absolute difference of the relevant raster layers
 to see where the largest changes will be.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">difference_rs</span> <span class="op">&lt;-</span> <span class="fu">pct_diff</span><span class="op">(</span><span class="va">bio_current_rs</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="va">bio_future_rs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">difference_rs</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/rescaled%20raster%20difference-1.png" class="r-plt" alt="" width="700"></p>
@@ -396,7 +495,7 @@ manually specifying <em>n</em>, the argument <code>fixedClusters</code>
 needs to be set to <code>FALSE</code>. When using PostProcessSDM the
 same threshhold metric should be used that will be applied to
 <code>PredictiveProvenance</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
 <span>  rast_cont <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
 <span>  test <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">TestData</span>,</span>
@@ -409,24 +508,33 @@ same threshhold metric should be used that will be applied to
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/identify%20current%20clusters-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>threshold_rasts<span class="sc">$</span>Threshold<span class="sc">$</span>equal_sens_spec</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.694638</span></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>bmap <span class="sc">+</span> </span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> </span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_as_sf</span>(</span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>    terra<span class="sc">::</span><span class="fu">as.polygons</span>(</span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>      threshold_rasts<span class="sc">$</span>FinalRasters[<span class="st">'Threshold'</span>])</span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>      ), <span class="at">fill =</span> <span class="st">'cornsilk'</span></span>
-<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>    ) <span class="sc">+</span> </span>
-<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>    <span class="fu">geom_sf</span>(<span class="at">data =</span> hemi) </span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">Threshold</span><span class="op">$</span><span class="va">equal_sens_spec</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">x</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">0.4329911</td>
+</tr></tbody>
+</table>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">bmap</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> </span>
+<span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span></span>
+<span>    <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/as.polygons.html" class="external-link">as.polygons</a></span><span class="op">(</span></span>
+<span>      <span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">[</span><span class="st">'Threshold'</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>, fill <span class="op">=</span> <span class="st">'cornsilk'</span></span>
+<span>    <span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">hemi</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/identify%20current%20clusters-2.png" class="r-plt" alt="" width="700"></p>
 <p>We will make the EnvironmentalBasedSample to find a suitable number
 of climate clusters at the current time period. When using EBS for
 predictive provencing also set the coord_wt parameter to a small value.
 This will remove the effect of the spatial clustering. Similar to PCNM,
 we cannot know the distribution of actual populations in the future.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ENVIbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EnvironmentalBasedSample.html">EnvironmentalBasedSample</a></span><span class="op">(</span></span>
 <span>  pred_rescale <span class="op">=</span> <span class="va">bio_current_rs</span><span class="op">$</span><span class="va">RescaledPredictors</span>, </span>
 <span>  write2disk <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co"># we are not writing, but showing how to provide some arguments</span></span>
@@ -441,49 +549,21 @@ we cannot know the distribution of actual populations in the future.</p>
 <span>  min.nc <span class="op">=</span> <span class="fl">5</span>, </span>
 <span>  max.nc <span class="op">=</span> <span class="fl">15</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-1.png" class="r-plt" alt="" width="700"></p>
-<pre><code>*** : The Hubert index is a graphical method of determining the number of clusters.
-                In the plot of Hubert index, we seek a significant knee that corresponds to a 
-                significant increase of the value of the measure i.e the significant peak in Hubert
-                index second differences plot. 
- </code></pre>
-<p><img src="PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-2.png" class="r-plt" alt="" width="700"></p>
-<pre><code>*** : The D index is a graphical method of determining the number of clusters. 
-                In the plot of D index, we seek a significant knee (the significant peak in Dindex
-                second differences plot) that corresponds to a significant increase of the value of
-                the measure. 
- 
-******************************************************************* 
-* Among all indices:                                                
-* 1 proposed 5 as the best number of clusters 
-* 6 proposed 6 as the best number of clusters 
-* 1 proposed 7 as the best number of clusters 
-* 2 proposed 8 as the best number of clusters 
-* 1 proposed 11 as the best number of clusters 
-* 3 proposed 12 as the best number of clusters 
-* 1 proposed 14 as the best number of clusters 
-* 7 proposed 15 as the best number of clusters 
-
-                   ***** Conclusion *****                            
- 
-* According to the majority rule, the best number of clusters is  15 
- 
- 
-******************************************************************* 
-
-bmap + 
-  geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
-  geom_sf(data = hemi) + 
-  theme(legend.position = 'bottom') + 
-  labs(fill = 'Cluster', title = 'Current')</code></pre>
-<p><img src="PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-3.png" class="r-plt" alt="" width="700"></p>
+<p><img src="PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-1.png" class="r-plt" alt="" width="700"><img src="PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-2.png" class="r-plt" alt="" width="700"></p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bmap</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ENVIbs</span><span class="op">$</span><span class="va">Geometry</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">hemi</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'bottom'</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">'Cluster'</span>, title <span class="op">=</span> <span class="st">'Current'</span><span class="op">)</span></span></code></pre></div>
+<p><img src="PredictiveProvenance_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can apply the current clustering to the future scenario. This will
 show us how and where the currently identified clusters would exist in
 future geographic space. <code>ProjectClusters</code> is really the
 whole heart of this workflow, it requires the outputs from
 <code>elasticSDM</code>, <code>PostProcessSDM</code>, and
 <code>EnvironmentalBasedSample</code>.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">future_clusts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/projectClusters.html">projectClusters</a></span><span class="op">(</span></span>
 <span>  eSDM_object <span class="op">=</span> <span class="va">eSDM_model</span>, </span>
 <span>  current_clusters <span class="op">=</span> <span class="va">ENVIbs</span>,</span>
@@ -494,26 +574,52 @@ whole heart of this workflow, it requires the outputs from
 <span>  thresh_metric <span class="op">=</span> <span class="st">'equal_sens_spec'</span>,</span>
 <span>  n_sample_per_cluster <span class="op">=</span> <span class="fl">20</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p><img src="PredictiveProvenance_files/figure-html/classify%20future%20climate%20surface%20with%20clusters-1.png" class="r-plt" alt="" width="700"></p>
+<pre><code>*** : The Hubert index is a graphical method of determining the number of clusters.
+                In the plot of Hubert index, we seek a significant knee that corresponds to a 
+                significant increase of the value of the measure i.e the significant peak in Hubert
+                index second differences plot. 
+ </code></pre>
+<p><img src="PredictiveProvenance_files/figure-html/classify%20future%20climate%20surface%20with%20clusters-2.png" class="r-plt" alt="" width="700"></p>
+<pre><code>*** : The D index is a graphical method of determining the number of clusters. 
+                In the plot of D index, we seek a significant knee (the significant peak in Dindex
+                second differences plot) that corresponds to a significant increase of the value of
+                the measure. 
+ 
+******************************************************************* 
+* Among all indices:                                                
+* 6 proposed 2 as the best number of clusters 
+* 9 proposed 3 as the best number of clusters 
+* 1 proposed 4 as the best number of clusters 
+* 2 proposed 6 as the best number of clusters 
+* 1 proposed 7 as the best number of clusters 
+* 2 proposed 20 as the best number of clusters 
+
+                   ***** Conclusion *****                            
+ 
+* According to the majority rule, the best number of clusters is  3 
+ 
+ 
+******************************************************************* </code></pre>
 <p>However, our classifications cannot accomodate new climate
 conditions. We can identify these areas, which are outside of the
 training conditions for our SDM using MESS. Note that in these areas our
 SDM <em>is</em> extrapolating, so it’s performance cannot be evaluated.
 However, it seems that these will possibly be suitable habitat, and we
 can try to plan for that scenario.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">future_clusts</span><span class="op">$</span><span class="va">mess</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>bmap <span class="sc">+</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> </span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>    <span class="fu">st_as_sf</span>(terra<span class="sc">::</span><span class="fu">as.polygons</span>(future_clusts<span class="sc">$</span>novel_mask)), </span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>    <span class="at">fill =</span> <span class="st">'red'</span>) <span class="sc">+</span> </span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">'MESS regions'</span>)</span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bmap</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> </span>
+<span>    <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/as.polygons.html" class="external-link">as.polygons</a></span><span class="op">(</span><span class="va">future_clusts</span><span class="op">$</span><span class="va">novel_mask</span><span class="op">)</span><span class="op">)</span>, </span>
+<span>    fill <span class="op">=</span> <span class="st">'red'</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'MESS regions'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-2.png" class="r-plt" alt="" width="700"></p>
 <p>Once we identify these areas, if they are sufficiently large we can
 pass them to a new NbClust scenario and it can cluster them anew.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">current</span> <span class="op">=</span> <span class="va">bmap</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ENVIbs</span><span class="op">$</span><span class="va">Geometry</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Current'</span>, fill <span class="op">=</span> <span class="st">'Cluster'</span><span class="op">)</span> <span class="op">+</span></span>
@@ -531,46 +637,46 @@ classifcation scenarios, and cluster them, and identify which new
 climate clusters share branches with existing clusters. This is the
 method we employ to identify the most similar existing climate
 groups.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>novel_similarity</span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>[<span class="dv">1</span>] novel_cluster_id     nearest_existing_id  avg_silhouette_width</span>
-<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="sc">&lt;</span><span class="dv">0</span> rows<span class="sc">&gt;</span> (or <span class="dv">0</span><span class="sc">-</span>length row.names)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">future_clusts</span><span class="op">$</span><span class="va">novel_similarity</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">novel_cluster_id</th>
+<th align="right">nearest_existing_id</th>
+<th align="right">avg_silhouette_width</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">6</td>
+<td align="right">1</td>
+<td align="right">0.5741401</td>
+</tr>
+<tr class="even">
+<td align="right">7</td>
+<td align="right">3</td>
+<td align="right">0.6024110</td>
+</tr>
+<tr class="odd">
+<td align="right">8</td>
+<td align="right">3</td>
+<td align="right">0.4904208</td>
+</tr>
+</tbody>
+</table>
 <p>It is from these groups that we are most likely to collect germplasm
 relevant for the future scenarios.</p>
 <p>We can also take a very quick look at how cluster sizes change
 between the scenarios</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>changes</span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>   cluster_id current_area_km2 future_area_km2 area_change_pct</span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="dv">1</span>           <span class="dv">1</span>        <span class="fl">4043.3230</span>      <span class="fl">28300.9046</span>       <span class="fl">599.94172</span></span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="dv">2</span>           <span class="dv">2</span>       <span class="fl">13170.6534</span>        <span class="fl">269.7564</span>       <span class="sc">-</span><span class="fl">97.95184</span></span>
-<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="dv">3</span>           <span class="dv">3</span>        <span class="fl">4998.7124</span>       <span class="fl">1407.8829</span>       <span class="sc">-</span><span class="fl">71.83509</span></span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="dv">4</span>           <span class="dv">4</span>        <span class="fl">4435.7130</span>        <span class="fl">136.0061</span>       <span class="sc">-</span><span class="fl">96.93384</span></span>
-<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="dv">5</span>           <span class="dv">5</span>       <span class="fl">12027.6067</span>        <span class="fl">872.3368</span>       <span class="sc">-</span><span class="fl">92.74721</span></span>
-<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="dv">6</span>           <span class="dv">6</span>       <span class="fl">15081.4257</span>        <span class="fl">952.5868</span>       <span class="sc">-</span><span class="fl">93.68371</span></span>
-<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="dv">7</span>           <span class="dv">7</span>        <span class="fl">2576.1257</span>          <span class="fl">0.0000</span>      <span class="sc">-</span><span class="fl">100.00000</span></span>
-<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a><span class="dv">8</span>           <span class="dv">8</span>       <span class="fl">33353.1496</span>       <span class="fl">1413.2125</span>       <span class="sc">-</span><span class="fl">95.76288</span></span>
-<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a><span class="dv">9</span>           <span class="dv">9</span>        <span class="fl">3958.0202</span>       <span class="fl">3040.5491</span>       <span class="sc">-</span><span class="fl">23.18005</span></span>
-<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="dv">10</span>         <span class="dv">10</span>        <span class="fl">6312.3643</span>        <span class="fl">747.9952</span>       <span class="sc">-</span><span class="fl">88.15032</span></span>
-<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a><span class="dv">11</span>         <span class="dv">11</span>        <span class="fl">1313.6535</span>          <span class="fl">0.0000</span>      <span class="sc">-</span><span class="fl">100.00000</span></span>
-<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a><span class="dv">12</span>         <span class="dv">12</span>         <span class="fl">597.1152</span>       <span class="fl">4630.9965</span>       <span class="fl">675.56168</span></span>
-<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a><span class="dv">13</span>         <span class="dv">13</span>       <span class="fl">36782.2993</span>       <span class="fl">4143.2314</span>       <span class="sc">-</span><span class="fl">88.73580</span></span>
-<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a><span class="dv">14</span>         <span class="dv">14</span>       <span class="fl">32653.6727</span>       <span class="fl">1344.0688</span>       <span class="sc">-</span><span class="fl">95.88387</span></span>
-<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a><span class="dv">15</span>         <span class="dv">15</span>           <span class="fl">0.0000</span>       <span class="fl">3528.7292</span>              <span class="cn">NA</span></span>
-<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a>   centroid_shift_km</span>
-<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a><span class="dv">1</span>           <span class="fl">460.1072</span></span>
-<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a><span class="dv">2</span>           <span class="fl">290.3649</span></span>
-<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a><span class="dv">3</span>           <span class="fl">205.2148</span></span>
-<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a><span class="dv">4</span>           <span class="fl">251.8769</span></span>
-<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a><span class="dv">5</span>           <span class="fl">726.1748</span></span>
-<span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a><span class="dv">6</span>           <span class="fl">254.4887</span></span>
-<span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a><span class="dv">7</span>                 <span class="cn">NA</span></span>
-<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a><span class="dv">8</span>           <span class="fl">330.4310</span></span>
-<span id="cb21-27"><a href="#cb21-27" tabindex="-1"></a><span class="dv">9</span>           <span class="fl">494.6931</span></span>
-<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a><span class="dv">10</span>           <span class="fl">14.2699</span></span>
-<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a><span class="dv">11</span>                <span class="cn">NA</span></span>
-<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a><span class="dv">12</span>          <span class="fl">539.5743</span></span>
-<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a><span class="dv">13</span>          <span class="fl">298.5651</span></span>
-<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a><span class="dv">14</span>          <span class="fl">374.5908</span></span>
-<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a><span class="dv">15</span>                <span class="cn">NA</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>changes</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>       <span class="fl">264999.735</span>      <span class="fl">164724.097</span>       <span class="sc">-</span><span class="fl">37.83990</span>         <span class="fl">105.49128</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="dv">2</span>          <span class="dv">2</span>        <span class="fl">24891.178</span>       <span class="fl">15001.671</span>       <span class="sc">-</span><span class="fl">39.73097</span>          <span class="fl">10.99216</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="dv">3</span>          <span class="dv">3</span>         <span class="fl">3258.543</span>       <span class="fl">14966.818</span>       <span class="fl">359.31012</span>         <span class="fl">308.80211</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="dv">4</span>          <span class="dv">4</span>        <span class="fl">17708.733</span>        <span class="fl">3071.191</span>       <span class="sc">-</span><span class="fl">82.65719</span>         <span class="fl">410.52330</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="dv">5</span>          <span class="dv">5</span>        <span class="fl">22110.323</span>           <span class="fl">0.000</span>      <span class="sc">-</span><span class="fl">100.00000</span>                <span class="cn">NA</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="dv">6</span>          <span class="dv">6</span>            <span class="fl">0.000</span>        <span class="fl">4205.955</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="dv">7</span>          <span class="dv">7</span>            <span class="fl">0.000</span>        <span class="fl">2747.449</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="dv">8</span>          <span class="dv">8</span>            <span class="fl">0.000</span>        <span class="fl">3837.942</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

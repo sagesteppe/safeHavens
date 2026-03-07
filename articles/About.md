@@ -33,7 +33,7 @@ populations that are further apart. All approaches in the package are *a
 priori*, with the exception of the `EnvironmentalBasedSample` function,
 which relies on a species distribution model (SDM) to inform sampling
 locations and is based on the concept of Isolation by Environment (Wang
-& Bradburd 2014); however this still does not have field valdiation.
+& Bradburd 2014); however this still does not have field validation.
 None of these sampling approaches are meant to supplant genetic
 diversity-based sampling, but we recognize that having these data is
 rare, and even gathering them would often miss the opportunity to make
@@ -52,10 +52,11 @@ scheme and the user-facing function associated with them.
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
 | `IBDBasedSample`           | Breaks species range into clusters      | H     | L     |
-| `IBRSurface`               | Breaks species range into clusters      | H     | M     |
+| `buildResistanceSurface`   | Breaks species range into clusters      | H     | M     |
 | `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 | `KMedoidsBasedSample`      | For rare species with known occurrences | M     | M     |
+| `PosteriorCluster`         | Uses posteriors from an SDM to cluster  | H     | H     |
 
 ### geographic distance
 
@@ -139,6 +140,8 @@ based on the concept of maximizing the dispersion of selected points in
 geographic and environmental spaces to best capture the overall
 variation present in the species range.
 
+## BAYESIAN GOES HERE
+
 ### installation
 
 `safeHavens` can be installed directly from github, using either
@@ -149,13 +152,65 @@ packages that may require additional system dependencies, such as
 install, but once you have them effectively all open-source geospatial
 softwares are available to you.
 
+Users of the Bayesian approaches will need Stan and cmdstanr, installed,
+also requiring C++ toolkits. These can take a few minutes to figure out.
+
 `safeHavens` can be installed from GitHub with `remotes` or `devtools`.
 Some users have issues with devtools on Windows, but remotes tends to
 work well.
 
 ``` r
 remotes::install_github('sagesteppe/safeHavens') 
-
-# install.packages('devtools') 
 # devtools::install_github('sagesteppe/safeHavens')
+```
+
+An overview of the functionality in the package is presented below.
+
+``` mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 
+    'primaryTextColor':'#ffffff', 
+    'lineColor':'#ffffff',
+    'fontSize':'40px', 
+    'fontFamily':'Arial'}}}%%
+flowchart LR
+A[/Species Occurrence Data/]
+C[/Environmental Covariates/]
+A --> D(PointBasedSample)
+A --> E(EqualAreaSample)
+A --> F(OpportunisticSample)
+A --> G(IBDBasedSample)
+A --> J[elasticSDM]
+A --> K[bayesianSDM]
+A --> L(KMedoidsBasedSample)
+C -.-> L
+C --> J
+C --> K
+D --> N[PrioritizeSample]
+E --> N
+F --> N
+G --> N
+H[buildResistanceSurface] --> M(PolygonBasedSample)
+M --> N
+J --> O{postProcessSDM}
+K --> O
+O --> P{RescaleRaster}
+O --> S{RescaleRasterBayes}
+P --> Q(EnvironmentalBasedSample)
+Q --> R[PredictiveProvenance]
+Q --> M
+R --> M
+S --> T[PosteriorCluster]
+T --> R
+classDef geoColor fill:#272AB0,color:#FFFFFF
+classDef polyColor fill:#57ACDC,color:#000000
+classDef envColor fill:#E91E63,color:#FFFFFF
+classDef dataColor fill:#F5A623,color:#000000
+classDef decisionColor fill:#60C689,color:#000000
+classDef rareColor fill:#20B2AA,color:#000000
+class D,E,F,G geoColor
+class H,M polyColor
+class J,K,O,P,S,T,U,Q,R envColor
+class A,C dataColor
+class N decisionColor
+class L rareColor
 ```

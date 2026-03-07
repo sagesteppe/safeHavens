@@ -3,6 +3,7 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/LICENSE-text.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/LICENSE.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/About.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/articles/BayesianApproaches.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/GettingStarted.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/IsolationByResistance.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/articles/PolygonBasedSamples.html</loc></url>
@@ -22,8 +23,11 @@
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PointBasedSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PolygonBasedSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PostProcessSDM.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/PosteriorCluster.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/PrioritizeSample.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/RescaleRasters.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/RescaleRasters_bayes.html</loc></url>
+<url><loc>https://sagesteppe.github.io/safeHavens/reference/bayesianSDM.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/buildResistanceSurface.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/elasticSDM.html</loc></url>
 <url><loc>https://sagesteppe.github.io/safeHavens/reference/greatCircleDistance.html</loc></url>

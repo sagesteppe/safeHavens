@@ -59,6 +59,10 @@
 </script><!-- Additional SEO Meta Tags --><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package">
 <meta name="author" content="Reed Benkendorf">
+<meta property="og:title" content="safeHavens: Ex Situ Plant Germplasm Sampling Strategies">
+<meta property="og:description" content="R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation.">
+<meta property="og:url" content="https://sagesteppe.github.io/safeHavens/">
+<meta property="og:type" content="website">
 <link rel="canonical" href="https://sagesteppe.github.io/safeHavens/">
 </head>
 <body>
@@ -135,23 +139,70 @@ data.frame of sites, to streamline making a couple calculations.</p>
 <p>The input to the <code>KMedoidsBasedSample</code> function is a list
 with two elements: a distance matrix, and a data frame of site locations
 and attributes. The data frame must contain the following columns.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>n_sites <span class="ot">&lt;-</span> <span class="fu">nrow</span>(x) </span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">site_id =</span> <span class="fu">seq_len</span>(n_sites),</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">required =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">coord_uncertainty =</span> <span class="dv">0</span>, </span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">lon =</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(x)[,<span class="dv">1</span>], </span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  <span class="at">lat =</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(x)[,<span class="dv">2</span>]</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>)</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="fu">head</span>(df)</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  site_id required coord_uncertainty      lon      lat</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="dv">1</span>       <span class="dv">1</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">65.4000</span> <span class="sc">-</span><span class="fl">10.3833</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="dv">2</span>       <span class="dv">2</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">65.3833</span> <span class="sc">-</span><span class="fl">10.3833</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="dv">3</span>       <span class="dv">3</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">65.1333</span> <span class="sc">-</span><span class="fl">16.8000</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="dv">4</span>       <span class="dv">4</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">63.6667</span> <span class="sc">-</span><span class="fl">17.4500</span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="dv">5</span>       <span class="dv">5</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">63.8500</span> <span class="sc">-</span><span class="fl">17.4000</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="dv">6</span>       <span class="dv">6</span>    <span class="cn">FALSE</span>                 <span class="dv">0</span> <span class="sc">-</span><span class="fl">64.4167</span> <span class="sc">-</span><span class="fl">16.0000</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> </span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  site_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_sites</span><span class="op">)</span>,</span>
+<span>  required <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  coord_uncertainty <span class="op">=</span> <span class="fl">0</span>, </span>
+<span>  lon <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, </span>
+<span>  lat <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">site_id</th>
+<th align="left">required</th>
+<th align="right">coord_uncertainty</th>
+<th align="right">lon</th>
+<th align="right">lat</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-65.4000</td>
+<td align="right">-10.3833</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-65.3833</td>
+<td align="right">-10.3833</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-65.1333</td>
+<td align="right">-16.8000</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-63.6667</td>
+<td align="right">-17.4500</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-63.8500</td>
+<td align="right">-17.4000</td>
+</tr>
+<tr class="even">
+<td align="right">6</td>
+<td align="left">FALSE</td>
+<td align="right">0</td>
+<td align="right">-64.4167</td>
+<td align="right">-16.0000</td>
+</tr>
+</tbody>
+</table>
 <p>The second required element, the distance matrix, can be calculated
 with the <code>greatCircleDistance</code> function in the package.
 Please use this rather than <code>st_distance</code> from
@@ -238,7 +289,7 @@ scenarios. We recommened using at least 999 bootstraps for real world
 applications.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>st</span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>   user  system elapsed </span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a> <span class="fl">27.317</span>   <span class="fl">0.013</span>  <span class="fl">27.332</span> </span></code></pre></div>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a> <span class="fl">26.850</span>   <span class="fl">0.057</span>  <span class="fl">26.914</span> </span></code></pre></div>
 <div class="section level3">
 <h3 id="return-output-structure">return output structure<a class="anchor" aria-label="anchor" href="#return-output-structure"></a>
 </h3>
@@ -269,39 +320,195 @@ applications.</p>
 <span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>  ..<span class="sc">$</span> n_uncertain <span class="sc">:</span> int <span class="dv">19</span></span></code></pre></div>
 <p>The stability score shows how often the most frquently selected
 network of sites was selected from the bootstrapped runs.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">head</span>(geo_res<span class="sc">$</span>stability_score)</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">stability_score</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">x</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">0.2</td>
+</tr></tbody>
+</table>
 <p>The stability data frame shows how often each site was selected
 across all bootstrap runs.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">head</span>(geo_res<span class="sc">$</span>stability)</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>    site_id cooccur_strength is_seed</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="dv">47</span>       <span class="dv">47</span>               <span class="dv">40</span>    <span class="cn">TRUE</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="dv">21</span>       <span class="dv">21</span>               <span class="dv">28</span>   <span class="cn">FALSE</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="dv">5</span>         <span class="dv">5</span>               <span class="dv">24</span>   <span class="cn">FALSE</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="dv">83</span>       <span class="dv">83</span>               <span class="dv">20</span>   <span class="cn">FALSE</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="dv">100</span>     <span class="dv">100</span>               <span class="dv">20</span>   <span class="cn">FALSE</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="dv">6</span>         <span class="dv">6</span>               <span class="dv">16</span>   <span class="cn">FALSE</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">stability</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">site_id</th>
+<th align="right">cooccur_strength</th>
+<th align="left">is_seed</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">47</td>
+<td align="right">47</td>
+<td align="right">40</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">21</td>
+<td align="right">21</td>
+<td align="right">28</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="right">5</td>
+<td align="right">24</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">83</td>
+<td align="right">83</td>
+<td align="right">20</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">100</td>
+<td align="right">100</td>
+<td align="right">20</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="right">6</td>
+<td align="right">16</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
 <p>Many users may find the combindation of their input data with a few
 columns, to be all they need to carry on after the results.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">head</span>(geo_res<span class="sc">$</span>input_data)</span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>    site_id required coord_uncertainty      lon      lat certain</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="dv">47</span>       <span class="dv">47</span>     <span class="cn">TRUE</span>              <span class="fl">0.00</span> <span class="sc">-</span><span class="fl">74.3000</span>   <span class="fl">4.5833</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="dv">21</span>       <span class="dv">21</span>    <span class="cn">FALSE</span>              <span class="fl">0.00</span> <span class="sc">-</span><span class="fl">55.1333</span>  <span class="sc">-</span><span class="fl">2.8333</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="dv">5</span>         <span class="dv">5</span>    <span class="cn">FALSE</span>              <span class="fl">0.00</span> <span class="sc">-</span><span class="fl">63.8500</span> <span class="sc">-</span><span class="fl">17.4000</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="dv">83</span>       <span class="dv">83</span>    <span class="cn">FALSE</span>          <span class="fl">37283.66</span> <span class="sc">-</span><span class="fl">79.8167</span>   <span class="fl">9.1667</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="dv">100</span>     <span class="dv">100</span>    <span class="cn">FALSE</span>          <span class="fl">13616.63</span> <span class="sc">-</span><span class="fl">74.0833</span>  <span class="sc">-</span><span class="fl">2.3667</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="dv">6</span>         <span class="dv">6</span>    <span class="cn">FALSE</span>              <span class="fl">0.00</span> <span class="sc">-</span><span class="fl">64.4167</span> <span class="sc">-</span><span class="fl">16.0000</span>   <span class="cn">FALSE</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>    cooccur_strength is_seed selected sample_rank</span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="dv">47</span>                <span class="dv">40</span>    <span class="cn">TRUE</span>     <span class="cn">TRUE</span>           <span class="dv">1</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="dv">21</span>                <span class="dv">28</span>   <span class="cn">FALSE</span>     <span class="cn">TRUE</span>           <span class="dv">2</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="dv">5</span>                 <span class="dv">24</span>   <span class="cn">FALSE</span>    <span class="cn">FALSE</span>           <span class="dv">3</span></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="dv">83</span>                <span class="dv">20</span>   <span class="cn">FALSE</span>     <span class="cn">TRUE</span>           <span class="dv">4</span></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="dv">100</span>               <span class="dv">20</span>   <span class="cn">FALSE</span>    <span class="cn">FALSE</span>           <span class="dv">4</span></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="dv">6</span>                 <span class="dv">16</span>   <span class="cn">FALSE</span>     <span class="cn">TRUE</span>           <span class="dv">5</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">input_data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table style="width:100%;" class="table">
+<colgroup>
+<col width="3%">
+<col width="7%">
+<col width="8%">
+<col width="16%">
+<col width="8%">
+<col width="8%">
+<col width="7%">
+<col width="15%">
+<col width="7%">
+<col width="8%">
+<col width="10%">
+</colgroup>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">site_id</th>
+<th align="left">required</th>
+<th align="right">coord_uncertainty</th>
+<th align="right">lon</th>
+<th align="right">lat</th>
+<th align="left">certain</th>
+<th align="right">cooccur_strength</th>
+<th align="left">is_seed</th>
+<th align="left">selected</th>
+<th align="right">sample_rank</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">47</td>
+<td align="right">47</td>
+<td align="left">TRUE</td>
+<td align="right">0.00</td>
+<td align="right">-74.3000</td>
+<td align="right">4.5833</td>
+<td align="left">FALSE</td>
+<td align="right">40</td>
+<td align="left">TRUE</td>
+<td align="left">TRUE</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">21</td>
+<td align="right">21</td>
+<td align="left">FALSE</td>
+<td align="right">0.00</td>
+<td align="right">-55.1333</td>
+<td align="right">-2.8333</td>
+<td align="left">FALSE</td>
+<td align="right">28</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+<td align="right">2</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="right">5</td>
+<td align="left">FALSE</td>
+<td align="right">0.00</td>
+<td align="right">-63.8500</td>
+<td align="right">-17.4000</td>
+<td align="left">FALSE</td>
+<td align="right">24</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="left">83</td>
+<td align="right">83</td>
+<td align="left">FALSE</td>
+<td align="right">37283.66</td>
+<td align="right">-79.8167</td>
+<td align="right">9.1667</td>
+<td align="left">FALSE</td>
+<td align="right">20</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="left">100</td>
+<td align="right">100</td>
+<td align="left">FALSE</td>
+<td align="right">13616.63</td>
+<td align="right">-74.0833</td>
+<td align="right">-2.3667</td>
+<td align="left">FALSE</td>
+<td align="right">20</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="right">6</td>
+<td align="left">FALSE</td>
+<td align="right">0.00</td>
+<td align="right">-64.4167</td>
+<td align="right">-16.0000</td>
+<td align="left">FALSE</td>
+<td align="right">16</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+<td align="right">5</td>
+</tr>
+</tbody>
+</table>
 <p>Run parameters are saved in the settings element.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">head</span>(geo_res<span class="sc">$</span>settings)</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  n_sites n_bootstrap dropout_prob n_uncertain</span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="dv">1</span>       <span class="dv">5</span>          <span class="dv">10</span>          <span class="fl">0.1</span>          <span class="dv">19</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">settings</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">n_sites</th>
+<th align="right">n_bootstrap</th>
+<th align="right">dropout_prob</th>
+<th align="right">n_uncertain</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">5</td>
+<td align="right">10</td>
+<td align="right">0.1</td>
+<td align="right">19</td>
+</tr></tbody>
+</table>
 </div>
 <div class="section level3">
 <h3 id="visualize-the-selection-results">visualize the selection results<a class="anchor" aria-label="anchor" href="#visualize-the-selection-results"></a>
@@ -383,14 +590,12 @@ amount of the variance observed in this landscape.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pca_raster</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># prediction of the pca onto a new raster</span></span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/plot%20pca%20layers-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">pts</span>, <span class="va">predictors</span>, <span class="va">pca_results</span><span class="op">)</span></span></code></pre></div>
 <p>We keep the first two PCA layers for environmental distance
 calculation. More layers will increase dimensionality, and may lead to
 less useful results. Note that it’s fine to use a euclidean distance
 calculation for these, as the values are truly in the position of the
 pca plot.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env_values</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span><span class="va">pca_raster</span>, </span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span></span>
 <span>    <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span></span>
@@ -404,43 +609,76 @@ pca plot.</p>
 <p><img src="RareSpecies_files/figure-html/extract%20environmental%20values%20and%20calculate%20distance%20matrix-1.png" class="r-plt" alt="" width="700"></p>
 <p>We’ll ensure that these data are in a proper matrix format for
 feeding into the function.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env_dist_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/coerce.html" class="external-link">as.matrix</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></span><span class="op">(</span><span class="va">env_values</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">pca_raster</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="op">)</span></span></code></pre></div>
 <p>Similar to the above run with geographic distances, we create our
 input object, and run the function.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>test_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  <span class="at">distances =</span> env_dist_mat,</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>  <span class="at">sites =</span> df</span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>  )</span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>st <span class="ot">&lt;-</span> <span class="fu">system.time</span>( </span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a>  {</span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a>    env_res <span class="ot">&lt;-</span> <span class="fu">KMedoidsBasedSample</span>(  <span class="do">## reduce some parameters for shorter run time.</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a>      <span class="at">input_data =</span> test_data,</span>
-<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a>      <span class="at">n =</span> <span class="dv">5</span>,</span>
-<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a>      <span class="at">n_bootstrap =</span> <span class="dv">10</span>,</span>
-<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a>      <span class="at">dropout_prob =</span> <span class="fl">0.1</span>,</span>
-<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a>      <span class="at">n_local_search_iter =</span> <span class="dv">50</span>,</span>
-<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a>      <span class="at">n_restarts =</span> <span class="dv">2</span></span>
-<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a>    )</span>
-<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a>  }</span>
-<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a>)</span>
-<span id="cb24-18"><a href="#cb24-18" tabindex="-1"></a>Sites<span class="sc">:</span> <span class="dv">116</span> <span class="sc">|</span> Seeds<span class="sc">:</span> <span class="dv">1</span> <span class="sc">|</span> Requested<span class="sc">:</span> <span class="dv">5</span> <span class="sc">|</span> Coord. Uncertain<span class="sc">:</span> <span class="dv">19</span> <span class="sc">|</span> BS Replicates<span class="sc">:</span> <span class="dv">10</span></span>
-<span id="cb24-19"><a href="#cb24-19" tabindex="-1"></a>  <span class="sc">|</span>                                                                              <span class="er">|</span>                                                                      <span class="er">|</span>   <span class="dv">0</span><span class="sc">%  |                                                                              |=======                                                               |  10%</span>  <span class="er">|</span>                                                                              <span class="er">|==============</span>                                                        <span class="er">|</span>  <span class="dv">20</span><span class="sc">%  |                                                                              |=====================                                                 |  30%</span>  <span class="er">|</span>                                                                              <span class="er">|============================</span>                                          <span class="er">|</span>  <span class="dv">40</span><span class="sc">%  |                                                                              |===================================                                   |  50%</span>  <span class="er">|</span>                                                                              <span class="er">|==========================================</span>                            <span class="er">|</span>  <span class="dv">60</span><span class="sc">%  |                                                                              |=================================================                     |  70%</span>  <span class="er">|</span>                                                                              <span class="er">|========================================================</span>              <span class="er">|</span>  <span class="dv">80</span><span class="sc">%  |                                                                              |===============================================================       |  90%</span>  <span class="er">|</span>                                                                              <span class="er">|======================================================================|</span> <span class="dv">100</span>%</span>
-<span id="cb24-20"><a href="#cb24-20" tabindex="-1"></a></span>
-<span id="cb24-21"><a href="#cb24-21" tabindex="-1"></a><span class="fu">rm</span>(dist_mat, env_dist_mat)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>test_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>  <span class="at">distances =</span> env_dist_mat,</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>  <span class="at">sites =</span> df</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>  )</span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>st <span class="ot">&lt;-</span> <span class="fu">system.time</span>( </span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a>  {</span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a>    env_res <span class="ot">&lt;-</span> <span class="fu">KMedoidsBasedSample</span>(  <span class="do">## reduce some parameters for shorter run time.</span></span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a>      <span class="at">input_data =</span> test_data,</span>
+<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a>      <span class="at">n =</span> <span class="dv">5</span>,</span>
+<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a>      <span class="at">n_bootstrap =</span> <span class="dv">10</span>,</span>
+<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a>      <span class="at">dropout_prob =</span> <span class="fl">0.1</span>,</span>
+<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a>      <span class="at">n_local_search_iter =</span> <span class="dv">50</span>,</span>
+<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a>      <span class="at">n_restarts =</span> <span class="dv">2</span></span>
+<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a>    )</span>
+<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a>  }</span>
+<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a>)</span>
+<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a>Sites<span class="sc">:</span> <span class="dv">116</span> <span class="sc">|</span> Seeds<span class="sc">:</span> <span class="dv">1</span> <span class="sc">|</span> Requested<span class="sc">:</span> <span class="dv">5</span> <span class="sc">|</span> Coord. Uncertain<span class="sc">:</span> <span class="dv">19</span> <span class="sc">|</span> BS Replicates<span class="sc">:</span> <span class="dv">10</span></span>
+<span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a>  <span class="sc">|</span>                                                                              <span class="er">|</span>                                                                      <span class="er">|</span>   <span class="dv">0</span><span class="sc">%  |                                                                              |=======                                                               |  10%</span>  <span class="er">|</span>                                                                              <span class="er">|==============</span>                                                        <span class="er">|</span>  <span class="dv">20</span><span class="sc">%  |                                                                              |=====================                                                 |  30%</span>  <span class="er">|</span>                                                                              <span class="er">|============================</span>                                          <span class="er">|</span>  <span class="dv">40</span><span class="sc">%  |                                                                              |===================================                                   |  50%</span>  <span class="er">|</span>                                                                              <span class="er">|==========================================</span>                            <span class="er">|</span>  <span class="dv">60</span><span class="sc">%  |                                                                              |=================================================                     |  70%</span>  <span class="er">|</span>                                                                              <span class="er">|========================================================</span>              <span class="er">|</span>  <span class="dv">80</span><span class="sc">%  |                                                                              |===============================================================       |  90%</span>  <span class="er">|</span>                                                                              <span class="er">|======================================================================|</span> <span class="dv">100</span>%</span>
+<span id="cb23-20"><a href="#cb23-20" tabindex="-1"></a></span>
+<span id="cb23-21"><a href="#cb23-21" tabindex="-1"></a><span class="fu">rm</span>(dist_mat, env_dist_mat)</span></code></pre></div>
 <p>This run takes longer than the runs with only the geographic distance
 matrix.</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>st</span>
-<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>   user  system elapsed </span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a> <span class="fl">35.243</span>   <span class="fl">0.020</span>  <span class="fl">35.267</span> </span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">st</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">user.self</td>
+<td align="right">35.583</td>
+</tr>
+<tr class="even">
+<td align="left">sys.self</td>
+<td align="right">0.005</td>
+</tr>
+<tr class="odd">
+<td align="left">elapsed</td>
+<td align="right">35.594</td>
+</tr>
+<tr class="even">
+<td align="left">user.child</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="left">sys.child</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
 <p>The environmental distance run takes about 10 seconds longer.</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">head</span>(env_res<span class="sc">$</span>stability_score)</span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">env_res</span><span class="op">$</span><span class="va">stability_score</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">x</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">0.2</td>
+</tr></tbody>
+</table>
 <p>The overall stability score is similar to from the geographic score.
 When you view the plots you will see that a handful of sites in close
 proximity to the selected sites would have served as nearly equivanently
@@ -448,7 +686,7 @@ suitable substitutes. A few areas have dropped out of priority sampling
 based on this method, but in general the results are pretty similar -
 the relationship between geographic and environmental distance is
 somewhat strong in this landscape.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">env_res</span><span class="op">$</span><span class="va">input_data</span>, </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
@@ -462,7 +700,7 @@ somewhat strong in this landscape.</p>
 <span> <span class="co"># ggrepel::geom_label_repel(aes(label = site_id), size = 4) + </span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Priority Selection Status of Sites; Environmental'</span><span class="op">)</span></span></code></pre></div>
-<p><img src="RareSpecies_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="RareSpecies_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
 <div class="section level2">
@@ -475,7 +713,7 @@ highest density of populations. Intuitively, this would be suggested as
 a population with a high amount of genetic diversity for the species,
 although it is unlikely to have accumulated considerably local changes
 as the effects of drift are overcome by more frequent dispersal.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dens</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/kde2d.html" class="external-link">kde2d</a></span><span class="op">(</span><span class="va">lon</span>, <span class="va">lat</span>, n <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">max_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">dens</span><span class="op">$</span><span class="va">z</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">dens</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, arr.ind <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span></span>
 <span><span class="va">max_point</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">dens</span><span class="op">$</span><span class="va">x</span><span class="op">[</span><span class="va">max_idx</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">dens</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="va">max_idx</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
@@ -486,7 +724,7 @@ as the effects of drift are overcome by more frequent dispersal.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">dens</span>, <span class="va">max_idx</span>, <span class="va">max_point</span>, <span class="va">pops_centre</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively we can identify the <em>population</em> which is most
 near the ‘center’ of the environmental variable space.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env_centered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep</a></span><span class="op">(</span><span class="va">env_values</span>, <span class="fl">2</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">env_values</span>, <span class="va">median</span><span class="op">)</span>, <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="va">env_centered_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.min</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rowSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">env_centered</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -495,7 +733,7 @@ near the ‘center’ of the environmental variable space.</p>
 most important required site to center a design off of. However, it can
 suffer from sampling bias, and you may want to sense check that the
 recorded populations are de-duplicated to accomodate this reality.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># geographic centroid was pt 47</span></span>
 <span><span class="va">centers</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">[</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">env_centered_id</span>, <span class="va">pop_centered_id</span>, <span class="fl">47</span><span class="op">)</span>, <span class="op">]</span> </span>
 <span><span class="va">centers</span><span class="op">$</span><span class="va">type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Environmental'</span>, <span class="st">'Population'</span>, <span class="st">'Geographic'</span><span class="op">)</span></span>
@@ -510,16 +748,13 @@ recorded populations are de-duplicated to accomodate this reality.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">lon</span>, y <span class="op">=</span> <span class="va">lat</span><span class="op">)</span>,</span>
 <span>    col <span class="op">=</span> <span class="st">'#FF1493'</span>, size <span class="op">=</span> <span class="fl">4</span></span>
 <span>    <span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">ggrepel</span><span class="fu">::</span><span class="fu"><a href="https://ggrepel.slowkow.com/reference/geom_text_repel.html" class="external-link">geom_label_repel</a></span><span class="op">(</span></span>
-<span>    data <span class="op">=</span> <span class="va">centers</span>, </span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>label <span class="op">=</span> <span class="va">type</span>, x <span class="op">=</span> <span class="va">lon</span>, y <span class="op">=</span> <span class="va">lat</span><span class="op">)</span></span>
-<span>    <span class="op">)</span> <span class="op">+</span> </span>
+<span> <span class="co"># ggrepel::geom_label_repel(</span></span>
+<span> <span class="co">#   data = centers, </span></span>
+<span> <span class="co">#   aes(label = type, x = lon, y = lat)</span></span>
+<span> <span class="co">#   ) + </span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Possbilities for centers'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/plot%20alternative%20centroids-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">env_centered_id</span>, <span class="va">env_centered</span>, <span class="va">pop_centered_id</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

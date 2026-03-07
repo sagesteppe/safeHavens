@@ -68,6 +68,18 @@ Preparation for Predictive Provenance
   : Project current environmental clusters onto a future climate
   scenario
 
+## Bayesian Approaches
+
+Bayesian approaches for generating clusters in light of uncertainty
+
+- [`bayesianSDM()`](https://sagesteppe.github.io/safeHavens/reference/bayesianSDM.md)
+  : Fit a Bayesian spatial GLMM as a species distribution model
+- [`RescaleRasters_bayes()`](https://sagesteppe.github.io/safeHavens/reference/RescaleRasters_bayes.md)
+  : Rescale a raster stack to reflect posterior beta coefficients from a
+  brms SDM
+- [`PosteriorCluster()`](https://sagesteppe.github.io/safeHavens/reference/PosteriorCluster.md)
+  : Cluster environmental space using posterior beta draws
+
 ## Rare Plant Sampling
 
 Optimization based site selection helpers for known populations

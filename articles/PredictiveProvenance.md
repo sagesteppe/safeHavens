@@ -236,6 +236,77 @@ eSDM_model <- elasticSDM(
     planar_projection = 5070, 
     PCNM = FALSE ## set to FALSE for this workstream!!!!!
     )
+
+# Test with just 3 runs to see variability quickly
+run1 <- elasticSDM(hemi, bio_current, 5070)
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.915674e-09 (eff. df= 196.6507 )
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.915674e-09 (eff. df= 196.6507 )
+run2 <- elasticSDM(hemi, bio_current, 5070)
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+run3 <- elasticSDM(hemi, bio_current, 5070)
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+Warning: 
+Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
+  (GCV) Generalized Cross-Validation 
+   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
+
+# Compare coefficients
+coef1 <- as.matrix(coef(run1$Model))
+coef2 <- as.matrix(coef(run2$Model))
+coef3 <- as.matrix(coef(run3$Model))
+
+# Quick comparison
+all_vars <- unique(c(rownames(coef1), rownames(coef2), rownames(coef3)))
+compare <- data.frame(
+  var = all_vars,
+  run1 = coef1[match(all_vars, rownames(coef1)), 1],
+  run2 = coef2[match(all_vars, rownames(coef2)), 1],
+  run3 = coef3[match(all_vars, rownames(coef3)), 1]
+)
+compare[is.na(compare)] <- 0
+compare$cv <- apply(compare[,-1], 1, function(x) sd(x)/mean(x))
+print(compare)
+           var        run1        run2        run3         cv
+1  (Intercept)  0.96113097  1.63123032  1.63123032  0.2748007
+2       bio_03 -0.03427818 -0.05265923 -0.05265923 -0.2280635
+3       bio_15  0.00000000  0.00000000  0.00000000        NaN
+4       bio_14  0.00000000  0.00000000  0.00000000        NaN
+5       bio_16  0.00000000  0.00000000  0.00000000        NaN
+6       bio_04  0.00000000  0.00000000  0.00000000        NaN
+7       bio_08  0.02953027  0.03609195  0.03609195  0.1117363
+8       bio_13  0.00000000  0.00000000  0.00000000        NaN
+9       bio_07  0.00000000  0.00000000  0.00000000        NaN
+10      bio_06  0.00000000  0.00000000  0.00000000        NaN
+11      bio_01  0.00000000  0.00000000  0.00000000        NaN
+12      bio_10  0.00000000  0.00000000  0.00000000        NaN
+13       PCNM4 18.21217064 15.51873762 15.51873762  0.0947248
+14       PCNM9  0.00000000  0.00000000  0.00000000        NaN
+15       PCNM2  0.00000000 -4.77088330 -4.77088330 -0.8660254
+16       PCNM1  0.00000000  6.78260982  6.78260982  0.8660254
 ```
 
 We will use the eSDM_model function for this workstream, however is is
@@ -247,10 +318,18 @@ bioclim variables. Rather than using `eDist` from sdm for generating
 background points we will use the `eRandom` method instead.
 
 ``` r
-eSDM_model$ConfusionMatrix$byClass[
-  c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')]
-      Sensitivity       Specificity            Recall Balanced Accuracy 
-        0.9200000         0.7692308         0.9200000         0.8446154 
+knitr::kable(eSDM_model$ConfusionMatrix$byClass[
+  c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')])
+```
+
+|                   |         x |
+|:------------------|----------:|
+| Sensitivity       | 0.7200000 |
+| Specificity       | 0.8461538 |
+| Recall            | 0.7200000 |
+| Balanced Accuracy | 0.7830769 |
+
+``` r
 plot(eSDM_model$RasterPredictions)
 ```
 
@@ -339,8 +418,14 @@ plot(threshold_rasts$FinalRasters)
 ![](PredictiveProvenance_files/figure-html/identify%20current%20clusters-1.png)
 
 ``` r
-threshold_rasts$Threshold$equal_sens_spec
-[1] 0.694638
+knitr::kable(threshold_rasts$Threshold$equal_sens_spec)
+```
+
+|         x |
+|----------:|
+| 0.4329911 |
+
+``` r
 
 bmap + 
   geom_sf(data = 
@@ -377,46 +462,17 @@ ENVIbs <- EnvironmentalBasedSample(
   )
 ```
 
-![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-1.png)
+![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-1.png)![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-2.png)
 
-    *** : The Hubert index is a graphical method of determining the number of clusters.
-                    In the plot of Hubert index, we seek a significant knee that corresponds to a 
-                    significant increase of the value of the measure i.e the significant peak in Hubert
-                    index second differences plot. 
-     
+``` r
+bmap + 
+  geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(data = hemi) + 
+  theme(legend.position = 'bottom') + 
+  labs(fill = 'Cluster', title = 'Current')
+```
 
-![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-2.png)
-
-    *** : The D index is a graphical method of determining the number of clusters. 
-                    In the plot of D index, we seek a significant knee (the significant peak in Dindex
-                    second differences plot) that corresponds to a significant increase of the value of
-                    the measure. 
-     
-    ******************************************************************* 
-    * Among all indices:                                                
-    * 1 proposed 5 as the best number of clusters 
-    * 6 proposed 6 as the best number of clusters 
-    * 1 proposed 7 as the best number of clusters 
-    * 2 proposed 8 as the best number of clusters 
-    * 1 proposed 11 as the best number of clusters 
-    * 3 proposed 12 as the best number of clusters 
-    * 1 proposed 14 as the best number of clusters 
-    * 7 proposed 15 as the best number of clusters 
-
-                       ***** Conclusion *****                            
-     
-    * According to the majority rule, the best number of clusters is  15 
-     
-     
-    ******************************************************************* 
-
-    bmap + 
-      geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
-      geom_sf(data = hemi) + 
-      theme(legend.position = 'bottom') + 
-      labs(fill = 'Cluster', title = 'Current')
-
-![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-3.png)
+![](PredictiveProvenance_files/figure-html/unnamed-chunk-2-1.png)
 
 We can apply the current clustering to the future scenario. This will
 show us how and where the currently identified clusters would exist in
@@ -437,6 +493,37 @@ future_clusts <- projectClusters(
 )
 ```
 
+![](PredictiveProvenance_files/figure-html/classify%20future%20climate%20surface%20with%20clusters-1.png)
+
+    *** : The Hubert index is a graphical method of determining the number of clusters.
+                    In the plot of Hubert index, we seek a significant knee that corresponds to a 
+                    significant increase of the value of the measure i.e the significant peak in Hubert
+                    index second differences plot. 
+     
+
+![](PredictiveProvenance_files/figure-html/classify%20future%20climate%20surface%20with%20clusters-2.png)
+
+    *** : The D index is a graphical method of determining the number of clusters. 
+                    In the plot of D index, we seek a significant knee (the significant peak in Dindex
+                    second differences plot) that corresponds to a significant increase of the value of
+                    the measure. 
+     
+    ******************************************************************* 
+    * Among all indices:                                                
+    * 6 proposed 2 as the best number of clusters 
+    * 9 proposed 3 as the best number of clusters 
+    * 1 proposed 4 as the best number of clusters 
+    * 2 proposed 6 as the best number of clusters 
+    * 1 proposed 7 as the best number of clusters 
+    * 2 proposed 20 as the best number of clusters 
+
+                       ***** Conclusion *****                            
+     
+    * According to the majority rule, the best number of clusters is  3 
+     
+     
+    ******************************************************************* 
+
 However, our classifications cannot accomodate new climate conditions.
 We can identify these areas, which are outside of the training
 conditions for our SDM using MESS. Note that in these areas our SDM *is*
@@ -456,8 +543,6 @@ bmap +
     st_as_sf(terra::as.polygons(future_clusts$novel_mask)), 
     fill = 'red') + 
   labs(title = 'MESS regions')
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
 ![](PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-2.png)
@@ -487,10 +572,14 @@ climate clusters share branches with existing clusters. This is the
 method we employ to identify the most similar existing climate groups.
 
 ``` r
-future_clusts$novel_similarity
-[1] novel_cluster_id     nearest_existing_id  avg_silhouette_width
-<0 rows> (or 0-length row.names)
+knitr::kable(future_clusts$novel_similarity)
 ```
+
+| novel_cluster_id | nearest_existing_id | avg_silhouette_width |
+|-----------------:|--------------------:|---------------------:|
+|                6 |                   1 |            0.5741401 |
+|                7 |                   3 |            0.6024110 |
+|                8 |                   3 |            0.4904208 |
 
 It is from these groups that we are most likely to collect germplasm
 relevant for the future scenarios.
@@ -500,38 +589,15 @@ the scenarios
 
 ``` r
 future_clusts$changes
-   cluster_id current_area_km2 future_area_km2 area_change_pct
-1           1        4043.3230      28300.9046       599.94172
-2           2       13170.6534        269.7564       -97.95184
-3           3        4998.7124       1407.8829       -71.83509
-4           4        4435.7130        136.0061       -96.93384
-5           5       12027.6067        872.3368       -92.74721
-6           6       15081.4257        952.5868       -93.68371
-7           7        2576.1257          0.0000      -100.00000
-8           8       33353.1496       1413.2125       -95.76288
-9           9        3958.0202       3040.5491       -23.18005
-10         10        6312.3643        747.9952       -88.15032
-11         11        1313.6535          0.0000      -100.00000
-12         12         597.1152       4630.9965       675.56168
-13         13       36782.2993       4143.2314       -88.73580
-14         14       32653.6727       1344.0688       -95.88387
-15         15           0.0000       3528.7292              NA
-   centroid_shift_km
-1           460.1072
-2           290.3649
-3           205.2148
-4           251.8769
-5           726.1748
-6           254.4887
-7                 NA
-8           330.4310
-9           494.6931
-10           14.2699
-11                NA
-12          539.5743
-13          298.5651
-14          374.5908
-15                NA
+  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
+1          1       264999.735      164724.097       -37.83990         105.49128
+2          2        24891.178       15001.671       -39.73097          10.99216
+3          3         3258.543       14966.818       359.31012         308.80211
+4          4        17708.733        3071.191       -82.65719         410.52330
+5          5        22110.323           0.000      -100.00000                NA
+6          6            0.000        4205.955              NA                NA
+7          7            0.000        2747.449              NA                NA
+8          8            0.000        3837.942              NA                NA
 ```
 
 ## Conclusion

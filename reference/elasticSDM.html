@@ -49,7 +49,7 @@ prohibited by older model selection frameworks."><meta property="og:image" conte
     "priceCurrency": "USD"
   }
 }
-</script><!-- Additional SEO Meta Tags --><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large"><meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package"><meta name="author" content="Reed Benkendorf"><link rel="canonical" href="https://sagesteppe.github.io/safeHavens/"></head><body>
+</script><!-- Additional SEO Meta Tags --><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large"><meta name="keywords" content="germplasm conservation, ex situ conservation, plant conservation, sampling design, species distribution model, R package"><meta name="author" content="Reed Benkendorf"><meta property="og:title" content="safeHavens: Ex Situ Plant Germplasm Sampling Strategies"><meta property="og:description" content="R package providing seven sampling schemes for germplasm curators to prioritize field collection efforts for ex situ plant conservation."><meta property="og:url" content="https://sagesteppe.github.io/safeHavens/"><meta property="og:type" content="website"><link rel="canonical" href="https://sagesteppe.github.io/safeHavens/"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -101,7 +101,9 @@ prohibited by older model selection frameworks.</p>
 <span>  <span class="va">planar_projection</span>,</span>
 <span>  domain <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quantile_v <span class="op">=</span> <span class="fl">0.025</span>,</span>
-<span>  PCNM <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  PCNM <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  fact <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  resample <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -130,7 +132,16 @@ prohibited by older model selection frameworks.</p>
 
 
 <dt id="arg-pcnm">PCNM<a class="anchor" aria-label="anchor" href="#arg-pcnm"></a></dt>
-<dd><p>Boolean. Whether to include PCNM while fitting the model.
+<dd><p>Boolean. Whether to include PCNM while fitting the model.</p></dd>
+
+
+<dt id="arg-fact">fact<a class="anchor" aria-label="anchor" href="#arg-fact"></a></dt>
+<dd><p>Numeric, default 1.0. Factor to multiple the number of occurrence records by to generate the number of background (absence) points.</p></dd>
+
+
+<dt id="arg-resample">resample<a class="anchor" aria-label="anchor" href="#arg-resample"></a></dt>
+<dd><p>Boolean, Defaults to FALSE. Used to place 15% of the requested points in areas undersampled by sdm::background functions.
+This is expected to decrease confusion matrix results on out of sample data, but result in more realistic results.
 Defaults to TRUE for use with <code>EnvironmentalBasedSample</code>, but FALSE should be used with <code>Predictive Provenance</code> type workstreams.</p></dd>
 
 </dl></div>

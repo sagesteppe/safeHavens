@@ -48,15 +48,17 @@ df <- data.frame(
   lat = sf::st_coordinates(x)[,2]
 )
 
-head(df)
-  site_id required coord_uncertainty      lon      lat
-1       1    FALSE                 0 -65.4000 -10.3833
-2       2    FALSE                 0 -65.3833 -10.3833
-3       3    FALSE                 0 -65.1333 -16.8000
-4       4    FALSE                 0 -63.6667 -17.4500
-5       5    FALSE                 0 -63.8500 -17.4000
-6       6    FALSE                 0 -64.4167 -16.0000
+knitr::kable(head(df))
 ```
+
+| site_id | required | coord_uncertainty |      lon |      lat |
+|--------:|:---------|------------------:|---------:|---------:|
+|       1 | FALSE    |                 0 | -65.4000 | -10.3833 |
+|       2 | FALSE    |                 0 | -65.3833 | -10.3833 |
+|       3 | FALSE    |                 0 | -65.1333 | -16.8000 |
+|       4 | FALSE    |                 0 | -63.6667 | -17.4500 |
+|       5 | FALSE    |                 0 | -63.8500 | -17.4000 |
+|       6 | FALSE    |                 0 | -64.4167 | -16.0000 |
 
 The second required element, the distance matrix, can be calculated with
 the `greatCircleDistance` function in the package. Please use this
@@ -161,7 +163,7 @@ applications.
 ``` r
 st
    user  system elapsed 
- 27.317   0.013  27.332 
+ 26.850   0.057  26.914 
 ```
 
 ### return output structure
@@ -199,52 +201,54 @@ The stability score shows how often the most frquently selected network
 of sites was selected from the bootstrapped runs.
 
 ``` r
-head(geo_res$stability_score)
-[1] 0.2
+knitr::kable(head(geo_res$stability_score))
 ```
+
+|   x |
+|----:|
+| 0.2 |
 
 The stability data frame shows how often each site was selected across
 all bootstrap runs.
 
 ``` r
-head(geo_res$stability)
-    site_id cooccur_strength is_seed
-47       47               40    TRUE
-21       21               28   FALSE
-5         5               24   FALSE
-83       83               20   FALSE
-100     100               20   FALSE
-6         6               16   FALSE
+knitr::kable(head(geo_res$stability))
 ```
+
+|     | site_id | cooccur_strength | is_seed |
+|:----|--------:|-----------------:|:--------|
+| 47  |      47 |               40 | TRUE    |
+| 21  |      21 |               28 | FALSE   |
+| 5   |       5 |               24 | FALSE   |
+| 83  |      83 |               20 | FALSE   |
+| 100 |     100 |               20 | FALSE   |
+| 6   |       6 |               16 | FALSE   |
 
 Many users may find the combindation of their input data with a few
 columns, to be all they need to carry on after the results.
 
 ``` r
-head(geo_res$input_data)
-    site_id required coord_uncertainty      lon      lat certain
-47       47     TRUE              0.00 -74.3000   4.5833   FALSE
-21       21    FALSE              0.00 -55.1333  -2.8333   FALSE
-5         5    FALSE              0.00 -63.8500 -17.4000   FALSE
-83       83    FALSE          37283.66 -79.8167   9.1667   FALSE
-100     100    FALSE          13616.63 -74.0833  -2.3667   FALSE
-6         6    FALSE              0.00 -64.4167 -16.0000   FALSE
-    cooccur_strength is_seed selected sample_rank
-47                40    TRUE     TRUE           1
-21                28   FALSE     TRUE           2
-5                 24   FALSE    FALSE           3
-83                20   FALSE     TRUE           4
-100               20   FALSE    FALSE           4
-6                 16   FALSE     TRUE           5
+knitr::kable(head(geo_res$input_data))
 ```
+
+|     | site_id | required | coord_uncertainty |      lon |      lat | certain | cooccur_strength | is_seed | selected | sample_rank |
+|:----|--------:|:---------|------------------:|---------:|---------:|:--------|-----------------:|:--------|:---------|------------:|
+| 47  |      47 | TRUE     |              0.00 | -74.3000 |   4.5833 | FALSE   |               40 | TRUE    | TRUE     |           1 |
+| 21  |      21 | FALSE    |              0.00 | -55.1333 |  -2.8333 | FALSE   |               28 | FALSE   | TRUE     |           2 |
+| 5   |       5 | FALSE    |              0.00 | -63.8500 | -17.4000 | FALSE   |               24 | FALSE   | FALSE    |           3 |
+| 83  |      83 | FALSE    |          37283.66 | -79.8167 |   9.1667 | FALSE   |               20 | FALSE   | TRUE     |           4 |
+| 100 |     100 | FALSE    |          13616.63 | -74.0833 |  -2.3667 | FALSE   |               20 | FALSE   | FALSE    |           4 |
+| 6   |       6 | FALSE    |              0.00 | -64.4167 | -16.0000 | FALSE   |               16 | FALSE   | TRUE     |           5 |
 
 Run parameters are saved in the settings element.
 
 ``` r
-head(geo_res$settings)
-  n_sites n_bootstrap dropout_prob n_uncertain
-1       5          10          0.1          19
+knitr::kable(head(geo_res$settings))
 ```
+
+| n_sites | n_bootstrap | dropout_prob | n_uncertain |
+|--------:|------------:|-------------:|------------:|
+|       5 |          10 |          0.1 |          19 |
 
 ### visualize the selection results
 
@@ -342,10 +346,6 @@ terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a ne
 
 ![](RareSpecies_files/figure-html/plot%20pca%20layers-1.png)
 
-``` r
-rm(pts, predictors, pca_results)
-```
-
 We keep the first two PCA layers for environmental distance calculation.
 More layers will increase dimensionality, and may lead to less useful
 results. Note that it’s fine to use a euclidean distance calculation for
@@ -373,8 +373,6 @@ into the function.
 env_dist_mat <- as.matrix(
     dist(env_values)
   )
-
-rm(pca_raster)
 ```
 
 Similar to the above run with geographic distances, we create our input
@@ -408,17 +406,26 @@ This run takes longer than the runs with only the geographic distance
 matrix.
 
 ``` r
-st
-   user  system elapsed 
- 35.243   0.020  35.267 
+knitr::kable(st)
 ```
+
+|            |      x |
+|:-----------|-------:|
+| user.self  | 35.583 |
+| sys.self   |  0.005 |
+| elapsed    | 35.594 |
+| user.child |  0.000 |
+| sys.child  |  0.000 |
 
 The environmental distance run takes about 10 seconds longer.
 
 ``` r
-head(env_res$stability_score)
-[1] 0.2
+knitr::kable(head(env_res$stability_score))
 ```
+
+|   x |
+|----:|
+| 0.2 |
 
 The overall stability score is similar to from the geographic score.
 When you view the plots you will see that a handful of sites in close
@@ -444,7 +451,7 @@ map +
   labs(title = 'Priority Selection Status of Sites; Environmental')
 ```
 
-![](RareSpecies_files/figure-html/unnamed-chunk-10-1.png)
+![](RareSpecies_files/figure-html/unnamed-chunk-12-1.png)
 
 ## alternative methods for required central points
 
@@ -498,17 +505,12 @@ map +
     aes(x = lon, y = lat),
     col = '#FF1493', size = 4
     ) + 
-  ggrepel::geom_label_repel(
-    data = centers, 
-    aes(label = type, x = lon, y = lat)
-    ) + 
+ # ggrepel::geom_label_repel(
+ #   data = centers, 
+ #   aes(label = type, x = lon, y = lat)
+ #   ) + 
   theme_minimal() + 
   labs(title = 'Possbilities for centers')
 ```
 
 ![](RareSpecies_files/figure-html/plot%20alternative%20centroids-1.png)
-
-``` r
-
-rm(env_centered_id, env_centered, pop_centered_id)
-```

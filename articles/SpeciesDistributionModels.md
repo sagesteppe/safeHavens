@@ -92,15 +92,7 @@ sdModel <- elasticSDM(
 Warning: 
 Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
   (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  1.656291e-07 (eff. df= 174.8 )
+   minimum at  right endpoint  lambda  =  1.459607e-07 (eff. df= 174.8003 )
 ```
 
 Under the hood this function uses `caret` to help out with `glmnet`, as
@@ -131,29 +123,29 @@ Confusion Matrix and Statistics
 
           Reference
 Prediction  0  1
-         0 16  1
-         1  7 21
-                                        
-               Accuracy : 0.8222        
-                 95% CI : (0.6795, 0.92)
-    No Information Rate : 0.5111        
-    P-Value [Acc > NIR] : 1.465e-05     
-                                        
-                  Kappa : 0.6464        
-                                        
- Mcnemar's Test P-Value : 0.0771        
-                                        
-            Sensitivity : 0.9545        
-            Specificity : 0.6957        
-         Pos Pred Value : 0.7500        
-         Neg Pred Value : 0.9412        
-             Prevalence : 0.4889        
-         Detection Rate : 0.4667        
-   Detection Prevalence : 0.6222        
-      Balanced Accuracy : 0.8251        
-                                        
-       'Positive' Class : 1             
-                                        
+         0 18  2
+         1  5 20
+                                          
+               Accuracy : 0.8444          
+                 95% CI : (0.7054, 0.9351)
+    No Information Rate : 0.5111          
+    P-Value [Acc > NIR] : 3.102e-06       
+                                          
+                  Kappa : 0.6897          
+                                          
+ Mcnemar's Test P-Value : 0.4497          
+                                          
+            Sensitivity : 0.9091          
+            Specificity : 0.7826          
+         Pos Pred Value : 0.8000          
+         Neg Pred Value : 0.9000          
+             Prevalence : 0.4889          
+         Detection Rate : 0.4444          
+   Detection Prevalence : 0.5556          
+      Balanced Accuracy : 0.8458          
+                                          
+       'Positive' Class : 1               
+                                          
 ```
 
 Here we can see how our selected model works on predicting the state of
@@ -241,7 +233,6 @@ threshold_rasts <- PostProcessSDM(
   thresh_metric = 'sensitivity', 
   quant_amt = 0.5
   )
-1000 prediction points are sampled from the modeldomain
 ```
 
 We can compare the results of applying this function side by side using

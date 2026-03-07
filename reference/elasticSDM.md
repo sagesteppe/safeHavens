@@ -19,7 +19,9 @@ elasticSDM(
   planar_projection,
   domain = NULL,
   quantile_v = 0.025,
-  PCNM = TRUE
+  PCNM = TRUE,
+  fact = 1,
+  resample = FALSE
 )
 ```
 
@@ -58,9 +60,21 @@ elasticSDM(
 
 - PCNM:
 
-  Boolean. Whether to include PCNM while fitting the model. Defaults to
-  TRUE for use with `EnvironmentalBasedSample`, but FALSE should be used
-  with `Predictive Provenance` type workstreams.
+  Boolean. Whether to include PCNM while fitting the model.
+
+- fact:
+
+  Numeric, default 1.0. Factor to multiple the number of occurrence
+  records by to generate the number of background (absence) points.
+
+- resample:
+
+  Boolean, Defaults to FALSE. Used to place 15% of the requested points
+  in areas undersampled by sdm::background functions. This is expected
+  to decrease confusion matrix results on out of sample data, but result
+  in more realistic results. Defaults to TRUE for use with
+  `EnvironmentalBasedSample`, but FALSE should be used with
+  `Predictive Provenance` type workstreams.
 
 ## Value
 

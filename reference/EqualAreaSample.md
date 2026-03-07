@@ -11,7 +11,7 @@ EqualAreaSample(
   n = 20,
   pts = 5000,
   planar_proj,
-  returnProjected,
+  returnProjected = FALSE,
   reps = 100,
   BS.reps = 9999
 )
@@ -82,7 +82,7 @@ system.time(
 #> Warning: did not converge in 10 iterations
 #> Warning: did not converge in 10 iterations
 #>    user  system elapsed 
-#>   5.314   0.041   5.356 
+#>   5.403   0.079   5.484 
 
 plot(nc, main = 'Counties of North Carolina')
 

@@ -50,7 +50,7 @@ cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
 table( cymu[['data']]['geodeticDatum']) 
 geodeticDatum
 WGS84 
-  675 
+  681 
 
 ## subset the data to relevant columns 
 cymu_cols <- cymu[['data']][,cols]
@@ -88,25 +88,22 @@ ggplot() +
 ![](WorkedExample_files/figure-html/check%20gbif%20data-1.png)
 
 ``` r
+
 ## check the outlying record. 
 arrange(spp, by = decimalLatitude, desc=FALSE) |>
-  head(5)
-Simple feature collection with 5 features and 10 fields
-Geometry type: POINT
-Dimension:     XY
-Bounding box:  xmin: -102.8461 ymin: 26.2436 xmax: -101.343 ymax: 26.30833
-Geodetic CRS:  WGS 84
- [38;5;246m# A tibble: 5 × 11 [39m
-  decimalLatitude decimalLongitude dateIdentified species acceptedScientificName
-             [3m [38;5;246m<dbl> [39m [23m             [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<chr> [39m [23m           [3m [38;5;246m<chr> [39m [23m    [3m [38;5;246m<chr> [39m [23m                 
- [38;5;250m1 [39m            26.2            - [31m103 [39m [31m. [39m  [31mNA [39m             Boutel… Bouteloua warnockii G…
- [38;5;250m2 [39m            26.2            - [31m103 [39m [31m. [39m  [31mNA [39m             Boutel… Bouteloua warnockii G…
- [38;5;250m3 [39m            26.2            - [31m103 [39m [31m. [39m  [31mNA [39m             Boutel… Bouteloua warnockii G…
- [38;5;250m4 [39m            26.3            - [31m101 [39m [31m. [39m  [31mNA [39m             Boutel… Bouteloua warnockii G…
- [38;5;250m5 [39m            26.3            - [31m101 [39m [31m. [39m  [31mNA [39m             Boutel… Bouteloua warnockii G…
- [38;5;246m# ℹ 6 more variables: datasetName <chr>, coordinateUncertaintyInMeters <dbl>, [39m
- [38;5;246m#   basisOfRecord <chr>, institutionCode <chr>, catalogNumber <chr>, [39m
- [38;5;246m#   geometry <POINT [°]> [39m
+  head(5) |>
+  knitr::kable()
+```
+
+| decimalLatitude | decimalLongitude | dateIdentified | species             | acceptedScientificName              | datasetName                                                                                                  | coordinateUncertaintyInMeters | basisOfRecord      | institutionCode | catalogNumber | geometry                   |
+|----------------:|-----------------:|:---------------|:--------------------|:------------------------------------|:-------------------------------------------------------------------------------------------------------------|------------------------------:|:-------------------|:----------------|:--------------|:---------------------------|
+|        26.24360 |        -102.8460 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology                                                                                          |                            NA | PRESERVED_SPECIMEN | US              | US 3419592    | POINT (-102.846 26.2436)   |
+|        26.24361 |        -102.8461 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México                                                        |                            50 | PRESERVED_SPECIMEN | CIIDIR-IPN      | 13158         | POINT (-102.8461 26.24361) |
+|        26.24361 |        -102.8461 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Computarización de colecciones y adquisición de infraestructura (mobiliario) para el herbario CIIDIR-Durango |                            NA | PRESERVED_SPECIMEN | CIIDIR-IPN      | 34657         | POINT (-102.8461 26.24361) |
+|        26.30530 |        -101.3430 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology                                                                                          |                            NA | PRESERVED_SPECIMEN | US              | US 3481177    | POINT (-101.343 26.3053)   |
+|        26.30833 |        -101.3583 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México                                                        |                            50 | PRESERVED_SPECIMEN | UAAAN           | 18673         | POINT (-101.3583 26.30833) |
+
+``` r
 
 ## remove it based on it's latitude. 
 spp <- filter(spp, decimalLatitude <= 40)
@@ -247,11 +244,6 @@ base + ## visualize for a single taxon.
 
 ![](WorkedExample_files/figure-html/ibd%20sampling-1.png)
 
-``` r
-
-rm(spp_concave)
-```
-
 The above plot for the isolation-by-distance sampling shows the
 individual sample areas for *Bouteloua warnockii*.
 
@@ -335,10 +327,3 @@ for(i in seq_along(sppL)){
   message(format(object.size(fp), standard = "IEC", units = "MiB", digits = 4))
 }
 ```
-
-    Warning in rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base,
-    template, : object 'p2Collections' not found
-    Warning in rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base,
-    template, : object 'fp' not found
-    Warning in rm(spp, sppL, eas, ibd_samples, ibd_samples_priority, base,
-    template, : object 'i' not found

@@ -41,6 +41,11 @@ Background, installation, usage, and sampling schemas
   Downloading species occurrence data, creating hulls, sampling and
   writing out data for sample design.
 
+- [Bayesian
+  Approaches](https://sagesteppe.github.io/safeHavens/articles/BayesianApproaches.md):
+
+  Using Bayesian approaches for EnvironmentalBasedSample.
+
 ### Sampling schema for rare species
 
 A supplemental schema for rare species
