@@ -146,7 +146,10 @@ test_data <- list(
   )
 
 str(test_data)
+```
 
+
+```{r, echo = F}
 rm(x, n_sites, uncertain_sites, dists2c)
 ```
 
@@ -154,7 +157,10 @@ The funtion `KMedoidsBasedSample` has several arguments used to control run para
 
 ```{r run with geographic distances, message=F}
 st <- system.time( {
-    geo_res <- KMedoidsBasedSample(  ## reduce some parameters for faster run. 
+    geo_res <- KMedoidsBasedSample( 
+       ## reduce params from defaults
+       ##  for a quick run. 
+
       input_data = test_data,
       n = 5,
       n_bootstrap = 10,

@@ -3,7 +3,7 @@ title: "Bayesian Approaches"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bayesian Approaches}
-  `%\VignetteEngine{knitr::rmarkdown_notangle}`
+  `%\VignetteEngine{knitr::rmarkdown}`
   %\VignetteEncoding{UTF-8}
 description: >
   Using Bayesian approaches for EnvironmentalBasedSample.

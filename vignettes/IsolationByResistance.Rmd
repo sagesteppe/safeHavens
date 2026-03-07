@@ -12,7 +12,7 @@ description: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = ""
 )
 ```
 
@@ -31,10 +31,10 @@ While IBD is easily calculated from geographic distances, IBR requires a paramet
 We'll use the species occurrence data from dismo again here. 
 A few spatial data sets that should be suitable for nearly all users IBR applications are included in `safeHavens` for this example, but the full data sets are not shipped with the package. 
 They include: 
-  - lakes, Lehner et al. 2025, [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)
-  - oceans from Natural Earth, https://www.naturalearthdata.com/downloads/10m-physical-vectors/
-  - rivers from [FAO](https://data.apps.fao.org/catalog/dataset/76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), 
-  - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography
+  - lakes, Lehner et al. 2025, [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)  
+  - oceans from Natural Earth, https://www.naturalearthdata.com/downloads/10m-physical-vectors/  
+  - rivers from [FAO](https://data.apps.fao.org/catalog/dataset/  76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), 
+  - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography  
 
 ```{r libraries, warning =F, message = F}
 library(terra)
@@ -125,7 +125,7 @@ plot(rivers_r)
 plot(lakes_r)
 plot(ocean_r)
 plot(tri)
-dev.off()
+par(mfrow=c(1,1))
 
 rm(ocean_v, lakes_v, rivers_v)
 ```
@@ -163,10 +163,10 @@ plot(res_surface)
 
 Note that the above object will be stored *in memory*, I advocate for the use of a relatively coarsely grained raster surface (e.g. 4kmx4km cells or more), because we are doing pretty generalized work, and it will speed up processing. 
 
-Now that we have our resistance surface, the next step is calculating the distances between areas across the species range. 
-Similar to other functions in `safeHavens` we will not use population occurrence record data directly, as we know that spatial biases affect occurrence record distributinons. 
+Now that we have our resistance surface, the next step is calculating the distances between areas across the species range using the function `populationResistance`. 
+Similar to other functions in `safeHavens` we will not use population occurrence record data directly, as we know that spatial biases affect occurrence record distributions. 
 Rather we will buffer (`buffer_dist`) the occurrence records, using a relevant `planar_proj`, and create a raster surface of their locations. 
-From this surface we will sample `n` points (using terra::spatSample, with method = 'spread'), and identify neighboring points using a `graph_method`, either delauney triangulation, which is useful when a very high `n` is required, or through a complete distance matrix.  
+From this surface we will sample `n` points (using terra::spatSample, with method = 'spread'), and identify neighboring points using a `graph_method`, either delauney triangulation, which is useful when a very high `n` is required, or through a complete distance matrix. 
 In my testing I *greatly* prefer results from 'complete' calculations, and these work with NbClust without having to be ordinated down into 2-dimensional space and give much better results. 
 
 This function will return a raster representing the buffered populations (species range in the domain), the points sampled by terra, the graph information, and a distance matrix with the least cost distance values from the resistance surface. 
@@ -287,7 +287,7 @@ inverted_sdm = round(inverted_sdm * 100, 0)
 plot(inverted_sdm)
 ```
 
-Note that we will have to make sure our SDM aligns with the existin layers
+Note that we will have to make sure our SDM aligns with the existing layers
 ```{r}
 inverted_sdm <- crop(inverted_sdm, ocean_r)
 inverted_sdm <- resample(inverted_sdm, ocean_r)
@@ -317,7 +317,9 @@ plot(x, rs(asinh(x)), type = "l", main = "asinh(x)")
 plot(x, rs(x^2), type = "l", main = "x^2: polynomial")
 plot(x, rs(x^3), type = "l", main = "x^3: polynomial")
 plot(x, rs(x^4), type = "l", main = "x^4 polynomial")
+```
 
+```{r remove var,echo=F}
 rm(x)
 ```
 
@@ -333,7 +335,7 @@ plot(tri_rscl, main = 'Rescaled')
 
 And we can create a new resistance surface
 
-```{r}
+```{r build a polynomial surface}
 res_surface <- buildResistanceSurface(
 
   base_raster = rast(ocean_r), # template
@@ -352,6 +354,6 @@ res_surface <- buildResistanceSurface(
   #w_tri = 4 # don't use me! use addtl_wt
   addtl_w = 1
 )
-dev.off()
+par(mfrow=c(1,1))
 plot(res_surface)
 ```
