@@ -1,6 +1,6 @@
 ---
 title: "Polygon Based Sampling"
-output: pkgdown::as_is
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Polygon Based Sampling}
   %\VignetteEngine{quarto::rmarkdown}
