@@ -62,7 +62,7 @@ hemi <- hemi[['data']][,cols]  |>
   st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F) 
 ```
 
-```{r prep basemap, echo = F}
+```{r prep basemap, echo = F, warning=F}
 western_states <- spData::us_states |> ## for making a quick basemap. 
   dplyr::filter(NAME %in% 
     c('Utah', 'Arizona', 'Colorado', 'New Mexico', 'Wyoming', 'Nevada', 'Idaho', 'California')) |>
@@ -303,7 +303,7 @@ points(obby$SamplePoints, cex = 0.5)
 
 As with the other sampling functions, spatial polygons are returned for use with other applications. 
 
-```{r show posterior clusters}
+```{r show posterior clusters, warning=F}
 bmap +
   geom_sf(data = obby$Geometry, aes(fill = factor(ID))) + 
   labs(fill = 'Cluster')
