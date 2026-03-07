@@ -46,9 +46,6 @@ library(ggplot2)
 library(patchwork)
 ```
 
-    Warning: attribute variables are assumed to be spatially constant throughout
-    all geometries
-
 ![](BayesianApproaches_files/figure-html/prep%20basemap-1.png)
 
 ### fit the model

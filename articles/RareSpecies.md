@@ -163,7 +163,7 @@ applications.
 ``` r
 st
    user  system elapsed 
- 26.850   0.057  26.914 
+ 26.787   0.054  26.848 
 ```
 
 ### return output structure
@@ -411,9 +411,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 35.583 |
-| sys.self   |  0.005 |
-| elapsed    | 35.594 |
+| user.self  | 35.253 |
+| sys.self   |  0.002 |
+| elapsed    | 35.261 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 

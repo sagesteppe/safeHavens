@@ -156,8 +156,6 @@ keep this vignette entry relatively short.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code>Warning: attribute variables are assumed to be spatially constant throughout
-all geometries</code></pre>
 <p><img src="BayesianApproaches_files/figure-html/prep%20basemap-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
@@ -170,7 +168,7 @@ requires occurrence data <code>x</code>, a raster stack of
 used to create pseudo-absence data, and a <code>planar_proj</code> used
 to calculate distances between occurrence data and possible
 pseudo-absence points.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bayesianSDM.html">bayesianSDM</a></span><span class="op">(</span> </span>
 <span>  x <span class="op">=</span> <span class="va">hemi</span>,</span>
 <span>  pca_predictors <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -183,7 +181,7 @@ pseudo-absence points.</p>
 <span>  fact <span class="op">=</span> <span class="fl">3</span>, </span>
 <span>  silent <span class="op">=</span> <span class="fl">2</span> <span class="co"># print fewer messages during model fit.</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#setwd('~/Documents/assoRted/safeHavens/vignettes')</span></span>
 <span><span class="co">#sdModel$RasterPredictions &lt;- terra::wrap(sdModel$RasterPredictions)</span></span>
 <span><span class="co">#sdModel$Predictors &lt;- terra::wrap(sdModel$Predictors)</span></span>
@@ -192,7 +190,7 @@ pseudo-absence points.</p>
 <span><span class="co">#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))</span></span></code></pre></div>
 <p>For the sake of this vignette, we will load a run of the above
 model.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/serialize.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>,  <span class="st">'BayesSDM.rds'</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -210,7 +208,7 @@ interpret-ability of the models parameters.</p>
 <h4 id="explore-the-output">explore the output<a class="anchor" aria-label="anchor" href="#explore-the-output"></a>
 </h4>
 <p>Plot the predictions</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdm_td</span> <span class="op">&lt;-</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TrainData</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
@@ -223,35 +221,35 @@ interpret-ability of the models parameters.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="va">sdm_td</span><span class="op">[</span><span class="va">sdm_td</span><span class="op">$</span><span class="va">occurrence</span><span class="op">==</span><span class="fl">0</span>,<span class="op">]</span><span class="op">)</span>,col <span class="op">=</span> <span class="st">'red'</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/Explore%20SDM%20output%20-%20Different%20alpha-1.png" class="r-plt" alt="" width="700"></p>
 <p>The brms:: model summary can be accessed from the sdModel list.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Model</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>Warning<span class="sc">:</span> There were <span class="dv">32</span> divergent transitions after warmup. Increasing</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>adapt_delta above <span class="fl">0.99</span> may help. See</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>http<span class="sc">:</span><span class="er">//</span>mc<span class="sc">-</span>stan.org<span class="sc">/</span>misc<span class="sc">/</span>warnings.html<span class="co">#divergent-transitions-after-warmup</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a> Family<span class="sc">:</span> bernoulli </span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  Links<span class="sc">:</span> mu <span class="ot">=</span> logit </span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>Formula<span class="sc">:</span> occurrence <span class="sc">~</span> bio_02 <span class="sc">+</span> bio_03 <span class="sc">+</span> bio_04 <span class="sc">+</span> bio_09 <span class="sc">+</span> bio_14 <span class="sc">+</span> <span class="fu">s</span>(gp_x, gp_y, <span class="at">bs =</span> <span class="st">"gp"</span>, <span class="at">k =</span> <span class="dv">50</span>) </span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>   Data<span class="sc">:</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>(train) (Number of observations<span class="sc">:</span> <span class="dv">415</span>) </span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  Draws<span class="sc">:</span> <span class="dv">4</span> chains, each with iter <span class="ot">=</span> <span class="dv">5000</span>; warmup <span class="ot">=</span> <span class="dv">2000</span>; thin <span class="ot">=</span> <span class="dv">1</span>;</span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>         total post<span class="sc">-</span>warmup draws <span class="ot">=</span> <span class="dv">12000</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>Smoothing Spline Hyperparameters<span class="sc">:</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>                 Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="fu">sds</span>(sgp_xgp_y_1)  <span class="fl">1076.12</span>    <span class="fl">420.52</span>   <span class="fl">479.08</span>  <span class="fl">2109.27</span> <span class="fl">1.00</span>     <span class="dv">2349</span>     <span class="dv">4826</span></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>Regression Coefficients<span class="sc">:</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>            Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>Intercept       <span class="fl">5.15</span>      <span class="fl">7.15</span>    <span class="sc">-</span><span class="fl">3.30</span>    <span class="fl">21.86</span> <span class="fl">1.00</span>     <span class="dv">2420</span>     <span class="dv">5747</span></span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>bio_02         <span class="sc">-</span><span class="fl">0.03</span>      <span class="fl">0.11</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.09</span> <span class="fl">1.00</span>     <span class="dv">5916</span>     <span class="dv">5747</span></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>bio_03         <span class="sc">-</span><span class="fl">0.06</span>      <span class="fl">0.10</span>    <span class="sc">-</span><span class="fl">0.31</span>     <span class="fl">0.03</span> <span class="fl">1.00</span>     <span class="dv">3753</span>     <span class="dv">6509</span></span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>bio_04         <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.00</span>    <span class="sc">-</span><span class="fl">0.02</span>     <span class="fl">0.00</span> <span class="fl">1.00</span>     <span class="dv">2778</span>     <span class="dv">6755</span></span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>bio_09          <span class="fl">0.00</span>      <span class="fl">0.02</span>    <span class="sc">-</span><span class="fl">0.03</span>     <span class="fl">0.05</span> <span class="fl">1.00</span>     <span class="dv">9355</span>     <span class="dv">9702</span></span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>bio_14         <span class="sc">-</span><span class="fl">0.05</span>      <span class="fl">0.06</span>    <span class="sc">-</span><span class="fl">0.19</span>     <span class="fl">0.01</span> <span class="fl">1.00</span>     <span class="dv">2793</span>     <span class="dv">7626</span></span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>sgp_xgp_y_1    <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.25</span>    <span class="sc">-</span><span class="fl">0.28</span>     <span class="fl">0.28</span> <span class="fl">1.00</span>    <span class="dv">11289</span>     <span class="dv">7949</span></span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>sgp_xgp_y_2    <span class="sc">-</span><span class="fl">0.01</span>      <span class="fl">0.26</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.25</span> <span class="fl">1.00</span>    <span class="dv">12436</span>     <span class="dv">8781</span></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a></span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>Draws were sampled using <span class="fu">sample</span>(hmc). For each parameter, Bulk_ESS</span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>scale reduction factor on split <span class="fu">chains</span> (at convergence, <span class="at">Rhat =</span> <span class="dv">1</span>).</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Model</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Warning<span class="sc">:</span> There were <span class="dv">32</span> divergent transitions after warmup. Increasing</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>adapt_delta above <span class="fl">0.99</span> may help. See</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>http<span class="sc">:</span><span class="er">//</span>mc<span class="sc">-</span>stan.org<span class="sc">/</span>misc<span class="sc">/</span>warnings.html<span class="co">#divergent-transitions-after-warmup</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a> Family<span class="sc">:</span> bernoulli </span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  Links<span class="sc">:</span> mu <span class="ot">=</span> logit </span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>Formula<span class="sc">:</span> occurrence <span class="sc">~</span> bio_02 <span class="sc">+</span> bio_03 <span class="sc">+</span> bio_04 <span class="sc">+</span> bio_09 <span class="sc">+</span> bio_14 <span class="sc">+</span> <span class="fu">s</span>(gp_x, gp_y, <span class="at">bs =</span> <span class="st">"gp"</span>, <span class="at">k =</span> <span class="dv">50</span>) </span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>   Data<span class="sc">:</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>(train) (Number of observations<span class="sc">:</span> <span class="dv">415</span>) </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  Draws<span class="sc">:</span> <span class="dv">4</span> chains, each with iter <span class="ot">=</span> <span class="dv">5000</span>; warmup <span class="ot">=</span> <span class="dv">2000</span>; thin <span class="ot">=</span> <span class="dv">1</span>;</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>         total post<span class="sc">-</span>warmup draws <span class="ot">=</span> <span class="dv">12000</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>Smoothing Spline Hyperparameters<span class="sc">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>                 Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="fu">sds</span>(sgp_xgp_y_1)  <span class="fl">1076.12</span>    <span class="fl">420.52</span>   <span class="fl">479.08</span>  <span class="fl">2109.27</span> <span class="fl">1.00</span>     <span class="dv">2349</span>     <span class="dv">4826</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>Regression Coefficients<span class="sc">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>            Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>Intercept       <span class="fl">5.15</span>      <span class="fl">7.15</span>    <span class="sc">-</span><span class="fl">3.30</span>    <span class="fl">21.86</span> <span class="fl">1.00</span>     <span class="dv">2420</span>     <span class="dv">5747</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>bio_02         <span class="sc">-</span><span class="fl">0.03</span>      <span class="fl">0.11</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.09</span> <span class="fl">1.00</span>     <span class="dv">5916</span>     <span class="dv">5747</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>bio_03         <span class="sc">-</span><span class="fl">0.06</span>      <span class="fl">0.10</span>    <span class="sc">-</span><span class="fl">0.31</span>     <span class="fl">0.03</span> <span class="fl">1.00</span>     <span class="dv">3753</span>     <span class="dv">6509</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>bio_04         <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.00</span>    <span class="sc">-</span><span class="fl">0.02</span>     <span class="fl">0.00</span> <span class="fl">1.00</span>     <span class="dv">2778</span>     <span class="dv">6755</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>bio_09          <span class="fl">0.00</span>      <span class="fl">0.02</span>    <span class="sc">-</span><span class="fl">0.03</span>     <span class="fl">0.05</span> <span class="fl">1.00</span>     <span class="dv">9355</span>     <span class="dv">9702</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>bio_14         <span class="sc">-</span><span class="fl">0.05</span>      <span class="fl">0.06</span>    <span class="sc">-</span><span class="fl">0.19</span>     <span class="fl">0.01</span> <span class="fl">1.00</span>     <span class="dv">2793</span>     <span class="dv">7626</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>sgp_xgp_y_1    <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.25</span>    <span class="sc">-</span><span class="fl">0.28</span>     <span class="fl">0.28</span> <span class="fl">1.00</span>    <span class="dv">11289</span>     <span class="dv">7949</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>sgp_xgp_y_2    <span class="sc">-</span><span class="fl">0.01</span>      <span class="fl">0.26</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.25</span> <span class="fl">1.00</span>    <span class="dv">12436</span>     <span class="dv">8781</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>Draws were sampled using <span class="fu">sample</span>(hmc). For each parameter, Bulk_ESS</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>scale reduction factor on split <span class="fu">chains</span> (at convergence, <span class="at">Rhat =</span> <span class="dv">1</span>).</span></code></pre></div>
 <p>rHat &lt;1.01 ideal, &lt;1.05 acceptable, both ESS should be greater
 than 400 increase iterations to achieve this. Divergence of 0 is ideal,
 any divergences are flags for a possibly misspecified model.</p>
@@ -263,21 +261,21 @@ than 400 increase iterations to achieve this. Divergence of 0 is ideal,
 any divergences are flags for a possibly misspecified model.</p>
 <p>Similar to <code>elasticSDM</code> we also have area of applicabality
 and other surfaces from CAST</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/plot%20aoa-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Diagnostics</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="sc">$</span>max_Rhat</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.004849</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="sc">$</span>min_BulkESS</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2131.685</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="sc">$</span>min_TailESS</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">4453.781</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="sc">$</span>n_divergent</span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">32</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Diagnostics</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="sc">$</span>max_Rhat</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.004849</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="sc">$</span>min_BulkESS</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2131.685</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="sc">$</span>min_TailESS</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">4453.781</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="sc">$</span>n_divergent</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">32</span></span></code></pre></div>
 <p>To view how well the model is able to predict suitable habitat of the
 hold out sample the confusion matrix can be accessed from the test and
 train splits. While balanced accuracy for these is generally low, as
@@ -285,40 +283,40 @@ these models are not intended for prediction, so much as understanding
 the relationships between environmental variables driving the species
 distribution, the results show the model was able to learn some
 important characteristics of the species.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sdModel<span class="sc">$</span>ConfusionMatrix</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="sc">$</span>positive</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"1"</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="sc">$</span>table</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>          Reference</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>Prediction  <span class="dv">0</span>  <span class="dv">1</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>         <span class="dv">0</span> <span class="dv">71</span> <span class="dv">11</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>         <span class="dv">1</span>  <span class="dv">7</span> <span class="dv">13</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="sc">$</span>overall</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>      Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull </span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>    <span class="fl">0.82352941</span>     <span class="fl">0.47959184</span>     <span class="fl">0.73551513</span>     <span class="fl">0.89192685</span>     <span class="fl">0.76470588</span> </span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>AccuracyPValue  McnemarPValue </span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    <span class="fl">0.09683511</span>     <span class="fl">0.47950012</span> </span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="sc">$</span>byClass</span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>         Sensitivity          Specificity       Pos Pred Value </span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>           <span class="fl">0.5416667</span>            <span class="fl">0.9102564</span>            <span class="fl">0.6500000</span> </span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>      Neg Pred Value            Precision               Recall </span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>           <span class="fl">0.8658537</span>            <span class="fl">0.6500000</span>            <span class="fl">0.5416667</span> </span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>                  F1           Prevalence       Detection Rate </span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>           <span class="fl">0.5909091</span>            <span class="fl">0.2352941</span>            <span class="fl">0.1274510</span> </span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>Detection Prevalence    Balanced Accuracy </span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a>           <span class="fl">0.1960784</span>            <span class="fl">0.7259615</span> </span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a></span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="sc">$</span>mode</span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"sens_spec"</span></span>
-<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a></span>
-<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="sc">$</span>dots</span>
-<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="fu">list</span>()</span>
-<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a></span>
-<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="fu">attr</span>(,<span class="st">"class"</span>)</span>
-<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"confusionMatrix"</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>sdModel<span class="sc">$</span>ConfusionMatrix</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="sc">$</span>positive</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"1"</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="sc">$</span>table</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>          Reference</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>Prediction  <span class="dv">0</span>  <span class="dv">1</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>         <span class="dv">0</span> <span class="dv">71</span> <span class="dv">11</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>         <span class="dv">1</span>  <span class="dv">7</span> <span class="dv">13</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="sc">$</span>overall</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull </span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>    <span class="fl">0.82352941</span>     <span class="fl">0.47959184</span>     <span class="fl">0.73551513</span>     <span class="fl">0.89192685</span>     <span class="fl">0.76470588</span> </span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>AccuracyPValue  McnemarPValue </span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    <span class="fl">0.09683511</span>     <span class="fl">0.47950012</span> </span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="sc">$</span>byClass</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>         Sensitivity          Specificity       Pos Pred Value </span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>           <span class="fl">0.5416667</span>            <span class="fl">0.9102564</span>            <span class="fl">0.6500000</span> </span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>      Neg Pred Value            Precision               Recall </span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>           <span class="fl">0.8658537</span>            <span class="fl">0.6500000</span>            <span class="fl">0.5416667</span> </span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>                  F1           Prevalence       Detection Rate </span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>           <span class="fl">0.5909091</span>            <span class="fl">0.2352941</span>            <span class="fl">0.1274510</span> </span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>Detection Prevalence    Balanced Accuracy </span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>           <span class="fl">0.1960784</span>            <span class="fl">0.7259615</span> </span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="sc">$</span>mode</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"sens_spec"</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="sc">$</span>dots</span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="fu">list</span>()</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="fu">attr</span>(,<span class="st">"class"</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"confusionMatrix"</span></span></code></pre></div>
 <p>Here we can see how our selected model works on predicting the state
 of test data. Note these accuracy results are slightly higher than those
 from the CV folds. This is not a bug, CV folds are testing on their own
@@ -335,7 +333,7 @@ hood which allows for spatially informed cross validation.</p>
 </h4>
 <p>The bayesian sdm is post-processed using the same function as is used
 by the <code>elasticSDM</code> workflow.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
 <span>  rast_cont <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
 <span>  test <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TestData</span>,</span>
@@ -376,7 +374,7 @@ by the <code>elasticSDM</code> workflow.</p>
 </table>
 <p>We can compare the results of applying this function side by side
 using the output from the function.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/Compare%20Threshold%20Results-1.png" class="r-plt" alt="" width="700"></p>
 </div>
@@ -386,7 +384,7 @@ using the output from the function.</p>
 <p>The <code>bayesianSDM</code> requires a different function from
 <code>elasticSDM</code> for creating weighted surfaces, with the suffix
 <code>RescaleRasters_bayes</code>.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters_bayes.html">RescaleRasters_bayes</a></span><span class="op">(</span></span>
 <span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
 <span>  predictors <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span>, </span>
@@ -399,12 +397,12 @@ using the output from the function.</p>
 <p><img src="BayesianApproaches_files/figure-html/Rescale%20Predictor%20Variables-1.png" class="r-plt" alt="" width="700"></p>
 <p>An optionally returned layer (via include_uncertainty = TRUE),
 depicts areas with greater uncertainty towards the prediction.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="st">'coef_uncertainty'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/plot%20coef%20uncertainty%20layer-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also show the variables that contributed the most to the sdm
 models predictions, along with their signs.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
 <span>  <span class="va">rr</span><span class="op">$</span><span class="va">BetaCoefficients</span><span class="op">[</span> </span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">BetaCoefficients</span><span class="op">$</span><span class="va">Estimate</span><span class="op">)</span>,decreasing <span class="op">=</span> <span class="cn">T</span><span class="op">)</span>, </span>
@@ -464,51 +462,51 @@ models predictions, along with their signs.</p>
 <p>To delineate putative seed collection zones we use the
 <code>PosteriorCluster</code> function. It will use the raster surfaces
 of mean beta coefficient importance</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>obby <span class="ot">&lt;-</span> <span class="fu">PosteriorCluster</span>(</span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">subset</span>(rr<span class="sc">$</span>RescaledPredictors, <span class="st">'coef_uncertainty'</span>, <span class="at">negate =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">f_rasts =</span> threshold_rasts<span class="sc">$</span>FinalRasters,</span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="at">lyr =</span> <span class="st">'Supplemented'</span>,</span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  <span class="at">pred_mat =</span> sdModel<span class="sc">$</span>PredictMatrix,</span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="at">training_data =</span> sdModel<span class="sc">$</span>Train,</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>  <span class="at">planar_proj =</span> <span class="dv">5070</span></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a>)</span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>Drawing <span class="dv">100</span> posterior beta samples ...</span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>Sampling fixed point set from prediction surface ...</span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>  <span class="dv">500</span> of <span class="dv">500</span> requested points have complete predictor data.</span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>Clustering over <span class="dv">100</span> posterior draws ...</span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>  Draw <span class="dv">25</span> <span class="sc">/</span> <span class="dv">100</span></span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a>  Draw <span class="dv">50</span> <span class="sc">/</span> <span class="dv">100</span></span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>  Draw <span class="dv">75</span> <span class="sc">/</span> <span class="dv">100</span></span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a>  Draw <span class="dv">100</span> <span class="sc">/</span> <span class="dv">100</span></span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a>Computing co<span class="sc">-</span>occurrence matrix ...</span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a>Deriving consensus clustering ...</span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a>Computing top<span class="dv">-3</span> cluster assignments per point ...</span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a>Projecting consensus clusters to raster ...</span>
-<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a>Loading required package<span class="sc">:</span> lattice</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>obby <span class="ot">&lt;-</span> <span class="fu">PosteriorCluster</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">subset</span>(rr<span class="sc">$</span>RescaledPredictors, <span class="st">'coef_uncertainty'</span>, <span class="at">negate =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="at">f_rasts =</span> threshold_rasts<span class="sc">$</span>FinalRasters,</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="at">lyr =</span> <span class="st">'Supplemented'</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="at">pred_mat =</span> sdModel<span class="sc">$</span>PredictMatrix,</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>  <span class="at">training_data =</span> sdModel<span class="sc">$</span>Train,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>  <span class="at">planar_proj =</span> <span class="dv">5070</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>Drawing <span class="dv">100</span> posterior beta samples ...</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>Sampling fixed point set from prediction surface ...</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>  <span class="dv">500</span> of <span class="dv">500</span> requested points have complete predictor data.</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>Clustering over <span class="dv">100</span> posterior draws ...</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>  Draw <span class="dv">25</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>  Draw <span class="dv">50</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a>  Draw <span class="dv">75</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>  Draw <span class="dv">100</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a>Computing co<span class="sc">-</span>occurrence matrix ...</span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a>Deriving consensus clustering ...</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>Computing top<span class="dv">-3</span> cluster assignments per point ...</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>Projecting consensus clusters to raster ...</span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a>Loading required package<span class="sc">:</span> lattice</span></code></pre></div>
 <p>Using the Bayesian posteriors and clustering allows us to determine
 areas that have higher and lower uncertainty for clustering assignments.
 Values with a higher proportion had greater colocation scores than areas
 with lower proportions.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obby</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">stability</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="va">obby</span><span class="op">$</span><span class="va">SamplePoints</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/plot%20stability%20raster%20with%20sample%20points-1.png" class="r-plt" alt="" width="700"></p>
 <p>As with the other sampling functions, spatial polygons are returned
 for use with other applications.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>bmap <span class="sc">+</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> obby<span class="sc">$</span>Geometry, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(ID))) <span class="sc">+</span> </span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">'Cluster'</span>)</span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>bmap <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> obby<span class="sc">$</span>Geometry, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(ID))) <span class="sc">+</span> </span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">'Cluster'</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png" class="r-plt" alt="" width="700"></p>
 <p>Interested users can see what the second most and third most stable
 clustering scenarios would look like via the following ranks. Do note
 that the renumbering of clusters from NW to SE (left to right, like many
 language groups read books) has not occurred on these rasters yet, so
 the numbers differ from the consensus surface.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obby</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">consensus</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obby</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank2_final</span><span class="op">)</span></span>
@@ -520,7 +518,7 @@ the numbers differ from the consensus surface.</p>
 </h4>
 <p>writeSDMresults can be used to save most of the core SDM output from
 the bayesian work flow as well.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bp</span> <span class="op">&lt;-</span> <span class="st">'~/Documents/assoRted/StrategizingGermplasmCollections'</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/writeSDMresults.html">writeSDMresults</a></span><span class="op">(</span></span>
