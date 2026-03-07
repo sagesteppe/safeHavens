@@ -155,7 +155,9 @@ For the sake of this vignette, we will load a run of the above model.
 
 ```{r load pre-computed sdmodel}
 #saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
-sdModel <- readRDS(file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+sdModel <- readRDS(
+  file.path(system.file(package="safeHavens"), 'extdata',  'BayesSDM.rds')
+  )
 ```
 
 Under the hood this function uses `brms`, which dispatches to Stan, to fit a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  
