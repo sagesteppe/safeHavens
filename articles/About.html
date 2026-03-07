@@ -15,9 +15,10 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="About">
-<meta name="description" content="An overview of the package. ">
-<meta property="og:description" content="An overview of the package. ">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="About_files/libs/quarto-html/popper.min.js"></script><script src="About_files/libs/quarto-html/tippy.umd.min.js"></script><link href="About_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="About_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<script src="About_files/libs/quarto-diagram/mermaid.min.js"></script><script src="About_files/libs/quarto-diagram/mermaid-init.js"></script><link href="About_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
+<!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="About">
 <meta property="og:image" content="https://sagesteppe.github.io/safeHavens/logo.png">
 <!-- Google Search Console Verification --><meta name="google-site-verification" content="viUZcwXk_Fi5hsfdB7m6GgrFgGMJ-xVe1BcMTezGJII">
 <!-- JSON-LD Structured Data for AI Crawlers --><script type="application/ld+json">
@@ -95,75 +96,37 @@
 
 
   </div>
-</nav><div class="container template-article">
-
-
-
-
+</nav><div class="container template-quarto">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>About</h1>
-            
-      
-      <small class="dont-index">Source: <a href="https://github.com/sagesteppe/safeHavens/blob/main/vignettes/About.Rmd" class="external-link"><code>vignettes/About.Rmd</code></a></small>
-      <div class="d-none name"><code>About.Rmd</code></div>
+
+
+
+
+      <small class="dont-index">Source: <a href="https://github.com/sagesteppe/safeHavens/blob/main/vignettes/About.qmd" class="external-link"><code>vignettes/About.qmd</code></a></small>
+      <div class="d-none name"><code></code></div>
     </div>
 
-    
-    
-<div class="section level2">
-<h2 id="about-safehavens">about <code>safeHavens</code><a class="anchor" aria-label="anchor" href="#about-safehavens"></a>
+
+
+
+
+
+    <section class="level2"><h2 id="safehavens">
+<code>safeHavens</code><a class="anchor" aria-label="anchor" href="#safehavens"></a>
 </h2>
-<p>This package helps germplasm curators identify and communicate areas
-of interest to collection teams for targeting new accessions. For common
-species, it provides multiple sampling approaches for curators to choose
-from for each individual taxon they aim to collect. It also provides an
-<em>additional</em> sampling approach for rare species. The package
-allows for integration into existing workflows, that is reading in
-accession data from databases or Excel, comparing them to occurrence
-data, and writing out results into both tabular (e.g.. CSV, a database,
-Excel, etc.) and simple spatial data formats (e.g., geopackages,
-shapefiles, etc.), that can be shared with collection teams and work on
-handheld electronic devices (e.g., Qfield (free, preferred), ESRI
-products (paid, legacy)). It allows germplasm curators to have
-sophisticated spatial capabilities without the need to be GIS experts or
-paid software.</p>
-<div class="section level3">
-<h3 id="common-species-sampling-approaches">‘common’ species sampling approaches<a class="anchor" aria-label="anchor" href="#common-species-sampling-approaches"></a>
+<p>This package helps germplasm curators identify and communicate areas of interest to collection teams for targeting new accessions. For common species, it provides multiple sampling approaches for curators to choose from for each individual taxon they aim to collect. It also provides an <em>additional</em> sampling approach for rare species. The package allows for integration into existing workflows, that is reading in accession data from databases or Excel, comparing them to occurrence data, and writing out results into both tabular (e.g.. CSV, a database, Excel, etc.) and simple spatial data formats (e.g., geopackages, shapefiles, etc.), that can be shared with collection teams and work on handheld electronic devices (e.g., Qfield (free, preferred), ESRI products (paid, legacy)). It allows germplasm curators to have sophisticated spatial capabilities without the need to be GIS experts or paid software.</p>
+<section class="level3"><h3 id="common-species-sampling-approaches">‘common’ species sampling approaches<a class="anchor" aria-label="anchor" href="#common-species-sampling-approaches"></a>
 </h3>
-<p>Each approach is based on fundamental genetics and ecological theory,
-and loosely aligns with the concepts in landscape genetics/genomics. In
-practice, all functions attempt to capture the geographic and
-environmental variation across a species range. To this end, they evolve
-from simply partitioning a species range into <code>n</code> equal area,
-or regularly spaced areas, to modeling isolation by distance,
-resistance, and environment, or sampling from existing spatial data such
-as ecoregions or seed transfer zones. The geographic distance functions
-largely rely on Sewall Wright’s concept of Isolation by Distance (1943),
-the now empirically supported idea that populations that are more
-geographically proximate will be more genetically similar than
-populations that are further apart. All approaches in the package are
-<em>a priori</em>, with the exception of the
-<code>EnvironmentalBasedSample</code> function, which relies on a
-species distribution model (SDM) to inform sampling locations and is
-based on the concept of Isolation by Environment (Wang &amp; Bradburd
-2014); however this still does not have field validation. None of these
-sampling approaches are meant to supplant genetic diversity-based
-sampling, but we recognize that having these data is rare, and even
-gathering them would often miss the opportunity to make opportunistic
-seed collections along the way.</p>
-<p>The methods have various trade-offs in terms of computational and
-environmental complexity, although all are designed to be run on a
-standard desktop or laptop computer, and processing up to a couple
-thousand of species overnight, with the faster methods, should be
-possible. The table below presents the currently implemented sampling
-scheme and the user-facing function associated with them.</p>
-<table class="table">
+<p>Each approach is based on fundamental genetics and ecological theory, and loosely aligns with the concepts in landscape genetics/genomics. In practice, all functions attempt to capture the geographic and environmental variation across a species range. To this end, they evolve from simply partitioning a species range into <code>n</code> equal area, or regularly spaced areas, to modeling isolation by distance, resistance, and environment, or sampling from existing spatial data such as ecoregions or seed transfer zones. The geographic distance functions largely rely on Sewall Wright’s concept of Isolation by Distance (1943), the now empirically supported idea that populations that are more geographically proximate will be more genetically similar than populations that are further apart. All approaches in the package are <em>a priori</em>, with the exception of the <code>EnvironmentalBasedSample</code> function, which relies on a species distribution model (SDM) to inform sampling locations and is based on the concept of Isolation by Environment (Wang &amp; Bradburd 2014); however this still does not have field validation. None of these sampling approaches are meant to supplant genetic diversity-based sampling, but we recognize that having these data is rare, and even gathering them would often miss the opportunity to make opportunistic seed collections along the way.</p>
+<p>The methods have various trade-offs in terms of computational and environmental complexity, although all are designed to be run on a standard desktop or laptop computer, and processing up to a couple thousand of species overnight, with the faster methods, should be possible. The table below presents the currently implemented sampling scheme and the user-facing function associated with them.</p>
+<table class="table caption-top">
 <colgroup>
-<col width="34%">
-<col width="50%">
-<col width="7%">
-<col width="7%">
+<col style="width: 34%">
+<col style="width: 50%">
+<col style="width: 7%">
+<col style="width: 7%">
 </colgroup>
 <thead><tr class="header">
 <th>Function</th>
@@ -197,7 +160,7 @@ scheme and the user-facing function associated with them.</p>
 <td>L</td>
 </tr>
 <tr class="odd">
-<td><code>buildResistanceSurface</code></td>
+<td><code>IBRSurface</code></td>
 <td>Breaks species range into clusters</td>
 <td>H</td>
 <td>M</td>
@@ -227,132 +190,53 @@ scheme and the user-facing function associated with them.</p>
 <td>H</td>
 </tr>
 </tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="geographic-distance">geographic distance<a class="anchor" aria-label="anchor" href="#geographic-distance"></a>
+</table></section><section class="level3"><h3 id="geographic-distance">geographic distance<a class="anchor" aria-label="anchor" href="#geographic-distance"></a>
 </h3>
-<p>The first two functions, <code>PointBasedSample</code>, and
-<code>EqualAreaSample</code>, are flavors of the same process, where we
-partition the species range into geographic clusters of similar
-sizes.<br>
-The <code>OpportunisticSample</code> method is a special case of
-<code>PointBasedSample</code>, where existing collection records are
-used to help guide the sampling scheme, in other words additional
-samples are designed around the existing samples.
-<code>OpportunisticSample</code> uses the same underlying logic as
-<code>PointBasedSample</code>, but first ‘removes’ areas around existing
-collection records, and then fills in the remaining gaps with new
-sampling locations The <code>PointBasedSample</code> and
-<code>EqualAreaSample</code> functions would be used when
-<em>establishing</em> a new collection strategy for a species, while
-<code>OpportunisticSample</code> would be used when <em>augmenting</em>
-an existing collection strategy.</p>
-<p><code>IBDBasedSample</code> also relies on geographic distance, but
-in lieu of using the <em>continuity</em> of geographic space as its
-primary method, it focuses on the <em>discontinuity</em> of space and
-uses distance matrices and clustering to identify portions of the
-species range that are closer to each other than to others. This method
-is slightly more computationally expensive than the previous geographic
-distance methods.</p>
-</div>
-<div class="section level3">
-<h3 id="using-regions">using regions<a class="anchor" aria-label="anchor" href="#using-regions"></a>
+<p>The first two functions, <code>PointBasedSample</code>, and <code>EqualAreaSample</code>, are flavors of the same process, where we partition the species range into geographic clusters of similar sizes.<br>
+The <code>OpportunisticSample</code> method is a special case of <code>PointBasedSample</code>, where existing collection records are used to help guide the sampling scheme, in other words additional samples are designed around the existing samples. <code>OpportunisticSample</code> uses the same underlying logic as <code>PointBasedSample</code>, but first ‘removes’ areas around existing collection records, and then fills in the remaining gaps with new sampling locations The <code>PointBasedSample</code> and <code>EqualAreaSample</code> functions would be used when <em>establishing</em> a new collection strategy for a species, while <code>OpportunisticSample</code> would be used when <em>augmenting</em> an existing collection strategy.</p>
+<p><code>IBDBasedSample</code> also relies on geographic distance, but in lieu of using the <em>continuity</em> of geographic space as its primary method, it focuses on the <em>discontinuity</em> of space and uses distance matrices and clustering to identify portions of the species range that are closer to each other than to others. This method is slightly more computationally expensive than the previous geographic distance methods.</p>
+</section><section class="level3"><h3 id="using-regions">using regions<a class="anchor" aria-label="anchor" href="#using-regions"></a>
 </h3>
-<p>The <code>PolygonBasedSample</code> may be the most commonly
-encountered method in North America, and in various formats, is driving
-two major germplasm banking projects in both the Midwest and
-Southeastern United States, as well as at a high level, composing the
-way that numerous native seed collection coordinators are structured in
-the West. This method uses environmental variation as an implicit guide
-to target populations for seed collections; that is, the different
-ecoregions serve as stratification agents. In broad strokes, the general
-thinking is that these regions represent continuous transitions in the
-environment faced by the species, and populations across these ranges
-will be differently adapted to these environments. It can be used with
-either ecoregion or seed transfer zone based data. However, it relies on
-existing spatial data products, which may or may not be relevant to the
-ecology of the species.</p>
-</div>
-<div class="section level3">
-<h3 id="resistance-distance">resistance distance<a class="anchor" aria-label="anchor" href="#resistance-distance"></a>
+<p>The <code>PolygonBasedSample</code> may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. This method uses environmental variation as an implicit guide to target populations for seed collections; that is, the different ecoregions serve as stratification agents. In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. It can be used with either ecoregion or seed transfer zone based data. However, it relies on existing spatial data products, which may or may not be relevant to the ecology of the species.</p>
+</section><section class="level3"><h3 id="resistance-distance">resistance distance<a class="anchor" aria-label="anchor" href="#resistance-distance"></a>
 </h3>
-<p>The <code>IBRSurface</code> workstream allows users to parameterize a
-general cost surface for a landscape. The least-cost paths between
-occupied portions of the species range will then calculated and
-clustered. Spatial data from the end of this process can be passed into
-<code>PolygonBasedSample</code> if more than one collection per zone are
-desired.</p>
-</div>
-<div class="section level3">
-<h3 id="environmental-distance">environmental distance<a class="anchor" aria-label="anchor" href="#environmental-distance"></a>
+<p>The <code>IBRSurface</code> workstream allows users to parameterize a general cost surface for a landscape. The least-cost paths between occupied portions of the species range will then calculated and clustered. Spatial data from the end of this process can be passed into <code>PolygonBasedSample</code> if more than one collection per zone are desired.</p>
+</section><section class="level3"><h3 id="environmental-distance">environmental distance<a class="anchor" aria-label="anchor" href="#environmental-distance"></a>
 </h3>
-<p><code>EnvironmentalBasedSample</code>, is both the most
-computationally expensive and the most environmentally explicit. This
-function fits a Species Distribution Model (SDM), generated via a
-generalized linear model (glmnet), supported by this package, to cluster
-populations based on environmental variables related to their observed
-distributions and the spatial configuration and distance between them.
-On paper, this draws together all aspects of the above functions;
-however no empirical testing of this approach has been implemented.</p>
-<p>Spatial data from the end of this process can be passed into
-<code>PolygonBasedSample</code> if more than one collection per zone are
-desired.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="rare-species-sampling-approach">rare species sampling approach<a class="anchor" aria-label="anchor" href="#rare-species-sampling-approach"></a>
+<p><code>EnvironmentalBasedSample</code>, is both the most computationally expensive and the most environmentally explicit. This function fits a Species Distribution Model (SDM), generated via a generalized linear model (glmnet), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. On paper, this draws together all aspects of the above functions; however no empirical testing of this approach has been implemented.</p>
+<p>Spatial data from the end of this process can be passed into <code>PolygonBasedSample</code> if more than one collection per zone are desired.</p>
+</section></section><section class="level2"><h2 id="rare-species-sampling-approach">rare species sampling approach<a class="anchor" aria-label="anchor" href="#rare-species-sampling-approach"></a>
 </h2>
-<p>All of the above methods are designed for common species, that is
-species with more than 50 or 100 unique occurrence records. Each method
-returns a polygon geometry that provides guidelines for the general
-regions where the species should be sampled. However, for rare species,
-where the occurrence of individual populations are tracked, and which
-are generally collected along maternal lines, requiring considerably
-more field effort to gather seed, a supplemental approach exists that
-suggests the priority in which individual populations (‘points’) can be
-sampled.</p>
-<p>The <code>KMedoidsBasedSample</code> method utilizes either
-geographic distances alone or geographic distances in conjunction with a
-distance matrix developed from a few key environmental variables to
-suggest which populations should be prioritized for seed collections.
-This method is based on the concept of maximizing the dispersion of
-selected points in geographic and environmental spaces to best capture
-the overall variation present in the species range.</p>
-</div>
-<div class="section level2">
-<h2 id="bayesian-goes-here">BAYESIAN GOES HERE<a class="anchor" aria-label="anchor" href="#bayesian-goes-here"></a>
+<p>All of the above methods are designed for common species, that is species with more than 50 or 100 unique occurrence records. Each method returns a polygon geometry that provides guidelines for the general regions where the species should be sampled. However, for rare species, where the occurrence of individual populations are tracked, and which are generally collected along maternal lines, requiring considerably more field effort to gather seed, a supplemental approach exists that suggests the priority in which individual populations (‘points’) can be sampled.</p>
+<p>The <code>KMedoidsBasedSample</code> method utilizes either geographic distances alone or geographic distances in conjunction with a distance matrix developed from a few key environmental variables to suggest which populations should be prioritized for seed collections. This method is based on the concept of maximizing the dispersion of selected points in geographic and environmental spaces to best capture the overall variation present in the species range.</p>
+</section><section class="level2"><h2 id="bayesian-goes-here">BAYESIAN GOES HERE<a class="anchor" aria-label="anchor" href="#bayesian-goes-here"></a>
 </h2>
-<div class="section level3">
-<h3 id="installation">installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<section class="level3"><h3 id="installation">installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h3>
-<p><code>safeHavens</code> can be installed directly from github, using
-either devtools or remotes. Note that the software relies on a few other
-packages that may require additional system dependencies, such as
-<code>rgeos</code> and <code>rgdal</code>. It also requires a working
-installation of <code>GDAL</code>, <code>PROJ</code>, and
-<code>GEOS</code> on your system. This can occasionally be finicky to
-install, but once you have them effectively all open-source geospatial
-softwares are available to you.</p>
-<p>Users of the Bayesian approaches will need Stan and cmdstanr,
-installed, also requiring C++ toolkits. These can take a few minutes to
-figure out.</p>
-<p><code>safeHavens</code> can be installed from GitHub with
-<code>remotes</code> or <code>devtools</code>. Some users have issues
-with devtools on Windows, but remotes tends to work well.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'sagesteppe/safeHavens'</span><span class="op">)</span> </span>
-<span><span class="co"># devtools::install_github('sagesteppe/safeHavens')</span></span></code></pre></div>
-<p>An overview of the functionality in the package is presented
-below.</p>
-<pre class="mermaid"><code>%%{init: {'theme':'dark', 'themeVariables': { 
-    'primaryTextColor':'#ffffff', 
+<p><code>safeHavens</code> can be installed directly from github, using either devtools or remotes. Note that the software relies on a few other packages that may require additional system dependencies, such as <code>rgeos</code> and <code>rgdal</code>. It also requires a working installation of <code>GDAL</code>, <code>PROJ</code>, and <code>GEOS</code> on your system. This can occasionally be finicky to install, but once you have them effectively all open-source geospatial softwares are available to you.</p>
+<p>Users of the Bayesian approaches will need Stan and cmdstanr, installed, also requiring C++ toolkits. These can take a few minutes to figure out.</p>
+<p><code>safeHavens</code> can be installed from GitHub with <code>remotes</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'sagesteppe/safeHavens'</span><span class="op">)</span> </span></code></pre></div>
+</div>
+<p>An overview of the functionality in the package is below.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p>
+<figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme':'dark', 'themeVariables': {
+    'primaryTextColor':'#ffffff',
     'lineColor':'#ffffff',
-    'fontSize':'40px', 
+    'lineWidth':'24px',
+    'fontSize':'30px',
     'fontFamily':'Arial'}}}%%
 flowchart LR
 A[/Species Occurrence Data/]
-C[/Environmental Covariates/]
+B[/Environmental Covariates/]
+
 A --&gt; D(PointBasedSample)
 A --&gt; E(EqualAreaSample)
 A --&gt; F(OpportunisticSample)
@@ -360,14 +244,18 @@ A --&gt; G(IBDBasedSample)
 A --&gt; J[elasticSDM]
 A --&gt; K[bayesianSDM]
 A --&gt; L(KMedoidsBasedSample)
-C -.-&gt; L
-C --&gt; J
-C --&gt; K
+B -.-&gt; L
+B --&gt; J
+B --&gt; K
 D --&gt; N[PrioritizeSample]
 E --&gt; N
 F --&gt; N
 G --&gt; N
-H[buildResistanceSurface] --&gt; M(PolygonBasedSample)
+A --&gt; U[populationResistance]
+B --&gt; H[buildResistanceSurface]
+H --&gt; U
+U --&gt; V[IBRSurface]
+V --&gt; M[PolygonBasedSample]
 M --&gt; N
 J --&gt; O{postProcessSDM}
 K --&gt; O
@@ -379,24 +267,112 @@ Q --&gt; M
 R --&gt; M
 S --&gt; T[PosteriorCluster]
 T --&gt; R
-classDef geoColor fill:#272AB0,color:#FFFFFF
-classDef polyColor fill:#57ACDC,color:#000000
-classDef envColor fill:#E91E63,color:#FFFFFF
-classDef dataColor fill:#F5A623,color:#000000
-classDef decisionColor fill:#60C689,color:#000000
-classDef rareColor fill:#20B2AA,color:#000000
+classDef geoColor fill:#d95f02,color:#FFFFFF
+classDef polyColor fill:#66a61e,color:#FFFFFF
+classDef envColor fill:#1b9e77,color:#FFFFFF
+classDef dataColor fill:#a6761d,color:#FFFFFF
+classDef decisionColor fill:#7570b3,color:#FFFFFF
+classDef rareColor fill:#e6ab02,color:#FFFFFF
+classDef ibrColor fill:#e7298a,color:#FFFFFF
 class D,E,F,G geoColor
 class H,M polyColor
 class J,K,O,P,S,T,U,Q,R envColor
-class A,C dataColor
+class A,B dataColor
 class N decisionColor
-class L rareColor</code></pre>
+class L rareColor
+class H,U,V ibrColor
+</pre>
+</div>
+<p></p></figure><p></p>
 </div>
 </div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+</div>
+</section></section><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config);
+    }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
-
 
 
     <footer><div class="pkgdown-footer-left">

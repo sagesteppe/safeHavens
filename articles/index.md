@@ -6,7 +6,8 @@ Background, installation, usage, and sampling schemas
 
 - [About](https://sagesteppe.github.io/safeHavens/articles/About.md):
 
-  An overview of the package.
+  A package for germplasm curators to identify regions to sample
+  material from.
 
 - [Getting
   Started](https://sagesteppe.github.io/safeHavens/articles/GettingStarted.md):

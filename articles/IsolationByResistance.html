@@ -137,9 +137,9 @@ paramterize a cost surface, that can be used to support basic
 spatial data sets that should be suitable for nearly all users IBR
 applications are included in <code>safeHavens</code> for this example,
 but the full data sets are not shipped with the package. They include: -
-lakes, Lehner et al. 2025, <a href="https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994" class="external-link">GLWD</a>
-- oceans from Natural Earth, <a href="https://www.naturalearthdata.com/downloads/10m-physical-vectors/" class="external-link uri">https://www.naturalearthdata.com/downloads/10m-physical-vectors/</a>
-- rivers from <a href="https://data.apps.fao.org/catalog/dataset/76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9" class="external-link">FAO</a>,
+lakes, Lehner et al. 2025, <a href="https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994" class="external-link">GLWD</a><br>
+- oceans from Natural Earth, <a href="https://www.naturalearthdata.com/downloads/10m-physical-vectors/" class="external-link uri">https://www.naturalearthdata.com/downloads/10m-physical-vectors/</a><br>
+- rivers from <a href="https://data.apps.fao.org/catalog/dataset/%2076e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9" class="external-link">FAO</a>,
 - tri (terrain ruggedness index), Amatulli et al. 2018, <a href="https://www.earthenv.org/topography" class="external-link uri">https://www.earthenv.org/topography</a></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
@@ -227,9 +227,7 @@ function like <code>rasterize</code>, from terra.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/rasterize%20data-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; null device </span></span>
-<span><span class="co">#&gt;           1</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">ocean_v</span>, <span class="va">lakes_v</span>, <span class="va">rivers_v</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -276,38 +274,38 @@ advocate for the use of a relatively coarsely grained raster surface
 (e.g. 4kmx4km cells or more), because we are doing pretty generalized
 work, and it will speed up processing.</p>
 <p>Now that we have our resistance surface, the next step is calculating
-the distances between areas across the species range. Similar to other
-functions in <code>safeHavens</code> we will not use population
-occurrence record data directly, as we know that spatial biases affect
-occurrence record distributinons. Rather we will buffer
-(<code>buffer_dist</code>) the occurrence records, using a relevant
-<code>planar_proj</code>, and create a raster surface of their
-locations. From this surface we will sample <code>n</code> points (using
-terra::spatSample, with method = ‘spread’), and identify neighboring
-points using a <code>graph_method</code>, either delauney triangulation,
-which is useful when a very high <code>n</code> is required, or through
-a complete distance matrix.<br>
-In my testing I <em>greatly</em> prefer results from ‘complete’
-calculations, and these work with NbClust without having to be ordinated
-down into 2-dimensional space and give much better results.</p>
+the distances between areas across the species range using the function
+<code>populationResistance</code>. Similar to other functions in
+<code>safeHavens</code> we will not use population occurrence record
+data directly, as we know that spatial biases affect occurrence record
+distributions. Rather we will buffer (<code>buffer_dist</code>) the
+occurrence records, using a relevant <code>planar_proj</code>, and
+create a raster surface of their locations. From this surface we will
+sample <code>n</code> points (using terra::spatSample, with method =
+‘spread’), and identify neighboring points using a
+<code>graph_method</code>, either delauney triangulation, which is
+useful when a very high <code>n</code> is required, or through a
+complete distance matrix. In my testing I <em>greatly</em> prefer
+results from ‘complete’ calculations, and these work with NbClust
+without having to be ordinated down into 2-dimensional space and give
+much better results.</p>
 <p>This function will return a raster representing the buffered
 populations (species range in the domain), the points sampled by terra,
 the graph information, and a distance matrix with the least cost
 distance values from the resistance surface.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pop_res_graphs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/populationResistance.html">populationResistance</a></span><span class="op">(</span></span>
-<span>  base_raster <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">ocean_r</span><span class="op">)</span>,</span>
-<span>  populations_sf <span class="op">=</span> <span class="va">x</span>,</span>
-<span>  n <span class="op">=</span> <span class="fl">150</span>,</span>
-<span>  planar_proj <span class="op">=</span> <span class="fl">3857</span>,</span>
-<span>  buffer_dist <span class="op">=</span> <span class="fl">125000</span>,</span>
-<span>  resistance_surface <span class="op">=</span> <span class="va">res_surface</span>,</span>
-<span>  graph_method <span class="op">=</span> <span class="st">'complete'</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pop_res_graphs</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "pop_raster"     "sampled_points" "spatial_graph"  "edge_list"     </span></span>
-<span><span class="co">#&gt; [5] "ibr_matrix"</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>pop_res_graphs <span class="ot">&lt;-</span> <span class="fu">populationResistance</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">base_raster =</span> <span class="fu">rast</span>(ocean_r),</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">populations_sf =</span> x,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">n =</span> <span class="dv">150</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">planar_proj =</span> <span class="dv">3857</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">buffer_dist =</span> <span class="dv">125000</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="at">resistance_surface =</span> res_surface,</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">graph_method =</span> <span class="st">'complete'</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>)</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">names</span>(pop_res_graphs)</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"pop_raster"</span>     <span class="st">"sampled_points"</span> <span class="st">"spatial_graph"</span>  <span class="st">"edge_list"</span>     </span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>[<span class="dv">5</span>] <span class="st">"ibr_matrix"</span>    </span></code></pre></div>
 <p>The buffered locations look like this - currently the IDs are
 meaningless.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -402,7 +400,7 @@ predictors</p>
 <code class="sourceCode R"><span><span class="va">inverted_sdm</span> <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">inverted_sdm</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">inverted_sdm</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="700"></p>
-<p>Note that we will have to make sure our SDM aligns with the existin
+<p>Note that we will have to make sure our SDM aligns with the existing
 layers</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inverted_sdm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">inverted_sdm</span>, <span class="va">ocean_r</span><span class="op">)</span></span>
@@ -433,12 +431,9 @@ small effect until reaching certain thresholds.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"l"</span>, main <span class="op">=</span> <span class="st">"x^3: polynomial"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"l"</span>, main <span class="op">=</span> <span class="st">"x^4 polynomial"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/plot%20non-linear%20transformations-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></code></pre></div>
 <p>We will apply a fourth order polynomial to the input tri data to
 accomodate a non-linear effect.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tri_rscl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/app.html" class="external-link">app</a></span><span class="op">(</span><span class="va">tri</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span> <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">2</span>, to <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">80</span><span class="op">)</span><span class="op">)</span> <span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
@@ -446,7 +441,7 @@ accomodate a non-linear effect.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tri_rscl</span>, main <span class="op">=</span> <span class="st">'Rescaled'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/rescale%20TRI-1.png" class="r-plt" alt="" width="700"></p>
 <p>And we can create a new resistance surface</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_surface</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildResistanceSurface.html">buildResistanceSurface</a></span><span class="op">(</span></span>
 <span></span>
 <span>  base_raster <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">ocean_r</span><span class="op">)</span>, <span class="co"># template</span></span>
@@ -465,10 +460,9 @@ accomodate a non-linear effect.</p>
 <span>  <span class="co">#w_tri = 4 # don't use me! use addtl_wt</span></span>
 <span>  addtl_w <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; null device </span></span>
-<span><span class="co">#&gt;           1</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res_surface</span><span class="op">)</span></span></code></pre></div>
+<p><img src="IsolationByResistance_files/figure-html/build%20a%20polynomial%20surface-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
 </div>

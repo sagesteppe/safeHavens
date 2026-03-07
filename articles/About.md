@@ -1,6 +1,6 @@
 # About
 
-## about `safeHavens`
+## `safeHavens`
 
 This package helps germplasm curators identify and communicate areas of
 interest to collection teams for targeting new accessions. For common
@@ -52,7 +52,7 @@ scheme and the user-facing function associated with them.
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
 | `IBDBasedSample`           | Breaks species range into clusters      | H     | L     |
-| `buildResistanceSurface`   | Breaks species range into clusters      | H     | M     |
+| `IBRSurface`               | Breaks species range into clusters      | H     | M     |
 | `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
 | `KMedoidsBasedSample`      | For rare species with known occurrences | M     | M     |
@@ -155,26 +155,25 @@ softwares are available to you.
 Users of the Bayesian approaches will need Stan and cmdstanr, installed,
 also requiring C++ toolkits. These can take a few minutes to figure out.
 
-`safeHavens` can be installed from GitHub with `remotes` or `devtools`.
-Some users have issues with devtools on Windows, but remotes tends to
-work well.
+`safeHavens` can be installed from GitHub with `remotes`.
 
 ``` r
 remotes::install_github('sagesteppe/safeHavens') 
-# devtools::install_github('sagesteppe/safeHavens')
 ```
 
-An overview of the functionality in the package is presented below.
+An overview of the functionality in the package is below.
 
 ``` mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 
-    'primaryTextColor':'#ffffff', 
+%%{init: {'theme':'dark', 'themeVariables': {
+    'primaryTextColor':'#ffffff',
     'lineColor':'#ffffff',
-    'fontSize':'40px', 
+    'lineWidth':'24px',
+    'fontSize':'30px',
     'fontFamily':'Arial'}}}%%
 flowchart LR
 A[/Species Occurrence Data/]
-C[/Environmental Covariates/]
+B[/Environmental Covariates/]
+
 A --> D(PointBasedSample)
 A --> E(EqualAreaSample)
 A --> F(OpportunisticSample)
@@ -182,14 +181,18 @@ A --> G(IBDBasedSample)
 A --> J[elasticSDM]
 A --> K[bayesianSDM]
 A --> L(KMedoidsBasedSample)
-C -.-> L
-C --> J
-C --> K
+B -.-> L
+B --> J
+B --> K
 D --> N[PrioritizeSample]
 E --> N
 F --> N
 G --> N
-H[buildResistanceSurface] --> M(PolygonBasedSample)
+A --> U[populationResistance]
+B --> H[buildResistanceSurface]
+H --> U
+U --> V[IBRSurface]
+V --> M[PolygonBasedSample]
 M --> N
 J --> O{postProcessSDM}
 K --> O
@@ -201,16 +204,18 @@ Q --> M
 R --> M
 S --> T[PosteriorCluster]
 T --> R
-classDef geoColor fill:#272AB0,color:#FFFFFF
-classDef polyColor fill:#57ACDC,color:#000000
-classDef envColor fill:#E91E63,color:#FFFFFF
-classDef dataColor fill:#F5A623,color:#000000
-classDef decisionColor fill:#60C689,color:#000000
-classDef rareColor fill:#20B2AA,color:#000000
+classDef geoColor fill:#d95f02,color:#FFFFFF
+classDef polyColor fill:#66a61e,color:#FFFFFF
+classDef envColor fill:#1b9e77,color:#FFFFFF
+classDef dataColor fill:#a6761d,color:#FFFFFF
+classDef decisionColor fill:#7570b3,color:#FFFFFF
+classDef rareColor fill:#e6ab02,color:#FFFFFF
+classDef ibrColor fill:#e7298a,color:#FFFFFF
 class D,E,F,G geoColor
 class H,M polyColor
 class J,K,O,P,S,T,U,Q,R envColor
-class A,C dataColor
+class A,B dataColor
 class N decisionColor
 class L rareColor
+class H,U,V ibrColor
 ```

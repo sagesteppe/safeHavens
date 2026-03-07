@@ -132,8 +132,6 @@ List of 2
   ..$ coord_uncertainty: num [1:116] 0 0 0 0 0 ...
   ..$ lon              : num [1:116] -65.4 -65.4 -65.1 -63.7 -63.9 ...
   ..$ lat              : num [1:116] -10.4 -10.4 -16.8 -17.4 -17.4 ...
-
-rm(x, n_sites, uncertain_sites, dists2c)
 ```
 
 The funtion `KMedoidsBasedSample` has several arguments used to control
@@ -141,7 +139,10 @@ run parameters.
 
 ``` r
 st <- system.time( {
-    geo_res <- KMedoidsBasedSample(  ## reduce some parameters for faster run. 
+    geo_res <- KMedoidsBasedSample( 
+       ## reduce params from defaults
+       ##  for a quick run. 
+
       input_data = test_data,
       n = 5,
       n_bootstrap = 10,
@@ -163,7 +164,7 @@ applications.
 ``` r
 st
    user  system elapsed 
- 26.787   0.054  26.848 
+ 25.530   0.026  25.564 
 ```
 
 ### return output structure
@@ -411,9 +412,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 35.253 |
+| user.self  | 33.621 |
 | sys.self   |  0.002 |
-| elapsed    | 35.261 |
+| elapsed    | 33.627 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
@@ -451,7 +452,7 @@ map +
   labs(title = 'Priority Selection Status of Sites; Environmental')
 ```
 
-![](RareSpecies_files/figure-html/unnamed-chunk-12-1.png)
+![](RareSpecies_files/figure-html/unnamed-chunk-13-1.png)
 
 ## alternative methods for required central points
 

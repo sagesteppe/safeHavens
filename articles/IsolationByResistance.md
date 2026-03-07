@@ -26,11 +26,11 @@ spatial data sets that should be suitable for nearly all users IBR
 applications are included in `safeHavens` for this example, but the full
 data sets are not shipped with the package. They include: - lakes,
 Lehner et al. 2025,
-[GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994) -
-oceans from Natural Earth,
-<https://www.naturalearthdata.com/downloads/10m-physical-vectors/> -
-rivers from
-[FAO](https://data.apps.fao.org/catalog/dataset/76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), -
+[GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)  
+- oceans from Natural Earth,
+<https://www.naturalearthdata.com/downloads/10m-physical-vectors/>  
+- rivers from
+[FAO](https://data.apps.fao.org/catalog/dataset/%2076e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), -
 tri (terrain ruggedness index), Amatulli et al. 2018,
 <https://www.earthenv.org/topography>
 
@@ -132,9 +132,7 @@ plot(tri)
 ![](IsolationByResistance_files/figure-html/rasterize%20data-1.png)
 
 ``` r
-dev.off()
-#> null device 
-#>           1
+par(mfrow=c(1,1))
 
 rm(ocean_v, lakes_v, rivers_v)
 ```
@@ -186,19 +184,19 @@ cells or more), because we are doing pretty generalized work, and it
 will speed up processing.
 
 Now that we have our resistance surface, the next step is calculating
-the distances between areas across the species range. Similar to other
-functions in `safeHavens` we will not use population occurrence record
-data directly, as we know that spatial biases affect occurrence record
-distributinons. Rather we will buffer (`buffer_dist`) the occurrence
-records, using a relevant `planar_proj`, and create a raster surface of
-their locations. From this surface we will sample `n` points (using
-terra::spatSample, with method = ‘spread’), and identify neighboring
-points using a `graph_method`, either delauney triangulation, which is
-useful when a very high `n` is required, or through a complete distance
-matrix.  
-In my testing I *greatly* prefer results from ‘complete’ calculations,
-and these work with NbClust without having to be ordinated down into
-2-dimensional space and give much better results.
+the distances between areas across the species range using the function
+`populationResistance`. Similar to other functions in `safeHavens` we
+will not use population occurrence record data directly, as we know that
+spatial biases affect occurrence record distributions. Rather we will
+buffer (`buffer_dist`) the occurrence records, using a relevant
+`planar_proj`, and create a raster surface of their locations. From this
+surface we will sample `n` points (using terra::spatSample, with method
+= ‘spread’), and identify neighboring points using a `graph_method`,
+either delauney triangulation, which is useful when a very high `n` is
+required, or through a complete distance matrix. In my testing I
+*greatly* prefer results from ‘complete’ calculations, and these work
+with NbClust without having to be ordinated down into 2-dimensional
+space and give much better results.
 
 This function will return a raster representing the buffered populations
 (species range in the domain), the points sampled by terra, the graph
@@ -217,8 +215,8 @@ pop_res_graphs <- populationResistance(
 )
 
 names(pop_res_graphs)
-#> [1] "pop_raster"     "sampled_points" "spatial_graph"  "edge_list"     
-#> [5] "ibr_matrix"
+[1] "pop_raster"     "sampled_points" "spatial_graph"  "edge_list"     
+[5] "ibr_matrix"    
 ```
 
 The buffered locations look like this - currently the IDs are
@@ -347,7 +345,7 @@ plot(inverted_sdm)
 
 ![](IsolationByResistance_files/figure-html/unnamed-chunk-6-1.png)
 
-Note that we will have to make sure our SDM aligns with the existin
+Note that we will have to make sure our SDM aligns with the existing
 layers
 
 ``` r
@@ -385,11 +383,6 @@ plot(x, rs(x^4), type = "l", main = "x^4 polynomial")
 
 ![](IsolationByResistance_files/figure-html/plot%20non-linear%20transformations-1.png)
 
-``` r
-
-rm(x)
-```
-
 We will apply a fourth order polynomial to the input tri data to
 accomodate a non-linear effect.
 
@@ -424,8 +417,8 @@ res_surface <- buildResistanceSurface(
   #w_tri = 4 # don't use me! use addtl_wt
   addtl_w = 1
 )
-dev.off()
-#> null device 
-#>           1
+par(mfrow=c(1,1))
 plot(res_surface)
 ```
+
+![](IsolationByResistance_files/figure-html/build%20a%20polynomial%20surface-1.png)

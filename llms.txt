@@ -26,11 +26,9 @@ for each individual taxon they hope to process.
 `remotes` or `devtools` like so:
 
 ``` R
-install.packages('devtools')
-devtools::install_github('sagesteppe/safeHavens')
-
-install.packages('remotes') # remotes is very similar and  a good alternativ for this use case.
+install.packages('remotes') 
 remotes::install_github('sagesteppe/safeHavens')
+#devtools::install_github('sagesteppe/safeHavens') # if needed
 ```
 
 Once installed it can be attached for use like any other package from
@@ -65,6 +63,70 @@ The species distribution modelling section has a couple functions which
 are essential for achieving the `EnvironmentalBasedSample` design, these
 are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and
 `writeSDMresults`.
+
+``` r
+remotes::install_github('sagesteppe/safeHavens') 
+# devtools::install_github('sagesteppe/safeHavens')
+```
+
+An overview of the functionality in the package is below.
+
+``` mermaid
+%%{init: {'theme':'dark', 'themeVariables': {
+    'primaryTextColor':'#ffffff',
+    'lineColor':'#ffffff',
+    'lineWidth':'24px',
+    'fontSize':'18px',
+    'fontFamily':'Arial'}}}%%
+flowchart LR
+A[/Species Occurrence Data/]
+B[/Environmental Covariates/]
+
+A --> D(PointBasedSample)
+A --> E(EqualAreaSample)
+A --> F(OpportunisticSample)
+A --> G(IBDBasedSample)
+A --> J[elasticSDM]
+A --> K[bayesianSDM]
+A --> L(KMedoidsBasedSample)
+B -.-> L
+B --> J
+B --> K
+D --> N[PrioritizeSample]
+E --> N
+F --> N
+G --> N
+A --> U[populationResistance]
+B --> H[buildResistanceSurface]
+H --> U
+U --> V[IBRSurface]
+V --> M[PolygonBasedSample]
+M --> N
+J --> O{postProcessSDM}
+K --> O
+O --> P{RescaleRaster}
+O --> S{RescaleRasterBayes}
+P --> Q(EnvironmentalBasedSample)
+Q --> R[PredictiveProvenance]
+Q --> M
+R --> M
+S --> T[PosteriorCluster]
+T --> R
+classDef geoColor fill:#d95f02,color:#FFFFFF
+classDef polyColor fill:#66a61e,color:#FFFFFF
+classDef envColor fill:#1b9e77,color:#FFFFFF
+classDef dataColor fill:#a6761d,color:#FFFFFF
+classDef decisionColor fill:#7570b3,color:#FFFFFF
+classDef rareColor fill:#e6ab02,color:#FFFFFF
+classDef ibrColor fill:#e7298a,color:#FFFFFF
+class D,E,F,G geoColor
+class H,M polyColor
+class J,K,O,P,S,T,U,Q,R envColor
+class A,B dataColor
+class N decisionColor
+class L rareColor
+class H,U,V ibrColor
+```
 
 ## Acknowledgements
 
@@ -170,7 +232,8 @@ Background, installation, usage, and sampling schemas
 
 - [About](https://sagesteppe.github.io/safeHavens/articles/About.md):
 
-  An overview of the package.
+  A package for germplasm curators to identify regions to sample
+  material from.
 
 - [Getting
   Started](https://sagesteppe.github.io/safeHavens/articles/GettingStarted.md):
