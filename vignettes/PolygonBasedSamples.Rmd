@@ -1,9 +1,9 @@
 ---
 title: "Polygon Based Sampling"
-output: rmarkdown::html_vignette
+output: pkgdown::as_is
 vignette: >
   %\VignetteIndexEntry{Polygon Based Sampling}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::rmarkdown}
   %\VignetteEncoding{UTF-8}
 description: >
   Sampling provisional seed transfer zones and ecoregions 
@@ -21,7 +21,7 @@ Three options are available for both scenarios.
 
 Additionally, this function can be used on the cluster groups identified using the Isolation by Distance, Resistance, and Environmental workflows, when a user wants to decouple the clustering process from the number of samples. 
 
-```{mermaid}
+```mermaid
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#000', 
     'lineColor':'#000', 
