@@ -40,7 +40,6 @@ The below steps are all present at the start of the 'Predictive Provenance' vign
 We will 'hide' some of the processing steps to keep this vignette entry relatively short. 
 
 ```{r load libraries, message =F, warning = F}
-#remotes::install_github('sagesteppe/safeHavens@bayes')
 library(safeHavens)
 library(terra)
 library(geodata)
@@ -154,10 +153,21 @@ sdModel <- bayesianSDM(
 For the sake of this vignette, we will load a run of the above model. 
 
 ```{r load pre-computed sdmodel}
-#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+setwd('~/Documents/assoRted/safeHavens/vignettes')
+sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::wrap(sdModel$Predictors)
+sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
+sdModel$AOA <- terra::wrap(sdModel$AOA)
+saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'BayesSDM.rds')
   )
+
+sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
+sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
+sdModel$RasterPredictions_sd <- terra::unwrap(sdModel$RasterPredictions_sd)
+sdModel$AOA <- terra::unwrap(sdModel$AOA)
 ```
 
 Under the hood this function uses `brms`, which dispatches to Stan, to fit a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  
@@ -321,7 +331,7 @@ writeSDMresults(
   coef_tab = rr$BetaCoefficients, 
   f_rasts = threshold_rasts$FinalRasters,
   thresh = threshold_rasts$Threshold,
-  file.path(bp, 'results', 'SDM'), 'Bradypus_test')
+  file.path(bp, 'results', 'SDM'), 'hemi_test')
 
 # we can see that the files were placed here using this. 
 list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
