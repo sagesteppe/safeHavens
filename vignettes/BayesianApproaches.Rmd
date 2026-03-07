@@ -150,16 +150,18 @@ sdModel <- bayesianSDM(
   )
 ```
 
+```{r save model, eval = F}
+#setwd('~/Documents/assoRted/safeHavens/vignettes')
+#sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+#sdModel$Predictors <- terra::wrap(sdModel$Predictors)
+#sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
+#sdModel$AOA <- terra::wrap(sdModel$AOA)
+#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+```
+
 For the sake of this vignette, we will load a run of the above model. 
 
 ```{r load pre-computed sdmodel}
-setwd('~/Documents/assoRted/safeHavens/vignettes')
-sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
-sdModel$Predictors <- terra::wrap(sdModel$Predictors)
-sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
-sdModel$AOA <- terra::wrap(sdModel$AOA)
-saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
-
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'BayesSDM.rds')
   )
