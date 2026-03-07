@@ -150,7 +150,7 @@ sdModel <- bayesianSDM(
   )
 ```
 
-```{r save model, eval = F, echo = F}
+```{r save model, eval = F}
 #setwd('~/Documents/assoRted/safeHavens/vignettes')
 #sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
 #sdModel$Predictors <- terra::wrap(sdModel$Predictors)
