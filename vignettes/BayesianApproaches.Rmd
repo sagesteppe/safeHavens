@@ -126,6 +126,8 @@ names(bio_current) <- gsub('^.*5m_', '', names(bio_current))
 names(bio_current) <- simplify_names(bio_current)
 #names(bio_future) <- simplify_names(bio_future)
 
+hemi <- select(hemi) 
+
 rm(simplify_names)
 ```
 
@@ -134,9 +136,7 @@ rm(simplify_names)
 Here we fit as SDM using `bayesianSDM`. 
 For arguments it requires occurrence data `x`, a raster stack of `predictors`, a `quantile_v` that is an offset used to create pseudo-absence data, and a `planar_proj` used to calculate distances between occurrence data and possible pseudo-absence points. 
 
-```{r Create Species Distribution Model, message=F, warning=F}
-hemi <- select(hemi) 
-
+```{r Create Species Distribution Model, message=F, warning=F, eval = F}
 sdModel <- bayesianSDM( 
   x = hemi,
   pca_predictors = FALSE,
@@ -145,10 +145,17 @@ sdModel <- bayesianSDM(
   planar_proj = 5070, 
   resample = TRUE,
   feature_selection = 'ffs',
-  min_ffs_var = 4, 
+  min_ffs_var = 5, 
   fact = 3, 
   silent = 2 # print fewer messages during model fit.
   )
+```
+
+For the sake of this vignette, we will load a run of the above model. 
+
+```{r load pre-computed sdmodel}
+#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+sdModel <- readRDS(file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
 ```
 
 Under the hood this function uses `brms`, which dispatches to Stan, to fit a bayesian hierarchical model (GLMM), where the distances between occurrence records are the fixed effect, useful to reduce the effects of spatial autocorrelation to increase interpret-ability of the models parameters.  
