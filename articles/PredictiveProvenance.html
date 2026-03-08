@@ -114,53 +114,47 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>We have already shown that the beta-coefficients from species
-distribution models can be used in hierarchical clustering to group a
-species populations into clusters that experience more similar - and
-relevant to their ecology - climate. While running
-<code>EnvironmentalBasedSample</code> we focus on also optimizing the
-species occupied range using moran eigenvector matrix surfaces (MEMs, or
-PCNM). In this alternative approach we drop the PCNMs from the SDMs and
-focus solely on environmental predictors, and work to identify clusters
-in <strong>current</strong> environmental space, and then classify
-<strong>future</strong> environmental (and geographic) space with these
+<p>We have already shown that beta-coefficients from species
+distribution models can be used in hierarchical clustering to group
+species populations into clusters that are more similar and better
+aligned with their ecology and climate. While running
+<code>EnvironmentalBasedSample</code>, we also focus on optimising the
+species-occupied range using Moran eigenvector matrix surfaces (MEMs, or
+PCNMs). In this alternative approach, we drop the PCNMs from the SDMs,
+focus solely on environmental predictors, identify clusters in the
+<strong>current</strong> environmental space, and then classify
+<strong>future</strong> environmental (and geographic) space using these
 cluster parameters. This gives us sets of areas with populations that
-may be more pre-adapted to future conditions.</p>
-<p>In addition to transferring the realized environmental clusters of
-populations forward, we also identify novel climate spaces, using MESS
-(Elith 2010), and hierarchical clustering. This results in us having
-<em>n</em> identified clusters, and we can traverse the clustering
-branches to determine which existing clusters are <em>most</em> similar
-to novel clusters.</p>
+may be more pre-adapted to future conditions. In addition to
+transferring the realised environmental clusters of populations forward,
+we also identify novel climate spaces, using MESS (Elith 2010) and
+hierarchical clustering. This results in n identified clusters, and we
+can traverse the clustering branches to determine which existing
+clusters are most similar to the novel clusters.</p>
 <p>This is the sole workflow in <code>safeHavens</code> that seeks to
-link current climates to future scenarios, and directly suggest how the
-size of clusters may change, where they will shift to, and allow a
-germplasm curator to identify relevant seed sources for predictive
-provenancing. The approach employed here is adequate to guide
-<em>current</em> collections, however decisions on what sources to use
-at a particular restoration site are relatively well identified by tools
-such as the <em>Seed Lot Selection Tool</em> in North America, and COSST
-in South America.</p>
+link current climates to future scenarios, directly suggest how the size
+of clusters may change and where they will shift, and allow a germplasm
+curator to identify relevant seed sources for predictive provenancing.
+The approach employed here is adequate to guide current collections;
+decisions on which sources to use at a particular restoration site are
+relatively well defined by tools such as the Seed Lot Selection Tool in
+North America.</p>
 </div>
 <div class="section level2">
 <h2 id="analysis">Analysis<a class="anchor" aria-label="anchor" href="#analysis"></a>
 </h2>
 <p>This workstream leans heavily on the
-<code>EnvironmentalBasedSample</code> workflow, and passes it’s final
+<code>EnvironmentalBasedSample</code> workflow and passes its final
 objects off to <code>PolygonBasedSample</code> for completion. Please
 review <code>Species Distribution Models</code> and
-<code>Getting Started</code> before proceeding here.</p>
-<div class="section level3">
-<h3 id="data-prep">Data prep<a class="anchor" aria-label="anchor" href="#data-prep"></a>
-</h3>
+<code>Getting Started</code> before proceeding here. ### Data prep</p>
 <p>This workflow will require the <code>geodata</code> package;
-<code>geodata</code> is used for retrieving climate data from a variety
-of sources as raster data. In this vignette we will use <a href="https://www.worldclim.org/" class="external-link">Worldclim</a>. For most
-<code>safeHavens</code> users around the world this may be your ideal
-source for climate data. <code>geodata</code> is developed and
-maintained by Robert Hijman, similar to <code>terra</code>, and
-<code>dismo</code>, which are doing a ton of heavy lifting internally on
-our functions.</p>
+<code>geodata</code> is used to retrieve climate data from various
+sources as raster data. In this vignette, we will use <a href="https://www.worldclim.org/" class="external-link">Worldclim</a>. For most safeHavens
+users worldwide, this may be your ideal source of climate data.
+<code>geodata</code> is developed and maintained by Robert Hijman,
+similar to <code>terra</code>, and <code>dismo</code>, which are doing a
+ton of heavy lifting internally on our functions.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sagesteppe.github.io/safeHavens/">safeHavens</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
@@ -171,15 +165,15 @@ our functions.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">22</span><span class="op">)</span></span></code></pre></div>
-<p>For this example we will leverage data from GBIF, and shift our
-geographic focus to the Colorado Plateau in the Southwestern USA. The
-Colorado Plateau is predicted to experience some of the highest rates of
-climate change on the planet, and is already an area with considerably
-native seed development activities. For our focal species we will use
+<p>For this example, we will leverage GBIF data and shift our geographic
+focus to the Colorado Plateau in the Southwestern USA. The Colorado
+Plateau is predicted to experience some of the highest rates of climate
+change on the planet, and is already an area with considerable native
+seed development activities. For our focal species, we will use
 <em>Helianthella microcephala</em> for no other reason than that it
 exists in relatively homogenous portions of the Colorado Plateau -
 meaning we can download relatively coarse rasters for the vignettes, and
-that it has a <em>stunning</em> inflorescence.</p>
+that it has a stunning inflorescence.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>cols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'decimalLatitude'</span>, <span class="st">'decimalLongitude'</span>, <span class="st">'dateIdentified'</span>, <span class="st">'species'</span>, <span class="st">'acceptedScientificName'</span>, <span class="st">'datasetName'</span>, </span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="st">'coordinateUncertaintyInMeters'</span>, <span class="st">'basisOfRecord'</span>, <span class="st">'institutionCode'</span>, <span class="st">'catalogNumber'</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
@@ -226,13 +220,13 @@ that it has a <em>stunning</em> inflorescence.</p>
 <span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a>bmap <span class="sc">+</span></span>
 <span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">'Helianthella microcephala</span><span class="sc">\n</span><span class="st">occurrence records'</span>)</span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/Download%20species%20occurrence%20data-1.png" class="r-plt" alt="" width="700"></p>
-<p>We will download worldclim data using <code>geodata</code> the
-results from <code>worldclim_global</code> should be what we loaded from
-<code>dismo</code> in the various sloth examples.<br>
-For our future scenario we will use the <a href="https://wcrp-cmip.org/cmip-phases/cmip6/" class="external-link">CMIP6</a> modelled
+<p>We will download WorldClim data using <code>geodata</code>. The
+results from <code>worldclim_global</code> should match what we loaded
+from dismo in the various sloth examples. For our future scenario, we
+will use the <a href="https://wcrp-cmip.org/cmip-phases/cmip6/" class="external-link">CMIP6</a> modelled
 future climate data for the 2041-2060 time window. We will download the
-coarse 2.5 minute, ca ~70km at equator, resolution data. Do note that
-the source also includes a ~ 1km at equator resolution data set (30
+coarse 2.5-minute resolution data, ca. ~70km at the equator. Do note
+that the source also includes a ~1km at-equator resolution data set (30
 seconds), but this would take too long for the vignette.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Download WorldClim bioclim at ~10 km</span></span>
@@ -252,16 +246,16 @@ seconds), but this would take too long for the vignette.</p>
 <span></span>
 <span><span class="va">bio_current</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">bio_current</span>, <span class="va">bbox</span><span class="op">)</span></span>
 <span><span class="va">bio_future</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">bio_future</span>, <span class="va">bbox</span><span class="op">)</span></span></code></pre></div>
-<p><code>safeHavens</code> does not offer explicit functionality to
-rename / align the naming of raster surfaces. However, the modelling
-process requires that both current and future raster products have
-perfectly matching raster names.</p>
-<p>The chunk below shows how we will standardize the names by extracting
-the bioclim variable number, at the end of the name, and pad ‘bio_’ back
-onto the front of it with a leading zero so we have: ‘bio_01’ instead of
+<p><code>safeHavens</code> does not provide explicit functionality to
+rename / align raster surface naming. However, the modelling process
+requires that both current and future raster products have perfectly
+matching raster names.</p>
+<p>The chunk below shows how we will standardise the names by extracting
+the bioclim variable number at the end of the name and padding ‘bio_’
+back to the front with a leading zero, so we have ‘bio_01’ instead of
 ‘bio_1’. A minor variation of this should work for most data sources,
-after customizing the <code>gsub</code> to erase earlier portions of the
-file name.</p>
+after customising the gsub to erase earlier portions of the file
+name.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>simplify_names <span class="ot">&lt;-</span> <span class="cf">function</span>(x){</span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">'bio_'</span>, <span class="fu">sprintf</span>(<span class="st">"%02d"</span>, <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">'</span><span class="sc">\\</span><span class="st">D+'</span>,<span class="st">''</span>, <span class="fu">names</span>(x)))))</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>}</span>
@@ -284,34 +278,30 @@ file name.</p>
 <span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a></span>
 <span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>bio_current <span class="ot">&lt;-</span> <span class="fu">subset</span>(bio_current, <span class="at">negate =</span> <span class="cn">TRUE</span>, drops)</span>
 <span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>bio_future <span class="ot">&lt;-</span> <span class="fu">subset</span>(bio_future, <span class="at">negate =</span> <span class="cn">TRUE</span>, drops)</span></code></pre></div>
-<p>If you are following the vignette along locally and decided to
-<code>plot(bio_current)</code> and <code>plot(bio_future)</code> you
-would find that they look very similar. While the plots look very
-similar, when showing one raster stack after another, we can diff the
-two products to see where the largest changes in geographic space will
-occur.</p>
+<p>If you are following the vignette locally, you will find that
+<code>plot(bio_current)</code> and <code>plot(bio_future)</code> look
+very similar. While the plots look very similar when showing one raster
+stack after another, we can diff the two products to see where the
+largest changes occur in geographic space.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pct_diff</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">{</span><span class="op">(</span><span class="op">(</span><span class="va">x</span> <span class="op">-</span> <span class="va">y</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="op">(</span><span class="va">x</span> <span class="op">+</span> <span class="va">y</span><span class="op">)</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span><span class="op">}</span></span>
 <span><span class="va">difference</span> <span class="op">&lt;-</span> <span class="fu">pct_diff</span><span class="op">(</span><span class="va">bio_current</span>, <span class="va">bio_future</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">difference</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/diff%20the%20raster%20layers%20to%20show%20areas%20of%20difference-1.png" class="r-plt" alt="" width="700"></p>
-<p>We see that variables have inconsistences in <em>where</em> they will
-change, and to what extent they will change. This mismatch of conditions
-will almost certainly lead to <em>novel</em> climate conditions - unique
-combinations not yet known to this species. This will be handled using
-MESS surfaces and a second stage clustering approach in the
-function.</p>
-</div>
+<p>We see that variables exhibit inconsistencies in where they change
+and to what extent. This mismatch of conditions will almost certainly
+lead to novel climate conditions - unique combinations not yet known to
+this species. This will be handled using MESS surfaces and a
+second-stage clustering approach in the function.</p>
 <div class="section level3">
 <h3 id="analytical-workstream">Analytical workstream<a class="anchor" aria-label="anchor" href="#analytical-workstream"></a>
 </h3>
 <p>The workflow for predictive provenance builds upon the
 <code>EnvironmentalBasedSample</code> workflow, relying on many of the
-same internal helpers, and user facing functions. Note that when using
-<code>elasticSDM</code> we need to specify the flag
-<code>pcnm = FALSE</code> to bypass fitting a model with PCNM surfaces -
-their is no analog for these under future scenarios so they must be
-dropped.</p>
+same internal helpers and user-facing functions. Note that when using
+<code>elasticSDM</code>, we need to specify <code>pcnm</code> = FALSE to
+bypass fitting a model with PCNM surfaces; there is no analogue for
+these in future scenarios, so they must be dropped.</p>
 </div>
 <div class="section level3">
 <h3 id="fit-sdm-and-rescale-raster-surfaces">Fit SDM and rescale raster surfaces<a class="anchor" aria-label="anchor" href="#fit-sdm-and-rescale-raster-surfaces"></a>
@@ -404,12 +394,13 @@ our species.</p>
 <span id="cb6-84"><a href="#cb6-84" tabindex="-1"></a><span class="dv">14</span>       PCNM9  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>  <span class="fl">0.00000000</span>        <span class="cn">NaN</span></span>
 <span id="cb6-85"><a href="#cb6-85" tabindex="-1"></a><span class="dv">15</span>       PCNM2  <span class="fl">0.00000000</span> <span class="sc">-</span><span class="fl">4.77088330</span> <span class="sc">-</span><span class="fl">4.77088330</span> <span class="sc">-</span><span class="fl">0.8660254</span></span>
 <span id="cb6-86"><a href="#cb6-86" tabindex="-1"></a><span class="dv">16</span>       PCNM1  <span class="fl">0.00000000</span>  <span class="fl">6.78260982</span>  <span class="fl">6.78260982</span>  <span class="fl">0.8660254</span></span></code></pre></div>
-<p>We will use the eSDM_model function for this workstream, however is
-is essential that PCNM is set to FALSE. There is no way to forecast of
-predict PCNM to future scenarios, so we cannot fit models with it.</p>
-<p>If a warning is emitted here it is likely due to collinearity in the
-bioclim variables. Rather than using <code>eDist</code> from sdm for
-generating background points we will use the <code>eRandom</code> method
+<p>We will use the eSDM_model function for this workstream; however, it
+is essential that PCNM is set to FALSE. There is no way to forecast or
+predict PCNM for future scenarios, so we cannot fit models with it.</p>
+<p>If a warning is emitted here, it is likely due to collinearity in the
+bioclim variables. The function will internally dro- collinear
+predictors to try and maintain <code>eDist</code> usage (just for this
+step), but if this fails will fall back to the eRandom method
 instead.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">eSDM_model</span><span class="op">$</span><span class="va">ConfusionMatrix</span><span class="op">$</span><span class="va">byClass</span><span class="op">[</span></span>
@@ -441,17 +432,17 @@ instead.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">eSDM_model</span><span class="op">$</span><span class="va">RasterPredictions</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/current%20sdm%20threshold%20results-1.png" class="r-plt" alt="" width="700"></p>
-<p>We can view some of the results for the model, it is OK, but would
-benefit from using only a subset of the bioclim predictors to allow for
-<code>eDist</code> sampling upstream. It is a bit too generous with
-classifying areas as being possible suitable habitat. While this model
-would be unsuitable for applications, certain CRAN and Github checks
+<p>We can view some of the model results; they are OK, but would benefit
+from using only a subset of the bioclim predictors to allow for
+<code>eDist</code> sampling upstream. It is a bit too generous in
+classifying areas as being possibly suitable habitat. While this model
+would be unsuitable for applications, certain CRAN and GitHub checks
 make it difficult to improve upon as an example.</p>
-<p>Using the beta-coefficients from the model we will rescale both the
-current and future climate scenarios rasters. This will happen
-internally in the next function, but it is good to see the different
-between the current and future scenarios to have an idea of expectations
-for the final results.</p>
+<p>Using the beta coefficients from the model, we will rescale both the
+current and future climate scenario rasters. This will happen internally
+in the next function, but it is good to see the difference between the
+current and future scenarios to have an idea of expectations for the
+final results.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bio_current_rs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters.html">RescaleRasters</a></span><span class="op">(</span></span>
 <span>    model <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">Model</span>, </span>
@@ -474,11 +465,11 @@ for the final results.</p>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">bio_future_rs</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/rescale%20rasters-2.png" class="r-plt" alt="" width="700"></p>
-<p>If any of the layers show as a single color, and 0, it means that
-glmnet shrunk them from the model.</p>
+<p>If any of the layers show as a single colour and 0, it means that
+glmnet shrunk them out of the model.</p>
 <p>Similar to how we differenced the rasters at the two time points
-above, we can take the absolute difference of the relevant raster layers
-to see where the largest changes will be.</p>
+above, we can take the absolute difference between the relevant raster
+layers to see where the largest changes occur.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">difference_rs</span> <span class="op">&lt;-</span> <span class="fu">pct_diff</span><span class="op">(</span><span class="va">bio_current_rs</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="va">bio_future_rs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">difference_rs</span><span class="op">)</span></span></code></pre></div>
@@ -489,12 +480,12 @@ current and predicted conditions.</p>
 <div class="section level3">
 <h3 id="cluster-surfaces">Cluster surfaces<a class="anchor" aria-label="anchor" href="#cluster-surfaces"></a>
 </h3>
-<p>Clusters can be identified using NbClust, allowing it to determine
-the optimal <em>n</em> using the METHOD. To use NbClust, rather than
-manually specifying <em>n</em>, the argument <code>fixedClusters</code>
-needs to be set to <code>FALSE</code>. When using PostProcessSDM the
-same threshhold metric should be used that will be applied to
-<code>PredictiveProvenance</code>.</p>
+<p>Clusters can be identified using NbClust, which determines the
+optimal n using the <code>complete</code> consensus method. To use
+NbClust, rather than manually specifying n, the argument
+<code>fixedClusters</code> needs to be set to FALSE. When using
+<code>PostProcessSDM</code>, the same <code>thresh metric</code> should
+be used as the one applied to <code>PredictiveProvenance</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
 <span>  rast_cont <span class="op">=</span> <span class="va">eSDM_model</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
@@ -529,11 +520,12 @@ same threshhold metric should be used that will be applied to
 <span>    <span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">hemi</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/identify%20current%20clusters-2.png" class="r-plt" alt="" width="700"></p>
-<p>We will make the EnvironmentalBasedSample to find a suitable number
-of climate clusters at the current time period. When using EBS for
-predictive provencing also set the coord_wt parameter to a small value.
-This will remove the effect of the spatial clustering. Similar to PCNM,
-we cannot know the distribution of actual populations in the future.</p>
+<p>We will use the <code>EnvironmentalBasedSample</code> to determine a
+suitable number of climate clusters for the current time period. When
+using EBS for predictive provencing also set the <code>coord_wt</code>
+parameter to a small value. This will remove the effect of the spatial
+clustering. Similar to PCNM, we cannot know the distribution of actual
+populations in the future.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ENVIbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EnvironmentalBasedSample.html">EnvironmentalBasedSample</a></span><span class="op">(</span></span>
 <span>  pred_rescale <span class="op">=</span> <span class="va">bio_current_rs</span><span class="op">$</span><span class="va">RescaledPredictors</span>, </span>
@@ -559,8 +551,8 @@ we cannot know the distribution of actual populations in the future.</p>
 <p><img src="PredictiveProvenance_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can apply the current clustering to the future scenario. This will
 show us how and where the currently identified clusters would exist in
-future geographic space. <code>ProjectClusters</code> is really the
-whole heart of this workflow, it requires the outputs from
+the future geographic space. <code>ProjectClusters</code> is really the
+heart of this workflow; it requires the outputs from
 <code>elasticSDM</code>, <code>PostProcessSDM</code>, and
 <code>EnvironmentalBasedSample</code>.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
@@ -601,12 +593,11 @@ whole heart of this workflow, it requires the outputs from
  
  
 ******************************************************************* </code></pre>
-<p>However, our classifications cannot accomodate new climate
-conditions. We can identify these areas, which are outside of the
-training conditions for our SDM using MESS. Note that in these areas our
-SDM <em>is</em> extrapolating, so it’s performance cannot be evaluated.
-However, it seems that these will possibly be suitable habitat, and we
-can try to plan for that scenario.</p>
+<p>However, our classifications cannot accommodate new climate
+conditions. We can identify these areas outside the training conditions
+for our SDM using MESS. Note that in these areas, our SDM is
+extrapolating, so its performance cannot be evaluated. However, it seems
+these may be suitable habitats, and we can plan for that scenario.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">future_clusts</span><span class="op">$</span><span class="va">mess</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-1.png" class="r-plt" alt="" width="700"></p>
@@ -617,8 +608,8 @@ can try to plan for that scenario.</p>
 <span>    fill <span class="op">=</span> <span class="st">'red'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'MESS regions'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-2.png" class="r-plt" alt="" width="700"></p>
-<p>Once we identify these areas, if they are sufficiently large we can
-pass them to a new NbClust scenario and it can cluster them anew.</p>
+<p>Once we identify these areas, if they are sufficiently large, we can
+pass them to a new NbClust scenario, and it can cluster them anew.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">current</span> <span class="op">=</span> <span class="va">bmap</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ENVIbs</span><span class="op">$</span><span class="va">Geometry</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -633,10 +624,9 @@ pass them to a new NbClust scenario and it can cluster them anew.</p>
 <p><img src="PredictiveProvenance_files/figure-html/identify%20additional%20clusters%20under%20future%20climate-1.png" class="r-plt" alt="" width="700"></p>
 <p>However, we also need to determine which current areas are most
 similar to these novel climate clusters. We can take values from both
-classifcation scenarios, and cluster them, and identify which new
-climate clusters share branches with existing clusters. This is the
-method we employ to identify the most similar existing climate
-groups.</p>
+classifcation scenarios, cluster them, and identify which new climate
+clusters share branches with existing clusters. This is the method we
+employ to identify the most similar existing climate groups.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">future_clusts</span><span class="op">$</span><span class="va">novel_similarity</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -664,9 +654,9 @@ groups.</p>
 </tbody>
 </table>
 <p>It is from these groups that we are most likely to collect germplasm
-relevant for the future scenarios.</p>
+relevant to the future scenarios.</p>
 <p>We can also take a very quick look at how cluster sizes change
-between the scenarios</p>
+between the scenarios.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>changes</span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km</span>
 <span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>       <span class="fl">264999.735</span>      <span class="fl">164724.097</span>       <span class="sc">-</span><span class="fl">37.83990</span>         <span class="fl">105.49128</span></span>
@@ -683,17 +673,17 @@ between the scenarios</p>
 <h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
 </h2>
 <p>All functions in <code>safeHavens</code> work to identify areas where
-populations have the potential to maximize the coverage of neutral and
-allelic (genetic) diversity across the species. Large scale restoration
-requires the availability of seed sources as the need, and funding
-opportunities arise to use them. Developping germplasm materials from
-populations that seem adapted to future climate conditions is essential
-for future opportunities. While this function does not in any way seek
-to identify the best available seed source for a restoration, ala SST or
-COSST, it does seek to ensure that the best available option can be
-timely applied as the occasion arises.</p>
-<p>This is of particular importance for areas that are not able to plan
-restorations and develop their own seed sources using point-based
+populations have the potential to maximise the coverage of neutral and
+allelic (genetic) diversity across the species. Large-scale restoration
+requires the availability of seed sources and funding opportunities to
+use them. Developing germplasm materials from populations that seem
+adapted to future climate conditions is essential for future
+opportunities. While this function does not in any way seek to identify
+the best available seed source for a restoration, ala SST, it does seek
+to ensure that the best available option can be applied in a timely
+manner as the occasion arises.</p>
+<p>This is particularly important for areas that cannot plan
+restorations or develop their own seed sources using point-based
 analyses.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

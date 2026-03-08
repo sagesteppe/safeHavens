@@ -1,7 +1,6 @@
 # Rare Species Sampling Schema
 
-`safeHavens` offers only one function that operates explictly on
-population level data.
+`safeHavens` includes one function for population-level data.
 
 ## prepare data
 
@@ -14,8 +13,8 @@ library(patchwork)
 set.seed(99)
 ```
 
-We will use the Bradypus data included in the `dismo` package for this
-vignette.
+For this vignette, we will use the Bradypus data included in the `dismo`
+package.
 
 ``` r
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
@@ -23,20 +22,22 @@ x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
 ```
 
-And we will create the same base map used in `GettingStarted`, note this
-chunk is ‘hidden’ in the rendered man pages, but present in the raw
-vignette documents.
+We will now create the same base map used in the `GettingStarted`
+example. While this chunk is ‘hidden’ in the rendered man pages, it
+remains present in the raw vignette documents.
 
     Warning: attribute variables are assumed to be spatially constant throughout
     all geometries
 
-While all other functions in the package handle `sf` objects directly,
-this function will actually just use a simple data.frame of sites, to
-streamline making a couple calculations.
+Unlike other functions in the package that use sf objects, this function
+instead uses a simple site data frame for more efficient calculations.
 
-The input to the `KMedoidsBasedSample` function is a list with two
-elements: a distance matrix, and a data frame of site locations and
-attributes. The data frame must contain the following columns.
+The `KMedoidsBasedSample` function requires a list as input, consisting
+of two elements: (1) a distance matrix, and (2) a data frame containing
+site locations and relevant attributes. Ensure both elements are present
+when calling this function. The required columns in the data frame are:
+site_id, coord_uncertainty, lon, and lat. Please verify your data frame
+includes each of these columns to ensure proper function performance.
 
 ``` r
 n_sites <- nrow(x) 
@@ -60,15 +61,16 @@ knitr::kable(head(df))
 |       5 | FALSE    |                 0 | -63.8500 | -17.4000 |
 |       6 | FALSE    |                 0 | -64.4167 | -16.0000 |
 
-The second required element, the distance matrix, can be calculated with
-the `greatCircleDistance` function in the package. Please use this
-rather than `st_distance` from `sf` for consistency, as the units differ
-slightly. If you want to use
+The distance matrix, which is the second required element of the input
+list, can be generated using the `greatCircleDistance` function from
+this package. Use this instead of
+[`sf::st_distance`](https://r-spatial.github.io/sf/reference/geos_measures.html)
+to keep unit consistency, as the units differ. If using
 [`sf::st_distance`](https://r-spatial.github.io/sf/reference/geos_measures.html),
-make sure to convert the units to match the scale of the
-`greatCircleDistance` function, otherwise the results will be incorrect.
-Note that you can also use an environmental distance matrix from the
-first two axes of a PCA, this is detailed below.
+always convert the units to match those of `greatCircleDistance` to
+ensure correct results. As an alternative, you can use an environmental
+distance matrix derived from the first two axes of a PCA, as described
+in more detail below.
 
 ``` r
 dist_mat <- sapply(1:nrow(df), function(i) {
@@ -79,14 +81,13 @@ dist_mat <- sapply(1:nrow(df), function(i) {
  })
 ```
 
-The optimization routine requires at least one ‘required’ site to be
-specified. Here we will select the site closest to the geographic center
-of all sites as the required site.
+The optimisation routine requires at least one specified site. Here, we
+will select the site location closest to the geographic centre of all
+sites as the required site.
 
-Normally this can refer to existing accessions, or administrative units,
-or nature preserves which are helping to implement the germplasm
-collection, and are fortunate enough to already have some samples or at
-least guaranteed access.
+Normally, this refers to existing accessions, administrative units, or
+nature preserves that support the germplasm collection by already
+possessing samples or guaranteed access.
 
 ``` r
 dists2c <- greatCircleDistance(
@@ -98,11 +99,11 @@ dists2c <- greatCircleDistance(
 df[order(dists2c)[1],'required'] <- TRUE
 ```
 
-This function not only bootstraps sites to simulate the true
-distribution of the species, but it also bootstraps coordinate
-uncertainty for each site. Here we will randomly assign 20% of the sites
-to have coordinate uncertainty between 1 km and 40 km. Note that he
-argument is always in meters.
+This function bootstraps sites to simulate the species’ true
+distribution and bootstraps coordinate uncertainty for each site. Here,
+we will randomly assign 20% of the sites to have coordinate uncertainty
+ranging from 1 km to 40 km. Coordinate uncertainty is always measured in
+meters.
 
 ``` r
 uncertain_sites <- sample(
@@ -115,7 +116,7 @@ df$coord_uncertainty[uncertain_sites] <- runif(length(uncertain_sites), 1000, 40
 
 ## Run KMedoidsBasedSample based only on geographic distances
 
-The input to the function is the distance matrix, and the site data.
+The function takes two inputs: a distance matrix and site data.
 
 ``` r
 test_data <- list(
@@ -134,7 +135,7 @@ List of 2
   ..$ lat              : num [1:116] -10.4 -10.4 -16.8 -17.4 -17.4 ...
 ```
 
-The funtion `KMedoidsBasedSample` has several arguments used to control
+The function `KMedoidsBasedSample` has several arguments used to control
 run parameters.
 
 ``` r
@@ -156,16 +157,21 @@ Sites: 116 | Seeds: 1 | Requested: 5 | Coord. Uncertain: 19 | BS Replicates: 10
   |                                                                              |                                                                      |   0%  |                                                                              |=======                                                               |  10%  |                                                                              |==============                                                        |  20%  |                                                                              |=====================                                                 |  30%  |                                                                              |============================                                          |  40%  |                                                                              |===================================                                   |  50%  |                                                                              |==========================================                            |  60%  |                                                                              |=================================================                     |  70%  |                                                                              |========================================================              |  80%  |                                                                              |===============================================================       |  90%  |                                                                              |======================================================================| 100%
 ```
 
-The function operates relatively quick with few bootstraps and few
-sites, but will take a smidge of time longer with more complex
-scenarios. We recommened using at least 999 bootstraps for real world
-applications.
+The function runs quickly with a few bootstrap or site samples, but it
+will take longer with more complex scenarios. We recommend using at
+least 999 bootstraps for real-world applications.
 
 ``` r
-st
-   user  system elapsed 
- 25.530   0.026  25.564 
+knitr::kable(st)
 ```
+
+|            |      x |
+|:-----------|-------:|
+| user.self  | 26.797 |
+| sys.self   |  0.053 |
+| elapsed    | 26.858 |
+| user.child |  0.000 |
+| sys.child  |  0.000 |
 
 ### return output structure
 
@@ -198,7 +204,7 @@ List of 5
   ..$ n_uncertain : int 19
 ```
 
-The stability score shows how often the most frquently selected network
+The stability score shows how often the most frequently selected network
 of sites was selected from the bootstrapped runs.
 
 ``` r
@@ -209,8 +215,8 @@ knitr::kable(head(geo_res$stability_score))
 |----:|
 | 0.2 |
 
-The stability data frame shows how often each site was selected across
-all bootstrap runs.
+The stability data frame records how many times each site is selected
+during all bootstrap runs.
 
 ``` r
 knitr::kable(head(geo_res$stability))
@@ -225,8 +231,8 @@ knitr::kable(head(geo_res$stability))
 | 100 |     100 |               20 | FALSE   |
 | 6   |       6 |               16 | FALSE   |
 
-Many users may find the combindation of their input data with a few
-columns, to be all they need to carry on after the results.
+Many users may find that combining their input data with a few columns
+is all they need to continue after the results.
 
 ``` r
 knitr::kable(head(geo_res$input_data))
@@ -251,9 +257,9 @@ knitr::kable(head(geo_res$settings))
 |--------:|------------:|-------------:|------------:|
 |       5 |          10 |          0.1 |          19 |
 
-### visualize the selection results
+### visualise the selection results
 
-We can plot the required, and selected sites.
+We can plot the required and selected site locations.
 
 ``` r
 map + 
@@ -273,10 +279,11 @@ map +
 
 ![](RareSpecies_files/figure-html/first%20selection%20of%20target%20sites-1.png)
 
-As you can see, a couple alternative sites in very close proximity to
-the selected sites also score highly. Functionally, these could serve as
-subtitutes for the target sites. What is important is that these
-combinations are found and articulated in the results.
+As you can see, a couple of alternative sites in very close proximity to
+the selected sites also score highly. These alternatives could be used
+as substitutes for the target sites. What is important is that these
+combinations are found and articulated in the results for site
+locations.
 
 ``` r
 map + 
@@ -295,23 +302,24 @@ map +
 
 ![](RareSpecies_files/figure-html/priority%20ranking%20plot-1.png)
 
-Because we believe that as many populations should be sampled as *can*
-be sampled, we include a ‘priority’ ranking with the results. Focus
-should be on the selected sites, but opportunities to sample beyond
-these should not be overlooked.
+Because we believe that as many populations as possible should be
+sampled, we include a ‘priority’ ranking with the results. The focus
+should be on the selected sites, but opportunities to sample beyond them
+should not be overlooked.
 
 ## run KMedoidsBasedSample with environmental distances
 
 As mentioned, instead of using geographic distance, we can use
-environmental distance ordinated into two dimensional space. An analyst
-should only consider the use of variables they know relevant to the
-species distrubution for this. However, for the sake of the example we
-will feed in the full stack of environmental variables available from
-the dismo package.
+environmental distance, which is ordinated in a two-dimensional space.
+An analyst should only consider variables they know are relevant to the
+species distribution for this purpose. However, for the sake of the
+example, we will feed in the full stack of environmental variables
+available from the dismo package.
 
 ### extract prep environmental distances
 
-First we read in the rasters.
+First, to facilitate environmental distance calculations, we read in the
+required raster layers.
 
 ``` r
 files <- list.files(
@@ -324,9 +332,8 @@ rm(files)
 For our environmental distances, we will use a PCA transformation of the
 environmental variables. We will sample 100 random points from the
 raster layers to calculate the PCA, and then predict the PCA raster
-layers across the entire study area. We will take the only the first two
-layers, from the pca, and calculate environmental distances based on
-these two layers.
+layers across the entire study area. We will take only the first two
+layers from the PCA and calculate environmental distances based on them.
 
 ``` r
 pts <- terra::spatSample(predictors, 100, na.rm = TRUE)
@@ -338,8 +345,8 @@ round(pca_results$sdev^2 / sum(pca_results$sdev^2), 2) # variance explained
 pca_raster <- terra::predict(predictors, pca_results)
 ```
 
-From the above we see that the first two PCA axes explain a large amount
-of the variance observed in this landscape.
+From the above, we see that the first two PCA axes account for a large
+portion of the variance observed in this landscape.
 
 ``` r
 terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a new raster
@@ -347,10 +354,11 @@ terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a ne
 
 ![](RareSpecies_files/figure-html/plot%20pca%20layers-1.png)
 
-We keep the first two PCA layers for environmental distance calculation.
-More layers will increase dimensionality, and may lead to less useful
-results. Note that it’s fine to use a euclidean distance calculation for
-these, as the values are truly in the position of the pca plot.
+We keep the first two PCA layers for calculating the environmental
+distance. Including more layers increases dimensionality and may reduce
+the usefulness of the results. Note that it’s fine to use a Euclidean
+distance calculation for these, as the values are truly in the position
+of the pca plot.
 
 ``` r
 env_values <- terra::extract(pca_raster, 
@@ -377,7 +385,7 @@ env_dist_mat <- as.matrix(
 ```
 
 Similar to the above run with geographic distances, we create our input
-object, and run the function.
+object and run the function.
 
 ``` r
 test_data <- list(
@@ -412,9 +420,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 33.621 |
-| sys.self   |  0.002 |
-| elapsed    | 33.627 |
+| user.self  | 35.192 |
+| sys.self   |  0.001 |
+| elapsed    | 35.203 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
@@ -428,13 +436,13 @@ knitr::kable(head(env_res$stability_score))
 |----:|
 | 0.2 |
 
-The overall stability score is similar to from the geographic score.
-When you view the plots you will see that a handful of sites in close
-proximity to the selected sites would have served as nearly equivanently
-suitable substitutes. A few areas have dropped out of priority sampling
-based on this method, but in general the results are pretty similar -
-the relationship between geographic and environmental distance is
-somewhat strong in this landscape.
+The overall stability score is similar to that of the geographic score.
+When you view the plots, you will see that a handful of sites in close
+proximity to the selected sites would have served as nearly equivalent
+substitutes. A few areas have dropped out of priority sampling based on
+this method, but in general, the results are pretty similar - the
+relationship between geographic and environmental distance is somewhat
+strong in this landscape.
 
 ``` r
 map + 
@@ -452,18 +460,18 @@ map +
   labs(title = 'Priority Selection Status of Sites; Environmental')
 ```
 
-![](RareSpecies_files/figure-html/unnamed-chunk-13-1.png)
+![](RareSpecies_files/figure-html/unnamed-chunk-12-1.png)
 
 ## alternative methods for required central points
 
-In the example above we use a point at the median geographic center of
-the populations.
+In the example above, we use a point at the median geographic centre of
+the population.
 
-We can also identify the population which is *most* near the highest
-density of populations. Intuitively, this would be suggested as a
-population with a high amount of genetic diversity for the species,
-although it is unlikely to have accumulated considerably local changes
-as the effects of drift are overcome by more frequent dispersal.
+We can also identify the population with the highest population density.
+Intuitively, this would suggest a population with high genetic diversity
+for the species, although it is unlikely to have accumulated substantial
+local changes, as the effects of drift are overcome by more frequent
+dispersal.
 
 ``` r
 dens <- with(df, MASS::kde2d(lon, lat, n = 200))
@@ -476,8 +484,8 @@ pop_centered_id <- which.min(rowSums(abs(pops_centre^2)))
 rm(dens, max_idx, max_point, pops_centre)
 ```
 
-Alternatively we can identify the *population* which is most near the
-‘center’ of the environmental variable space.
+Alternatively, we can identify the population which is closest to the
+‘centre’ of the environmental variable space.
 
 ``` r
 env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
@@ -486,10 +494,10 @@ env_centered_id <- which.min(rowSums(abs(env_centered^2)))
 rm(env_values)
 ```
 
-Personally I would consider the ‘pop centered’ population to be the most
-important required site to center a design off of. However, it can
-suffer from sampling bias, and you may want to sense check that the
-recorded populations are de-duplicated to accomodate this reality.
+Personally, I would consider the ‘pop-centred’ population to be the most
+important site to centre a design. However, it can suffer from sampling
+bias, and you may want to check that the recorded populations are
+deduplicated to account for this.
 
 ``` r
 # geographic centroid was pt 47

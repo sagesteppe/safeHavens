@@ -134,14 +134,11 @@ same species.</p>
 <div class="section level3">
 <h3 id="defining-a-species-range-or-domain-for-sampling">Defining a Species Range or Domain for Sampling<a class="anchor" aria-label="anchor" href="#defining-a-species-range-or-domain-for-sampling"></a>
 </h3>
-<p>Central to the sampling schemes in <code>safeHavens</code> is a
-species range, or domain, for sampling. For example, depending on the
-goals of the collection, a curator may want to sample across the entire
-range of a species. Alternatively one may be interested in sampling only
-a portion of the range, e.g. a country, state, or ecoregion. Either of
-these scenarios can be supported by package. Here we will show how to
-create a species range from occurrence data, and then use that range for
-the various sampling schemes.</p>
+<p>The core of <code>safeHavens</code> sampling schemes is the species
+range or domain. Curators can sample across the entire range or focus on
+a region, such as a country or ecoregion. Both approaches are supported.
+We show how to use occurrence data to define species ranges across
+various sampling schemes.</p>
 <p>Below we will use <code>sf</code> to simply buffer occurrence points
 to create a species range across multiple South American nations.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -157,10 +154,9 @@ to create a species range across multiple South American nations.</p>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x_buff</span><span class="op">)</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Just%20Buffer%20it!-1.png" class="r-plt" alt="" width="700"></p>
-<p>Alternatives to this include a simple convex hull around a species,
-if it is widespread throughout an area (see ‘Worked Example’ for an
-example), or masking a binary SDM surface as the domain (see below, and
-‘Species Distribution Model’).</p>
+<p>Alternatives include creating a convex hull for widespread species
+(see ‘Worked Example’) or masking a binary SDM surface as the domain
+(see below and ‘Species Distribution Model’).</p>
 </div>
 <div class="section level2">
 <h2 id="prep-a-base-map">Prep a base map<a class="anchor" aria-label="anchor" href="#prep-a-base-map"></a>
@@ -262,12 +258,13 @@ reproduced here.</p>
 environmental complexity respectively, and range from low (L) through
 medium to high.</em></p>
 <div class="section level3">
-<h3 id="point-based-sample">Point Based Sample<a class="anchor" aria-label="anchor" href="#point-based-sample"></a>
+<h3 id="pointbasedsample">PointBasedSample<a class="anchor" aria-label="anchor" href="#pointbasedsample"></a>
 </h3>
-<p><code>PointBasedSample</code> simply samples a grid of regularly
-space points across the domain, and assigns the areas nearest to each
-point to a cluster. It will work very well for common species without
-many gaps in their distributions.</p>
+<p><code>PointBasedSample</code> selects a set of regularly spaced
+points across the domain and assigns each point’s cluster to the area
+nearest to it. This strictly spatial approach relies on even spacing as
+its main differentiator. It will work very well for common species
+without many gaps in their distributions.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PointBasedSample.html">PointBasedSample</a></span><span class="op">(</span><span class="va">x_buff</span>, reps <span class="op">=</span> <span class="fl">50</span>, BS.reps <span class="op">=</span> <span class="fl">333</span><span class="op">)</span></span>
 <span><span class="va">pbs.sf</span> <span class="op">&lt;-</span> <span class="va">pbs</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span></span>
@@ -282,23 +279,21 @@ many gaps in their distributions.</p>
 <p><img src="GettingStarted_files/figure-html/Point%20Based%20Sample-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level3">
-<h3 id="equal-area-sample">Equal Area Sample<a class="anchor" aria-label="anchor" href="#equal-area-sample"></a>
+<h3 id="equalareasample">EqualAreaSample<a class="anchor" aria-label="anchor" href="#equalareasample"></a>
 </h3>
-<p>Perhaps the simplest method which is offered in
-<code>safeHavens</code> is <code>EqualAreaSample</code>. It creates many
-points, <code>pts</code> defaulting to 5000, within our target domain
-and subjects them to k-means clustering where the groups are specified
-by <code>n</code>, our target number of collections. The individual
-points assigned to each group are merged into polygons which ‘take’ up
-all of the geographic space, and are intersected back to the species
-range, and the area of each polygon is then measured. This process will
-be ran a few times, defaulting to 100 <code>reps</code>, and the set of
-polygons which was created during these reps with the smallest variance
-in polygon size will be selected and returned.</p>
-<p>This differs from point based sampling in that the above instance, we
-start with a few regularly spaced points to grow from, here we take a
-step back and by using many points let the clusters grow themselves to
-similar sizes.</p>
+<p>Perhaps the simplest method offered in safeHavens is
+<code>EqualAreaSample</code>. It creates many points (<code>pts</code>,
+defaulting to 5000) within our target domain and subjects them to
+k-means clustering, where the groups are specified by <code>n</code>,
+our target number of collections. Points in each group are merged into
+polygons that fill the geographic space, intersected with the species’
+range, and their areas are measured. This runs multiple times (default:
+100 reps), and the set with the smallest variance in polygon size is
+selected</p>
+<p>This process stands apart from point-based sampling: instead of
+growing clusters from a set of regular points, EqualAreaSample uses many
+input points and relies on area-balancing clustering. This allows for
+more equally sized regions.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eas</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/EqualAreaSample.html">EqualAreaSample</a></span><span class="op">(</span><span class="va">x_buff</span>, planar_proj <span class="op">=</span> <span class="va">planar_proj</span><span class="op">)</span> </span>
 <span></span>
@@ -309,21 +304,20 @@ similar sizes.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
 <span><span class="va">eas.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png" class="r-plt" alt="" width="700"></p>
-<p>The results look quite similar to point based sample.</p>
+<p>The results look quite similar to <code>PointBasedSample</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="opportunistic-sample">Opportunistic Sample<a class="anchor" aria-label="anchor" href="#opportunistic-sample"></a>
+<h3 id="opportunisticsample">OpportunisticSample<a class="anchor" aria-label="anchor" href="#opportunisticsample"></a>
 </h3>
 <p>Users may be interested in how they can embed their existing
 collections into a sampling framework. The function
 <code>OpportunisticSample</code> makes a few minor modifications to the
-point based sample to and designs it around existing collections It
-doesn’t always work exceptionally, especially when a couple collections
-are very close to each other, but as the old saying goes “a bird in hand
-is worth two in the bush”. As we have observed, the previous sampling
-schemes have somewhat similar results - so we used the
-<code>PointBasedSample</code> as the framework to embed into this
-function.</p>
+point-based sample and designs it around existing collections. It may
+not perform well if collections are close together, but, as the saying
+goes, “a bird in hand is worth two in the bush”. As we have observed,
+the previous sampling schemes have produced somewhat similar results, so
+we used the <code>PointBasedSample</code> as the framework for embedding
+in this function.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">exist_pts</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_sample.html" class="external-link">st_sample</a></span><span class="op">(</span><span class="va">x_buff</span>, size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>   <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># ^^ randomly sampling 10 points in the species range</span></span>
@@ -348,9 +342,11 @@ but <em>a bird in hand is worth two in the bush.</em></p>
 <h3 id="isolation-by-distance-based-sample">Isolation by Distance Based Sample<a class="anchor" aria-label="anchor" href="#isolation-by-distance-based-sample"></a>
 </h3>
 <p>Isolation by Distance is the fundamental idea behind this package.
-This function explicitly uses IBD to develop a sampling scheme, and does
-not obfuscate it with any other parameters.</p>
-<p>Note that this function requires a raster, rather than vector,
+This function applies Isolation by Distance (IBD) without added
+parameters, creating clusters based solely on spatial genetic structure,
+not geographic spacing or area balancing, which distinguishes it from
+previous methods.</p>
+<p>Note that this function requires a raster, rather than a vector,
 input.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span> </span>
@@ -390,19 +386,17 @@ input.</p>
 <span></span>
 <span><span class="va">ibdbs.p</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Isolatation%20by%20Distance%20Example-1.png" class="r-plt" alt="" width="700"></p>
-<p>Because these data were processed from a raster, they have 90 corners
-and large straight lines, representing raster tiles. Regardless, it is
-evident that the <em>borders</em> of the clusters are more natural
-looking than in the previous (and future) sampling schemes, and we have
-better matching of the individual polygons into single classes.</p>
+<p>Because results are derived from rasters, clusters have straight
+lines and 90-degree corners. Despite the raster effects, cluster borders
+look more natural, and polygons align better with classes than previous
+methods.</p>
 </div>
 <div class="section level3">
-<h3 id="isolation-by-resistance">Isolation by resistance<a class="anchor" aria-label="anchor" href="#isolation-by-resistance"></a>
+<h3 id="isolation-by-resistance">Isolation by Resistance<a class="anchor" aria-label="anchor" href="#isolation-by-resistance"></a>
 </h3>
-<p>This workflow requires a couple steps to enact. We have a vignette
-dedicated to detailing them at <code>Isolation by Resistance</code> -
-check it out! Here we will just load the data that you will get if you
-run that vignette.</p>
+<p>This workflow requires a couple of steps. We have a dedicated
+vignette for Isolation by Resistance with full details. Here, we will
+just load the data you get when you run that vignette.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>ibr <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_read</span>(</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">system.file</span>(<span class="at">package=</span><span class="st">"safeHavens"</span>), <span class="st">'extdata'</span>, <span class="st">'IBR.gpkg'</span>), </span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
@@ -415,30 +409,29 @@ run that vignette.</p>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="polygon-based-sample">Polygon Based Sample<a class="anchor" aria-label="anchor" href="#polygon-based-sample"></a>
+<h3 id="polygonbasedsample">PolygonBasedSample<a class="anchor" aria-label="anchor" href="#polygonbasedsample"></a>
 </h3>
-<p>This is the most commonly implemented method for guiding native seed
-collection in North America. However, I am not sure exactly how
-practitioners all implement it, and whether the formats of application
-are consistent among practitioners! For these reasons a few different
-sets of options are supported for a user.</p>
-<p>For general usage, two parameters are always required <code>x</code>
+<p>This method is widely used for native seed collection in North
+America. However, I am not sure exactly how practitioners implement it,
+or whether the application formats are consistent among practitioners!
+For these reasons, a few different sets of options are supported for a
+user.</p>
+<p>For general usage, two parameters are always required <code>x</code>,
 which is the species range as an sf object, and <code>ecoregions</code>,
-the sf object containing the ecoregions of interest. The
-<code>ecoregions</code> file does not need to be subset to the range of
-<code>x</code> quite yet - the function will take care of that.
-Additional arguments to the function include as usual <code>n</code> to
-specify how many accession we are looking for in our collection. Two
-additional arguments relate to whether we are using Omernik Level 4
-ecoregions data or ecoregions (or biogeographic regions) from another
-source. These are <code>OmernikEPA</code>, and
-<code>ecoregion_col</code>, if you are using the official EPA release of
-ecoregions then both of these are optional, however if you are not using
-the EPA product than both <em>should</em> be supplied - but only the
-<code>ecoregion_col</code> argument is totally necessary. This column
-should contain unique names for the highest resolution level ecoregion
-you want to use from the data set, for many data sets, such as our
-example we call ‘neo_eco’ this may be the only field with ecolevel
+the sf object containing the ecoregions of interest. The ecoregions file
+does not need to be subset to the range of x quite yet - the function
+will take care of that. Additional arguments to the function include, as
+usual, <code>n</code>, which specifies how many accessions we are
+looking for in our collection. Two additional arguments relate to
+whether we are using Omernik Level 4 ecoregions data or ecoregions (or
+biogeographic regions) from another source. These are
+<code>OmernikEPA</code> and <code>ecoregion_col</code>. If you are using
+the official EPA release of ecoregions, then both of these are optional.
+If you are not using the EPA product, then both should be supplied, but
+only the <code>ecoregion_col</code> argument is totally necessary. This
+column should contain the unique name of the highest-resolution
+ecoregion you want to use from the dataset. For many data sets, such as
+our example, we call ‘neo_eco’; this may be the only field with ecolevel
 information!</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">neo_eco</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span></span>
@@ -504,23 +497,23 @@ information!</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ebs.sf</span> , <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">allocation</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Ecoregion'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span></code></pre></div>
-<p>This output differs from the others we will see, here we have
+<p>This output differs from the others we will see; here, we have
 depicted the number of collections to be made per ecoregion. Because the
-number of ecoregions is greater than our requested sample size, the
-return object can only take on two values - no collections, or one
+number of ecoregions exceeds our requested sample size, the return
+object can only take on two values: no collections or one
 collection.</p>
 </div>
 <div class="section level3">
-<h3 id="environmental-based-sample">Environmental Based Sample<a class="anchor" aria-label="anchor" href="#environmental-based-sample"></a>
+<h3 id="environmentalbasedsample">EnvironmentalBasedSample<a class="anchor" aria-label="anchor" href="#environmentalbasedsample"></a>
 </h3>
 <p>The <code>EnvironmentalBasedSample</code> can only be used if you
-have species distribution model data. We have included the ouputs of the
-vignette ‘Species Distibution Model’ with the package so they are
+have species distribution model data. We have included the outputs of
+the vignette ‘Species Distribution Model’ with the package so they are
 available to this vignette.</p>
 <div class="section level4">
 <h4 id="load-the-sdm-predictions">load the SDM predictions<a class="anchor" aria-label="anchor" href="#load-the-sdm-predictions"></a>
 </h4>
-<p>Here we load the results of the sdm processing from the package
+<p>Here, we load the results of the sdm processing from the package
 data.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/serialize.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
@@ -538,25 +531,24 @@ data.</p>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdm</span><span class="op">)</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="700"></p>
 <p>Once these data are loaded into R, we will scale the rasters (using
-<code>RescaleRasters</code>) which will serve as surfaces to predict
+<code>RescaleRasters</code>), which will serve as surfaces to predict
 from (this is also done above!), then we will run the algorithm
 (<code>EnvironmentalBasedSample</code>). However, before we run the
-algorithm we will need to create a directory (also called a ‘folder’),
+algorithm, we will need to create a directory (also called a ‘folder’)
 on our computers to save the results from the function
 <code>EnvironmentalBasedSample</code>. Whereas earlier in this vignette
 we showcased that the functions generated the species distribution
-model, and us saving the results were a two stage process (e.g. to
+model, and us saving the results were a two-stage process (e.g. to
 create the SDM and associated products we used: <code>elasticSDM</code>,
 <code>PostProcessSDM</code>, and <code>RescaleRasters</code>, before
 finally saving relevant data with <code>writeSDMresults</code>), this
 function produces both the product and writes out ancillary data
-simultaneously.<br>
-This approach was chosen as this function is only writing out four
-objects: 1) the groups as vector data<br>
+simultaneously. This approach was chosen as this function is only
+writing out four objects: 1) The groups as vector data<br>
 2) and the groups as raster data<br>
-3) the k-nearest neighbors (knn) model used to generate these
-clusters<br>
-4) the confusion matrix associated with testing the knn model</p>
+3) The k-nearest neighbours (kNN) model was used to generate these
+clusters 4) 1. The confusion matrix associated with testing the kNN
+model</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>rr <span class="ot">&lt;-</span> <span class="fu">RescaleRasters</span>( <span class="co"># you may have already done this!</span></span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="at">predictors =</span> sdModel<span class="sc">$</span>Predictors, </span>
@@ -611,20 +603,20 @@ the three binary rasters created by <code>PostProcessSDM</code> as
 arguments for the template. Here we showcase the different results from
 using each of them.</p>
 <p><img src="GettingStarted_files/figure-html/Compare%20Environmental%20Based%20Samples-1.png" class="r-plt" alt="" width="700"></p>
-<p>These plots are able to showcase the difference in results depending
-on which of the three input rasters are utilized. As with all of the
-sampling schemes, results vary widely based on the spatial extents which
-the functions are applied to. Using the SDM output which have undergone
-thresholding results in the largest classified area. At first glance the
-results may seem very different, but if you look at central america,
-they are largely consistent, as they are near the Andes; large
-differences do exist in the Amazon Basin, but even there some alignment
-between the systems is evident. Accordingly, the surface used for a
-species should match some evaluation criterion.</p>
+<p>These plots can showcase the differences in results depending on
+which of the three input rasters are used. As with all sampling schemes,
+results vary widely depending on the spatial extent to which the
+functions are applied. Using the SDM output that has undergone
+thresholding results in the largest classified area. At first glance,
+the results may seem very different, but in Central America, they are
+largely consistent because it is near the Andes; large differences do
+exist in the Amazon Basin, but even there, some alignment between the
+systems is evident. Accordingly, the surface used for a species should
+match some evaluation criterion.</p>
 <p>Using the threshold raster surface is a very good option if we do not
 want to ‘miss’ too many areas, whereas the clipped and supplemented
 options may be better suited for scenarios where we do not want to draw
-up clusters, which lack any populations which can be collected from.</p>
+up clusters that lack any populations that can be collected from.</p>
 </div>
 </div>
 </div>
@@ -632,28 +624,27 @@ up clusters, which lack any populations which can be collected from.</p>
 <h2 id="comparision-of-different-sampling-schemes">Comparision of different sampling schemes<a class="anchor" aria-label="anchor" href="#comparision-of-different-sampling-schemes"></a>
 </h2>
 <p>So, we have some maps for you to look at! They all <em>looked</em>
-relatively similar to me when plotted one after another, let’s plot them
-all simultaneously and see if that’s still the case.</p>
+relatively similar to me when plotted one after another. Let’s plot them
+together and see if that’s still the case.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbs.p</span> <span class="op">+</span> <span class="va">eas.p</span> <span class="op">+</span> <span class="va">os.p</span>  <span class="op">+</span>  <span class="va">ibdbs.p2</span> <span class="op">+</span> <span class="va">ibr.p</span> <span class="op">+</span> <span class="va">ENVIbs.p</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="GettingStarted_files/figure-html/Plot%20all%20Sampling%20Schemes%20together-1.png" class="r-plt" alt="" width="700"></p>
-<p>The geographic based samples (here Point, Equal Area, Opportunistic,
-and IBE) are quite similar. In my mind isolation by distance (IBD) show
-the biggest different, it makes the most <em>sense</em> by splitting
+<p>The geographic-based samples (here, Point, Equal Area, Opportunistic,
+and IBE) are quite similar. In my mind, isolation by distance (IBD)
+shows the biggest difference; it makes the most sense by splitting
 sampling areas along naturally occurring patches of the species
 range.</p>
-<p>The application of <code>PolygonBasedSample</code> to the data are
-difficult to evaluate in the same sense as the other data sets, but it
-was able to identify the desired regions for sampling. We do not show it
-in this pane.</p>
-<p>Isolation by Resistance is similar to IBD, however it makes fewer
-splits in Central America, instead picking up on them in the Peru.</p>
-<p>Relative to IBR Isolation by Environment tends to split locations
+<p>The application of <code>PolygonBasedSample</code> to the data is
+difficult to evaluate in the same way as the other data sets, but it did
+identify the desired sampling regions. We do not show it in this pane.
+Isolation by Resistance is similar to IBD; however, it makes fewer
+splits in Central America and instead picks them up in Peru.</p>
+<p>Relative to IBR, Isolation by Environment tends to split locations
 across the Andes and the NW coastal regions of South America. The ranges
-are relatively contigious - enough to sensibly sample from. Contiguity
-of ranges in this approach can be controlled with the
-<code>coord_wt</code> argument.</p>
+are relatively contiguous enough to sensibly sample from. Contiguity of
+ranges in this approach can be controlled with the coord_wt
+argument.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

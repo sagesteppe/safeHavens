@@ -2,26 +2,25 @@
 
 ## Introduction
 
-The previous tutorials focus on the individual *functions* in the
-package, but do little to show *how* to integrate them into common
-workflows to develop spatial products for sampling. Here we show a
-minimal example of how a curator may load occurrence data for a species,
-apply a couple sampling approaches to these data, and save the results
-for use. We will use two species native to the Southwestern United
-States & Mexico for this example, eventually narrowing our focus to
-discuss only one for the sake of brevity.
+The previous tutorials focus on the individual functions in the package
+but do little to show how to integrate them into common workflows for
+developing spatial products for sampling. Here we show a minimal example
+of how a curator may load occurrence data for a species, apply a couple
+of sampling approaches to these data, and save the results for use. We
+use two species native to the Southwestern United States and Mexico for
+this example. Eventually, we narrow our focus to just one species for
+brevity.
 
-While we only have two species in the example, the code is setup to
-accomodate as many species as an analyst desires to process
-simultaneously.
-
-### Data prep
+While we only have two species in the example, the code is set up to
+accommodate as many species as an analyst desires to process
+simultaneously. \## Data prep
 
 You will need to install `rgbif` to follow along with this example.
-`rgbif` is an amazing package maintained by ROpenSci to acess the Global
-Biodiversity Information Facility database from within R. Note that a
-(free, and esay to get), GBIF profile is required for larger data
-downloads, but for this example all you need is the R package.
+`rgbif` is an amazing package maintained by ROpenSci that provides
+access to the Global Biodiversity Information Facility database from
+within R. Note that a (free and easy to get) GBIF profile is required
+for larger data downloads, but for this example, all you need is the R
+package.
 
 ``` r
 library(safeHavens)
@@ -34,9 +33,9 @@ library(rgbif) # species occurrence data.
 library(spData) # example cartography data
 ```
 
-Using `rgbif` we’ll download occurrence data for a couple species, just
-so we have the code set up for `mapping` through multiple species in a
-more realistic manner.
+Using `rgbif`, we’ll download occurrence data for a couple of species.
+This way, we can set up the code for mapping multiple species in a
+realistic manner.
 
 ``` r
 ## small subset of useful columns for example
@@ -67,9 +66,8 @@ spp <- bind_rows(bowa_cols, cymu_cols) |>
 rm(cymu, bowa, cols, cymu_cols, bowa_cols)
 ```
 
-Take a quick look at the data to see if there are any clear errors. One
-points location is incorrect, it’s latitude is great - we remove it
-below.
+Quickly check the data for obvious errors. One point’s location is
+incorrect; its latitude is great - we removed it below.
 
 ``` r
 western_states <- spData::us_states |> ## for making a quick basemap. 
@@ -109,11 +107,11 @@ arrange(spp, by = decimalLatitude, desc=FALSE) |>
 spp <- filter(spp, decimalLatitude <= 40)
 ```
 
-A few tools exist for quickly cleaning GBIF data, `gatoRs` is a recently
-published great choice for this.
+A few tools exist for quickly cleaning GBIF data; gatoRs is a recent,
+great choice.
 
 Map the data again, and keep the ggplot around as a basemap for the rest
-of vignette.
+of the vignette.
 
 ``` r
 bb <- st_transform(spp, 5070) |>
@@ -136,18 +134,18 @@ base
 
 ### using safeHavens
 
-Now we will use the safeHavens functionality with our set-up environment
-and data from GBIF.
+Now we will use the safeHavens functionality in our setup environment
+with GBIF data.
 
 #### Create species ranges
 
-We will showcase two methods of generating the species range geometries,
-which are used by most of the packages functions. Both of these rely on
-the `st_concave_hull` function from `sf`. `st_concave_hull`, has a ratio
-parameter which can control the elasticity of hulls, with the ratio = 1
-creating a convex hull (akin the `st_convex_hull` function, also in
-`sf`), and ratio = 0.0, creating a true concave hull. Results below a
-ratio of 0.4 look too narrowly reduced for both of these species.
+We will showcase two methods for generating species-range geometries,
+which are used by most of the packages’ functions. Both of these rely on
+the `st_concave_hull` function from `sf`. `st_concave_hull` has a ratio
+parameter that controls the elasticity of the hull; ratio = 1 creates a
+convex hull (akin to the `st_convex_hull` function, also in sf), and
+ratio = 0.0 creates a true concave hull. Results below a ratio of 0.4
+appear too narrow for both of these species.
 
 ``` r
 sppL <- split(spp, f = spp$species)
@@ -198,13 +196,13 @@ base +
 rm(spp_convex)
 ```
 
-For the sake of the example we will only use the concave ranges, with
-ratio 0.4, going forward.
+For the sake of the example, we will use only the concave ranges with a
+ratio of 0.4 going forward.
 
 ### Perform sampling for the species ranges
 
-First we will perform equal area sampling with a relatively small amount
-of points and repetitions.
+First, we will perform equal area sampling with a relatively small
+number of points and repetitions.
 
 ``` r
 eas <- spp_concave |>
@@ -218,7 +216,7 @@ base +
 
 The plot above shows only the results for *Vesper multinervatus*.
 
-Below we perform isolation by distance (IBD) based sampling.
+Below, we perform isolation-by-distance (IBD)- based sampling.
 
 ``` r
 # create an arbitrary template for example - best to do this over your real range of all species collections
@@ -244,33 +242,32 @@ base + ## visualize for a single taxon.
 
 ![](WorkedExample_files/figure-html/ibd%20sampling-1.png)
 
-The above plot for the isolation-by-distance sampling shows the
-individual sample areas for *Bouteloua warnockii*.
+The isolation-by-distance plot above highlights individual sample areas
+for *Bouteloua warnockii*.
 
 #### prioritize sample areas
 
-In addition to creating spatial geometries that can be used to guide
-sampling efforts, `safeHavens` can also help provide *visualize*
-guidance on general areas where germplasm can be sampled from to try and
-maximize distance between the samples. Please note that while
-`safeHavens` can offer *suggestions* of where to sample, and *where*
-should be prioritized these suggestions may not align with reality - so
-consider these rules of thumbs! I have made, a couple hundred large
-native seed collections, and coordinated a couple hundred more, for many
-years - and argue that beggers cannot be choosers. Hence basing
-deliverable metrics purely around data like this can be difficult - some
-degree of reporting autonomy must be maintained.
+In addition to creating spatial geometries to guide sampling efforts,
+`safeHavens` can also provide visual guidance on general areas where
+germplasm can be sampled to maximise the distance between samples.
+Please note that while `safeHavens` can offer suggestions of where to
+sample, and where should be prioritised, these suggestions may not align
+with reality - so consider these rules of thumb! I have made a couple of
+hundred large native seed collections and coordinated a couple hundred
+more, for many years, and I argue that beggars cannot be choosers.
+Hence, basing deliverable metrics purely around data like this can be
+difficult - some degree of reporting autonomy must be maintained.
 
-The function `PrioritizeSample` offers two levels of prioritization. The
-more coarse level will suggest a relative order that the sample areas
-should be sampled in, from 1:n; the function seeks to minimize the
-variance ( a related measure) between each sample as more samples are
-collected. In effect it tries to stratify the sampling across the
-species range. The second part of the function is almost a ‘heamap’
-which can be used to show concentric rings around the geographic center
-of each sample unit. Keeping the number of rings low allows for some
-pragmatic communication of more desirable/less desirable portions of the
-range to *ideally* collect in.
+The function `PrioritizeSample` offers two levels of prioritisation. The
+coarser level will suggest a relative order for the sample areas to be
+sampled, from 1:n; the function seeks to minimise the variance (a
+related measure) between samples as more are collected. In effect, it
+tries to stratify the sampling across the species range. The second part
+of the function is almost a ‘heatmap’ which can be used to show
+concentric rings around the geographic centre of each sample unit.
+Keeping the number of rings low allows for some pragmatic communication
+of more desirable/less desirable portions of the range to ideally
+collect in.
 
 ``` r
 ibd_samples_priority <- ibd_samples %>%
@@ -283,19 +280,19 @@ base +
 
 ![](WorkedExample_files/figure-html/prioritize%20sample%20areas-1.png)
 
-The map above shows a possible general order to guide the prioritization
-of individual sample areas, and simplified visuals of where within
-sample areas to attempt to target.
+The map above shows a possible general order to guide the prioritisation
+of individual sample areas, along with simplified visuals of where
+within those areas to target.
 
 #### wrapping up
 
-Upon completion of using `safeHavens` results should be written to
-individual geopackages for long term storage. A strong benefit of a
-geopackage is it’s ability to hold multiple geometry types (polygons,
-points, rasters, etc.), which can sometimes be lost when they are kept
-in separate directories.
+Upon completion of using safeHavens, results should be written to
+individual geopackages for long-term storage. A significant benefit of a
+geopackage is its ability to store multiple geometry types (polygons,
+points, rasters, etc.), which can be lost when stored in separate
+directories.
 
-Here we show how we would write out data for a range of species.
+Here is how to write out species data.
 
 ``` r
 ## create a directory to hold the outputs

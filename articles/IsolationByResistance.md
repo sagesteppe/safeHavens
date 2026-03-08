@@ -2,30 +2,31 @@
 
 ## Isolation by Resistance Sampling
 
-Landscape genetics has laddered null hypothesis regarding the genetic
+Landscape genetics has laddered null hypotheses regarding the genetic
 structure of species. The first null, Panmixia, is that populations show
-no differentiation, as *could* be observed in a species with few, highly
-connected populations; it is not treated as a sampling scenario by this
-package. The second null is Isolation by Distance, the main idea behind
-most of the functions in this package, where populations become more
-differentiated as a function of geographic distance - culminating in the
-function ‘IBDBasedSample’. The final null hypothesis is Isolation by
-Resistance, where the differentiation of populations is driven by
-environmental distances across populations decreasing gene flow.
+no differentiation, as could be observed in a species with few, highly
+connected populations; this package does not treat it as a sampling
+scenario. The second null is Isolation by Distance, the main idea behind
+most of the functions in this package, in which populations become more
+differentiated with increasing geographic distance, culminating in the
+function ‘IBDBasedSample’.The next hypothesis is Isolation by
+Resistance, where the differentiation of populations is driven by a
+break down in gene flow due to barriers.
 
 While IBD is easily calculated from geographic distances, IBR requires a
-parameterized cost surface, in raster format, that depicts the costs to
+parameterised cost surface, in raster format, that depicts the costs to
 an organism’s movement of maternal and paternal genetic material.
-`safeHavens` supports a simple workflow to paramterize a cost surface,
-that can be used to support basic `IBR` type sampling.
+safeHavens supports a simple workflow for parameterising a cost surface
+that can be used for basic IBR-type sampling.
 
 ### Example
 
 We’ll use the species occurrence data from dismo again here. A few
-spatial data sets that should be suitable for nearly all users IBR
-applications are included in `safeHavens` for this example, but the full
-data sets are not shipped with the package. They include: - lakes,
-Lehner et al. 2025,
+spatial data sets suitable for nearly all users’ IBR applications are
+included in safeHavens for this example, but the full data sets are not
+shipped with the package.
+
+They include: - lakes, Lehner et al. 2025,
 [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)  
 - oceans from Natural Earth,
 <https://www.naturalearthdata.com/downloads/10m-physical-vectors/>  
@@ -55,10 +56,10 @@ planar_proj <- 3857 # Web Mercator for planar distance calcs
 ### data prep
 
 Each of the environmental variable data sources needs some
-pre-processing before being feed into the IBR workflow, most of them
-just need to be converted from vector to raster formats - a process we
-call ‘rasterization’. We will also rescale the tri rasters, to put them
-on a similar numeric range as the other data sets.
+pre-processing before being fed into the IBR workflow; most of them just
+need to be converted from vector to raster formats - a process we call
+‘rasterisation’. We will also rescale the tri rasters to put them on a
+similar numeric scale to the other datasets.
 
 ``` r
 tri <- terra::rast(file.path(system.file(package = "safeHavens"), "extdata", "tri.tif"))
@@ -95,8 +96,8 @@ rivers_v <- sf::st_read(
   terra::vect()
 ```
 
-We’ll convert each of the above spatVect objects to spatRasters, and
-clip them to an area of analysis around our species records.
+We’ll convert each of the above spatVect objects to spatRasters and clip
+them to an analysis area around our species records.
 
 ``` r
 x_buff <- sf::st_transform(x, planar_proj) |>
@@ -114,8 +115,8 @@ ocean_v <- crop(ocean_v, x_buff)
 tri <- crop(tri, x_buff)
 ```
 
-The vector data need to be converted to raster format using a function
-like `rasterize`, from terra.
+Convert the vector data to raster format using terra’s `rasterise`
+function.
 
 ``` r
 ocean_r <- rasterize(ocean_v, tri, field = 'Value', background = 0.1)
@@ -139,24 +140,23 @@ rm(ocean_v, lakes_v, rivers_v)
 
 ### actual workflow.
 
-The first, of three, functions in the Isolation by Resistance sampling
+The first of three functions in the Isolation by Resistance sampling
 workflow is used to create the resistance surface. It requires a
-template raster, and the other rasters which will be incorporated into
+template raster and the other rasters, which will be incorporated into
 the product. `buildResistanceSurface` essentially just requires the
-rasters we configured above, and user specified weights to assign to
-each raster. These weights convey how difficult it is for a species to
-move across the landscape. For plants, oceans generally get very high
-weight, while lakes and rivers - still obstacles - receive lower
-weights. Terrain ruggedness values are much more likely to vary based on
-both the ecology of the species, and the lanscape being sampled.
+rasters we configured above and user-specified weights for each raster.
+These weights convey how difficult it is for a species to move across
+the landscape. For plants, oceans generally get very high weights, while
+lakes and rivers - still obstacles - receive lower weights. Terrain
+ruggedness values are much more likely to vary with both the species’
+ecology and the landscape being sampled.
 
-When considering weights consider the influences of: bird dispersal,
-land animal dispersal, and natural growth/expansion of populations. This
-is certainly the most difficult part of this workstream to tune, and
-often relies on subjective expert judgement. The values below are the
-functions defaults - to my eyes they work OK for the landscape at hand;
-although an ecologist with experience in this region may beg to differ,
-and I would not argue with them.
+When considering weights, consider the influences of bird dispersal,
+land animal dispersal, and natural population growth/expansion. Tuning
+this part is challenging and often subjective. The values below are the
+functions’ defaults - to my eyes, they work OK for the landscape at
+hand; although an ecologist with experience in this region may beg to
+differ, and I would not argue with them.
 
 ``` r
 res_surface <- buildResistanceSurface(
@@ -178,10 +178,9 @@ plot(res_surface)
 
 ![](IsolationByResistance_files/figure-html/create%20resistance%20surface-1.png)
 
-Note that the above object will be stored *in memory*, I advocate for
-the use of a relatively coarsely grained raster surface (e.g. 4kmx4km
-cells or more), because we are doing pretty generalized work, and it
-will speed up processing.
+Note that the above object is stored in memory. I recommend using coarse
+raster surfaces (e.g., 4 km x 4 km cells or larger) at this level of
+generalisation and to speed up processing.
 
 Now that we have our resistance surface, the next step is calculating
 the distances between areas across the species range using the function
@@ -198,9 +197,9 @@ required, or through a complete distance matrix. In my testing I
 with NbClust without having to be ordinated down into 2-dimensional
 space and give much better results.
 
-This function will return a raster representing the buffered populations
+This function returns a raster representing the buffered populations
 (species range in the domain), the points sampled by terra, the graph
-information, and a distance matrix with the least cost distance values
+information, and a distance matrix containing the least-cost distances
 from the resistance surface.
 
 ``` r
@@ -219,8 +218,7 @@ names(pop_res_graphs)
 [5] "ibr_matrix"    
 ```
 
-The buffered locations look like this - currently the IDs are
-meaningless.
+Buffered locations appear as shown; IDs are meaningless.
 
 ``` r
 plot(pop_res_graphs$pop_raster)
@@ -228,9 +226,8 @@ plot(pop_res_graphs$pop_raster)
 
 ![](IsolationByResistance_files/figure-html/plot%20the%20buffered%20populations-1.png)
 
-This function does not perform well with user pre-specified `n`, however
-the `min.nc` parameter, passed to `NbClust` can be applied to generally
-give the analyst specified value.
+This function underperforms with user-prespecified `n`; passing `min.nc`
+to NbClust generally yields the analyst-specified value.
 
 ``` r
 ibr_groups <- IBRSurface(
@@ -245,7 +242,7 @@ ibr_groups <- IBRSurface(
 )
 ```
 
-The results of the clustering process are visualized beneath.
+Clustering results are shown below.
 
 ``` r
 classified_pts = ibr_groups$points
@@ -261,7 +258,7 @@ points(
 
 ![](IsolationByResistance_files/figure-html/Plot%20cluster%20classified%20points-1.png)
 
-The classified occupied area clusters are visualized below.
+Occupied area clusters are visualised below.
 
 ``` r
 ggplot() +
@@ -271,9 +268,9 @@ ggplot() +
 
 ![](IsolationByResistance_files/figure-html/plot%20the%20classified%20clusters-1.png)
 
-Finally the surface can be sampled using `PolygonBasedSample`. Simply
+Finally, the surface can be sampled using `PolygonBasedSample`. Simply
 union the geometries to be the species range, and supply the groups to
-the x argument, in lieu of an ecoregion or pstz type surface.
+the x argument, in lieu of an ecoregion or pSTZ-type surface.
 
 ``` r
 out <- PolygonBasedSample(
@@ -292,17 +289,15 @@ ggplot(data = out) +
 
 ![](IsolationByResistance_files/figure-html/unnamed-chunk-2-1.png)
 
-Each of the nine clusters has a different number of the 20 desired
-collections assigned to it.
+Each cluster has a different number of the 20 assigned collections.
 
 ### bonus: adding sdm as a resistance layer, and non-linear scaling.
 
-A default argument to cluster IBR is the probablity surface predictions
+A default argument to cluster IBR is the probability surface predictions
 from an SDM. Here we will add it to the surface.
 
-We will also show another way of adding topographc ruggedness index,
-that ‘bypasses’ an assumed linear relationship along the weighting
-scheme.
+We will also show another way to add the topographic ruggedness index
+that bypasses the assumed linear relationship in the weighting scheme.
 
 ``` r
 sdm <- terra::rast(
@@ -313,9 +308,9 @@ plot(sdm['Predictions'])
 
 ![](IsolationByResistance_files/figure-html/unnamed-chunk-3-1.png)
 
-Note that we will have to reverse the predictions from this layer,
-currently higher values mean more suitable habitat. We want the higher
-values going into the probability surface function to mean more
+Note that we will have to reverse the predictions from this layer;
+currently, higher values indicate a more suitable habitat. We want
+higher values in the probability surface function to indicate greater
 resistance to movement.
 
 ``` r
@@ -325,8 +320,8 @@ plot(inverted_sdm)
 
 ![](IsolationByResistance_files/figure-html/unnamed-chunk-4-1.png)
 
-And indeed, we may actually just want to remove weights in suitable
-habitat, or set to an arbitrarily low value
+And indeed, we may actually just want to remove weights in a suitable
+habitat, or set them to an arbitrarily low value.
 
 ``` r
 inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
@@ -335,8 +330,8 @@ plot(inverted_sdm)
 
 ![](IsolationByResistance_files/figure-html/unnamed-chunk-5-1.png)
 
-And we will convert it to the same, integer, scale as the rest of the
-predictors
+And we will convert it to the same integer scale as the other
+predictors.
 
 ``` r
 inverted_sdm = round(inverted_sdm * 100, 0)
@@ -361,8 +356,8 @@ plot(inverted_sdm)
 #### non-linear weight
 
 Not all environmental variables are expected to have linear effects on
-movement. Indeed something like terrain ruggedness may have only a small
-effect until reaching certain thresholds.
+movement. Indeed, something like terrain ruggedness may have only a
+small effect until reaching an asymptote.
 
 ``` r
 x <- 1:100
@@ -383,8 +378,8 @@ plot(x, rs(x^4), type = "l", main = "x^4 polynomial")
 
 ![](IsolationByResistance_files/figure-html/plot%20non-linear%20transformations-1.png)
 
-We will apply a fourth order polynomial to the input tri data to
-accomodate a non-linear effect.
+We will apply a fourth-order polynomial to the input tri data to
+accommodate a non-linear effect.
 
 ``` r
 tri_rscl <- app(tri, function(x) { rs(x^2, to = c(1, 80)) })

@@ -2,38 +2,45 @@
 
 ## Species Distribution Modelling
 
-Please refer to all frequentist methods before viewing this vignette.
-The rationale is roughly similar, but this approach provides better
-estimates of uncertainty for the processing.
+Before proceeding, please refer to all other vignettes, as they provide
+valuable foundational context. While the rationale here is roughly the
+same, this approach focuses on improved uncertainty estimation during
+processing.
 
 ### Background
 
-This vignette details the steps required to create a bayesian Species
-Distribution Model (SDM) using the functions provided in `safeHavens`,
-which form a wrapper around brms::brms(). The SDM is then post-processed
-to create a binary raster map of suitable and unsuitable habitat, that
-is used to rescale the environmental predictor variables according to
-the parameter posteriors for the model. These parameter posteriors are
-then used in a clustering algorithm to partition the species range into
-environmentally distinct regions for germplasm sampling.
+This vignette details the steps required to create a Bayesian Species
+Distribution Model (SDM) using functions from `safeHavens`, which serve
+as wrappers for brms::brms(). Building on the foundational rationale
+mentioned previously, the following information guides you through the
+Bayesian-specific setup. The SDM is then post-processed to create a
+binary raster map of suitable and unsuitable habitat, which is used to
+rescale the environmental predictor variables based on the model’s
+parameter posteriors. These parameter posteriors are then used in a
+clustering algorithm to partition the species range into environmentally
+distinct regions for germplasm sampling.
 
-The goal of most SDM’s is to create a model that accurately predicts
+The goal of most SDMs is to create a model that accurately predicts
 where a species will be located in environmental space and can then be
 predicted in geographic space. The goal of these models is to understand
 the degree and direction to which various environmental features
-correlate with a species observed range.
+correlate with a species’ observed range.
 
 ### About
 
-Here we use bayesian hierarchical models to estimate coefficient
-uncertainty to use for clustering climatically similar areas via an SDM
-approach.
+In this section, we use Bayesian hierarchical models to estimate
+coefficient uncertainty. This enables clustering climatically similar
+areas using an SDM approach, linking the previously described
+methodology to specific analytical outcomes.
 
 #### prep data
 
-The below steps are all present at the start of the ‘Predictive
-Provenance’ vignette. We will ‘hide’ some of the processing steps to
-keep this vignette entry relatively short.
+The data preparation steps described below are also found at the start
+of the ‘Predictive Provenance’ vignette. Recall these foundational steps
+as we transition into Bayesian-specific applications. To keep this
+vignette concise, some intermediate processing steps will be ‘hidden.’
+This ensures the focus remains on the distinct Bayesian approach
+discussed in the sections above.
 
 ``` r
 library(safeHavens)
@@ -50,11 +57,11 @@ library(patchwork)
 
 ### fit the model
 
-Here we fit as SDM using `bayesianSDM`. For arguments it requires
-occurrence data `x`, a raster stack of `predictors`, a `quantile_v` that
-is an offset used to create pseudo-absence data, and a `planar_proj`
-used to calculate distances between occurrence data and possible
-pseudo-absence points.
+Here we fit as SDM using `bayesianSDM`. For arguments, it requires
+occurrence data `x`, a raster stack of `predictors`, a `quantile_v`
+offset used to create pseudo-absence data, and a `planar_proj` used to
+calculate distances between occurrence data and possible pseudo-absence
+points.
 
 ``` r
 sdModel <- bayesianSDM( 
@@ -80,7 +87,8 @@ sdModel <- bayesianSDM(
 #saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
 ```
 
-For the sake of this vignette, we will load a run of the above model.
+Load a run of the model described above for the sake of this vignettes
+processing speed.
 
 ``` r
 sdModel <- readRDS(
@@ -93,10 +101,10 @@ sdModel$RasterPredictions_sd <- terra::unwrap(sdModel$RasterPredictions_sd)
 sdModel$AOA <- terra::unwrap(sdModel$AOA)
 ```
 
-Under the hood this function uses `brms`, which dispatches to Stan, to
-fit a bayesian hierarchical model (GLMM), where the distances between
-occurrence records are the fixed effect, useful to reduce the effects of
-spatial autocorrelation to increase interpret-ability of the models
+Under the hood, this function uses `brms`, which dispatches to Stan, to
+fit a Bayesian hierarchical model (GLMM), where the distances between
+occurrence records are treated as fixed effects to reduce the effects of
+spatial autocorrelation and increase the interpretability of the model’s
 parameters.
 
 #### explore the output
@@ -152,20 +160,16 @@ and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
-rHat \<1.01 ideal, \<1.05 acceptable, both ESS should be greater than
-400 increase iterations to achieve this. Divergence of 0 is ideal, any
-divergences are flags for a possibly misspecified model.
+rHat \< 1.01 is ideal; \< 1.05 is acceptable. Both ESS should be greater
+than 400; increase iterations to achieve this. Divergence of 0 is ideal;
+any divergence is a flag for a possibly misspecified model.
 
 Diagnostics can be accessed from a list, and the stan website has some
-information on them here as well as warnings (as may be depicted above)
+information on them here, as well as warnings (as may be depicted above)
 <https://mc-stan.org/misc/warnings/>
 
-rHat \<1.01 ideal, \<1.05 acceptable, both ESS should be greater than
-400 increase iterations to achieve this. Divergence of 0 is ideal, any
-divergences are flags for a possibly misspecified model.
-
-Similar to `elasticSDM` we also have area of applicabality and other
-surfaces from CAST
+Similar to `elasticSDM`, we also have an area of applicability and other
+surfaces from CAST.
 
 ``` r
 plot(sdModel$AOA)
@@ -188,8 +192,8 @@ $n_divergent
 [1] 32
 ```
 
-To view how well the model is able to predict suitable habitat of the
-hold out sample the confusion matrix can be accessed from the test and
+To assess how well the model predicts the suitable habitat for the
+hold-out sample, the confusion matrix can be obtained from the test and
 train splits. While balanced accuracy for these is generally low, as
 these models are not intended for prediction, so much as understanding
 the relationships between environmental variables driving the species
@@ -197,58 +201,38 @@ distribution, the results show the model was able to learn some
 important characteristics of the species.
 
 ``` r
-sdModel$ConfusionMatrix
-$positive
-[1] "1"
-
-$table
-          Reference
-Prediction  0  1
-         0 71 11
-         1  7 13
-
-$overall
-      Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
-    0.82352941     0.47959184     0.73551513     0.89192685     0.76470588 
-AccuracyPValue  McnemarPValue 
-    0.09683511     0.47950012 
-
-$byClass
-         Sensitivity          Specificity       Pos Pred Value 
-           0.5416667            0.9102564            0.6500000 
-      Neg Pred Value            Precision               Recall 
-           0.8658537            0.6500000            0.5416667 
-                  F1           Prevalence       Detection Rate 
-           0.5909091            0.2352941            0.1274510 
-Detection Prevalence    Balanced Accuracy 
-           0.1960784            0.7259615 
-
-$mode
-[1] "sens_spec"
-
-$dots
-list()
-
-attr(,"class")
-[1] "confusionMatrix"
+knitr::kable(sdModel$ConfusionMatrix$byClass)
 ```
 
-Here we can see how our selected model works on predicting the state of
-test data. Note these accuracy results are slightly higher than those
-from the CV folds. This is not a bug, CV folds are testing on their own
-holdouts, while this is a brand new set of holdouts. The main reason the
-confusion matrix results are likely to be higher is due to spatial
-auto-correlation which are not address in a typical ‘random split’ of
-test and train data. In order to minimize the effects of
-spatial-autocorrelation on our model we use `CAST` under the hood which
-allows for spatially informed cross validation.
+|                      |         x |
+|:---------------------|----------:|
+| Sensitivity          | 0.5416667 |
+| Specificity          | 0.9102564 |
+| Pos Pred Value       | 0.6500000 |
+| Neg Pred Value       | 0.8658537 |
+| Precision            | 0.6500000 |
+| Recall               | 0.5416667 |
+| F1                   | 0.5909091 |
+| Prevalence           | 0.2352941 |
+| Detection Rate       | 0.1274510 |
+| Detection Prevalence | 0.1960784 |
+| Balanced Accuracy    | 0.7259615 |
 
-Consider the output from CVStructure to be a bit more realistic.
+Observe how the selected model predicts the state of the test data. Note
+that these accuracy results are slightly higher than those from the CV
+folds. Understand that this is not a bug; CV folds test on their own
+holdouts, while this is a new holdout set. The main reason the confusion
+matrix results are likely to be higher is due to spatial
+autocorrelation, which is not addressed in a typical ‘random split’ of
+test and train data. Minimise the effects of spatial autocorrelation on
+the model by using CAST for spatially informed cross-validation.
+
+Treat the CVStructure output as a more realistic assessment.
 
 #### binarize the output
 
-The bayesian sdm is post-processed using the same function as is used by
-the `elasticSDM` workflow.
+The Bayesian SDM is post-processed using the same `PostProcessSDM`
+function as the elasticSDM workflow.
 
 ``` r
 threshold_rasts <- PostProcessSDM(
@@ -267,7 +251,7 @@ knitr::kable(threshold_rasts$Threshold)
 | thresholds | 0.220913 |  0.220913 |   0.0510473 |  0.2444197 |       0.2866278 |   0.2444197 |
 
 We can compare the results of applying this function side by side using
-the output from the function.
+the function’s output.
 
 ``` r
 terra::plot(threshold_rasts$FinalRasters)
@@ -277,7 +261,7 @@ terra::plot(threshold_rasts$FinalRasters)
 
 #### rescale predictor variables
 
-The `bayesianSDM` requires a different function from `elasticSDM` for
+The `bayesianSDM` requires a different function from elasticSDM for
 creating weighted surfaces, with the suffix `RescaleRasters_bayes`.
 
 ``` r
@@ -294,7 +278,7 @@ terra::plot(rr$RescaledPredictors)
 
 ![](BayesianApproaches_files/figure-html/Rescale%20Predictor%20Variables-1.png)
 
-An optionally returned layer (via include_uncertainty = TRUE), depicts
+An optionally returned layer (via `include_uncertainty` = TRUE) depicts
 areas with greater uncertainty towards the prediction.
 
 ``` r
@@ -304,7 +288,7 @@ plot(subset(rr$RescaledPredictors, 'coef_uncertainty'))
 ![](BayesianApproaches_files/figure-html/plot%20coef%20uncertainty%20layer-1.png)
 
 We can also show the variables that contributed the most to the sdm
-models predictions, along with their signs.
+models’ predictions, along with their signs.
 
 ``` r
 knitr::kable(
@@ -321,9 +305,9 @@ knitr::kable(
 | 3   | bio_04   | -0.0047051 | 0.0048937 | -0.0158306 | 0.0014900 |
 | 4   | bio_09   |  0.0041970 | 0.0163085 | -0.0253077 | 0.0466395 |
 
-To delineate putative seed collection zones we use the
-`PosteriorCluster` function. It will use the raster surfaces of mean
-beta coefficient importance
+To delineate putative seed collection zones, we use the
+`PosteriorCluster` function. It will use the raster surfaces of the mean
+beta coefficient importance.
 
 ``` r
 obby <- PosteriorCluster(
@@ -350,10 +334,10 @@ Projecting consensus clusters to raster ...
 Loading required package: lattice
 ```
 
-Using the Bayesian posteriors and clustering allows us to determine
-areas that have higher and lower uncertainty for clustering assignments.
-Values with a higher proportion had greater colocation scores than areas
-with lower proportions.
+Using Bayesian posteriors and clustering allows us to identify areas
+with higher and lower uncertainty in clustering assignments. Areas with
+higher proportions had higher colocation scores than those with lower
+proportions.
 
 ``` r
 par(mfrow=c(1,1))
@@ -376,10 +360,10 @@ bmap +
 
 ![](BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png)
 
-Interested users can see what the second most and third most stable
+Interested users can see what the second-most and third-most stable
 clustering scenarios would look like via the following ranks. Do note
-that the renumbering of clusters from NW to SE (left to right, like many
-language groups read books) has not occurred on these rasters yet, so
+that the renumbering of clusters from NW to SE (left to right, as many
+language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.
 
 ``` r
@@ -393,8 +377,8 @@ plot(obby$RankRaster$rank3_final)
 
 #### save results
 
-writeSDMresults can be used to save most of the core SDM output from the
-bayesian work flow as well.
+writeSDMresults can also be used to save most of the core SDM output
+from the Bayesian workflow.
 
 ``` r
 bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
@@ -414,10 +398,9 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 
 #### wrapping up
 
-While the bayesian hierarchical GLM does not produce excellent
+While the Bayesian hierarchical GLM does not produce excellent
 predictions of suitable habitat, it has several advantages. 1) It can
 incorporate spatial smoothers (splines) from mcgv to reduce the effects
-of spatial-autocorrelation on model parameter estimates. 2) It provides
+of spatial autocorrelation on model parameter estimates. 2) It provides
 uncertainty around the contribution of each selected predictor
 (i.e. many predictors can be weighed differently to get similar results)
-3)

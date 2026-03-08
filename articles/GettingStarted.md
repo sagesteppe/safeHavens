@@ -26,13 +26,10 @@ planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +uni
 
 ### Defining a Species Range or Domain for Sampling
 
-Central to the sampling schemes in `safeHavens` is a species range, or
-domain, for sampling. For example, depending on the goals of the
-collection, a curator may want to sample across the entire range of a
-species. Alternatively one may be interested in sampling only a portion
-of the range, e.g. a country, state, or ecoregion. Either of these
-scenarios can be supported by package. Here we will show how to create a
-species range from occurrence data, and then use that range for the
+The core of `safeHavens` sampling schemes is the species range or
+domain. Curators can sample across the entire range or focus on a
+region, such as a country or ecoregion. Both approaches are supported.
+We show how to use occurrence data to define species ranges across
 various sampling schemes.
 
 Below we will use `sf` to simply buffer occurrence points to create a
@@ -54,10 +51,9 @@ plot(x_buff)
 
 ![](GettingStarted_files/figure-html/Just%20Buffer%20it!-1.png)
 
-Alternatives to this include a simple convex hull around a species, if
-it is widespread throughout an area (see ‘Worked Example’ for an
-example), or masking a binary SDM surface as the domain (see below, and
-‘Species Distribution Model’).
+Alternatives include creating a convex hull for widespread species (see
+‘Worked Example’) or masking a binary SDM surface as the domain (see
+below and ‘Species Distribution Model’).
 
 ## Prep a base map
 
@@ -113,12 +109,13 @@ reproduced here.
 environmental complexity respectively, and range from low (L) through
 medium to high.*
 
-### Point Based Sample
+### PointBasedSample
 
-`PointBasedSample` simply samples a grid of regularly space points
-across the domain, and assigns the areas nearest to each point to a
-cluster. It will work very well for common species without many gaps in
-their distributions.
+`PointBasedSample` selects a set of regularly spaced points across the
+domain and assigns each point’s cluster to the area nearest to it. This
+strictly spatial approach relies on even spacing as its main
+differentiator. It will work very well for common species without many
+gaps in their distributions.
 
 ``` r
 pbs <- PointBasedSample(x_buff, reps = 50, BS.reps = 333)
@@ -135,23 +132,21 @@ pbs.p
 
 ![](GettingStarted_files/figure-html/Point%20Based%20Sample-1.png)
 
-### Equal Area Sample
+### EqualAreaSample
 
-Perhaps the simplest method which is offered in `safeHavens` is
-`EqualAreaSample`. It creates many points, `pts` defaulting to 5000,
-within our target domain and subjects them to k-means clustering where
-the groups are specified by `n`, our target number of collections. The
-individual points assigned to each group are merged into polygons which
-‘take’ up all of the geographic space, and are intersected back to the
-species range, and the area of each polygon is then measured. This
-process will be ran a few times, defaulting to 100 `reps`, and the set
-of polygons which was created during these reps with the smallest
-variance in polygon size will be selected and returned.
+Perhaps the simplest method offered in safeHavens is `EqualAreaSample`.
+It creates many points (`pts`, defaulting to 5000) within our target
+domain and subjects them to k-means clustering, where the groups are
+specified by `n`, our target number of collections. Points in each group
+are merged into polygons that fill the geographic space, intersected
+with the species’ range, and their areas are measured. This runs
+multiple times (default: 100 reps), and the set with the smallest
+variance in polygon size is selected
 
-This differs from point based sampling in that the above instance, we
-start with a few regularly spaced points to grow from, here we take a
-step back and by using many points let the clusters grow themselves to
-similar sizes.
+This process stands apart from point-based sampling: instead of growing
+clusters from a set of regular points, EqualAreaSample uses many input
+points and relies on area-balancing clustering. This allows for more
+equally sized regions.
 
 ``` r
 eas <- EqualAreaSample(x_buff, planar_proj = planar_proj) 
@@ -166,19 +161,18 @@ eas.p
 
 ![](GettingStarted_files/figure-html/Equal%20Area%20Sample-1.png)
 
-The results look quite similar to point based sample.
+The results look quite similar to `PointBasedSample`.
 
-### Opportunistic Sample
+### OpportunisticSample
 
 Users may be interested in how they can embed their existing collections
 into a sampling framework. The function `OpportunisticSample` makes a
-few minor modifications to the point based sample to and designs it
-around existing collections It doesn’t always work exceptionally,
-especially when a couple collections are very close to each other, but
-as the old saying goes “a bird in hand is worth two in the bush”. As we
-have observed, the previous sampling schemes have somewhat similar
-results - so we used the `PointBasedSample` as the framework to embed
-into this function.
+few minor modifications to the point-based sample and designs it around
+existing collections. It may not perform well if collections are close
+together, but, as the saying goes, “a bird in hand is worth two in the
+bush”. As we have observed, the previous sampling schemes have produced
+somewhat similar results, so we used the `PointBasedSample` as the
+framework for embedding in this function.
 
 ``` r
 exist_pts <- sf::st_sample(x_buff, size = 10) |> 
@@ -206,10 +200,12 @@ results from this function can lead to some oddly shaped clusters, but
 ### Isolation by Distance Based Sample
 
 Isolation by Distance is the fundamental idea behind this package. This
-function explicitly uses IBD to develop a sampling scheme, and does not
-obfuscate it with any other parameters.
+function applies Isolation by Distance (IBD) without added parameters,
+creating clusters based solely on spatial genetic structure, not
+geographic spacing or area balancing, which distinguishes it from
+previous methods.
 
-Note that this function requires a raster, rather than vector, input.
+Note that this function requires a raster, rather than a vector, input.
 
 ``` r
 files <- list.files( 
@@ -252,18 +248,16 @@ ibdbs.p
 
 ![](GettingStarted_files/figure-html/Isolatation%20by%20Distance%20Example-1.png)
 
-Because these data were processed from a raster, they have 90 corners
-and large straight lines, representing raster tiles. Regardless, it is
-evident that the *borders* of the clusters are more natural looking than
-in the previous (and future) sampling schemes, and we have better
-matching of the individual polygons into single classes.
+Because results are derived from rasters, clusters have straight lines
+and 90-degree corners. Despite the raster effects, cluster borders look
+more natural, and polygons align better with classes than previous
+methods.
 
-### Isolation by resistance
+### Isolation by Resistance
 
-This workflow requires a couple steps to enact. We have a vignette
-dedicated to detailing them at `Isolation by Resistance` - check it out!
-Here we will just load the data that you will get if you run that
-vignette.
+This workflow requires a couple of steps. We have a dedicated vignette
+for Isolation by Resistance with full details. Here, we will just load
+the data you get when you run that vignette.
 
 ``` r
 ibr <- sf::st_read(
@@ -278,29 +272,28 @@ ibr.p <- map +
  [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
-### Polygon Based Sample
+### PolygonBasedSample
 
-This is the most commonly implemented method for guiding native seed
-collection in North America. However, I am not sure exactly how
-practitioners all implement it, and whether the formats of application
-are consistent among practitioners! For these reasons a few different
-sets of options are supported for a user.
+This method is widely used for native seed collection in North America.
+However, I am not sure exactly how practitioners implement it, or
+whether the application formats are consistent among practitioners! For
+these reasons, a few different sets of options are supported for a user.
 
-For general usage, two parameters are always required `x` which is the
+For general usage, two parameters are always required `x`, which is the
 species range as an sf object, and `ecoregions`, the sf object
-containing the ecoregions of interest. The `ecoregions` file does not
-need to be subset to the range of `x` quite yet - the function will take
-care of that. Additional arguments to the function include as usual `n`
-to specify how many accession we are looking for in our collection. Two
-additional arguments relate to whether we are using Omernik Level 4
-ecoregions data or ecoregions (or biogeographic regions) from another
-source. These are `OmernikEPA`, and `ecoregion_col`, if you are using
-the official EPA release of ecoregions then both of these are optional,
-however if you are not using the EPA product than both *should* be
-supplied - but only the `ecoregion_col` argument is totally necessary.
-This column should contain unique names for the highest resolution level
-ecoregion you want to use from the data set, for many data sets, such as
-our example we call ‘neo_eco’ this may be the only field with ecolevel
+containing the ecoregions of interest. The ecoregions file does not need
+to be subset to the range of x quite yet - the function will take care
+of that. Additional arguments to the function include, as usual, `n`,
+which specifies how many accessions we are looking for in our
+collection. Two additional arguments relate to whether we are using
+Omernik Level 4 ecoregions data or ecoregions (or biogeographic regions)
+from another source. These are `OmernikEPA` and `ecoregion_col`. If you
+are using the official EPA release of ecoregions, then both of these are
+optional. If you are not using the EPA product, then both should be
+supplied, but only the `ecoregion_col` argument is totally necessary.
+This column should contain the unique name of the highest-resolution
+ecoregion you want to use from the dataset. For many data sets, such as
+our example, we call ‘neo_eco’; this may be the only field with ecolevel
 information!
 
 ``` r
@@ -336,21 +329,21 @@ ebs.p <- map +
   coord_sf(expand = F)
 ```
 
-This output differs from the others we will see, here we have depicted
+This output differs from the others we will see; here, we have depicted
 the number of collections to be made per ecoregion. Because the number
-of ecoregions is greater than our requested sample size, the return
-object can only take on two values - no collections, or one collection.
+of ecoregions exceeds our requested sample size, the return object can
+only take on two values: no collections or one collection.
 
-### Environmental Based Sample
+### EnvironmentalBasedSample
 
 The `EnvironmentalBasedSample` can only be used if you have species
-distribution model data. We have included the ouputs of the vignette
-‘Species Distibution Model’ with the package so they are available to
+distribution model data. We have included the outputs of the vignette
+‘Species Distribution Model’ with the package so they are available to
 this vignette.
 
 #### load the SDM predictions
 
-Here we load the results of the sdm processing from the package data.
+Here, we load the results of the sdm processing from the package data.
 
 ``` r
 sdModel <- readRDS(
@@ -374,23 +367,24 @@ terra::plot(sdm)
 ![](GettingStarted_files/figure-html/unnamed-chunk-7-1.png)
 
 Once these data are loaded into R, we will scale the rasters (using
-`RescaleRasters`) which will serve as surfaces to predict from (this is
+`RescaleRasters`), which will serve as surfaces to predict from (this is
 also done above!), then we will run the algorithm
-(`EnvironmentalBasedSample`). However, before we run the algorithm we
-will need to create a directory (also called a ‘folder’), on our
+(`EnvironmentalBasedSample`). However, before we run the algorithm, we
+will need to create a directory (also called a ‘folder’) on our
 computers to save the results from the function
 `EnvironmentalBasedSample`. Whereas earlier in this vignette we
 showcased that the functions generated the species distribution model,
-and us saving the results were a two stage process (e.g. to create the
+and us saving the results were a two-stage process (e.g. to create the
 SDM and associated products we used: `elasticSDM`, `PostProcessSDM`, and
 `RescaleRasters`, before finally saving relevant data with
 `writeSDMresults`), this function produces both the product and writes
-out ancillary data simultaneously.  
-This approach was chosen as this function is only writing out four
-objects: 1) the groups as vector data  
+out ancillary data simultaneously. This approach was chosen as this
+function is only writing out four objects: 1) The groups as vector
+data  
 2) and the groups as raster data  
-3) the k-nearest neighbors (knn) model used to generate these clusters  
-4) the confusion matrix associated with testing the knn model
+3) The k-nearest neighbours (kNN) model was used to generate these
+clusters 4) 1. The confusion matrix associated with testing the kNN
+model
 
 ``` r
 rr <- RescaleRasters( # you may have already done this!
@@ -451,27 +445,27 @@ we showcase the different results from using each of them.
 
 ![](GettingStarted_files/figure-html/Compare%20Environmental%20Based%20Samples-1.png)
 
-These plots are able to showcase the difference in results depending on
-which of the three input rasters are utilized. As with all of the
-sampling schemes, results vary widely based on the spatial extents which
-the functions are applied to. Using the SDM output which have undergone
-thresholding results in the largest classified area. At first glance the
-results may seem very different, but if you look at central america,
-they are largely consistent, as they are near the Andes; large
-differences do exist in the Amazon Basin, but even there some alignment
-between the systems is evident. Accordingly, the surface used for a
-species should match some evaluation criterion.
+These plots can showcase the differences in results depending on which
+of the three input rasters are used. As with all sampling schemes,
+results vary widely depending on the spatial extent to which the
+functions are applied. Using the SDM output that has undergone
+thresholding results in the largest classified area. At first glance,
+the results may seem very different, but in Central America, they are
+largely consistent because it is near the Andes; large differences do
+exist in the Amazon Basin, but even there, some alignment between the
+systems is evident. Accordingly, the surface used for a species should
+match some evaluation criterion.
 
 Using the threshold raster surface is a very good option if we do not
 want to ‘miss’ too many areas, whereas the clipped and supplemented
 options may be better suited for scenarios where we do not want to draw
-up clusters, which lack any populations which can be collected from.
+up clusters that lack any populations that can be collected from.
 
 ## Comparision of different sampling schemes
 
 So, we have some maps for you to look at! They all *looked* relatively
-similar to me when plotted one after another, let’s plot them all
-simultaneously and see if that’s still the case.
+similar to me when plotted one after another. Let’s plot them together
+and see if that’s still the case.
 
 ``` r
 pbs.p + eas.p + os.p  +  ibdbs.p2 + ibr.p + ENVIbs.p + 
@@ -480,20 +474,18 @@ pbs.p + eas.p + os.p  +  ibdbs.p2 + ibr.p + ENVIbs.p +
 
 ![](GettingStarted_files/figure-html/Plot%20all%20Sampling%20Schemes%20together-1.png)
 
-The geographic based samples (here Point, Equal Area, Opportunistic, and
-IBE) are quite similar. In my mind isolation by distance (IBD) show the
-biggest different, it makes the most *sense* by splitting sampling areas
-along naturally occurring patches of the species range.
+The geographic-based samples (here, Point, Equal Area, Opportunistic,
+and IBE) are quite similar. In my mind, isolation by distance (IBD)
+shows the biggest difference; it makes the most sense by splitting
+sampling areas along naturally occurring patches of the species range.
 
-The application of `PolygonBasedSample` to the data are difficult to
-evaluate in the same sense as the other data sets, but it was able to
-identify the desired regions for sampling. We do not show it in this
-pane.
+The application of `PolygonBasedSample` to the data is difficult to
+evaluate in the same way as the other data sets, but it did identify the
+desired sampling regions. We do not show it in this pane. Isolation by
+Resistance is similar to IBD; however, it makes fewer splits in Central
+America and instead picks them up in Peru.
 
-Isolation by Resistance is similar to IBD, however it makes fewer splits
-in Central America, instead picking up on them in the Peru.
-
-Relative to IBR Isolation by Environment tends to split locations across
-the Andes and the NW coastal regions of South America. The ranges are
-relatively contigious - enough to sensibly sample from. Contiguity of
-ranges in this approach can be controlled with the `coord_wt` argument.
+Relative to IBR, Isolation by Environment tends to split locations
+across the Andes and the NW coastal regions of South America. The ranges
+are relatively contiguous enough to sensibly sample from. Contiguity of
+ranges in this approach can be controlled with the coord_wt argument.

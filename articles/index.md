@@ -17,8 +17,8 @@ Background, installation, usage, and sampling schemas
 - [Isolation By
   Resistance](https://sagesteppe.github.io/safeHavens/articles/IsolationByResistance.md):
 
-  Cleaning and prepping data for creating resistance surfaces required
-  for Isolation By Resistance sampling.
+  Cleaning and preparing data to generate resistance surfaces for
+  Isolation by Resistance analysis.
 
 - [Species Distribution
   Models](https://sagesteppe.github.io/safeHavens/articles/SpeciesDistributionModels.md):

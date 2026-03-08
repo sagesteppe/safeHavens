@@ -16,8 +16,8 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Isolation By Resistance">
-<meta name="description" content="Cleaning and prepping data for creating resistance surfaces required for Isolation By Resistance sampling. ">
-<meta property="og:description" content="Cleaning and prepping data for creating resistance surfaces required for Isolation By Resistance sampling. ">
+<meta name="description" content="Cleaning and preparing data to generate resistance surfaces for Isolation by Resistance analysis. ">
+<meta property="og:description" content="Cleaning and preparing data to generate resistance surfaces for Isolation by Resistance analysis. ">
 <meta property="og:image" content="https://sagesteppe.github.io/safeHavens/logo.png">
 <!-- Google Search Console Verification --><meta name="google-site-verification" content="viUZcwXk_Fi5hsfdB7m6GgrFgGMJ-xVe1BcMTezGJII">
 <!-- JSON-LD Structured Data for AI Crawlers --><script type="application/ld+json">
@@ -114,30 +114,29 @@
 <div class="section level2">
 <h2 id="isolation-by-resistance-sampling">Isolation by Resistance Sampling<a class="anchor" aria-label="anchor" href="#isolation-by-resistance-sampling"></a>
 </h2>
-<p>Landscape genetics has laddered null hypothesis regarding the genetic
+<p>Landscape genetics has laddered null hypotheses regarding the genetic
 structure of species. The first null, Panmixia, is that populations show
-no differentiation, as <em>could</em> be observed in a species with few,
-highly connected populations; it is not treated as a sampling scenario
-by this package. The second null is Isolation by Distance, the main idea
-behind most of the functions in this package, where populations become
-more differentiated as a function of geographic distance - culminating
-in the function ‘IBDBasedSample’. The final null hypothesis is Isolation
-by Resistance, where the differentiation of populations is driven by
-environmental distances across populations decreasing gene flow.</p>
+no differentiation, as could be observed in a species with few, highly
+connected populations; this package does not treat it as a sampling
+scenario. The second null is Isolation by Distance, the main idea behind
+most of the functions in this package, in which populations become more
+differentiated with increasing geographic distance, culminating in the
+function ‘IBDBasedSample’.The next hypothesis is Isolation by
+Resistance, where the differentiation of populations is driven by a
+break down in gene flow due to barriers.</p>
 <p>While IBD is easily calculated from geographic distances, IBR
-requires a parameterized cost surface, in raster format, that depicts
+requires a parameterised cost surface, in raster format, that depicts
 the costs to an organism’s movement of maternal and paternal genetic
-material. <code>safeHavens</code> supports a simple workflow to
-paramterize a cost surface, that can be used to support basic
-<code>IBR</code> type sampling.</p>
+material. safeHavens supports a simple workflow for parameterising a
+cost surface that can be used for basic IBR-type sampling.</p>
 <div class="section level3">
 <h3 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h3>
 <p>We’ll use the species occurrence data from dismo again here. A few
-spatial data sets that should be suitable for nearly all users IBR
-applications are included in <code>safeHavens</code> for this example,
-but the full data sets are not shipped with the package. They include: -
-lakes, Lehner et al. 2025, <a href="https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994" class="external-link">GLWD</a><br>
+spatial data sets suitable for nearly all users’ IBR applications are
+included in safeHavens for this example, but the full data sets are not
+shipped with the package.</p>
+<p>They include: - lakes, Lehner et al. 2025, <a href="https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994" class="external-link">GLWD</a><br>
 - oceans from Natural Earth, <a href="https://www.naturalearthdata.com/downloads/10m-physical-vectors/" class="external-link uri">https://www.naturalearthdata.com/downloads/10m-physical-vectors/</a><br>
 - rivers from <a href="https://data.apps.fao.org/catalog/dataset/%2076e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9" class="external-link">FAO</a>,
 - tri (terrain ruggedness index), Amatulli et al. 2018, <a href="https://www.earthenv.org/topography" class="external-link uri">https://www.earthenv.org/topography</a></p>
@@ -160,10 +159,10 @@ spatial.</p>
 <h3 id="data-prep">data prep<a class="anchor" aria-label="anchor" href="#data-prep"></a>
 </h3>
 <p>Each of the environmental variable data sources needs some
-pre-processing before being feed into the IBR workflow, most of them
-just need to be converted from vector to raster formats - a process we
-call ‘rasterization’. We will also rescale the tri rasters, to put them
-on a similar numeric range as the other data sets.</p>
+pre-processing before being fed into the IBR workflow; most of them just
+need to be converted from vector to raster formats - a process we call
+‘rasterisation’. We will also rescale the tri rasters to put them on a
+similar numeric scale to the other datasets.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package <span class="op">=</span> <span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">"extdata"</span>, <span class="st">"tri.tif"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">'tri'</span></span>
@@ -197,8 +196,8 @@ on a similar numeric range as the other data sets.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span>geometry <span class="op">=</span> <span class="va">geom</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Value <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>We’ll convert each of the above spatVect objects to spatRasters, and
-clip them to an area of analysis around our species records.</p>
+<p>We’ll convert each of the above spatVect objects to spatRasters and
+clip them to an analysis area around our species records.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x_buff</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">planar_proj</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="co"># huge buffer for the bbox. </span></span>
@@ -213,8 +212,8 @@ clip them to an area of analysis around our species records.</p>
 <span><span class="va">rivers_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">rivers_v</span>, <span class="va">x_buff</span><span class="op">)</span></span>
 <span><span class="va">ocean_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">ocean_v</span>, <span class="va">x_buff</span><span class="op">)</span></span>
 <span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/crop.html" class="external-link">crop</a></span><span class="op">(</span><span class="va">tri</span>, <span class="va">x_buff</span><span class="op">)</span></span></code></pre></div>
-<p>The vector data need to be converted to raster format using a
-function like <code>rasterize</code>, from terra.</p>
+<p>Convert the vector data to raster format using terra’s
+<code>rasterise</code> function.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ocean_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rasterize.html" class="external-link">rasterize</a></span><span class="op">(</span><span class="va">ocean_v</span>, <span class="va">tri</span>, field <span class="op">=</span> <span class="st">'Value'</span>, background <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span><span class="va">lakes_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rasterize.html" class="external-link">rasterize</a></span><span class="op">(</span><span class="va">lakes_v</span>, <span class="va">tri</span>, field <span class="op">=</span> <span class="st">'Value'</span>,  background <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
@@ -234,24 +233,22 @@ function like <code>rasterize</code>, from terra.</p>
 <div class="section level3">
 <h3 id="actual-workflow-">actual workflow.<a class="anchor" aria-label="anchor" href="#actual-workflow-"></a>
 </h3>
-<p>The first, of three, functions in the Isolation by Resistance
-sampling workflow is used to create the resistance surface. It requires
-a template raster, and the other rasters which will be incorporated into
+<p>The first of three functions in the Isolation by Resistance sampling
+workflow is used to create the resistance surface. It requires a
+template raster and the other rasters, which will be incorporated into
 the product. <code>buildResistanceSurface</code> essentially just
-requires the rasters we configured above, and user specified weights to
-assign to each raster. These weights convey how difficult it is for a
-species to move across the landscape. For plants, oceans generally get
-very high weight, while lakes and rivers - still obstacles - receive
-lower weights. Terrain ruggedness values are much more likely to vary
-based on both the ecology of the species, and the lanscape being
-sampled.</p>
-<p>When considering weights consider the influences of: bird dispersal,
-land animal dispersal, and natural growth/expansion of populations. This
-is certainly the most difficult part of this workstream to tune, and
-often relies on subjective expert judgement. The values below are the
-functions defaults - to my eyes they work OK for the landscape at hand;
-although an ecologist with experience in this region may beg to differ,
-and I would not argue with them.</p>
+requires the rasters we configured above and user-specified weights for
+each raster. These weights convey how difficult it is for a species to
+move across the landscape. For plants, oceans generally get very high
+weights, while lakes and rivers - still obstacles - receive lower
+weights. Terrain ruggedness values are much more likely to vary with
+both the species’ ecology and the landscape being sampled.</p>
+<p>When considering weights, consider the influences of bird dispersal,
+land animal dispersal, and natural population growth/expansion. Tuning
+this part is challenging and often subjective. The values below are the
+functions’ defaults - to my eyes, they work OK for the landscape at
+hand; although an ecologist with experience in this region may beg to
+differ, and I would not argue with them.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_surface</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildResistanceSurface.html">buildResistanceSurface</a></span><span class="op">(</span></span>
 <span>  base_raster <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">ocean_r</span><span class="op">)</span>, <span class="co"># template</span></span>
@@ -269,10 +266,9 @@ and I would not argue with them.</p>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res_surface</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/create%20resistance%20surface-1.png" class="r-plt" alt="" width="700"></p>
-<p>Note that the above object will be stored <em>in memory</em>, I
-advocate for the use of a relatively coarsely grained raster surface
-(e.g. 4kmx4km cells or more), because we are doing pretty generalized
-work, and it will speed up processing.</p>
+<p>Note that the above object is stored in memory. I recommend using
+coarse raster surfaces (e.g., 4 km x 4 km cells or larger) at this level
+of generalisation and to speed up processing.</p>
 <p>Now that we have our resistance surface, the next step is calculating
 the distances between areas across the species range using the function
 <code>populationResistance</code>. Similar to other functions in
@@ -289,10 +285,10 @@ complete distance matrix. In my testing I <em>greatly</em> prefer
 results from ‘complete’ calculations, and these work with NbClust
 without having to be ordinated down into 2-dimensional space and give
 much better results.</p>
-<p>This function will return a raster representing the buffered
-populations (species range in the domain), the points sampled by terra,
-the graph information, and a distance matrix with the least cost
-distance values from the resistance surface.</p>
+<p>This function returns a raster representing the buffered populations
+(species range in the domain), the points sampled by terra, the graph
+information, and a distance matrix containing the least-cost distances
+from the resistance surface.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>pop_res_graphs <span class="ot">&lt;-</span> <span class="fu">populationResistance</span>(</span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">base_raster =</span> <span class="fu">rast</span>(ocean_r),</span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">populations_sf =</span> x,</span>
@@ -306,15 +302,13 @@ distance values from the resistance surface.</p>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">names</span>(pop_res_graphs)</span>
 <span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"pop_raster"</span>     <span class="st">"sampled_points"</span> <span class="st">"spatial_graph"</span>  <span class="st">"edge_list"</span>     </span>
 <span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>[<span class="dv">5</span>] <span class="st">"ibr_matrix"</span>    </span></code></pre></div>
-<p>The buffered locations look like this - currently the IDs are
-meaningless.</p>
+<p>Buffered locations appear as shown; IDs are meaningless.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">pop_res_graphs</span><span class="op">$</span><span class="va">pop_raster</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/plot%20the%20buffered%20populations-1.png" class="r-plt" alt="" width="700"></p>
-<p>This function does not perform well with user pre-specified
-<code>n</code>, however the <code>min.nc</code> parameter, passed to
-<code>NbClust</code> can be applied to generally give the analyst
-specified value.</p>
+<p>This function underperforms with user-prespecified <code>n</code>;
+passing <code>min.nc</code> to NbClust generally yields the
+analyst-specified value.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ibr_groups</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/IBRSurface.html">IBRSurface</a></span><span class="op">(</span></span>
 <span>  base_raster <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">ocean_r</span><span class="op">)</span>,</span>
@@ -326,7 +320,7 @@ specified value.</p>
 <span>  n <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  planar_proj <span class="op">=</span> <span class="fl">3857</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The results of the clustering process are visualized beneath.</p>
+<p>Clustering results are shown below.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classified_pts</span> <span class="op">=</span> <span class="va">ibr_groups</span><span class="op">$</span><span class="va">points</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res_surface</span><span class="op">)</span></span>
@@ -338,16 +332,16 @@ specified value.</p>
 <span>  lwd <span class="op">=</span> <span class="fl">3</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/Plot%20cluster%20classified%20points-1.png" class="r-plt" alt="" width="700"></p>
-<p>The classified occupied area clusters are visualized below.</p>
+<p>Occupied area clusters are visualised below.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ibr_groups</span><span class="op">$</span><span class="va">geometry</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/plot%20the%20classified%20clusters-1.png" class="r-plt" alt="" width="700"></p>
-<p>Finally the surface can be sampled using
+<p>Finally, the surface can be sampled using
 <code>PolygonBasedSample</code>. Simply union the geometries to be the
 species range, and supply the groups to the x argument, in lieu of an
-ecoregion or pstz type surface.</p>
+ecoregion or pSTZ-type surface.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PolygonBasedSample.html">PolygonBasedSample</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="va">ibr_groups</span><span class="op">$</span><span class="va">geometry</span><span class="op">)</span>,</span>
@@ -362,17 +356,17 @@ ecoregion or pstz type surface.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">'Ct. collections\nper cluster'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'bottom'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" alt="" width="700"></p>
-<p>Each of the nine clusters has a different number of the 20 desired
-collections assigned to it.</p>
+<p>Each cluster has a different number of the 20 assigned
+collections.</p>
 </div>
 <div class="section level3">
 <h3 id="bonus-adding-sdm-as-a-resistance-layer-and-non-linear-scaling-">bonus: adding sdm as a resistance layer, and non-linear
 scaling.<a class="anchor" aria-label="anchor" href="#bonus-adding-sdm-as-a-resistance-layer-and-non-linear-scaling-"></a>
 </h3>
-<p>A default argument to cluster IBR is the probablity surface
+<p>A default argument to cluster IBR is the probability surface
 predictions from an SDM. Here we will add it to the surface.</p>
-<p>We will also show another way of adding topographc ruggedness index,
-that ‘bypasses’ an assumed linear relationship along the weighting
+<p>We will also show another way to add the topographic ruggedness index
+that bypasses the assumed linear relationship in the weighting
 scheme.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdm</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span></span>
@@ -380,22 +374,22 @@ scheme.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdm</span><span class="op">[</span><span class="st">'Predictions'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" alt="" width="700"></p>
-<p>Note that we will have to reverse the predictions from this layer,
-currently higher values mean more suitable habitat. We want the higher
-values going into the probability surface function to mean more
+<p>Note that we will have to reverse the predictions from this layer;
+currently, higher values indicate a more suitable habitat. We want
+higher values in the probability surface function to indicate greater
 resistance to movement.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inverted_sdm</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">sdm</span><span class="op">[</span><span class="st">'Predictions'</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">inverted_sdm</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="700"></p>
-<p>And indeed, we may actually just want to remove weights in suitable
-habitat, or set to an arbitrarily low value</p>
+<p>And indeed, we may actually just want to remove weights in a suitable
+habitat, or set them to an arbitrarily low value.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inverted_sdm</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/ifelse.html" class="external-link">ifel</a></span><span class="op">(</span><span class="va">inverted_sdm</span> <span class="op">&lt;</span> <span class="fl">0.5</span>, <span class="fl">0.01</span>, <span class="va">inverted_sdm</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">inverted_sdm</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="700"></p>
-<p>And we will convert it to the same, integer, scale as the rest of the
-predictors</p>
+<p>And we will convert it to the same integer scale as the other
+predictors.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inverted_sdm</span> <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/math-generics.html" class="external-link">round</a></span><span class="op">(</span><span class="va">inverted_sdm</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">inverted_sdm</span><span class="op">)</span></span></code></pre></div>
@@ -413,8 +407,8 @@ layers</p>
 <h4 id="non-linear-weight">non-linear weight<a class="anchor" aria-label="anchor" href="#non-linear-weight"></a>
 </h4>
 <p>Not all environmental variables are expected to have linear effects
-on movement. Indeed something like terrain ruggedness may have only a
-small effect until reaching certain thresholds.</p>
+on movement. Indeed, something like terrain ruggedness may have only a
+small effect until reaching an asymptote.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">100</span></span>
 <span><span class="va">rs</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">to</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -431,8 +425,8 @@ small effect until reaching certain thresholds.</p>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"l"</span>, main <span class="op">=</span> <span class="st">"x^3: polynomial"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">4</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"l"</span>, main <span class="op">=</span> <span class="st">"x^4 polynomial"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="IsolationByResistance_files/figure-html/plot%20non-linear%20transformations-1.png" class="r-plt" alt="" width="700"></p>
-<p>We will apply a fourth order polynomial to the input tri data to
-accomodate a non-linear effect.</p>
+<p>We will apply a fourth-order polynomial to the input tri data to
+accommodate a non-linear effect.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tri_rscl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/app.html" class="external-link">app</a></span><span class="op">(</span><span class="va">tri</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span> <span class="fu">rs</span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">2</span>, to <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">80</span><span class="op">)</span><span class="op">)</span> <span class="op">}</span><span class="op">)</span></span>
 <span></span>

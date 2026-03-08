@@ -111,8 +111,8 @@
 
     
     
-<p><code>safeHavens</code> offers only one function that operates
-explictly on population level data.</p>
+<p><code>safeHavens</code> includes one function for population-level
+data.</p>
 <div class="section level2">
 <h2 id="prepare-data">prepare data<a class="anchor" aria-label="anchor" href="#prepare-data"></a>
 </h2>
@@ -122,23 +122,28 @@ explictly on population level data.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">99</span><span class="op">)</span></span></code></pre></div>
-<p>We will use the Bradypus data included in the <code>dismo</code>
-package for this vignette.</p>
+<p>For this vignette, we will use the Bradypus data included in the
+<code>dismo</code> package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"dismo"</span><span class="op">)</span>, <span class="st">'ex'</span>, <span class="st">'bradypus.csv'</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'lon'</span>, <span class="st">'lat'</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">x</span>, coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'lon'</span>, <span class="st">'lat'</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span></code></pre></div>
-<p>And we will create the same base map used in
-<code>GettingStarted</code>, note this chunk is ‘hidden’ in the rendered
-man pages, but present in the raw vignette documents.</p>
+<p>We will now create the same base map used in the
+<code>GettingStarted</code> example. While this chunk is ‘hidden’ in the
+rendered man pages, it remains present in the raw vignette
+documents.</p>
 <pre><code>Warning: attribute variables are assumed to be spatially constant throughout
 all geometries</code></pre>
-<p>While all other functions in the package handle <code>sf</code>
-objects directly, this function will actually just use a simple
-data.frame of sites, to streamline making a couple calculations.</p>
-<p>The input to the <code>KMedoidsBasedSample</code> function is a list
-with two elements: a distance matrix, and a data frame of site locations
-and attributes. The data frame must contain the following columns.</p>
+<p>Unlike other functions in the package that use sf objects, this
+function instead uses a simple site data frame for more efficient
+calculations.</p>
+<p>The <code>KMedoidsBasedSample</code> function requires a list as
+input, consisting of two elements: (1) a distance matrix, and (2) a data
+frame containing site locations and relevant attributes. Ensure both
+elements are present when calling this function. The required columns in
+the data frame are: site_id, coord_uncertainty, lon, and lat. Please
+verify your data frame includes each of these columns to ensure proper
+function performance.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> </span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -203,15 +208,15 @@ and attributes. The data frame must contain the following columns.</p>
 </tr>
 </tbody>
 </table>
-<p>The second required element, the distance matrix, can be calculated
-with the <code>greatCircleDistance</code> function in the package.
-Please use this rather than <code>st_distance</code> from
-<code>sf</code> for consistency, as the units differ slightly. If you
-want to use <code><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">sf::st_distance</a></code>, make sure to convert the units
-to match the scale of the <code>greatCircleDistance</code> function,
-otherwise the results will be incorrect. Note that you can also use an
-environmental distance matrix from the first two axes of a PCA, this is
-detailed below.</p>
+<p>The distance matrix, which is the second required element of the
+input list, can be generated using the <code>greatCircleDistance</code>
+function from this package. Use this instead of
+<code><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">sf::st_distance</a></code> to keep unit consistency, as the units
+differ. If using <code><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">sf::st_distance</a></code>, always convert the units
+to match those of <code>greatCircleDistance</code> to ensure correct
+results. As an alternative, you can use an environmental distance matrix
+derived from the first two axes of a PCA, as described in more detail
+below.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dist_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
 <span>   <span class="fu"><a href="../reference/greatCircleDistance.html">greatCircleDistance</a></span><span class="op">(</span></span>
@@ -219,13 +224,12 @@ detailed below.</p>
 <span>     <span class="va">df</span><span class="op">$</span><span class="va">lat</span>, <span class="va">df</span><span class="op">$</span><span class="va">lon</span></span>
 <span>   <span class="op">)</span></span>
 <span> <span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<p>The optimization routine requires at least one ‘required’ site to be
-specified. Here we will select the site closest to the geographic center
-of all sites as the required site.</p>
-<p>Normally this can refer to existing accessions, or administrative
-units, or nature preserves which are helping to implement the germplasm
-collection, and are fortunate enough to already have some samples or at
-least guaranteed access.</p>
+<p>The optimisation routine requires at least one specified site. Here,
+we will select the site location closest to the geographic centre of all
+sites as the required site.</p>
+<p>Normally, this refers to existing accessions, administrative units,
+or nature preserves that support the germplasm collection by already
+possessing samples or guaranteed access.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dists2c</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/greatCircleDistance.html">greatCircleDistance</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">median</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">lat</span><span class="op">)</span>, </span>
@@ -234,11 +238,11 @@ least guaranteed access.</p>
 <span>  <span class="va">df</span><span class="op">$</span><span class="va">lon</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">df</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">dists2c</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,<span class="st">'required'</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span></code></pre></div>
-<p>This function not only bootstraps sites to simulate the true
-distribution of the species, but it also bootstraps coordinate
-uncertainty for each site. Here we will randomly assign 20% of the sites
-to have coordinate uncertainty between 1 km and 40 km. Note that he
-argument is always in meters.</p>
+<p>This function bootstraps sites to simulate the species’ true
+distribution and bootstraps coordinate uncertainty for each site. Here,
+we will randomly assign 20% of the sites to have coordinate uncertainty
+ranging from 1 km to 40 km. Coordinate uncertainty is always measured in
+meters.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">uncertain_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_sites</span><span class="op">)</span>, </span>
@@ -250,8 +254,7 @@ argument is always in meters.</p>
 <div class="section level2">
 <h2 id="run-kmedoidsbasedsample-based-only-on-geographic-distances">Run KMedoidsBasedSample based only on geographic distances<a class="anchor" aria-label="anchor" href="#run-kmedoidsbasedsample-based-only-on-geographic-distances"></a>
 </h2>
-<p>The input to the function is the distance matrix, and the site
-data.</p>
+<p>The function takes two inputs: a distance matrix and site data.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>test_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">distances =</span> dist_mat,</span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">sites =</span> df</span>
@@ -266,7 +269,7 @@ data.</p>
 <span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  ..<span class="sc">$</span> coord_uncertainty<span class="sc">:</span> num [<span class="dv">1</span><span class="sc">:</span><span class="dv">116</span>] <span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span> ...</span>
 <span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  ..<span class="sc">$</span> lon              <span class="sc">:</span> num [<span class="dv">1</span><span class="sc">:</span><span class="dv">116</span>] <span class="sc">-</span><span class="fl">65.4</span> <span class="sc">-</span><span class="fl">65.4</span> <span class="sc">-</span><span class="fl">65.1</span> <span class="sc">-</span><span class="fl">63.7</span> <span class="sc">-</span><span class="fl">63.9</span> ...</span>
 <span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  ..<span class="sc">$</span> lat              <span class="sc">:</span> num [<span class="dv">1</span><span class="sc">:</span><span class="dv">116</span>] <span class="sc">-</span><span class="fl">10.4</span> <span class="sc">-</span><span class="fl">10.4</span> <span class="sc">-</span><span class="fl">16.8</span> <span class="sc">-</span><span class="fl">17.4</span> <span class="sc">-</span><span class="fl">17.4</span> ...</span></code></pre></div>
-<p>The funtion <code>KMedoidsBasedSample</code> has several arguments
+<p>The function <code>KMedoidsBasedSample</code> has several arguments
 used to control run parameters.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>st <span class="ot">&lt;-</span> <span class="fu">system.time</span>( {</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>    geo_res <span class="ot">&lt;-</span> <span class="fu">KMedoidsBasedSample</span>( </span>
@@ -284,13 +287,39 @@ used to control run parameters.</p>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>)</span>
 <span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>Sites<span class="sc">:</span> <span class="dv">116</span> <span class="sc">|</span> Seeds<span class="sc">:</span> <span class="dv">1</span> <span class="sc">|</span> Requested<span class="sc">:</span> <span class="dv">5</span> <span class="sc">|</span> Coord. Uncertain<span class="sc">:</span> <span class="dv">19</span> <span class="sc">|</span> BS Replicates<span class="sc">:</span> <span class="dv">10</span></span>
 <span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  <span class="sc">|</span>                                                                              <span class="er">|</span>                                                                      <span class="er">|</span>   <span class="dv">0</span><span class="sc">%  |                                                                              |=======                                                               |  10%</span>  <span class="er">|</span>                                                                              <span class="er">|==============</span>                                                        <span class="er">|</span>  <span class="dv">20</span><span class="sc">%  |                                                                              |=====================                                                 |  30%</span>  <span class="er">|</span>                                                                              <span class="er">|============================</span>                                          <span class="er">|</span>  <span class="dv">40</span><span class="sc">%  |                                                                              |===================================                                   |  50%</span>  <span class="er">|</span>                                                                              <span class="er">|==========================================</span>                            <span class="er">|</span>  <span class="dv">60</span><span class="sc">%  |                                                                              |=================================================                     |  70%</span>  <span class="er">|</span>                                                                              <span class="er">|========================================================</span>              <span class="er">|</span>  <span class="dv">80</span><span class="sc">%  |                                                                              |===============================================================       |  90%</span>  <span class="er">|</span>                                                                              <span class="er">|======================================================================|</span> <span class="dv">100</span>%</span></code></pre></div>
-<p>The function operates relatively quick with few bootstraps and few
-sites, but will take a smidge of time longer with more complex
-scenarios. We recommened using at least 999 bootstraps for real world
-applications.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>st</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>   user  system elapsed </span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a> <span class="fl">25.530</span>   <span class="fl">0.026</span>  <span class="fl">25.564</span> </span></code></pre></div>
+<p>The function runs quickly with a few bootstrap or site samples, but
+it will take longer with more complex scenarios. We recommend using at
+least 999 bootstraps for real-world applications.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">st</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">user.self</td>
+<td align="right">26.797</td>
+</tr>
+<tr class="even">
+<td align="left">sys.self</td>
+<td align="right">0.053</td>
+</tr>
+<tr class="odd">
+<td align="left">elapsed</td>
+<td align="right">26.858</td>
+</tr>
+<tr class="even">
+<td align="left">user.child</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="left">sys.child</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
 <div class="section level3">
 <h3 id="return-output-structure">return output structure<a class="anchor" aria-label="anchor" href="#return-output-structure"></a>
 </h3>
@@ -319,7 +348,7 @@ applications.</p>
 <span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>  ..<span class="sc">$</span> n_bootstrap <span class="sc">:</span> num <span class="dv">10</span></span>
 <span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>  ..<span class="sc">$</span> dropout_prob<span class="sc">:</span> num <span class="fl">0.1</span></span>
 <span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>  ..<span class="sc">$</span> n_uncertain <span class="sc">:</span> int <span class="dv">19</span></span></code></pre></div>
-<p>The stability score shows how often the most frquently selected
+<p>The stability score shows how often the most frequently selected
 network of sites was selected from the bootstrapped runs.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">stability_score</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -331,8 +360,8 @@ network of sites was selected from the bootstrapped runs.</p>
 <td align="right">0.2</td>
 </tr></tbody>
 </table>
-<p>The stability data frame shows how often each site was selected
-across all bootstrap runs.</p>
+<p>The stability data frame records how many times each site is selected
+during all bootstrap runs.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">stability</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -381,8 +410,8 @@ across all bootstrap runs.</p>
 </tr>
 </tbody>
 </table>
-<p>Many users may find the combindation of their input data with a few
-columns, to be all they need to carry on after the results.</p>
+<p>Many users may find that combining their input data with a few
+columns is all they need to continue after the results.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">geo_res</span><span class="op">$</span><span class="va">input_data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table style="width:100%;" class="table">
@@ -512,9 +541,9 @@ columns, to be all they need to carry on after the results.</p>
 </table>
 </div>
 <div class="section level3">
-<h3 id="visualize-the-selection-results">visualize the selection results<a class="anchor" aria-label="anchor" href="#visualize-the-selection-results"></a>
+<h3 id="visualise-the-selection-results">visualise the selection results<a class="anchor" aria-label="anchor" href="#visualise-the-selection-results"></a>
 </h3>
-<p>We can plot the required, and selected sites.</p>
+<p>We can plot the required and selected site locations.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">geo_res</span><span class="op">$</span><span class="va">input_data</span>, </span>
@@ -530,10 +559,11 @@ columns, to be all they need to carry on after the results.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Priority Selection Status of Sites; Geographic Distances'</span><span class="op">)</span></span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/first%20selection%20of%20target%20sites-1.png" class="r-plt" alt="" width="700"></p>
-<p>As you can see, a couple alternative sites in very close proximity to
-the selected sites also score highly. Functionally, these could serve as
-subtitutes for the target sites. What is important is that these
-combinations are found and articulated in the results.</p>
+<p>As you can see, a couple of alternative sites in very close proximity
+to the selected sites also score highly. These alternatives could be
+used as substitutes for the target sites. What is important is that
+these combinations are found and articulated in the results for site
+locations.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">geo_res</span><span class="op">$</span><span class="va">input_data</span>, </span>
@@ -548,25 +578,26 @@ combinations are found and articulated in the results.</p>
 <span> <span class="co"># ggrepel::geom_label_repel(aes(label = sample_rank), size = 4) +</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span>   </span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/priority%20ranking%20plot-1.png" class="r-plt" alt="" width="700"></p>
-<p>Because we believe that as many populations should be sampled as
-<em>can</em> be sampled, we include a ‘priority’ ranking with the
-results. Focus should be on the selected sites, but opportunities to
-sample beyond these should not be overlooked.</p>
+<p>Because we believe that as many populations as possible should be
+sampled, we include a ‘priority’ ranking with the results. The focus
+should be on the selected sites, but opportunities to sample beyond them
+should not be overlooked.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="run-kmedoidsbasedsample-with-environmental-distances">run KMedoidsBasedSample with environmental distances<a class="anchor" aria-label="anchor" href="#run-kmedoidsbasedsample-with-environmental-distances"></a>
 </h2>
 <p>As mentioned, instead of using geographic distance, we can use
-environmental distance ordinated into two dimensional space. An analyst
-should only consider the use of variables they know relevant to the
-species distrubution for this. However, for the sake of the example we
-will feed in the full stack of environmental variables available from
-the dismo package.</p>
+environmental distance, which is ordinated in a two-dimensional space.
+An analyst should only consider variables they know are relevant to the
+species distribution for this purpose. However, for the sake of the
+example, we will feed in the full stack of environmental variables
+available from the dismo package.</p>
 <div class="section level3">
 <h3 id="extract-prep-environmental-distances">extract prep environmental distances<a class="anchor" aria-label="anchor" href="#extract-prep-environmental-distances"></a>
 </h3>
-<p>First we read in the rasters.</p>
+<p>First, to facilitate environmental distance calculations, we read in
+the required raster layers.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"dismo"</span><span class="op">)</span>, <span class="st">'ex'</span><span class="op">)</span>, </span>
@@ -576,9 +607,9 @@ the dismo package.</p>
 <p>For our environmental distances, we will use a PCA transformation of
 the environmental variables. We will sample 100 random points from the
 raster layers to calculate the PCA, and then predict the PCA raster
-layers across the entire study area. We will take the only the first two
-layers, from the pca, and calculate environmental distances based on
-these two layers.</p>
+layers across the entire study area. We will take only the first two
+layers from the PCA and calculate environmental distances based on
+them.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>pts <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">spatSample</span>(predictors, <span class="dv">100</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>pts <span class="ot">&lt;-</span> pts[, <span class="fu">names</span>(pts)<span class="sc">!=</span><span class="st">'biome'</span> ] <span class="co"># remove categorical variable for distance calc</span></span>
 <span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a></span>
@@ -586,16 +617,16 @@ these two layers.</p>
 <span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">round</span>(pca_results<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_results<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>) <span class="co"># variance explained</span></span>
 <span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.58</span> <span class="fl">0.26</span> <span class="fl">0.10</span> <span class="fl">0.04</span> <span class="fl">0.02</span> <span class="fl">0.00</span> <span class="fl">0.00</span> <span class="fl">0.00</span></span>
 <span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>pca_raster <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">predict</span>(predictors, pca_results)</span></code></pre></div>
-<p>From the above we see that the first two PCA axes explain a large
-amount of the variance observed in this landscape.</p>
+<p>From the above, we see that the first two PCA axes account for a
+large portion of the variance observed in this landscape.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pca_raster</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># prediction of the pca onto a new raster</span></span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/plot%20pca%20layers-1.png" class="r-plt" alt="" width="700"></p>
-<p>We keep the first two PCA layers for environmental distance
-calculation. More layers will increase dimensionality, and may lead to
-less useful results. Note that it’s fine to use a euclidean distance
-calculation for these, as the values are truly in the position of the
-pca plot.</p>
+<p>We keep the first two PCA layers for calculating the environmental
+distance. Including more layers increases dimensionality and may reduce
+the usefulness of the results. Note that it’s fine to use a Euclidean
+distance calculation for these, as the values are truly in the position
+of the pca plot.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env_values</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span><span class="va">pca_raster</span>, </span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span></span>
@@ -615,7 +646,7 @@ feeding into the function.</p>
 <span>    <span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></span><span class="op">(</span><span class="va">env_values</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>Similar to the above run with geographic distances, we create our
-input object, and run the function.</p>
+input object and run the function.</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>test_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
 <span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>  <span class="at">distances =</span> env_dist_mat,</span>
 <span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>  <span class="at">sites =</span> df</span>
@@ -649,15 +680,15 @@ matrix.</p>
 <tbody>
 <tr class="odd">
 <td align="left">user.self</td>
-<td align="right">33.621</td>
+<td align="right">35.192</td>
 </tr>
 <tr class="even">
 <td align="left">sys.self</td>
-<td align="right">0.002</td>
+<td align="right">0.001</td>
 </tr>
 <tr class="odd">
 <td align="left">elapsed</td>
-<td align="right">33.627</td>
+<td align="right">35.203</td>
 </tr>
 <tr class="even">
 <td align="left">user.child</td>
@@ -680,13 +711,13 @@ matrix.</p>
 <td align="right">0.2</td>
 </tr></tbody>
 </table>
-<p>The overall stability score is similar to from the geographic score.
-When you view the plots you will see that a handful of sites in close
-proximity to the selected sites would have served as nearly equivanently
-suitable substitutes. A few areas have dropped out of priority sampling
-based on this method, but in general the results are pretty similar -
-the relationship between geographic and environmental distance is
-somewhat strong in this landscape.</p>
+<p>The overall stability score is similar to that of the geographic
+score. When you view the plots, you will see that a handful of sites in
+close proximity to the selected sites would have served as nearly
+equivalent substitutes. A few areas have dropped out of priority
+sampling based on this method, but in general, the results are pretty
+similar - the relationship between geographic and environmental distance
+is somewhat strong in this landscape.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">map</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">env_res</span><span class="op">$</span><span class="va">input_data</span>, </span>
@@ -701,19 +732,19 @@ somewhat strong in this landscape.</p>
 <span> <span class="co"># ggrepel::geom_label_repel(aes(label = site_id), size = 4) + </span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Priority Selection Status of Sites; Environmental'</span><span class="op">)</span></span></code></pre></div>
-<p><img src="RareSpecies_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="RareSpecies_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="alternative-methods-for-required-central-points">alternative methods for required central points<a class="anchor" aria-label="anchor" href="#alternative-methods-for-required-central-points"></a>
 </h2>
-<p>In the example above we use a point at the median geographic center
-of the populations.</p>
-<p>We can also identify the population which is <em>most</em> near the
-highest density of populations. Intuitively, this would be suggested as
-a population with a high amount of genetic diversity for the species,
-although it is unlikely to have accumulated considerably local changes
-as the effects of drift are overcome by more frequent dispersal.</p>
+<p>In the example above, we use a point at the median geographic centre
+of the population.</p>
+<p>We can also identify the population with the highest population
+density. Intuitively, this would suggest a population with high genetic
+diversity for the species, although it is unlikely to have accumulated
+substantial local changes, as the effects of drift are overcome by more
+frequent dispersal.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dens</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/kde2d.html" class="external-link">kde2d</a></span><span class="op">(</span><span class="va">lon</span>, <span class="va">lat</span>, n <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">max_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">dens</span><span class="op">$</span><span class="va">z</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">dens</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, arr.ind <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span></span>
@@ -723,17 +754,17 @@ as the effects of drift are overcome by more frequent dispersal.</p>
 <span><span class="va">pop_centered_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.min</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rowSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pops_centre</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">dens</span>, <span class="va">max_idx</span>, <span class="va">max_point</span>, <span class="va">pops_centre</span><span class="op">)</span></span></code></pre></div>
-<p>Alternatively we can identify the <em>population</em> which is most
-near the ‘center’ of the environmental variable space.</p>
+<p>Alternatively, we can identify the population which is closest to the
+‘centre’ of the environmental variable space.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env_centered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep</a></span><span class="op">(</span><span class="va">env_values</span>, <span class="fl">2</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">env_values</span>, <span class="va">median</span><span class="op">)</span>, <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="va">env_centered_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.min</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rowSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">env_centered</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">env_values</span><span class="op">)</span></span></code></pre></div>
-<p>Personally I would consider the ‘pop centered’ population to be the
-most important required site to center a design off of. However, it can
-suffer from sampling bias, and you may want to sense check that the
-recorded populations are de-duplicated to accomodate this reality.</p>
+<p>Personally, I would consider the ‘pop-centred’ population to be the
+most important site to centre a design. However, it can suffer from
+sampling bias, and you may want to check that the recorded populations
+are deduplicated to account for this.</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># geographic centroid was pt 47</span></span>
 <span><span class="va">centers</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">[</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">env_centered_id</span>, <span class="va">pop_centered_id</span>, <span class="fl">47</span><span class="op">)</span>, <span class="op">]</span> </span>

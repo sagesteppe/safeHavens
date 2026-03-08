@@ -114,39 +114,45 @@
 <div class="section level2">
 <h2 id="species-distribution-modelling">Species Distribution Modelling<a class="anchor" aria-label="anchor" href="#species-distribution-modelling"></a>
 </h2>
-<p>Please refer to all frequentist methods before viewing this vignette.
-The rationale is roughly similar, but this approach provides better
-estimates of uncertainty for the processing.</p>
+<p>Before proceeding, please refer to all other vignettes, as they
+provide valuable foundational context. While the rationale here is
+roughly the same, this approach focuses on improved uncertainty
+estimation during processing.</p>
 <div class="section level3">
 <h3 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h3>
-<p>This vignette details the steps required to create a bayesian Species
-Distribution Model (SDM) using the functions provided in
-<code>safeHavens</code>, which form a wrapper around brms::brms(). The
-SDM is then post-processed to create a binary raster map of suitable and
-unsuitable habitat, that is used to rescale the environmental predictor
-variables according to the parameter posteriors for the model. These
-parameter posteriors are then used in a clustering algorithm to
-partition the species range into environmentally distinct regions for
-germplasm sampling.</p>
-<p>The goal of most SDM’s is to create a model that accurately predicts
+<p>This vignette details the steps required to create a Bayesian Species
+Distribution Model (SDM) using functions from <code>safeHavens</code>,
+which serve as wrappers for brms::brms(). Building on the foundational
+rationale mentioned previously, the following information guides you
+through the Bayesian-specific setup. The SDM is then post-processed to
+create a binary raster map of suitable and unsuitable habitat, which is
+used to rescale the environmental predictor variables based on the
+model’s parameter posteriors. These parameter posteriors are then used
+in a clustering algorithm to partition the species range into
+environmentally distinct regions for germplasm sampling.</p>
+<p>The goal of most SDMs is to create a model that accurately predicts
 where a species will be located in environmental space and can then be
 predicted in geographic space. The goal of these models is to understand
 the degree and direction to which various environmental features
-correlate with a species observed range.</p>
+correlate with a species’ observed range.</p>
 </div>
 <div class="section level3">
 <h3 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
 </h3>
-<p>Here we use bayesian hierarchical models to estimate coefficient
-uncertainty to use for clustering climatically similar areas via an SDM
-approach.</p>
+<p>In this section, we use Bayesian hierarchical models to estimate
+coefficient uncertainty. This enables clustering climatically similar
+areas using an SDM approach, linking the previously described
+methodology to specific analytical outcomes.</p>
 <div class="section level4">
 <h4 id="prep-data">prep data<a class="anchor" aria-label="anchor" href="#prep-data"></a>
 </h4>
-<p>The below steps are all present at the start of the ‘Predictive
-Provenance’ vignette. We will ‘hide’ some of the processing steps to
-keep this vignette entry relatively short.</p>
+<p>The data preparation steps described below are also found at the
+start of the ‘Predictive Provenance’ vignette. Recall these foundational
+steps as we transition into Bayesian-specific applications. To keep this
+vignette concise, some intermediate processing steps will be ‘hidden.’
+This ensures the focus remains on the distinct Bayesian approach
+discussed in the sections above.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sagesteppe.github.io/safeHavens/">safeHavens</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
@@ -162,12 +168,12 @@ keep this vignette entry relatively short.</p>
 <div class="section level3">
 <h3 id="fit-the-model">fit the model<a class="anchor" aria-label="anchor" href="#fit-the-model"></a>
 </h3>
-<p>Here we fit as SDM using <code>bayesianSDM</code>. For arguments it
+<p>Here we fit as SDM using <code>bayesianSDM</code>. For arguments, it
 requires occurrence data <code>x</code>, a raster stack of
-<code>predictors</code>, a <code>quantile_v</code> that is an offset
-used to create pseudo-absence data, and a <code>planar_proj</code> used
-to calculate distances between occurrence data and possible
-pseudo-absence points.</p>
+<code>predictors</code>, a <code>quantile_v</code> offset used to create
+pseudo-absence data, and a <code>planar_proj</code> used to calculate
+distances between occurrence data and possible pseudo-absence
+points.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bayesianSDM.html">bayesianSDM</a></span><span class="op">(</span> </span>
 <span>  x <span class="op">=</span> <span class="va">hemi</span>,</span>
@@ -188,8 +194,8 @@ pseudo-absence points.</p>
 <span><span class="co">#sdModel$RasterPredictions_sd &lt;- terra::wrap(sdModel$RasterPredictions_sd)</span></span>
 <span><span class="co">#sdModel$AOA &lt;- terra::wrap(sdModel$AOA)</span></span>
 <span><span class="co">#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))</span></span></code></pre></div>
-<p>For the sake of this vignette, we will load a run of the above
-model.</p>
+<p>Load a run of the model described above for the sake of this
+vignettes processing speed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/serialize.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span>package<span class="op">=</span><span class="st">"safeHavens"</span><span class="op">)</span>, <span class="st">'extdata'</span>,  <span class="st">'BayesSDM.rds'</span><span class="op">)</span></span>
@@ -199,11 +205,11 @@ model.</p>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span><span class="op">)</span></span>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions_sd</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions_sd</span><span class="op">)</span></span>
 <span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span><span class="op">)</span></span></code></pre></div>
-<p>Under the hood this function uses <code>brms</code>, which dispatches
-to Stan, to fit a bayesian hierarchical model (GLMM), where the
-distances between occurrence records are the fixed effect, useful to
-reduce the effects of spatial autocorrelation to increase
-interpret-ability of the models parameters.</p>
+<p>Under the hood, this function uses <code>brms</code>, which
+dispatches to Stan, to fit a Bayesian hierarchical model (GLMM), where
+the distances between occurrence records are treated as fixed effects to
+reduce the effects of spatial autocorrelation and increase the
+interpretability of the model’s parameters.</p>
 <div class="section level4">
 <h4 id="explore-the-output">explore the output<a class="anchor" aria-label="anchor" href="#explore-the-output"></a>
 </h4>
@@ -250,17 +256,15 @@ interpret-ability of the models parameters.</p>
 <span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>Draws were sampled using <span class="fu">sample</span>(hmc). For each parameter, Bulk_ESS</span>
 <span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
 <span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>scale reduction factor on split <span class="fu">chains</span> (at convergence, <span class="at">Rhat =</span> <span class="dv">1</span>).</span></code></pre></div>
-<p>rHat &lt;1.01 ideal, &lt;1.05 acceptable, both ESS should be greater
-than 400 increase iterations to achieve this. Divergence of 0 is ideal,
-any divergences are flags for a possibly misspecified model.</p>
+<p>rHat &lt; 1.01 is ideal; &lt; 1.05 is acceptable. Both ESS should be
+greater than 400; increase iterations to achieve this. Divergence of 0
+is ideal; any divergence is a flag for a possibly misspecified
+model.</p>
 <p>Diagnostics can be accessed from a list, and the stan website has
-some information on them here as well as warnings (as may be depicted
+some information on them here, as well as warnings (as may be depicted
 above) <a href="https://mc-stan.org/misc/warnings/" class="external-link uri">https://mc-stan.org/misc/warnings/</a></p>
-<p>rHat &lt;1.01 ideal, &lt;1.05 acceptable, both ESS should be greater
-than 400 increase iterations to achieve this. Divergence of 0 is ideal,
-any divergences are flags for a possibly misspecified model.</p>
-<p>Similar to <code>elasticSDM</code> we also have area of applicabality
-and other surfaces from CAST</p>
+<p>Similar to <code>elasticSDM</code>, we also have an area of
+applicability and other surfaces from CAST.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/plot%20aoa-1.png" class="r-plt" alt="" width="700"></p>
@@ -276,63 +280,82 @@ and other surfaces from CAST</p>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="sc">$</span>n_divergent</span>
 <span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">32</span></span></code></pre></div>
-<p>To view how well the model is able to predict suitable habitat of the
-hold out sample the confusion matrix can be accessed from the test and
+<p>To assess how well the model predicts the suitable habitat for the
+hold-out sample, the confusion matrix can be obtained from the test and
 train splits. While balanced accuracy for these is generally low, as
 these models are not intended for prediction, so much as understanding
 the relationships between environmental variables driving the species
 distribution, the results show the model was able to learn some
 important characteristics of the species.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>sdModel<span class="sc">$</span>ConfusionMatrix</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="sc">$</span>positive</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"1"</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="sc">$</span>table</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>          Reference</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>Prediction  <span class="dv">0</span>  <span class="dv">1</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>         <span class="dv">0</span> <span class="dv">71</span> <span class="dv">11</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>         <span class="dv">1</span>  <span class="dv">7</span> <span class="dv">13</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="sc">$</span>overall</span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull </span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>    <span class="fl">0.82352941</span>     <span class="fl">0.47959184</span>     <span class="fl">0.73551513</span>     <span class="fl">0.89192685</span>     <span class="fl">0.76470588</span> </span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>AccuracyPValue  McnemarPValue </span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    <span class="fl">0.09683511</span>     <span class="fl">0.47950012</span> </span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="sc">$</span>byClass</span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>         Sensitivity          Specificity       Pos Pred Value </span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>           <span class="fl">0.5416667</span>            <span class="fl">0.9102564</span>            <span class="fl">0.6500000</span> </span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>      Neg Pred Value            Precision               Recall </span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>           <span class="fl">0.8658537</span>            <span class="fl">0.6500000</span>            <span class="fl">0.5416667</span> </span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>                  F1           Prevalence       Detection Rate </span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>           <span class="fl">0.5909091</span>            <span class="fl">0.2352941</span>            <span class="fl">0.1274510</span> </span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>Detection Prevalence    Balanced Accuracy </span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>           <span class="fl">0.1960784</span>            <span class="fl">0.7259615</span> </span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a></span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="sc">$</span>mode</span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"sens_spec"</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a></span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="sc">$</span>dots</span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="fu">list</span>()</span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a></span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="fu">attr</span>(,<span class="st">"class"</span>)</span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>[<span class="dv">1</span>] <span class="st">"confusionMatrix"</span></span></code></pre></div>
-<p>Here we can see how our selected model works on predicting the state
-of test data. Note these accuracy results are slightly higher than those
-from the CV folds. This is not a bug, CV folds are testing on their own
-holdouts, while this is a brand new set of holdouts. The main reason the
-confusion matrix results are likely to be higher is due to spatial
-auto-correlation which are not address in a typical ‘random split’ of
-test and train data. In order to minimize the effects of
-spatial-autocorrelation on our model we use <code>CAST</code> under the
-hood which allows for spatially informed cross validation.</p>
-<p>Consider the output from CVStructure to be a bit more realistic.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">ConfusionMatrix</span><span class="op">$</span><span class="va">byClass</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sensitivity</td>
+<td align="right">0.5416667</td>
+</tr>
+<tr class="even">
+<td align="left">Specificity</td>
+<td align="right">0.9102564</td>
+</tr>
+<tr class="odd">
+<td align="left">Pos Pred Value</td>
+<td align="right">0.6500000</td>
+</tr>
+<tr class="even">
+<td align="left">Neg Pred Value</td>
+<td align="right">0.8658537</td>
+</tr>
+<tr class="odd">
+<td align="left">Precision</td>
+<td align="right">0.6500000</td>
+</tr>
+<tr class="even">
+<td align="left">Recall</td>
+<td align="right">0.5416667</td>
+</tr>
+<tr class="odd">
+<td align="left">F1</td>
+<td align="right">0.5909091</td>
+</tr>
+<tr class="even">
+<td align="left">Prevalence</td>
+<td align="right">0.2352941</td>
+</tr>
+<tr class="odd">
+<td align="left">Detection Rate</td>
+<td align="right">0.1274510</td>
+</tr>
+<tr class="even">
+<td align="left">Detection Prevalence</td>
+<td align="right">0.1960784</td>
+</tr>
+<tr class="odd">
+<td align="left">Balanced Accuracy</td>
+<td align="right">0.7259615</td>
+</tr>
+</tbody>
+</table>
+<p>Observe how the selected model predicts the state of the test data.
+Note that these accuracy results are slightly higher than those from the
+CV folds. Understand that this is not a bug; CV folds test on their own
+holdouts, while this is a new holdout set. The main reason the confusion
+matrix results are likely to be higher is due to spatial
+autocorrelation, which is not addressed in a typical ‘random split’ of
+test and train data. Minimise the effects of spatial autocorrelation on
+the model by using CAST for spatially informed cross-validation.</p>
+<p>Treat the CVStructure output as a more realistic assessment.</p>
 </div>
 <div class="section level4">
 <h4 id="binarize-the-output">binarize the output<a class="anchor" aria-label="anchor" href="#binarize-the-output"></a>
 </h4>
-<p>The bayesian sdm is post-processed using the same function as is used
-by the <code>elasticSDM</code> workflow.</p>
+<p>The Bayesian SDM is post-processed using the same
+<code>PostProcessSDM</code> function as the elasticSDM workflow.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
 <span>  rast_cont <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
@@ -373,7 +396,7 @@ by the <code>elasticSDM</code> workflow.</p>
 </tr></tbody>
 </table>
 <p>We can compare the results of applying this function side by side
-using the output from the function.</p>
+using the function’s output.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/Compare%20Threshold%20Results-1.png" class="r-plt" alt="" width="700"></p>
@@ -382,7 +405,7 @@ using the output from the function.</p>
 <h4 id="rescale-predictor-variables">rescale predictor variables<a class="anchor" aria-label="anchor" href="#rescale-predictor-variables"></a>
 </h4>
 <p>The <code>bayesianSDM</code> requires a different function from
-<code>elasticSDM</code> for creating weighted surfaces, with the suffix
+elasticSDM for creating weighted surfaces, with the suffix
 <code>RescaleRasters_bayes</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters_bayes.html">RescaleRasters_bayes</a></span><span class="op">(</span></span>
@@ -395,13 +418,13 @@ using the output from the function.</p>
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/Rescale%20Predictor%20Variables-1.png" class="r-plt" alt="" width="700"></p>
-<p>An optionally returned layer (via include_uncertainty = TRUE),
-depicts areas with greater uncertainty towards the prediction.</p>
+<p>An optionally returned layer (via <code>include_uncertainty</code> =
+TRUE) depicts areas with greater uncertainty towards the prediction.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="st">'coef_uncertainty'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/plot%20coef%20uncertainty%20layer-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also show the variables that contributed the most to the sdm
-models predictions, along with their signs.</p>
+models’ predictions, along with their signs.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
 <span>  <span class="va">rr</span><span class="op">$</span><span class="va">BetaCoefficients</span><span class="op">[</span> </span>
@@ -459,9 +482,9 @@ models predictions, along with their signs.</p>
 </tr>
 </tbody>
 </table>
-<p>To delineate putative seed collection zones we use the
+<p>To delineate putative seed collection zones, we use the
 <code>PosteriorCluster</code> function. It will use the raster surfaces
-of mean beta coefficient importance</p>
+of the mean beta coefficient importance.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>obby <span class="ot">&lt;-</span> <span class="fu">PosteriorCluster</span>(</span>
 <span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
 <span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">subset</span>(rr<span class="sc">$</span>RescaledPredictors, <span class="st">'coef_uncertainty'</span>, <span class="at">negate =</span> <span class="cn">TRUE</span>),</span>
@@ -484,10 +507,10 @@ of mean beta coefficient importance</p>
 <span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>Computing top<span class="dv">-3</span> cluster assignments per point ...</span>
 <span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>Projecting consensus clusters to raster ...</span>
 <span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a>Loading required package<span class="sc">:</span> lattice</span></code></pre></div>
-<p>Using the Bayesian posteriors and clustering allows us to determine
-areas that have higher and lower uncertainty for clustering assignments.
-Values with a higher proportion had greater colocation scores than areas
-with lower proportions.</p>
+<p>Using Bayesian posteriors and clustering allows us to identify areas
+with higher and lower uncertainty in clustering assignments. Areas with
+higher proportions had higher colocation scores than those with lower
+proportions.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obby</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">stability</span><span class="op">)</span></span>
@@ -501,10 +524,10 @@ for use with other applications.</p>
 <span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
 <span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png" class="r-plt" alt="" width="700"></p>
-<p>Interested users can see what the second most and third most stable
+<p>Interested users can see what the second-most and third-most stable
 clustering scenarios would look like via the following ranks. Do note
-that the renumbering of clusters from NW to SE (left to right, like many
-language groups read books) has not occurred on these rasters yet, so
+that the renumbering of clusters from NW to SE (left to right, as many
+language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
@@ -516,8 +539,8 @@ the numbers differ from the consensus surface.</p>
 <div class="section level4">
 <h4 id="save-results">save results<a class="anchor" aria-label="anchor" href="#save-results"></a>
 </h4>
-<p>writeSDMresults can be used to save most of the core SDM output from
-the bayesian work flow as well.</p>
+<p>writeSDMresults can also be used to save most of the core SDM output
+from the Bayesian workflow.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bp</span> <span class="op">&lt;-</span> <span class="st">'~/Documents/assoRted/StrategizingGermplasmCollections'</span></span>
 <span></span>
@@ -536,13 +559,13 @@ the bayesian work flow as well.</p>
 <div class="section level4">
 <h4 id="wrapping-up">wrapping up<a class="anchor" aria-label="anchor" href="#wrapping-up"></a>
 </h4>
-<p>While the bayesian hierarchical GLM does not produce excellent
+<p>While the Bayesian hierarchical GLM does not produce excellent
 predictions of suitable habitat, it has several advantages. 1) It can
 incorporate spatial smoothers (splines) from mcgv to reduce the effects
-of spatial-autocorrelation on model parameter estimates. 2) It provides
+of spatial autocorrelation on model parameter estimates. 2) It provides
 uncertainty around the contribution of each selected predictor
-(i.e. many predictors can be weighed differently to get similar results)
-3)</p>
+(i.e. many predictors can be weighed differently to get similar
+results)</p>
 </div>
 </div>
 </div>
