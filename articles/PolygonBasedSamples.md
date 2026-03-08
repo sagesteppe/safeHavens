@@ -13,8 +13,9 @@ The function requires modes for two main scenarios: when a user wants
 use an ‘increase’ method. When a user wants **fewer** collections than
 there are zones, a decrease method needs to be implemented. Three
 options are available for both scenarios. 1) number of polygons per
-class 2) total area of each class 3) simple climate parameters for each
-class
+class  
+2) total area of each class  
+3) simple climate parameters for each class
 
 Additionally, this function can be applied to the clusters identified by
 the Isolation by Distance, Resistance, and Environmental workflows when
