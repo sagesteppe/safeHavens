@@ -11,23 +11,22 @@ description: >
 
 ## `safeHavens`
 
-This package helps germplasm curators identify and communicate areas of interest to collection teams for targeting new accessions. 
-For common species, it provides multiple sampling approaches for curators to choose from for each individual taxon they aim to collect.
-It also provides an *additional* sampling approach for rare species. 
-The package allows for integration into existing workflows, that is reading in accession data from databases or Excel, comparing them to occurrence data, and writing out results into both tabular (e.g.. CSV, a database, Excel, etc.) and simple spatial data formats (e.g., geopackages, shapefiles, etc.), that can be shared with collection teams and work on handheld electronic devices (e.g., Qfield (free, preferred), ESRI products (paid, legacy)). 
-It allows germplasm curators to have sophisticated spatial capabilities without the need to be GIS experts or paid software.
+This package enables germplasm curators to identify and communicate areas of interest to collection teams, supporting the targeting of new accessions.
+For common species, it offers several options for curators to choose where to collect each plant type.
+For rare species, the package offers an additional sampling approach.
+The package can be integrated into existing workflows. It reads accession data from databases or Excel, compares them to occurrence data, and outputs results in tabular formats (CSV, database, Excel) and spatial formats (geopackages, shapefiles). These results can be shared with collection teams and used on handheld devices such as Qfield (free, preferred) or ESRI products (paid, legacy).
+Curators gain spatial capabilities through the package without requiring GIS expertise or paid software.
 
 ### 'common' species sampling approaches
 
-Each approach is based on fundamental genetics and ecological theory, and loosely aligns with the concepts in landscape genetics/genomics.
-In practice, all functions attempt to capture the geographic and environmental variation across a species range.
-To this end, they evolve from simply partitioning a species range into `n` equal area, or regularly spaced areas, to modeling isolation by distance, resistance, and environment, or sampling from existing spatial data such as ecoregions or seed transfer zones. 
-The geographic distance functions largely rely on Sewall Wright's concept of Isolation by Distance (1943), the now empirically supported idea that populations that are more geographically proximate will be more genetically similar than populations that are further apart. 
-All approaches in the package are *a priori*, with the exception of the `EnvironmentalBasedSample` function, which relies on a species distribution model (SDM) to inform sampling locations and is based on the concept of Isolation by Environment (Wang & Bradburd 2014); however this still does not have field validation.
-None of these sampling approaches are meant to supplant genetic diversity-based sampling, but we recognize that having these data is rare, and even gathering them would often miss the opportunity to make opportunistic seed collections along the way.
-
-The methods have various trade-offs in terms of computational and environmental complexity, although all are designed to be run on a standard desktop or laptop computer, and processing up to a couple thousand of species overnight, with the faster methods, should be possible. 
-The table below presents the currently implemented sampling scheme and the user-facing function associated with them. 
+Each approach is grounded in genetics and ecological theory, and aligns with landscape genetics and genomics concepts.
+All functions are designed to capture geographic and environmental variation across a species' range.
+To this end, they evolve from simply partitioning a species' range into `n` equal or regularly spaced areas to modelling isolation by distance, resistance, and environment, or sampling from existing spatial data such as ecoregions or seed transfer zones.
+Distance functions are based on Sewall Wright's (1943) idea that plants growing closer together are more alike than those farther apart.
+All approaches in the package are a priori (based on theoretical reasoning rather than empirical observation), except for the EnvironmentalBasedSample function. This function uses a species distribution model (SDM, a tool that predicts where a species is likely to occur based on environmental variables) to inform sampling locations and is based on the concept of Isolation by Environment (Wang & Bradburd, 2014). However, this approach lacks field validation.
+None of the sampling approaches is meant to replace genetic diversity-based sampling. However, such data is rare, and gathering it often means missing opportunities for opportunistic seed collections.
+The methods have trade-offs in computational and environmental complexity. All are designed to run on standard computers. With the faster methods, a user can process a couple of thousand species overnight.
+The table below presents the currently implemented sampling scheme and the user-facing function associated with it.
 
 |        Function           |              Description               | Comp.| Envi.|
 |---------------------------|----------------------------------------|------|------|
@@ -42,56 +41,58 @@ The table below presents the currently implemented sampling scheme and the user-
 | `PosteriorCluster`        | Uses posteriors from an SDM to cluster |  H   |   H  |
 
 ### geographic distance 
-The first two functions, `PointBasedSample`, and `EqualAreaSample`, are flavors of the same process, where we partition the species range into geographic clusters of similar sizes.  
-The `OpportunisticSample` method is a special case of `PointBasedSample`, where existing collection records are used to help guide the sampling scheme, in other words additional samples are designed around the existing samples.
-`OpportunisticSample` uses the same underlying logic as `PointBasedSample`, but first 'removes' areas around existing collection records, and then fills in the remaining gaps with new sampling locations
-The `PointBasedSample` and `EqualAreaSample` functions would be used when *establishing* a new collection strategy for a species, while `OpportunisticSample` would be used when *augmenting* an existing collection strategy.
+The functions `PointBasedSample` and `EqualAreaSample` partition the species' range into geographic clusters of similar size.
+The `OpportunisticSample` method is a variant of `PointBasedSample` that uses existing collection records to guide the sampling scheme, designing additional samples around current records.
+`OpportunisticSample` uses the same logic as `PointBasedSample`. First, it removes areas within a specified distance of existing collection records—known as buffer zones—then fills the remaining gaps with new sampling locations.
+Use `PointBasedSample` and `EqualAreaSample` to establish a new collection strategy, or `OpportunisticSample` to augment an existing strategy.
 
-`IBDBasedSample` also relies on geographic distance, but in lieu of using the *continuity* of geographic space as its primary method, it focuses on the *discontinuity* of space and uses distance matrices and clustering to identify portions of the species range that are closer to each other than to others. 
-This method is slightly more computationally expensive than the previous geographic distance methods. 
+`IBDBasedSample` also relies on geographic distance, but instead of using the continuous nature of space, it focuses on discontinuities. It uses distance matrices (tables showing the distance between all pairs of points) and clustering (grouping similar points) to identify portions of the species' range that are closer to each other than to other parts of the range.
+This method incurs a slightly higher computational cost than previous geographic distance approaches.
 
 ### using regions 
 
-The `PolygonBasedSample` may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
-This method uses environmental variation as an implicit guide to target populations for seed collections; that is, the different ecoregions serve as stratification agents. 
-In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. 
-It can be used with either ecoregion or seed transfer zone based data. 
-However, it relies on existing spatial data products, which may or may not be relevant to the ecology of the species.
+A polygon-based sample may be most common in North America. 
+In various forms, it is used in major germplasm banking projects in the Midwest and Southeastern United States.
+It also shapes how native seed collection coordinators are structured in the West.
+This method uses environmental variation to guide seed collections. 
+Different ecoregions act as stratification agents.
+Generally, these regions exhibit continuous environmental transitions that the species face. 
+Populations in different regions adapt uniquely.
+It can be used with either ecoregion- or seed-transfer-zone-based data.
+The method relies on existing spatial data products. These may or may not match the species' ecology.
 
 ### resistance distance 
-The `IBRSurface` workstream allows users to parameterize a general cost surface for a landscape. 
-The least-cost paths between occupied portions of the species range will then calculated and clustered. 
-Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone are desired. 
+The `IBRSurface` workstream lets users create a general cost surface.
+Least-cost paths (the easiest routes between two locations, based on the cost surface) are calculated and grouped for occupied sections of the species' range.
+The least-cost paths between occupied parts of the range are calculated and then clustered.
+Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone is desired.
 
 ### environmental distance 
 
-`EnvironmentalBasedSample`, is both the most computationally expensive and the most environmentally explicit. 
-This function fits a Species Distribution Model (SDM), generated via a generalized linear model (glmnet), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
-On paper, this draws together all aspects of the above functions; however no empirical testing of this approach has been implemented. 
+`EnvironmentalBasedSample` is both the most computationally expensive and the most environmentally explicit.
+This function fits a Species Distribution Model (SDM) using a generalised linear model (glmnet, a regularised regression method). It clusters populations based on environmental variables, observed species locations, and the spatial arrangement of those populations.
+On paper, this draws together all aspects of the above functions. However, this approach has not been empirically tested.
 
-Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone are desired. 
+Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone is desired.
 
 ## rare species sampling approach
 
-All of the above methods are designed for common species, that is species with more than 50 or 100 unique occurrence records. 
-Each method returns a polygon geometry that provides guidelines for the general regions where the species should be sampled. 
+All of the above methods are designed for common species, that is, species with more than 50 or 100 unique occurrence records.Each method returns a polygon geometry that gives guidelines for the general regions where sampling should occur.
 However, for rare species, where the occurrence of individual populations are tracked, and which are generally collected along maternal lines, requiring considerably more field effort to gather seed, a supplemental approach exists that suggests the priority in which individual populations (‘points’) can be sampled. 
 
-The `KMedoidsBasedSample` method utilizes either geographic distances alone or geographic distances in conjunction with a distance matrix developed from a few key environmental variables to suggest which populations should be prioritized for seed collections. 
-This method is based on the concept of maximizing the dispersion of selected points in geographic and environmental spaces to best capture the overall variation present in the species range. 
+`KMedoidsBasedSample` uses geographic distances alone or, optionally, a distance matrix derived from key environmental variables. It suggests which populations to prioritise for seed collections.
+This method is based on the concept of maximising the dispersion of selected points across geographic and environmental spaces to best capture the overall variation in the species' range.
 
 ## BAYESIAN GOES HERE
 
 ### installation 
 
-`safeHavens` can be installed directly from github, using either devtools or remotes. 
-Note that the software relies on a few other packages that may require additional system dependencies, such as `rgeos` and `rgdal`.
-It also requires a working installation of `GDAL`, `PROJ`, and `GEOS` on your system.
-This can occasionally be finicky to install, but once you have them effectively all open-source geospatial softwares are available to you.
-
-Users of the Bayesian approaches will need Stan and cmdstanr, installed, also requiring C++ toolkits. 
-These can take a few minutes to figure out. 
-
+`safeHavens` can be installed directly from GitHub, using either devtools or remotes.
+The software relies on other packages that may require additional system dependencies, such as rgeos and rgdal.
+It also requires GDAL, PROJ, and GEOS to be installed on your system.
+This can occasionally be finicky to install, but once you have it, you effectively have access to all open-source geospatial software.
+Users of Bayesian approaches must have Stan and cmdstanr installed. These also require C++ toolkits.
+Installation may require additional configuration time.
 `safeHavens` can be installed from GitHub with `remotes`.
 
 ```{r Install Package, message=FALSE, eval = F}
