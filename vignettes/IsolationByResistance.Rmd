@@ -164,11 +164,11 @@ plot(res_surface)
 Note that the above object is stored in memory. 
 I recommend using coarse raster surfaces (e.g., 4 km x 4 km cells or larger) at this level of generalisation and to speed up processing.
 
-Now that we have our resistance surface, the next step is to calculate the distances between areas across the species' range using the function `populationResistance`.
-As with other functions in safeHavens, we will not use population-occurrence record data directly, as we know that spatial biases affect occurrence record distributions.
-Rather, we will buffer (`buffer_dist`) the occurrence records, using a relevant `planar_proj`, and create a raster surface of their locations.
-From this surface, we will sample `n` points (using terra::spatSample, method = ‘spread’) and identify neighbouring points using a `graph_method`: either Delaunay triangulation, which is useful when a very high `n` is required, or a complete distance matrix.
-In my testing, I greatly prefer results from ‘complete’ calculations, and these work with NbClust without being ordinated down into 2-dimensional space and give much better results.
+Now that we have our resistance surface, the next step is calculating the distances between areas across the species range using the function `populationResistance`. 
+Similar to other functions in `safeHavens` we will not use population occurrence record data directly, as we know that spatial biases affect occurrence record distributions. 
+Rather we will buffer (`buffer_dist`) the occurrence records, using a relevant `planar_proj`, and create a raster surface of their locations. 
+From this surface we will sample `n` points (using terra::spatSample, with method = 'spread'), and identify neighboring points using a `graph_method`, either delauney triangulation, which is useful when a very high `n` is required, or through a complete distance matrix. 
+In my testing I *greatly* prefer results from 'complete' calculations, and these work with NbClust without having to be ordinated down into 2-dimensional space and give much better results. 
 
 This function returns a raster representing the buffered populations (species range in the domain), the points sampled by terra, the graph information, and a distance matrix containing the least-cost distances from the resistance surface.
 
@@ -289,7 +289,7 @@ inverted_sdm = round(inverted_sdm * 100, 0)
 plot(inverted_sdm)
 ```
 
-Note that we will need to ensure our SDM aligns with the existing layers.
+Note that we will have to make sure our SDM aligns with the existing layers
 ```{r}
 inverted_sdm <- crop(inverted_sdm, ocean_r)
 inverted_sdm <- resample(inverted_sdm, ocean_r)
@@ -335,7 +335,8 @@ plot(tri, main = 'Original')
 plot(tri_rscl, main = 'Rescaled')
 ```
 
-And we can create a new resistance surface.
+And we can create a new resistance surface
+
 ```{r build a polynomial surface}
 res_surface <- buildResistanceSurface(
 
