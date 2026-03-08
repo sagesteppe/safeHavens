@@ -100,7 +100,7 @@ remotes::install_github('sagesteppe/safeHavens')
 
 An overview of the functionality in the package is below. 
 
-```{r echo =F, fig.width=6, fig.height=4}
+```{r, echo =F, fig.width=6, fig.height=4}
 DiagrammeR::mermaid("
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#ffffff', 
