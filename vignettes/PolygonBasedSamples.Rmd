@@ -23,7 +23,6 @@ Additionally, this function can be applied to the clusters identified by the Iso
 
 ```{r echo =F, fig.width=6, fig.height=9}
 DiagrammeR::mermaid("
-```mermaid
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#000', 
     'lineColor':'#000', 
