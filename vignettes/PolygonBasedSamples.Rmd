@@ -65,6 +65,7 @@ class C,M,D,E,N,O areaColor
 class F,P,G,H,Q,R polygonColor
 class I,S,J,K,T,U climateColor
 class B,L decisionColor
+")
 ```
 
 See `?PolygonBasedSample` for notes on implementation. 
