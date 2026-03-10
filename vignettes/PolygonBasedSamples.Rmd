@@ -21,8 +21,7 @@ Three options are available for both scenarios.
 
 Additionally, this function can be applied to the clusters identified by the Isolation by Distance, Resistance, and Environmental workflows when a user wants to decouple the clustering process from the number of samples.
 
-```{r, echo =F, fig.width=6, fig.height=9}
-DiagrammeR::mermaid("
+```{mermaid}
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#000', 
     'lineColor':'#000', 
@@ -65,7 +64,6 @@ class C,M,D,E,N,O areaColor
 class F,P,G,H,Q,R polygonColor
 class I,S,J,K,T,U climateColor
 class B,L decisionColor
-")
 ```
 
 See `?PolygonBasedSample` for notes on implementation. 
