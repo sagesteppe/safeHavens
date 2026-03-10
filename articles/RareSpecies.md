@@ -167,9 +167,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 26.660 |
-| sys.self   |  0.054 |
-| elapsed    | 26.726 |
+| user.self  | 26.671 |
+| sys.self   |  0.043 |
+| elapsed    | 26.719 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
@@ -420,9 +420,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 35.363 |
-| sys.self   |  0.004 |
-| elapsed    | 35.374 |
+| user.self  | 35.202 |
+| sys.self   |  0.003 |
+| elapsed    | 35.210 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
