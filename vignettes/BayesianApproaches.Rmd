@@ -107,11 +107,19 @@ rm(cols, western_states)
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
 
+bio_future <- cmip6_world(
+  model = "CNRM-CM6-1", ## modelling method
+  ssp   = "245", ## "Middle of the Road" scenario
+  time  = "2041-2060", # time period
+  var   = "bioc", # just use the bioclim variables
+  res   = 2.5
+)
+
 # Crop to domain 
 bbox <- ext(bb)
 
 bio_current <- crop(bio_current, bbox)
-#bio_future <- crop(bio_future, bbox)
+bio_future <- crop(bio_future, bbox)
 ```
 
 ```{r standardize raster layer names, echo = FALSE}
@@ -120,10 +128,10 @@ simplify_names <- function(x){
 }
 
 names(bio_current) <- gsub('^.*5m_', '', names(bio_current))
-#names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
+names(bio_future) <- gsub('^.*2060_', '', names(bio_future))
 
 names(bio_current) <- simplify_names(bio_current)
-#names(bio_future) <- simplify_names(bio_future)
+names(bio_future) <- simplify_names(bio_future)
 
 hemi <- select(hemi) 
 
@@ -284,8 +292,13 @@ obby <- PosteriorCluster(
   lyr = 'Supplemented',
   pred_mat = sdModel$PredictMatrix,
   training_data = sdModel$Train,
-  planar_proj = 5070
+  planar_proj = 5070,
+  coord_wt = 0.5,
+  n_pts = 5000
 )
+obby$KNNModels
+plot(obby$Geometry)
+plot(obby$SummaryRaster)
 ```
 
 Using Bayesian posteriors and clustering allows us to identify areas with higher and lower uncertainty in clustering assignments.
@@ -313,6 +326,7 @@ par(mfrow = c(1, 3))
 plot(obby$SummaryRaster$consensus)
 plot(obby$RankRaster$rank2_final)
 plot(obby$RankRaster$rank3_final)
+par(mfrow = c(1,1))
 ```
 
 ### save results 
@@ -335,6 +349,65 @@ writeSDMresults(
 list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```
 
+
+## predictive provenance
+
+
+
+```{r}
+
+future_rescaled <- projectClustersBayes(
+  bSDM_object = sdModel,
+  posterior_clusters = obby,
+  future_predictors = bio_future,
+  current_predictors = bio_current,
+  threshold_rasts = threshold_rasts,
+  planar_proj = "epsg:5070",
+)
+
+bmap +
+  geom_sf(data = future_rescaled$clusters_sf, aes(fill = factor(ID))) + 
+  labs(fill = 'Cluster')
+
+```
+
+
+
+
+```{r}
+train_df <- obby$KNNModels$KNN_Cluster$trainingData
+env_vars <- setdiff(names(train_df), c(".outcome", 'coord_x_w', "coord_y_w"))
+env_vars <- intersect(env_vars, names(fut_df))
+
+# Build combined long-format data frame
+train_long <- train_df[, env_vars] |>
+  tidyr::pivot_longer(everything(), names_to = "variable", values_to = "value") |>
+  dplyr::mutate(source = "train (current)")
+
+future_long <- fut_df[stats::complete.cases(fut_df), env_vars] |>
+  tidyr::pivot_longer(everything(), names_to = "variable", values_to = "value") |>
+  dplyr::mutate(source = "future")
+
+combined <- dplyr::bind_rows(train_long, future_long)
+
+ggplot(combined, aes(x = value, fill = source, colour = source)) +
+  geom_density(alpha = 0.35, linewidth = 0.6) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  scale_fill_manual(values  = c("train (current)" = "#2196F3", "future" = "#FF5722")) +
+  scale_colour_manual(values = c("train (current)" = "#1565C0", "future" = "#BF360C")) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position  = "top",
+    strip.text       = element_text(size = 8, face = "bold"),
+    axis.text        = element_text(size = 7),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(
+    title  = "Feature distribution: KNN training (current) vs future rescaled",
+    x      = NULL, y      = "density", fill   = NULL, colour = NULL
+  )
+
+```
 
 ### wrapping up 
 
