@@ -281,15 +281,14 @@ PosteriorCluster <- function(
   # geographically-ordered IDs consistent with Geometry$ID.
   label_lookup <- .build_label_lookup(
     raw_raster = rast_list$cluster_raster,
-    geo_raster = reordered$raster,
-    sample_pts = sample_pts
+    geo_raster = reordered$raster
   )
 
   # Remap consensus_labels and top3 matrices to geographic IDs
-  consensus_labels_geo <- label_lookup[consensus_labels]
+  consensus_labels_geo <- unname(label_lookup[as.character(consensus_labels)])
   top3_geo <- apply(
     top3_results$labels_matrix, 2,
-    function(col) label_lookup[col]
+    function(col) unname(label_lookup[as.character(col)])
   )
 
   # Retrain KNNs on remapped labels using the same feature matrix
@@ -369,10 +368,15 @@ PosteriorCluster <- function(
     #   (b) replay draws on the future surface to compute forward-looking
     #       stability without re-sampling from the posterior.
     ScalingParams = list(
-      mean_betas = mean_betas,   # named numeric: posterior mean |beta| per var
-      beta_draws = beta_draws,   # matrix n_draws x n_vars: raw posterior draws
-      coord_wt   = coord_wt      # numeric: coordinate weight used in clustering
-    )
+      mean_betas   = mean_betas,   # named numeric: posterior mean |beta| per var
+      beta_draws   = beta_draws,   # matrix n_draws x n_vars: raw posterior draws
+      coord_wt     = coord_wt      # numeric: coordinate weight used in clustering
+    ),
+
+    # raw cutree ID -> geographic ID lookup (from reassign_cluster_ids).
+    # Exposed for inspection/debugging — KNNModels are already trained on
+    # geo-ordered labels so this does not need to be applied downstream.
+    LabelLookup = label_lookup
   )
 }
 
@@ -888,36 +892,56 @@ project_consensus_to_raster <- function(
 
 #' Build a raw->geographic label lookup vector from pre/post reorder rasters
 #'
-#' Extracts cluster IDs at the fixed sample point locations from both the
-#' raw (cutree) raster and the geographically-reordered raster, then builds
-#' a named integer vector that maps raw label -> geographic label. Used to
-#' remap consensus_labels and top3 matrices before retraining KNNs.
+#' Wraps `reassign_cluster_ids` to produce a named integer vector suitable
+#' for remapping consensus_labels and top3 matrices from raw cutree IDs to
+#' geographically-ordered IDs. Uses a stratified 1-point-per-class sample
+#' so every class is guaranteed to appear in the lookup.
 #'
 #' @param raw_raster `SpatRaster` of raw cutree cluster IDs.
 #' @param geo_raster `SpatRaster` of geographically-reordered cluster IDs.
-#' @param sample_pts `SpatVector` of fixed sample points.
 #' @returns Named integer vector: names are raw labels, values are geo labels.
-#'   Safe to use as a lookup via `lookup[raw_label_vector]`.
+#'   Safe to use as a lookup via `lookup[as.character(raw_label_vector)]`.
 #' @keywords internal
 #' @noRd
-.build_label_lookup <- function(raw_raster, geo_raster, sample_pts) {
-  raw_vals <- terra::extract(raw_raster, sample_pts, ID = FALSE)[[1]]
-  geo_vals <- terra::extract(geo_raster,  sample_pts, ID = FALSE)[[1]]
-
-  pairs <- stats::na.omit(data.frame(raw = raw_vals, geo = geo_vals))
-
-  # Each raw label should map to exactly one geo label — take the mode in case
-  # of any edge-cell disagreement from rasterization
-  unique_raw <- unique(pairs$raw)
-  lookup_vec <- vapply(unique_raw, function(r) {
-    candidates <- pairs$geo[pairs$raw == r]
-    as.integer(names(sort(table(candidates), decreasing = TRUE)[1L]))
-  }, integer(1L))
-
-  names(lookup_vec) <- as.character(unique_raw)
+.build_label_lookup <- function(raw_raster, geo_raster) {
+  mapping <- reassign_cluster_ids(raw_raster, geo_raster)
+  lookup_vec <- as.integer(mapping[, "new"])
+  names(lookup_vec) <- as.character(mapping[, "old"])
   lookup_vec
 }
 
+
+#' Used to overwrite the original, raw, cluster ids. 
+#' Allowing all reported values to follow the from NW most to SE most cluster ID numbering convention. 
+#' @param old_rast SpatRast. The original classified raster
+#' @param new_rast SpatRast. The re-numbered classified raster
+#' @return A two column matrix, with nrows equal to the number of classes, with the old and new cluster IDs. 
+#' @keywords internal
+#' @noRd
+reassign_cluster_ids <- function(old_rast, new_rast){
+
+  class_pts <- terra::spatSample(
+    x = old_rast,
+    size = 1,
+    method = 'stratified',
+    as.points = TRUE
+  )
+
+  new_class <- terra::extract(
+    x = new_rast,
+    y = class_pts
+  )
+
+  setNames( # and figure out the return obj
+    as.data.frame(
+      cbind( 
+        terra::as.data.frame(class_pts)[[1]],
+        new_class[[2]]
+      )
+    ),
+    nm = c('old', 'new')
+  )
+}
 
 #' Retrain all KNNs using geographically-ordered cluster labels
 #'
