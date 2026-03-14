@@ -25,6 +25,7 @@ Suggests:
     rgbif, 
     purrr,
     sp,
+    marginaleffects,
     tidyr,
     testthat,
     covr,
@@ -32,7 +33,8 @@ Suggests:
     rlang,
     safeHavens,
     geodata,
-    DiagrammeR
+    DiagrammeR,
+    tidybayes
 VignetteBuilder: knitr
 Imports: 
     brms,

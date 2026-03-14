@@ -90,7 +90,7 @@ projectClustersBayes <- function(
   current_predictors,
   threshold_rasts,
   planar_proj,
-  coord_wt             = NULL,   # ignored; read from ScalingParams
+  coord_wt             = NULL,  
   mess_threshold       = 0,
   cluster_novel        = TRUE,
   n_novel_pts          = 500,
