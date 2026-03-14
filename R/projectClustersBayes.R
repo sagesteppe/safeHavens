@@ -90,7 +90,7 @@ projectClustersBayes <- function(
   current_predictors,
   threshold_rasts,
   planar_proj,
-  coord_wt             = NULL,  
+  coord_wt             = NULL,   # ignored; read from ScalingParams
   mess_threshold       = 0,
   cluster_novel        = TRUE,
   n_novel_pts          = 500,
@@ -100,11 +100,11 @@ projectClustersBayes <- function(
   nbclust_args         = list(),
   thresh_metric        = "sensitivity"
 ) {
-  # ── Unpack bSDM_object ───────────────────────────────────────────────────────
+  # --- Unpack bSDM_object ------------------------------------------------------
   current_model <- bSDM_object$Model
   pred_mat      <- bSDM_object$PredictMatrix
 
-  # ── Unpack posterior_clusters ────────────────────────────────────────────────
+  # --- Unpack posterior_clusters ------------------------------------------------
   knn_consensus <- posterior_clusters$KNNModels$KNN_Cluster
   scaling       <- posterior_clusters$ScalingParams
   mean_betas    <- scaling$mean_betas
@@ -120,7 +120,7 @@ projectClustersBayes <- function(
     min(as.integer(n_future_draws), n_stored)
   }
 
-  # ── 1. SDM prediction on future climate (population-level, no GP) ────────────
+  # --- 1. SDM prediction on future climate (population-level, no GP) ------------
   # The spatial smooth (gp_x, gp_y) is kept active (re_formula = NULL) by
   # supplying proper planar-km coordinate rasters built from the future extent.
   # This mirrors create_bayes_spatial_predictions exactly. The GP extrapolates
@@ -139,10 +139,7 @@ projectClustersBayes <- function(
     planar_proj       = planar_proj
   )
 
-  # n_iter: use the number of stored posterior draws from ScalingParams rather
-  # than calling brms::as_draws_matrix — this avoids requiring a live stanfit
-  # object and is consistent with the draw count used throughout the pipeline.
-  n_iter      <- nrow(beta_draws)
+  n_iter <- nrow(brms::as_draws_matrix(current_model))
   predict_fun <- .make_brms_predict_fun(n_iter)
 
   future_sdm_stack <- terra::predict(
@@ -157,7 +154,7 @@ projectClustersBayes <- function(
   cut              <- thresholds[[thresh_metric]]
   suitable_habitat <- future_sdm >= cut
 
-  # ── 2. MESS — identify novel climate ────────────────────────────────────────
+  # --- 2. MESS — identify novel climate --------------------------------------------
   ref_matrix <- terra::as.data.frame(
     current_predictors[[env_vars]],
     na.rm = TRUE
@@ -173,13 +170,13 @@ projectClustersBayes <- function(
   mess_overall  <- mess_result[[terra::nlyr(mess_result)]]
   novel_climate <- mess_overall < mess_threshold
 
-  # ── 3. Partition suitable habitat ───────────────────────────────────────────
+  # --- 3. Partition suitable habitat ------------------------------------------
   suitable_known          <- terra::ifel(suitable_habitat & !novel_climate, 1, NA)
   suitable_novel          <- terra::ifel(suitable_habitat &  novel_climate, 1, NA)
   suitable_habitat_binary <- terra::ifel(suitable_habitat, 1, NA)
   novel_mask_binary       <- terra::ifel(novel_climate,    1, NA)
 
-  # ── 4. Rescale future predictors to match current-era KNN feature space ────
+  # --- 4. Rescale future predictors to match current-era KNN feature space -------
   # PosteriorCluster received predictors already processed by RescaleRasters_bayes.
   # The KNNs were therefore trained on that rescaled space. We apply the same
   # transformation to future_predictors here so the feature space matches.
@@ -199,7 +196,7 @@ projectClustersBayes <- function(
   names(future_rescaled)[names(future_rescaled) == "y"] <- "coord_y_w"
   # nocov end
 
-  # ── 5. Project consensus clusters onto suitable + known areas ───────────────
+  # --- 5. Project consensus clusters onto suitable + known areas -----------
   known_clusters <- terra::predict(
     future_rescaled,
     model = knn_consensus,
@@ -209,7 +206,7 @@ projectClustersBayes <- function(
 
   n_novel_cells <- terra::global(suitable_novel, "sum", na.rm = TRUE)[[1]]
 
-  # ── 6. Cluster novel areas (NbClust + KNN, same as enet path) ───────────────
+  # --- 6. Cluster novel areas (NbClust + KNN, same as enet path) -----------
   if (cluster_novel && !is.na(n_novel_cells) && n_novel_cells > 0) {
     # nocov start
     novel_result <- cluster_novel_areas(
@@ -229,7 +226,7 @@ projectClustersBayes <- function(
     novel_numeric  <- terra::as.int(novel_clusters)
     final_clusters <- terra::cover(known_numeric, novel_numeric)
 
-    # ── 7. Relationship analysis ─────────────────────────────────────────────
+    # --- 7. Relationship analysis ----------------------------------------------
     # nocov start
     novel_similarity <- analyze_cluster_relationships(
       clusters_raster      = final_clusters,
@@ -249,7 +246,7 @@ projectClustersBayes <- function(
     )
   }
 
-  # ── 8. Draw-based future stability ──────────────────────────────────────────
+  # ── 8. Draw-based future stability ---------------------------------------------
   # Replay posterior beta draws on the future climate surface. Stability at
   # each cell = fraction of draws agreeing on the modal cluster assignment.
   # Computed entirely in future climate space — cells in novel or strongly
@@ -271,18 +268,10 @@ projectClustersBayes <- function(
   )
   # nocov end
 
-  # ── 9. Smooth noise ──────────────────────────────────────────────────────────
-  template       <- terra::rast(final_clusters)
-  final_clusters <- terra::mask(final_clusters, suitable_habitat_binary)
-  agg            <- terra::aggregate(
-    final_clusters,
-    fact  = 2,
-    fun   = terra::modal,
-    na.rm = TRUE
-  )
-  final_clean <- terra::resample(agg, template, method = "near")
+  # --- 9. Smooth noise ----------------------------------------------------------
+  final_clean <- final_clusters
 
-  # ── 10. Polygonize ───────────────────────────────────────────────────────────
+  # --- 10. Polygonize ----------------------------------------------------------
   # IDs are kept as-is: current-era clusters retain their geographic IDs from
   # PosteriorCluster; novel clusters carry offset IDs (max(current) + 1 ...).
   # calculate_changes() matches by ID so lost/gained clusters are detected
@@ -292,7 +281,7 @@ projectClustersBayes <- function(
     sf::st_make_valid()
   names(clusters_sf)[1] <- "ID"
 
-  # ── 11. Change metrics ───────────────────────────────────────────────────────
+  # --- 11. Change metrics ----------------------------------------------------------
   # nocov start
   changes <- calculate_changes(
     current_sf  = posterior_clusters$Geometry,
@@ -301,10 +290,10 @@ projectClustersBayes <- function(
   )
   # nocov end
 
-  # ── 12. Return ───────────────────────────────────────────────────────────────
+  # --- 12. Return ----------------------------------------------------------
   list(
     clusters_raster  = final_clean,
-    clusters_sf      = clusters_sf,
+    Geometry         = clusters_sf,
     suitable_habitat = suitable_habitat_binary,
     novel_mask       = novel_mask_binary,
     mess             = mess_overall,
@@ -315,9 +304,9 @@ projectClustersBayes <- function(
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  Draw-based future stability
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 #' Compute draw-based cluster-assignment stability in future climate space
 #'
@@ -360,7 +349,7 @@ project_future_draws <- function(
   future_rescaled <- future_rescaled_rr$RescaledPredictors
   mean_betas_vec  <- colMeans(beta_draws)
 
-  # ── 1. Sample fixed points from future suitable habitat ─────────────────────
+  # --- 1. Sample fixed points from future suitable habitat ------------------
   message("  Sampling fixed future point set ...")
 
   n_available <- terra::global(suitable_mask, "sum", na.rm = TRUE)[[1]]
@@ -412,7 +401,7 @@ project_future_draws <- function(
     n_pts_actual, n_sample
   ))
 
-  # ── 2. Draw loop ─────────────────────────────────────────────────────────────
+  # --- 2. Draw loop ------------------------------------------------------
   # Per-draw reweighting: the raster values are already scaled by |mean_beta|
   # via RescaleRasters_bayes. For draw d we rescale by |beta_d| instead, which
   # is equivalent to multiplying by |beta_d| / |mean_beta| per variable.
@@ -453,7 +442,7 @@ project_future_draws <- function(
     draw_assignments[seq_len(nrow(pt_full)), d] <- preds_int
   }
 
-  # ── 3. Modal cluster and per-point stability ─────────────────────────────────
+  # --- 3. Modal cluster and per-point stability ---------------------------------
   modal_cluster <- apply(draw_assignments, 1, function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0L) return(NA_integer_)
@@ -468,7 +457,7 @@ project_future_draws <- function(
     mean(x == modal)
   }, numeric(1L))
 
-  # ── 4. Paint stability to raster — one terra::predict call ───────────────────
+  # --- 4. Paint stability to raster — one terra::predict call ------------------
   # Use the already-correctly-scaled future_rescaled + coordinates as features,
   # mirroring exactly the feature space the stability regression will generalise over.
   pt_mean_scaled <- pt_rr

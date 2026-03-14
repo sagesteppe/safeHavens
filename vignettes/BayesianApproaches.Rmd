@@ -41,14 +41,13 @@ To keep this vignette concise, some intermediate processing steps will be 'hidde
 
 ```{r load libraries, message =F, warning = F}
 library(safeHavens)
+library(sf)
 library(terra)
 library(geodata)
-library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(patchwork)
-library(tidybayes)
 ```
 
 ```{r Download species occurrence data, echo = FALSE}
@@ -82,14 +81,44 @@ bb <- st_bbox(
 
 western_states <- st_crop(western_states, bb)
 
+theme_navy <- function(base_size = 14, base_family = "sans") {
+  library(grid)
+  library(ggthemes)
+  (theme_foundation(base_size = base_size, base_family = base_family)
+    + theme(
+      plot.title       = element_text(face = "bold", size = rel(1.2),
+                                      hjust = 0.5, colour = "#dce3f0"),
+      text             = element_text(colour = "#dce3f0"),
+      panel.background = element_rect(fill = "#0d1220", colour = NA),
+      plot.background  = element_rect(fill = "#0a0e1a", colour = NA),
+      panel.border     = element_rect(colour = NA),
+      axis.title       = element_text(face = "bold", size = rel(1),
+                                      colour = "#dce3f0"),
+      axis.text        = element_text(colour = "#8a99b8"),
+      axis.line.x      = element_line(colour = "#3a4a6b"),
+      axis.line.y      = element_line(colour = "#3a4a6b"),
+      axis.ticks       = element_line(colour = "#3a4a6b"),
+      panel.grid.major = element_line(colour = "#1c2540"),
+      panel.grid.minor = element_blank(),
+      legend.background = element_rect(fill = "#0a0e1a", colour = NA),
+      legend.key       = element_rect(fill = "#0a0e1a", colour = NA),
+      legend.position  = "bottom",
+      legend.direction = "horizontal",
+      strip.background = element_rect(fill = "#1c2540", colour = "#1c2540"),
+      strip.text       = element_text(face = "bold", colour = "#dce3f0")
+    ))
+}
+
+
 bmap <- ggplot() + 
-    geom_sf(data = western_states) + 
-    geom_sf(data = hemi) +
+    geom_sf(data = western_states, fill = NA, lwd = 1.25) + 
+    geom_sf(data = hemi, col = 'white') +
     theme_minimal() +
     coord_sf(
         xlim = c(bb[['xmin']], bb[['xmax']]), 
         ylim = c(bb[['ymin']], bb[['ymax']])
         )  +
+    theme_navy() + 
     theme(
       axis.title.x=element_blank(),
       axis.text.x=element_blank(),
@@ -185,128 +214,6 @@ Under the hood, this function uses `brms`, which dispatches to Stan, to fit a Ba
 
 ### explore the output
 
-```{r}
-brms::pp_check(sdModel$Model, type = "bars") 
-brms::pp_check(
-  sdModel$Model, 
-  type = "stat", 
-  stat = "mean"
-  )  
-```
-
-```{r}
-loo_probs <- tibble(
-  pred_prob = brms::loo_epred(sdModel$Model)[, 1],
-  observed  = factor(sdModel$TrainData$occurrence)
-)
-
-# Get posterior predicted probabilities
-pred_probs <- sdModel$TrainData |>
-  add_epred_draws(sdModel$Model, ndraws = 100) |>
-  group_by(.row, .draw) |>
-  summarise(prob = mean(.epred), .groups = "drop")
-
-loo_probs |>
-  mutate(bin = cut(pred_prob, breaks = 10)) |>
-  group_by(bin) |>
-  summarise(mean_pred = mean(pred_prob),
-            mean_obs  = mean(as.numeric(as.character(observed)))) |>
-  ggplot(aes(x = mean_pred, y = mean_obs)) +
-  geom_point() +
-  geom_line() +
-  geom_abline(linetype = "dashed") +
-  labs(x = "Mean LOO predicted probability", y = "Observed frequency",
-       title = "LOO calibration")
-
-# ROC per draw then summarise
-pred_probs |>
-  group_by(.draw) |>
-  summarise(
-    auc = as.numeric(
-      auc(
-        roc(sdModel$TrainData$occurrence[.row], 
-        prob, 
-        quiet = TRUE))
-        )
-  ) |>
-  ggplot(aes(x = auc)) +
-  stat_halfeye() +
-  labs(x = "AUC", title = "Posterior distribution of AUC")
-
-roc(loo_probs$observed, loo_probs$pred_prob) |>
-  ggroc() +
-  geom_abline(slope = 1, intercept = 1, linetype = "dashed") +
-  labs(title = "LOO ROC curve")
-
-loo_probs |>
-  ggplot(aes(x = pred_prob, fill = observed)) +
-  stat_halfeye(alpha = 0.6) +
-  labs(x = "LOO predicted probability", fill = "Observed")
-```
-
-The AUC value will be optimistic
-
-
-
-```{r}
-library(DHARMa)
-
-sims <- brms::posterior_predict(sdModel$Model, ndraws = 500)
-
-dharma_res <- createDHARMa(
-  simulatedResponse = t(sims),
-  observedResponse  = df$y,
-  fittedPredictedResponse = apply(sims, 2, mean)
-)
-
-plot(dharma_res)                        # QQ + residuals vs fitted
-plotResiduals(dharma_res, df$x1)        # residuals vs a specific predictor
-```
-
-
-```{r plot the posteriors}
-spr_draw <- sdModel$Model |>
-  spread_draws(`b_.*`, regex = TRUE) |>
-  select(starts_with('b_bio')) 
-
-spr_draw |>
-  pivot_longer(starts_with("b_"), names_to = "param", values_to = "value") |>
-  ggplot(aes(x = value)) +
-  stat_dots(alpha = 0.7, normalize = "panels") +
-  facet_wrap(~ param, scales = "free_x") +
-  theme(legend.position = "none")
-```
-
-The posterior distribution of each predictor is shown above. 
-The widths show the uncertainty around the effect of each variable on the species distribution. 
-
-```{r}
-spr_draw |>
-  mutate(across(everything(), scale)) |>
-  pivot_longer(everything(), names_to = "param", values_to = "value") |>
-  mutate(param = stringr::str_remove(param, "^b_")) |>
-  ggplot(aes(x = value, y = reorder(param, value))) +
-  stat_halfeye() +
-  geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.5) +
-  labs(x = "Posterior estimate", y = NULL)
-```
-
-Variables with tighter density of predictions, and further from 0, have the largest effects on the outcome in the model. 
-
-```{r marginal effects plot}
-plots <- purrr::map(
-  gsub("^b_", '', colnames(spr_draw) ), ~
-  marginaleffects::plot_predictions(sdModel$Model, condition = .x) +
-    labs(title = .x) +
-    ylim(0,1) +
-    theme_minimal()
-)
-
-patchwork::wrap_plots(plots, ncol = 2)
-```
-
-in the partial effects plot, each variables contribution is shown across it's entire range, when averaged over other variables. 
-
 Plot the predictions 
 ```{r Explore SDM output - Different alpha}
 sdm_td <- sdModel$TrainData
@@ -336,6 +243,7 @@ Similar to `elasticSDM`, we also have an area of applicability and other surface
 plot(sdModel$AOA)
 ```
 
+Diagnostics on the model come directly from Stan and brms::. 
 ```{r check diagnostics}
 sdModel$Diagnostics
 ```
@@ -408,7 +316,7 @@ To delineate putative seed collection zones, we use the `PosteriorCluster` funct
 It will use the raster surfaces of the mean beta coefficient importance.
 
 ```{r posterior clustering}
-obby <- PosteriorCluster(
+current_cluster <- PosteriorCluster(
   model = sdModel$Model,
   predictors = subset(rr$RescaledPredictors, 'coef_uncertainty', negate = TRUE),
   f_rasts = threshold_rasts$FinalRasters,
@@ -421,22 +329,21 @@ obby <- PosteriorCluster(
 )
 ```
 
-
 Using Bayesian posteriors and clustering allows us to identify areas with higher and lower uncertainty in clustering assignments.
 Areas with higher proportions had higher colocation scores than those with lower proportions.
 
 ```{r plot stability raster with sample points}
 par(mfrow=c(1,1))
-plot(obby$SummaryRaster$stability)
-points(obby$SamplePoints, cex = 0.3)
+plot(current_cluster$SummaryRaster$stability, main = 'Cluster Stability')
+points(current_cluster$SamplePoints, cex = 0.3)
 ```
 
 As with the other sampling functions, spatial polygons are returned for use with other applications.
 
 ```{r show posterior clusters, warning=F}
 bmap +
-  geom_sf(data = obby$Geometry, aes(fill = factor(ID))) + 
-  labs(fill = 'Cluster')
+  geom_sf(data = current_cluster$Geometry, aes(fill = factor(ID))) + 
+  labs(fill = 'Cluster', title = 'Consensus Clusters')
 ```
 
 Interested users can see what the second-most and third-most stable clustering scenarios would look like via the following ranks.
@@ -444,9 +351,9 @@ Do note that the renumbering of clusters from NW to SE (left to right, as many l
 
 ```{r view top 3 ranks side by side}
 par(mfrow = c(1, 3))
-plot(as.factor(obby$SummaryRaster$consensus))
-plot(obby$RankRaster$rank2_final)
-plot(obby$RankRaster$rank3_final)
+plot(as.factor(current_cluster$SummaryRaster$consensus), main = 'Consensus')
+plot(current_cluster$RankRaster$rank2_final, main = '2nd most')
+plot(current_cluster$RankRaster$rank3_final, main = '3rd most')
 par(mfrow = c(1,1))
 ```
 
@@ -475,7 +382,7 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```{r projected clusters into future time point, message = F}
 future_rescaled <- projectClustersBayes(
   bSDM_object = sdModel,
-  posterior_clusters = obby,
+  posterior_clusters = current_cluster,
   future_predictors = bio_future,
   current_predictors = bio_current,
   threshold_rasts = threshold_rasts,
@@ -483,21 +390,18 @@ future_rescaled <- projectClustersBayes(
 )
 
 nCl = max(future_rescaled$Geometry$ID)
-cus_pal <- RColorBrewer::brewer.pal(
-  n = nCl, 
-  name = "Set3"
-  )
+cus_pal <- RColorBrewer::brewer.pal(n = nCl, name = "Set3")
 names(cus_pal) <- 1:nCl
 
 bmap + 
-  geom_sf(data = obby$Geometry, aes(fill = factor(ID))) +
+  geom_sf(data = current_cluster$Geometry, aes(fill = factor(ID))) +
   scale_fill_manual(values = cus_pal) +
-  theme(legend.position = 'none') + 
+  theme(legend.position = 'none', NULL) + 
   labs(title = 'Current') +
 bmap +
   geom_sf(data = future_rescaled$Geometry, aes(fill = factor(ID))) + 
   scale_fill_manual(values = cus_pal) + 
-  labs(title = 'Future')
+  labs(title = 'Future', fill = 'Cluster')
 
 ```
 
@@ -512,7 +416,7 @@ While the Bayesian hierarchical GLM does not produce excellent predictions of su
   2) It provides uncertainty around the contribution of each selected predictor (i.e. many predictors can be weighed differently to get similar results)
 
 ```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
-rm(rr, predictors, files, bp)
+rm(rr, predictors, files, bp, bio_future, bio_current, bmap, bbox, bb, current_cluster, threshold_rasts)
 ```
 
 ## bonus - model evaluation
@@ -533,38 +437,9 @@ However, given the scale of the biodiversity crisis, automated approaches are ne
 library(pROC)
 library(DHARMa)
 library(tidybayes)
-devtools::install_github("nsgrantham/ggdark")
-theme_dark()
 ```
 
 ```{r dark theme, echo = F}
-theme_navy <- function(base_size = 14, base_family = "sans") {
-  library(grid)
-  library(ggthemes)
-  (theme_foundation(base_size = base_size, base_family = base_family)
-    + theme(
-      plot.title       = element_text(face = "bold", size = rel(1.2),
-                                      hjust = 0.5, colour = "#dce3f0"),
-      text             = element_text(colour = "#dce3f0"),
-      panel.background = element_rect(fill = "#0d1220", colour = NA),
-      plot.background  = element_rect(fill = "#0a0e1a", colour = NA),
-      panel.border     = element_rect(colour = NA),
-      axis.title       = element_text(face = "bold", size = rel(1),
-                                      colour = "#dce3f0"),
-      axis.text        = element_text(colour = "#8a99b8"),
-      axis.line.x      = element_line(colour = "#3a4a6b"),
-      axis.line.y      = element_line(colour = "#3a4a6b"),
-      axis.ticks       = element_line(colour = "#3a4a6b"),
-      panel.grid.major = element_line(colour = "#1c2540"),
-      panel.grid.minor = element_blank(),
-      legend.background = element_rect(fill = "#0a0e1a", colour = NA),
-      legend.key       = element_rect(fill = "#0a0e1a", colour = NA),
-      legend.position  = "bottom",
-      legend.direction = "horizontal",
-      strip.background = element_rect(fill = "#1c2540", colour = "#1c2540"),
-      strip.text       = element_text(face = "bold", colour = "#dce3f0")
-    ))
-}
 update_geom_defaults("line",   list(colour = "#dce3f0"))
 ```
 
@@ -575,7 +450,7 @@ brms::pp_check(sdModel$Model, ndraws = 10) +
   labs(title = 'stuff') + 
   theme_navy() +
   labs(
-    title    = "Posterior Predictive Check — Density",
+    title    = "Posterior Predictive Check - Density",
     subtitle = "Simulated datasets from the model (light) overlaid on observed data (dark)",
     caption  = "Lines closely following the observed distribution suggest the model captures the data generating process well."
   ) 
@@ -586,7 +461,7 @@ brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) +
   labs(title = 'more') + 
   theme_navy() +
   labs(
-    title    = "Posterior Predictive Check — Class Balance",
+    title    = "Posterior Predictive Check - Class Balance",
     subtitle = "Predicted counts of 0s and 1s vs observed across posterior draws",
     caption  = "Bars heights within the uncertainty range (point and line) indicates the model reproduces the observed presence/absence ratio."
   ) 
@@ -597,20 +472,20 @@ brms::pp_check(sdModel$Model, type = "stat", stat = "mean") +
   labs(title = 'more') + 
   theme_navy()  +
   labs(
-    title    = "Posterior Predictive Check — Mean",
+    title    = "Posterior Predictive Check - Mean",
     subtitle = "Distribution of predicted means across draws vs the observed mean (vertical line)",
     caption  = "The observed mean should fall near the center of the predicted distribution. Models outside of this area are likely biased."
   ) 
 ```
 
-
+Areas of probability that the model has more difficulty predicting can also be visualized, using the method below. 
+When the line deviates from the diagonal axis, it indicates a range of values they model is being overly or underconfident about assigning. 
 
 ```{r posterior predicted probabilities}
 loo_probs <- tibble(
   pred_prob = brms::loo_epred(sdModel$Model)[, 1],
   observed  = factor(sdModel$TrainData$occurrence)
 )
-
 # Get posterior predicted probabilities
 pred_probs <- sdModel$TrainData |>
   add_epred_draws(sdModel$Model, ndraws = 100) |>
@@ -636,6 +511,8 @@ loo_probs |>
   theme_navy()
 ```
 
+Bayesian meethods allow for a posterior AUC distribution, these complement a mean point approach. 
+
 ```{r auc plot, message = F, warning = F}
 pred_probs |>
   group_by(.draw) |>
@@ -658,10 +535,14 @@ pred_probs |>
   theme_navy()
 ```
 
+A simple receiver operator curve based on the LOO validation can be computed. 
+These show the tradeoff in sensitivity and specificity across the models range. 
+
 ```{r loo roc plot}
+update_geom_defaults("line",   list(colour = "#dce3f0"))
 roc(loo_probs$observed, loo_probs$pred_prob) |>
   ggroc() +
-  geom_abline(slope = 1, intercept = 1, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 1, linetype = "dashed", col = "#dce3f0") +
   labs(
     title    = "LOO ROC Curve",
     subtitle = "Receiver operating characteristic curve using leave-one-out predicted probabilities",
@@ -670,22 +551,27 @@ roc(loo_probs$observed, loo_probs$pred_prob) |>
   theme_navy()
 ```
 
-```{r loo predicted probs plot}
+The ability for the model to discrimate between categorical classes, such as from a bernoulli model, can be visualized as well. 
+In the following plot perfectly separated densities would indicate a model with perfect discrimination. 
+The plot below will roughly tie into the ideas behind the threshold metrics used in `PostProcessSDM`. 
+
+```{r loo predicted probs by class}
 loo_probs |>
   ggplot(aes(x = pred_prob, fill = observed)) +
   stat_halfeye(alpha = 0.6) +
+  scale_fill_manual(values = c('#8B2635', '#dce3f0')) + 
   labs(x = "LOO predicted probability", fill = "Observed") + 
   theme_navy() + 
   labs(
-    title    = "Predicted Probability by Observed Class",
-    subtitle = "LOO predicted probability distributions for observed presences (1) and absences (0)",
+    title    = "Predicted Probability by Class",
+    subtitle = "LOO predicted probability distributions for pseudo-absences (0) and observed presences (1)",
     caption  = "Less overlap between distributions indicates the model better separates suitable from unsuitable habitat.\nA high-performing model shows two distinct, separated peaks."
     )
 ```
 
-The AUC value will be optimistic
+We can also check model residuals after transformation to determine if assumptions of indepdenence of individual errors are violated using DHARMa. 
 
-```{r qqplot}
+```{r qqplot from dharma}
 sims <- brms::posterior_predict(sdModel$Model, ndraws = 500)
 
 dharma_res <- createDHARMa(
@@ -697,8 +583,9 @@ dharma_res <- createDHARMa(
 plot(dharma_res)# QQ + residuals vs fitted
 ```
 
+We can see the simulated posterior effect of each predictor on the models outcome. 
 
-```{r plot the posteriors}
+```{r posterior distribution per predictor}
 spr_draw <- sdModel$Model |>
   spread_draws(`b_.*`, regex = TRUE) |>
   select(starts_with('b_bio')) 
@@ -720,13 +607,14 @@ spr_draw |>
 The posterior distribution of each predictor is shown above. 
 The widths show the uncertainty around the effect of each variable on the species distribution. 
 
-```{r}
+```{r standardised posterior effects plot, warning = F}
 spr_draw |>
   mutate(across(everything(), scale)) |>
   pivot_longer(everything(), names_to = "param", values_to = "value") |>
   mutate(param = stringr::str_remove(param, "^b_")) |>
   ggplot(aes(x = value, y = reorder(param, value))) +
   stat_halfeye(col = '#8B2635', fill = '#9191E9') +
+  xlim(-5, 5) + ## tighten this up for visualizing on vignette html page
   geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.5, col = '#E0E2DB') +
   labs(
     x = "Posterior estimate", 
@@ -745,11 +633,12 @@ plots <- purrr::map(
   gsub("^b_", '', colnames(spr_draw) ), ~
   marginaleffects::plot_predictions(sdModel$Model, condition = .x) +
     labs(title = .x) +
+    xlab(NULL) + 
     ylim(0,1) +
     theme_navy() +
     theme(legend.position = 'none') +
     ggplot2::update_geom_defaults("ribbon", list(fill = "#8b2635")) +
-    ggplot2::update_geom_defaults("line",   list(fill = "#dce3f0"))
+    ggplot2::update_geom_defaults("line", list(colour = "white"))
 ) 
 
 patchwork::wrap_plots(plots, ncol = 2) + 
@@ -764,8 +653,11 @@ patchwork::wrap_plots(plots, ncol = 2) +
     plot.subtitle   = element_text(colour = "#dce3f0", size = rel(1.1)),
     plot.caption   = element_text(colour = "#dce3f0", size = rel(1))
   ))
+
+update_geom_defaults("line", list(colour = "black"))
+
 ```
 
 ```{r, eval=F}
-#rm(theme_navy, spr_draw, sdModel,plots, sims, dharma_res, loo_probs,pred_probs)
+rm(theme_navy, spr_draw, sdModel,plots, sims, dharma_res, loo_probs,pred_probs)
 ```
