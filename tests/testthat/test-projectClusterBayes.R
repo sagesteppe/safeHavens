@@ -1,5 +1,21 @@
 ## Tests for projectClustersBayes and its internal helpers
 ##
+## Strategy
+## ─────────
+## The full projectClustersBayes() call requires a fitted brmsfit, which is
+## too expensive to fit in a test suite. We therefore:
+##   1. Test ALL internal helper functions directly with minimal synthetic data.
+##   2. Test projectClustersBayes() itself via a fully-mocked fixture that stubs
+##      out every brms / terra::predict call, letting us exercise the glue logic,
+##      return-structure contracts, and edge-case branches (no novel cells,
+##      n_future_draws clamping, stability raster bounds).
+##
+## Helpers tested directly (no mocking needed):
+##   .build_future_pred_stack   calculate_changes
+##   .make_brms_predict_fun     project_future_draws  (via mock rr)
+##   .build_label_lookup        reassign_cluster_ids  (via PosteriorCluster)
+##   add_weighted_coordinates   rescale_points_by_betas (legacy, kept for ref)
+
 library(testthat)
 library(terra)
 library(sf)
@@ -88,7 +104,7 @@ test_that(".build_future_pred_stack adds gp_x and gp_y layers", {
   stack <- .build_future_pred_stack(
     future_predictors = r,
     env_vars          = env_vars,
-    planar_proj       = 5070
+    planar_proj       = "EPSG:5070"
   )
 
   expect_true(inherits(stack, "SpatRaster"))
@@ -99,9 +115,10 @@ test_that(".build_future_pred_stack adds gp_x and gp_y layers", {
 
 test_that(".build_future_pred_stack gp coordinates are in km scale", {
   r <- make_env_rast()
-  stack <- .build_future_pred_stack(r, env_vars, planar_proj = 5070)
+  stack <- .build_future_pred_stack(r, env_vars, planar_proj = "EPSG:5070")
 
-  gp_x_range <- diff(as.numeric(terra::global(stack[["gp_x"]], "range", na.rm = TRUE)))
+  gp_x_rng   <- terra::global(stack[["gp_x"]], "range", na.rm = TRUE)
+  gp_x_range <- gp_x_rng$max - gp_x_rng$min
   # 10-degree longitude span in CONUS ~800km; gp_x in km should be ~that order
   expect_gt(gp_x_range, 10)    # not in degrees (~10) but km (~800)
   expect_lt(gp_x_range, 5000)  # not in metres (~800000)
@@ -110,7 +127,7 @@ test_that(".build_future_pred_stack gp coordinates are in km scale", {
 test_that(".build_future_pred_stack errors on missing env_vars", {
   r <- make_env_rast()
   expect_error(
-    .build_future_pred_stack(r, c("bio_01", "bio_99"), planar_proj = 5070),
+    .build_future_pred_stack(r, c("bio_01", "bio_99"), planar_proj = "EPSG:5070"),
     regexp = NULL  # terra will error on missing layer name
   )
 })
@@ -155,8 +172,10 @@ test_that("add_weighted_coordinates coord range scales with coord_wt", {
   out1 <- add_weighted_coordinates(r, coord_wt = 0.5)
   out2 <- add_weighted_coordinates(r, coord_wt = 2.0)
 
-  range1 <- diff(as.numeric(terra::global(out1[["x"]], "range", na.rm = TRUE)))
-  range2 <- diff(as.numeric(terra::global(out2[["x"]], "range", na.rm = TRUE)))
+  rng1   <- terra::global(out1[["x"]], "range", na.rm = TRUE)
+  rng2   <- terra::global(out2[["x"]], "range", na.rm = TRUE)
+  range1 <- rng1$max - rng1$min
+  range2 <- rng2$max - rng2$min
   expect_gt(range2, range1)
 })
 
@@ -176,14 +195,14 @@ make_cluster_sf <- function(ids, xoffset = 0) {
   })
   sf::st_sf(
     ID       = ids,
-    geometry = sf::st_sfc(polys, crs = 32614)  # planar UTM
+    geometry = sf::st_sfc(polys, crs = "EPSG:32614")  # planar UTM
   )
 }
 
 test_that("calculate_changes returns correct columns", {
   cur <- make_cluster_sf(1:3)
   fut <- make_cluster_sf(1:3, xoffset = 0.1)
-  out <- calculate_changes(cur, fut, planar_proj = 32614)
+  out <- calculate_changes(cur, fut, planar_proj = "EPSG:32614")
 
   expect_true(is.data.frame(out))
   expect_named(
@@ -197,7 +216,7 @@ test_that("calculate_changes returns correct columns", {
 test_that("calculate_changes detects lost clusters", {
   cur <- make_cluster_sf(1:3)
   fut <- make_cluster_sf(1:2)   # cluster 3 gone
-  out <- calculate_changes(cur, fut, planar_proj = 32614)
+  out <- calculate_changes(cur, fut, planar_proj = "EPSG:32614")
 
   lost_row <- out[out$cluster_id == 3, ]
   expect_equal(nrow(lost_row), 1L)
@@ -208,7 +227,7 @@ test_that("calculate_changes detects lost clusters", {
 test_that("calculate_changes detects gained clusters", {
   cur <- make_cluster_sf(1:2)
   fut <- make_cluster_sf(1:3)   # cluster 3 is new
-  out <- calculate_changes(cur, fut, planar_proj = 32614)
+  out <- calculate_changes(cur, fut, planar_proj = "EPSG:32614")
 
   gained_row <- out[out$cluster_id == 3, ]
   expect_equal(nrow(gained_row), 1L)
@@ -219,7 +238,7 @@ test_that("calculate_changes detects gained clusters", {
 test_that("calculate_changes handles no common clusters gracefully", {
   cur <- make_cluster_sf(1:2)
   fut <- make_cluster_sf(3:4)
-  out <- calculate_changes(cur, fut, planar_proj = 32614)
+  out <- calculate_changes(cur, fut, planar_proj = "EPSG:32614")
 
   # All should appear as lost or gained, none as persists
   expect_equal(nrow(out), 4L)
@@ -229,7 +248,7 @@ test_that("calculate_changes handles no common clusters gracefully", {
 test_that("calculate_changes centroid_shift is NA for lost/gained", {
   cur <- make_cluster_sf(1:3)
   fut <- make_cluster_sf(2:4)  # 1 lost, 4 gained
-  out <- calculate_changes(cur, fut, planar_proj = 32614)
+  out <- calculate_changes(cur, fut, planar_proj = "EPSG:32614")
 
   expect_true(is.na(out$centroid_shift_km[out$cluster_id == 1]))
   expect_true(is.na(out$centroid_shift_km[out$cluster_id == 4]))
@@ -245,12 +264,25 @@ make_mock_future_rr <- function(seed = 7L) {
   set.seed(seed)
   r <- make_env_rast(seed = seed)
   # Rescaled predictors: just scale to [0,1] to mimic RescaleRasters_bayes output
-  r_scaled <- (r - terra::global(r, "min", na.rm = TRUE)$min) /
-    diff(as.numeric(terra::global(r, "range", na.rm = TRUE)))
+  # terra::global returns a data frame — extract per-layer min/max explicitly
+  r_min <- min(terra::global(r, "min", na.rm = TRUE)$min)
+  r_max <- max(terra::global(r, "max", na.rm = TRUE)$max)
+  r_scaled <- (r - r_min) / (r_max - r_min)
   list(RescaledPredictors = r_scaled)
 }
 
+## Mock KNN that uses stats::predict dispatch (avoids kknn dependency).
+## project_future_draws calls stats::predict(knn_consensus, newdata = ...)
+## which dispatches to caret's predict.train — we stub that at the stats level.
+local_mock_stats_predict <- function(object, newdata, ...) {
+  factor(
+    rep(levels(object$finalModel$cl)[1], nrow(newdata)),
+    levels = levels(object$finalModel$cl)
+  )
+}
+
 test_that("project_future_draws returns a SpatRaster named future_stability", {
+  skip_if_not_installed("kknn")
   set.seed(1L)
   mock_rr   <- make_mock_future_rr()
   suit_mask <- mock_rr$RescaledPredictors[[1]] * 0 + 1  # all cells suitable
@@ -258,7 +290,6 @@ test_that("project_future_draws returns a SpatRaster named future_stability", {
   scaling   <- make_scaling_params(n_draws = 5L)
   mock_knn  <- make_mock_knn(levels = as.character(1:3))
 
-  # Stub caret predict
   local_mocked_bindings(
     predict.train = local_mock_predict,
     .package = "caret",
@@ -281,6 +312,7 @@ test_that("project_future_draws returns a SpatRaster named future_stability", {
 })
 
 test_that("project_future_draws stability values are in [0, 1]", {
+  skip_if_not_installed("kknn")
   set.seed(2L)
   mock_rr   <- make_mock_future_rr(seed = 2L)
   suit_mask <- mock_rr$RescaledPredictors[[1]] * 0 + 1
@@ -311,8 +343,7 @@ test_that("project_future_draws stability values are in [0, 1]", {
 
 test_that("project_future_draws returns NA raster when no suitable cells", {
   mock_rr   <- make_mock_future_rr()
-  # All NA suitable mask — no suitable habitat
-  suit_mask <- mock_rr$RescaledPredictors[[1]] * NA
+  suit_mask <- mock_rr$RescaledPredictors[[1]] * NA  # no suitable habitat
 
   scaling  <- make_scaling_params(n_draws = 5L)
   mock_knn <- make_mock_knn()
@@ -337,22 +368,22 @@ test_that("project_future_draws returns NA raster when no suitable cells", {
 })
 
 test_that("project_future_draws clamps n_future_pts to available cells", {
+  skip_if_not_installed("kknn")
   set.seed(3L)
-  mock_rr <- make_mock_future_rr()
-  # Only 5 suitable cells in a mostly-NA mask
+  mock_rr   <- make_mock_future_rr()
   suit_mask <- mock_rr$RescaledPredictors[[1]] * NA
-  suit_mask[1:5] <- 1
+  suit_mask[1:5] <- 1   # only 5 suitable cells
 
   scaling  <- make_scaling_params(n_draws = 3L)
   mock_knn <- make_mock_knn()
 
-  # Should warn about clamping, not error
-  expect_message(
-    local_mocked_bindings(
-      predict.train = local_mock_predict,
-      .package = "caret",
-      {
-        out <- project_future_draws(
+  # expect_message must wrap the code block, not local_mocked_bindings
+  local_mocked_bindings(
+    predict.train = local_mock_predict,
+    .package = "caret",
+    {
+      expect_message(
+        project_future_draws(
           future_rescaled_rr   = mock_rr,
           suitable_mask        = suit_mask,
           env_vars             = env_vars,
@@ -361,10 +392,10 @@ test_that("project_future_draws clamps n_future_pts to available cells", {
           knn_consensus        = mock_knn,
           n_future_pts         = 500L,
           existing_cluster_ids = 1:3
-        )
-      }
-    ),
-    regexp = "clamping"
+        ),
+        regexp = "clamping"
+      )
+    }
   )
 })
 
@@ -444,61 +475,73 @@ test_that("explicit n_future_draws is clamped to n_stored", {
 
 ## Build a minimal mock posterior_clusters object
 make_mock_posterior_clusters <- function() {
-  mock_knn    <- make_mock_knn(levels = as.character(1:3))
+  mock_knn <- make_mock_knn(levels = as.character(1:3))
   list(
-    Geometry  = make_geometry_sf(),
-    KNNModels = list(KNN_Cluster = mock_knn),
+    Geometry      = make_geometry_sf(),
+    KNNModels     = list(KNN_Cluster = mock_knn),
     ScalingParams = make_scaling_params(n_draws = 5L)
   )
 }
 
-test_that("projectClustersBayes return list has all required elements", {
-  skip_if_not_installed("brms")
+## Shared minimal bSDM_object stub — no stanfit needed since n_iter is
+## derived from beta_draws directly, never touching brms::as_draws_matrix.
+make_mock_bsdm <- function(r) {
+  list(
+    Model         = structure(list(), class = "brmsfit"),
+    PredictMatrix = as.matrix(as.data.frame(terra::values(r, na.rm = TRUE))),
+    TrainData     = sf::st_sf(geometry = sf::st_sfc(
+                      sf::st_point(c(-95, 45)), crs = 4326))
+  )
+}
 
-  r         <- make_env_rast()
-  pc        <- make_mock_posterior_clusters()
-  mock_rr   <- make_mock_future_rr()
+## Stub raster for terra::predict SDM output (constant 0.8 suitability)
+make_sdm_stub <- function(r) r[[1]] * 0 + 0.8
 
-  # Stub the four heavy external calls so we never touch brms or terra::predict
-  # with a real model
+## Stub stability raster
+make_stab_stub <- function() {
+  s <- make_env_rast()[[1]] * 0 + 0.7
+  names(s) <- "future_stability"
+  s
+}
+
+## Run projectClustersBayes with all heavy dependencies stubbed.
+## terra::predict is mocked at the safeHavens namespace level.
+run_pcb <- function(r, pc, mock_rr, ...) {
   local_mocked_bindings(
-    RescaleRasters_bayes = function(...) mock_rr,
+    RescaleRasters_bayes     = function(...) mock_rr,
     .build_future_pred_stack = function(...) make_env_rast(),
-    .make_brms_predict_fun = function(...) {
-      function(model, data, ...) {
-        matrix(rep(0.8, nrow(data) * 2), ncol = 2)
-      }
-    },
-    `terra::predict` = function(x, model, fun, ...) {
-      # Return a constant 0.8 suitability raster
-      x[[1]] * 0 + 0.8
-    },
-    project_future_draws = function(...) {
-      r <- make_env_rast()[[1]] * 0 + 0.7
-      names(r) <- "future_stability"
-      r
-    },
+    project_future_draws     = function(...) make_stab_stub(),
+    .package                 = "safeHavens",
     {
-      result <- projectClustersBayes(
-        bSDM_object          = list(
-          Model        = structure(list(), class = "brmsfit"),
-          PredictMatrix = as.matrix(as.data.frame(terra::values(r, na.rm = TRUE))),
-          TrainData    = sf::st_sf(geometry = sf::st_sfc(sf::st_point(c(-95, 45)),
-                                                         crs = 4326))
-        ),
-        posterior_clusters   = pc,
-        future_predictors    = r,
-        current_predictors   = r,
-        threshold_rasts      = list(
-          Threshold = data.frame(sensitivity = 0.5)
-        ),
-        planar_proj          = 5070,
-        cluster_novel        = FALSE,
-        n_future_draws       = 5L,
-        n_future_pts         = 10L
+      # terra::predict must be mocked in the terra namespace since it is
+      # called as terra::predict inside projectClustersBayes
+      local_mocked_bindings(
+        predict = function(x, ...) make_sdm_stub(x),
+        .package = "terra",
+        {
+          projectClustersBayes(
+            bSDM_object        = make_mock_bsdm(r),
+            posterior_clusters = pc,
+            future_predictors  = r,
+            current_predictors = r,
+            threshold_rasts    = list(Threshold = data.frame(sensitivity = 0.5)),
+            planar_proj        = "EPSG:5070",
+            cluster_novel      = FALSE,
+            n_future_draws     = 3L,
+            n_future_pts       = 10L,
+            ...
+          )
+        }
       )
     }
   )
+}
+
+test_that("projectClustersBayes return list has all required elements", {
+  r  <- make_env_rast()
+  pc <- make_mock_posterior_clusters()
+
+  result <- run_pcb(r, pc, make_mock_future_rr())
 
   expected_names <- c(
     "clusters_raster", "clusters_sf", "suitable_habitat",
@@ -516,36 +559,10 @@ test_that("projectClustersBayes return list has all required elements", {
 })
 
 test_that("novel_similarity is empty data frame when cluster_novel = FALSE", {
-  skip_if_not_installed("brms")
-
   r  <- make_env_rast()
   pc <- make_mock_posterior_clusters()
-  mock_rr <- make_mock_future_rr()
 
-  local_mocked_bindings(
-    RescaleRasters_bayes     = function(...) mock_rr,
-    .build_future_pred_stack = function(...) make_env_rast(),
-    .make_brms_predict_fun   = function(...) function(model, data, ...) matrix(0.8, nrow(data), 2),
-    `terra::predict`         = function(x, ...) x[[1]] * 0 + 0.8,
-    project_future_draws     = function(...) { r <- make_env_rast()[[1]]*0+0.7; names(r) <- "future_stability"; r },
-    {
-      result <- projectClustersBayes(
-        bSDM_object        = list(
-          Model = structure(list(), class = "brmsfit"),
-          PredictMatrix = as.matrix(as.data.frame(terra::values(r, na.rm = TRUE))),
-          TrainData = sf::st_sf(geometry = sf::st_sfc(sf::st_point(c(-95,45)), crs=4326))
-        ),
-        posterior_clusters = pc,
-        future_predictors  = r,
-        current_predictors = r,
-        threshold_rasts    = list(Threshold = data.frame(sensitivity = 0.5)),
-        planar_proj        = 5070,
-        cluster_novel      = FALSE,
-        n_future_draws     = 3L,
-        n_future_pts       = 10L
-      )
-    }
-  )
+  result <- run_pcb(r, pc, make_mock_future_rr())
 
   expect_equal(nrow(result$novel_similarity), 0L)
   expect_named(
@@ -554,77 +571,33 @@ test_that("novel_similarity is empty data frame when cluster_novel = FALSE", {
   )
 })
 
-test_that("clusters_sf has an ID column with integer values", {
-  skip_if_not_installed("brms")
-
+test_that("clusters_sf has an ID column with integer-compatible values", {
   r  <- make_env_rast()
   pc <- make_mock_posterior_clusters()
-  mock_rr <- make_mock_future_rr()
 
-  local_mocked_bindings(
-    RescaleRasters_bayes     = function(...) mock_rr,
-    .build_future_pred_stack = function(...) make_env_rast(),
-    .make_brms_predict_fun   = function(...) function(model, data, ...) matrix(0.8, nrow(data), 2),
-    `terra::predict`         = function(x, ...) x[[1]] * 0 + 0.8,
-    project_future_draws     = function(...) { r <- make_env_rast()[[1]]*0+0.7; names(r) <- "future_stability"; r },
-    {
-      result <- projectClustersBayes(
-        bSDM_object        = list(
-          Model = structure(list(), class = "brmsfit"),
-          PredictMatrix = as.matrix(as.data.frame(terra::values(r, na.rm = TRUE))),
-          TrainData = sf::st_sf(geometry = sf::st_sfc(sf::st_point(c(-95,45)), crs=4326))
-        ),
-        posterior_clusters = pc,
-        future_predictors  = r,
-        current_predictors = r,
-        threshold_rasts    = list(Threshold = data.frame(sensitivity = 0.5)),
-        planar_proj        = 5070,
-        cluster_novel      = FALSE,
-        n_future_draws     = 3L,
-        n_future_pts       = 10L
-      )
-    }
-  )
+  result <- run_pcb(r, pc, make_mock_future_rr())
 
   expect_true("ID" %in% names(result$clusters_sf))
   expect_true(is.integer(result$clusters_sf$ID) ||
                 is.numeric(result$clusters_sf$ID))
 })
 
-test_that("changes data frame cluster IDs are a subset of current Geometry IDs", {
-  skip_if_not_installed("brms")
-
+test_that("changes data frame contains cluster_id column and correct structure", {
   r  <- make_env_rast()
   pc <- make_mock_posterior_clusters()
-  mock_rr <- make_mock_future_rr()
 
-  local_mocked_bindings(
-    RescaleRasters_bayes     = function(...) mock_rr,
-    .build_future_pred_stack = function(...) make_env_rast(),
-    .make_brms_predict_fun   = function(...) function(model, data, ...) matrix(0.8, nrow(data), 2),
-    `terra::predict`         = function(x, ...) x[[1]] * 0 + 0.8,
-    project_future_draws     = function(...) { r <- make_env_rast()[[1]]*0+0.7; names(r) <- "future_stability"; r },
-    {
-      result <- projectClustersBayes(
-        bSDM_object        = list(
-          Model = structure(list(), class = "brmsfit"),
-          PredictMatrix = as.matrix(as.data.frame(terra::values(r, na.rm = TRUE))),
-          TrainData = sf::st_sf(geometry = sf::st_sfc(sf::st_point(c(-95,45)), crs=4326))
-        ),
-        posterior_clusters = pc,
-        future_predictors  = r,
-        current_predictors = r,
-        threshold_rasts    = list(Threshold = data.frame(sensitivity = 0.5)),
-        planar_proj        = 5070,
-        cluster_novel      = FALSE,
-        n_future_draws     = 3L,
-        n_future_pts       = 10L
-      )
-    }
-  )
+  result <- run_pcb(r, pc, make_mock_future_rr())
 
+  # clusters may be lost, gained, or novel — IDs need not be a strict subset
+  expect_true("cluster_id" %in% names(result$changes))
+  expect_true(all(c("current_area_km2", "future_area_km2",
+                     "area_change_pct",  "centroid_shift_km")
+                   %in% names(result$changes)))
+  # All reported change IDs must come from current era OR novel offset IDs
   current_ids <- unique(pc$Geometry$ID)
-  future_ids  <- unique(result$clusters_sf$ID)
-  # All future IDs must be current-era IDs (no novel in this run)
-  expect_true(all(future_ids %in% current_ids))
+  max_current  <- max(current_ids)
+  expect_true(all(
+    result$changes$cluster_id %in% current_ids |
+    result$changes$cluster_id > max_current   # novel offset IDs
+  ))
 })

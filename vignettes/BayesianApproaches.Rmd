@@ -347,7 +347,6 @@ writeSDMresults(
 list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 ```
 
-
 ## predictive provenance
 
 ```{r projected clusters into future time point, message = F}
