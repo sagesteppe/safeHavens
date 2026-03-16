@@ -37,11 +37,11 @@ They include:
   - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography  
 
 ```{r libraries, warning =F, message = F}
-library(terra)
-library(sf)
-library(dplyr)
-library(ggplot2)
 library(safeHavens)
+library(sf) ## vector operations
+library(terra) ## raster operations
+library(dplyr) ## general data handling
+library(ggplot2) ## plotting 
 ```
 
 We’ll load the species occurrence data and make it explicitly spatial.

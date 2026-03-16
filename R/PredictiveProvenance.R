@@ -547,77 +547,75 @@ analyze_cluster_relationships <- function(
 #' @noRd
 calculate_changes <- function(current_sf, future_sf, planar_proj) {
   current_p <- sf::st_transform(current_sf, planar_proj)
-  future_p <- sf::st_transform(future_sf, planar_proj)
+  future_p  <- sf::st_transform(future_sf,  planar_proj)
 
-  ## calculate total areas of each class
-  current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6 # km²
-  future_p$area <- as.numeric(sf::st_area(future_p)) / 1e6
+  current_p$area <- as.numeric(sf::st_area(current_p)) / 1e6
+  future_p$area  <- as.numeric(sf::st_area(future_p))  / 1e6
 
-  ## find geometric centroid
-  sf::st_agr(current_p) <- 'constant'
-  sf::st_agr(future_p) <- 'constant'
-
+  sf::st_agr(current_p) <- "constant"
+  sf::st_agr(future_p)  <- "constant"
   current_cents <- sf::st_point_on_surface(current_p)
-  future_cents <- sf::st_point_on_surface(future_p)
+  future_cents  <- sf::st_point_on_surface(future_p)
+
+  # Reused for any empty result
+  empty_changes <- data.frame(
+    cluster_id        = integer(0),
+    current_area_km2  = numeric(0),
+    future_area_km2   = numeric(0),
+    area_change_pct   = numeric(0),
+    centroid_shift_km = numeric(0)
+  )
 
   # ---------- clusters present in both ----------
-  common_ids <- intersect(current_sf$ID, future_sf$ID)
+  common_ids <- as.integer(intersect(current_sf$ID, future_sf$ID))
 
-  # Handle edge case: no common clusters
-  if (length(common_ids) == 0) {
-    persists <- data.frame(
-      cluster_id = integer(0),
-      current_area_km2 = numeric(0),
-      future_area_km2 = numeric(0),
-      area_change_pct = numeric(0),
-      centroid_shift_km = numeric(0)
-    )
+  persists <- if (length(common_ids) == 0) {
+    empty_changes
   } else {
-    persists <- data.frame(
-      cluster_id = common_ids,
-      current_area_km2 = current_p$area[match(common_ids, current_sf$ID)],
-      future_area_km2 = future_p$area[match(common_ids, future_sf$ID)]
+    data.frame(
+      cluster_id       = common_ids,
+      current_area_km2 = current_p$area[match(common_ids, as.integer(current_sf$ID))],
+      future_area_km2  = future_p$area[match(common_ids,  as.integer(future_sf$ID))]
     ) |>
       dplyr::mutate(
-        area_change_pct = 100 *
-          (future_area_km2 - current_area_km2) /
-          current_area_km2,
-        centroid_shift_km = as.numeric(
-          sf::st_distance(
-            current_cents[match(common_ids, current_sf$ID), ],
-            future_cents[match(common_ids, future_sf$ID), ],
-            by_element = TRUE
-          )
-        ) /
-          1000
+        area_change_pct   = 100 * (future_area_km2 - current_area_km2) / current_area_km2,
+        centroid_shift_km = as.numeric(sf::st_distance(
+          current_cents[match(common_ids, as.integer(current_sf$ID)), ],
+          future_cents[match(common_ids,  as.integer(future_sf$ID)),  ],
+          by_element = TRUE
+        )) / 1000
       )
   }
 
   # ---------- lost clusters ----------
-  lost_ids <- setdiff(current_sf$ID, future_sf$ID)
-  lost <- if (length(lost_ids) > 0) {
+  lost_ids <- as.integer(setdiff(current_sf$ID, future_sf$ID))
+
+  lost <- if (length(lost_ids) == 0) {
+    empty_changes
+  } else {
     data.frame(
-      cluster_id = lost_ids,
-      current_area_km2 = current_p$area[match(lost_ids, current_sf$ID)],
-      future_area_km2 = 0,
-      area_change_pct = -100,
+      cluster_id        = lost_ids,
+      current_area_km2  = current_p$area[match(lost_ids, as.integer(current_sf$ID))],
+      future_area_km2   = 0,
+      area_change_pct   = -100,
       centroid_shift_km = NA_real_
     )
   }
 
   # ---------- gained clusters ----------
-  gained_ids <- setdiff(future_sf$ID, current_sf$ID)
-  gained <- if (length(gained_ids) > 0) {
+  gained_ids <- as.integer(setdiff(future_sf$ID, current_sf$ID))
+
+  gained <- if (length(gained_ids) == 0) {
+    empty_changes
+  } else {
     data.frame(
-      cluster_id = gained_ids,
-      current_area_km2 = 0,
-      future_area_km2 = future_p$area[match(gained_ids, future_sf$ID)],
-      area_change_pct = NA_real_,
+      cluster_id        = gained_ids,
+      current_area_km2  = 0,
+      future_area_km2   = future_p$area[match(gained_ids, as.integer(future_sf$ID))],
+      area_change_pct   = NA_real_,
       centroid_shift_km = NA_real_
     )
   }
-
-  # ------- directional movement of point-on-surfaces ------- #
 
   dplyr::bind_rows(persists, lost, gained) |>
     dplyr::arrange(cluster_id)

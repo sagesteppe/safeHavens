@@ -9,6 +9,15 @@ description: >
   A package for germplasm curators to identify regions to sample material from. 
 ---
 
+```{r setup, include=FALSE}
+knitr::knit_engines$set(mermaid = function(options) {
+  code <- paste(options$code, collapse = "\n")
+  if (options$eval) {
+    DiagrammeR::mermaid(code)
+  }
+})
+```
+
 ## `safeHavens`
 
 This package helps germplasm curators identify and communicate areas of interest to collection teams for targeting new accessions. 
@@ -100,7 +109,8 @@ remotes::install_github('sagesteppe/safeHavens')
 
 An overview of the functionality in the package is below. 
 
-```{mermaid}
+```{r workflow, echo=FALSE}
+DiagrammeR::mermaid("
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#ffffff', 
     'lineColor':'#ffffff',
@@ -156,4 +166,5 @@ class A,B dataColor
 class N decisionColor
 class L rareColor
 class H,U,V ibrColor
+")
 ```

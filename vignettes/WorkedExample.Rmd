@@ -32,12 +32,12 @@ Note that a (free and easy to get) GBIF profile is required for larger data down
 ```{r load packages, warning = F, message = F}
 library(safeHavens)
 library(sf) # spatial data
-library(dplyr) # general data handling
-library(tidyr) # general data handling
-library(purrr) # mapping functions across lists.
-library(ggplot2) ## for maps 
 library(rgbif) # species occurrence data.
 library(spData) # example cartography data
+library(dplyr) # general data handling
+library(tidyr) # general data handling
+library(purrr) # sub for lapplying functions across lists
+library(ggplot2) ## for maps 
 ```
 
 Using `rgbif`, we’ll download occurrence data for a couple of species. 
@@ -245,7 +245,7 @@ The second part of the function is almost a ‘heatmap’ which can be used to s
 Keeping the number of rings low allows for some pragmatic communication of more desirable/less desirable portions of the range to ideally collect in.
 
 ```{r prioritize sample areas}
-ibd_samples_priority <- ibd_samples %>%
+ibd_samples_priority <- ibd_samples |>
   purrr::map(~ st_transform(.x$Geometry, 5070)) |> 
   purrr::map(~ list(PrioritizeSample(.x, n_breaks = 3)))
 

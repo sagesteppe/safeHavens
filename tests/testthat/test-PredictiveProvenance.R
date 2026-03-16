@@ -760,7 +760,6 @@ test_that("analyze_cluster_relationships handles silhouette warnings", {
 })
 
 test_that("analyze_cluster_relationships filters by novel_ids", {
-  skip_if_not_installed("cluster")
   
   set.seed(333)
   

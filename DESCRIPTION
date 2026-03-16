@@ -1,6 +1,6 @@
 Package: safeHavens
 Title: Developing sampling schemas for ex situ conservation of plant germplasm
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Reed", "Benkendorf", email = "rbenkendorf@chicagobotanic.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-9178-3087"))
@@ -12,7 +12,9 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Suggests: 
+    collapse,
     DiagrammeR,
+    DHARMa,
     ggplot2,
     knitr,
     lattice,
@@ -33,8 +35,8 @@ Suggests:
     rlang,
     safeHavens,
     geodata,
-    DiagrammeR,
-    tidybayes
+    tidybayes,
+    pROC
 VignetteBuilder: knitr
 Imports: 
     brms,
@@ -44,7 +46,6 @@ Imports:
     dplyr,
     fields,
     glmnet,
-    magrittr,
     NbClust,
     nptest,
     posterior,

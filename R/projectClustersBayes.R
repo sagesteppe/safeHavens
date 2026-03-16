@@ -65,19 +65,19 @@
 #' @returns A named list:
 #'   \item{`clusters_raster`}{Smoothed `SpatRaster` of consensus cluster IDs.}
 #'   \item{`clusters_sf`}{`sf` polygons with column `ID`.}
-#'   \item{`suitable_habitat`}{`SpatRaster` — binary suitable habitat under
+#'   \item{`suitable_habitat`}{`SpatRaster` - binary suitable habitat under
 #'     future conditions.}
-#'   \item{`novel_mask`}{`SpatRaster` — `1` where MESS < threshold.}
-#'   \item{`mess`}{`SpatRaster` — raw MESS scores.}
-#'   \item{`stability`}{`SpatRaster` — draw-based cluster-assignment stability
+#'   \item{`novel_mask`}{`SpatRaster` - `1` where MESS < threshold.}
+#'   \item{`mess`}{`SpatRaster` - raw MESS scores.}
+#'   \item{`stability`}{`SpatRaster` - draw-based cluster-assignment stability
 #'     under future climate. Fraction of posterior draws agreeing on each
 #'     cell's modal cluster. Values in (0, 1); low values flag cells where
 #'     beta uncertainty produces ambiguous cluster assignment in future space.
 #'     Unlike the current-era stability surface, this is computed directly in
 #'     future climate space and is not a transfer from [PosteriorCluster()].}
-#'   \item{`changes`}{`data.frame` — per-cluster area and centroid-shift
+#'   \item{`changes`}{`data.frame` - per-cluster area and centroid-shift
 #'     metrics.}
-#'   \item{`novel_similarity`}{`data.frame` — nearest existing cluster and
+#'   \item{`novel_similarity`}{`data.frame` - nearest existing cluster and
 #'     mean silhouette width for each novel cluster. Zero-row if none.}
 #'
 #' @seealso [projectClusters()] for the elastic-net equivalent,
@@ -131,7 +131,7 @@ projectClustersBayes <- function(
 
   # Build gp_x / gp_y coordinate rasters for the future extent in planar km,
   # matching exactly what create_bayes_spatial_predictions does for current data.
-  # re_formula = NULL (default) keeps the spatial smooth active — extrapolating
+  # re_formula = NULL (default) keeps the spatial smooth active - extrapolating
   # the GP into future space is more honest than zeroing coordinates.
   future_pred_stack <- .build_future_pred_stack(
     future_predictors = future_predictors,
@@ -139,7 +139,7 @@ projectClustersBayes <- function(
     planar_proj       = planar_proj
   )
 
-  n_iter <- nrow(brms::as_draws_matrix(current_model))
+  n_iter <- nrow(beta_draws)   #
   predict_fun <- .make_brms_predict_fun(n_iter)
 
   future_sdm_stack <- terra::predict(
@@ -154,7 +154,7 @@ projectClustersBayes <- function(
   cut              <- thresholds[[thresh_metric]]
   suitable_habitat <- future_sdm >= cut
 
-  # --- 2. MESS — identify novel climate --------------------------------------------
+  # --- 2. MESS - identify novel climate --------------------------------------------
   ref_matrix <- terra::as.data.frame(
     current_predictors[[env_vars]],
     na.rm = TRUE
@@ -181,7 +181,7 @@ projectClustersBayes <- function(
   # The KNNs were therefore trained on that rescaled space. We apply the same
   # transformation to future_predictors here so the feature space matches.
   # rescaleFutureBayes (which used raw pred_mat moments) is intentionally not
-  # used — it produced the wrong scale because it was unaware of the upstream
+  # used - it produced the wrong scale because it was unaware of the upstream
   # RescaleRasters_bayes transformation.
   # nocov start
   future_rr <- RescaleRasters_bayes(
@@ -219,7 +219,7 @@ projectClustersBayes <- function(
     # nocov end
 
     # novel_clusters already carries offset IDs (next_cluster_id was set to
-    # max(Geometry$ID) + 1 in the cluster_novel_areas call above) — do NOT
+    # max(Geometry$ID) + 1 in the cluster_novel_areas call above) - do NOT
     # add the offset again here, matching the enet path in projectClusters.
     novel_clusters <- novel_result$clusters_raster
     known_numeric  <- terra::as.int(known_clusters)
@@ -246,10 +246,10 @@ projectClustersBayes <- function(
     )
   }
 
-  # ── 8. Draw-based future stability ---------------------------------------------
+  # -- 8. Draw-based future stability ---------------------------------------------
   # Replay posterior beta draws on the future climate surface. Stability at
   # each cell = fraction of draws agreeing on the modal cluster assignment.
-  # Computed entirely in future climate space — cells in novel or strongly
+  # Computed entirely in future climate space - cells in novel or strongly
   # shifted climate will naturally show low draw-agreement rather than
   # inheriting a stability score from the current era.
   # nocov start
@@ -275,11 +275,12 @@ projectClustersBayes <- function(
   # IDs are kept as-is: current-era clusters retain their geographic IDs from
   # PosteriorCluster; novel clusters carry offset IDs (max(current) + 1 ...).
   # calculate_changes() matches by ID so lost/gained clusters are detected
-  # correctly without any renumbering — identical to the enet path.
+  # correctly without any renumbering - identical to the enet path.
   clusters_sf <- terra::as.polygons(final_clean) |>
     sf::st_as_sf() |>
     sf::st_make_valid()
   names(clusters_sf)[1] <- "ID"
+  clusters_sf$ID <- as.integer(clusters_sf$ID)
 
   # --- 11. Change metrics ----------------------------------------------------------
   # nocov start
@@ -317,14 +318,14 @@ projectClustersBayes <- function(
 #' fraction of draws that agreed on that point's modal cluster.
 #'
 #' Critically, point values are extracted from `future_rescaled_rr$RescaledPredictors`
-#' — the output of RescaleRasters_bayes applied to future climate — so the feature
+#' - the output of RescaleRasters_bayes applied to future climate - so the feature
 #' space is on exactly the same scale the KNN was trained on. The per-draw
 #' reweighting then modulates those values by the ratio of the draw's beta to the
 #' posterior mean beta, mirroring what PosteriorCluster does internally.
 #'
 #' @param future_rescaled_rr Return value of `RescaleRasters_bayes()` applied to
 #'   future predictors. Must contain `$RescaledPredictors` (a `SpatRaster`).
-#' @param suitable_mask `SpatRaster` — binary suitable habitat (1 / NA).
+#' @param suitable_mask `SpatRaster` - binary suitable habitat (1 / NA).
 #' @param env_vars Character vector of environmental predictor names.
 #' @param beta_draws Numeric matrix (n_draws x n_vars) of posterior beta samples.
 #' @param coord_wt Numeric coordinate weight matching [PosteriorCluster()].
@@ -379,7 +380,7 @@ project_future_draws <- function(
     na.rm     = TRUE
   )
 
-  # Extract already-RescaleRasters_bayes-scaled values — same space as KNN training
+  # Extract already-RescaleRasters_bayes-scaled values - same space as KNN training
   pt_rr         <- terra::extract(future_rescaled[[env_vars]], sample_pts, ID = FALSE)
   complete_rows <- stats::complete.cases(pt_rr)
   sample_pts    <- sample_pts[complete_rows, ]
@@ -457,7 +458,7 @@ project_future_draws <- function(
     mean(x == modal)
   }, numeric(1L))
 
-  # --- 4. Paint stability to raster — one terra::predict call ------------------
+  # --- 4. Paint stability to raster - one terra::predict call ------------------
   # Use the already-correctly-scaled future_rescaled + coordinates as features,
   # mirroring exactly the feature space the stability regression will generalise over.
   pt_mean_scaled <- pt_rr
@@ -501,28 +502,10 @@ project_future_draws <- function(
   stability_raster
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  brms prediction helper
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
-#' Internal brms prediction helper for terra::predict
-#'
-#' Returns the posterior mean predicted probability for a matrix of new
-#' environmental data. `re_formula = NA` drops the spatial GP random effect,
-#' which cannot be extrapolated to new space-time locations. This means the
-#' future SDM surface is pure fixed-effects; the threshold carried forward
-#' from `thresholds` was calibrated against the GP-inclusive model and may
-#' therefore be slightly optimistic (the GP absorbed residual spatial
-#' structure that now loads onto the environmental betas).
-#'
-#' @param model A `brmsfit` object.
-#' @param data  Data frame of new predictor values (supplied by
-#'   `terra::predict`).
-#' @param ...   Ignored.
-#'
-#' @returns Numeric vector of posterior mean predictions (length = nrow(data)).
-#' @keywords internal
-#' @noRd
 #' Build a future predictor stack with gp_x / gp_y coordinate layers
 #'
 #' Mirrors the coordinate-raster construction in `create_bayes_spatial_predictions`

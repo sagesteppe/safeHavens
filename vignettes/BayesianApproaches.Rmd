@@ -3,7 +3,7 @@ title: "Bayesian Approaches"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bayesian Approaches}
-  `%\VignetteEngine{knitr::rmarkdown}`
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 description: >
   Using Bayesian approaches for EnvironmentalBasedSample.
@@ -41,13 +41,13 @@ To keep this vignette concise, some intermediate processing steps will be 'hidde
 
 ```{r load libraries, message =F, warning = F}
 library(safeHavens)
-library(sf)
-library(terra)
-library(geodata)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(patchwork)
+library(sf) ## vector operations
+library(terra) ## raster operations
+library(geodata) ## environmental variables
+library(dplyr) ## general data handling
+library(tidyr) ## general data handling
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 ```
 
 ```{r Download species occurrence data, echo = FALSE}
@@ -82,33 +82,30 @@ bb <- st_bbox(
 western_states <- st_crop(western_states, bb)
 
 theme_navy <- function(base_size = 14, base_family = "sans") {
-  library(grid)
-  library(ggthemes)
-  (theme_foundation(base_size = base_size, base_family = base_family)
-    + theme(
-      plot.title       = element_text(face = "bold", size = rel(1.2),
-                                      hjust = 0.5, colour = "#dce3f0"),
-      text             = element_text(colour = "#dce3f0"),
-      panel.background = element_rect(fill = "#0d1220", colour = NA),
-      plot.background  = element_rect(fill = "#0a0e1a", colour = NA),
-      panel.border     = element_rect(colour = NA),
-      axis.title       = element_text(face = "bold", size = rel(1),
-                                      colour = "#dce3f0"),
-      axis.text        = element_text(colour = "#8a99b8"),
-      axis.line.x      = element_line(colour = "#3a4a6b"),
-      axis.line.y      = element_line(colour = "#3a4a6b"),
-      axis.ticks       = element_line(colour = "#3a4a6b"),
-      panel.grid.major = element_line(colour = "#1c2540"),
-      panel.grid.minor = element_blank(),
-      legend.background = element_rect(fill = "#0a0e1a", colour = NA),
-      legend.key       = element_rect(fill = "#0a0e1a", colour = NA),
-      legend.position  = "bottom",
-      legend.direction = "horizontal",
-      strip.background = element_rect(fill = "#1c2540", colour = "#1c2540"),
-      strip.text       = element_text(face = "bold", colour = "#dce3f0")
-    ))
+  ggplot2::theme_grey(base_size = base_size, base_family = base_family) +
+  ggplot2::theme(
+    plot.title        = ggplot2::element_text(face = "bold", size = rel(1.2),
+                          hjust = 0.5, colour = "#dce3f0"),
+    text              = ggplot2::element_text(colour = "#dce3f0"),
+    panel.background  = ggplot2::element_rect(fill = "#0d1220", colour = NA),
+    plot.background   = ggplot2::element_rect(fill = "#0a0e1a", colour = NA),
+    panel.border      = ggplot2::element_rect(fill = NA, colour = NA),
+    axis.title        = ggplot2::element_text(face = "bold", size = rel(1),
+                          colour = "#dce3f0"),
+    axis.text         = ggplot2::element_text(colour = "#8a99b8"),
+    axis.line.x       = ggplot2::element_line(colour = "#3a4a6b"),
+    axis.line.y       = ggplot2::element_line(colour = "#3a4a6b"),
+    axis.ticks        = ggplot2::element_line(colour = "#3a4a6b"),
+    panel.grid.major  = ggplot2::element_line(colour = "#1c2540"),
+    panel.grid.minor  = ggplot2::element_blank(),
+    legend.background = ggplot2::element_rect(fill = "#0a0e1a", colour = NA),
+    legend.key        = ggplot2::element_rect(fill = "#0a0e1a", colour = NA),
+    legend.position   = "bottom",
+    legend.direction  = "horizontal",
+    strip.background  = ggplot2::element_rect(fill = "#1c2540", colour = "#1c2540"),
+    strip.text        = ggplot2::element_text(face = "bold", colour = "#dce3f0")
+  )
 }
-
 
 bmap <- ggplot() + 
     geom_sf(data = western_states, fill = NA, lwd = 1.25) + 
@@ -168,12 +165,11 @@ hemi <- select(hemi)
 rm(simplify_names)
 ```
 
-
 ## fit the model
 Here we fit as SDM using `bayesianSDM`. 
 For arguments, it requires occurrence data `x`, a raster stack of `predictors`, a `quantile_v` offset used to create pseudo-absence data, and a `planar_proj` used to calculate distances between occurrence data and possible pseudo-absence points.
 
-```{r Create Species Distribution Model, message=F, warning=F, eval = F}
+```{r Create Species Distribution Model, message=F, warning=F, eval=F}
 sdModel <- bayesianSDM( 
   x = hemi,
   pca_predictors = FALSE,
@@ -182,19 +178,19 @@ sdModel <- bayesianSDM(
   planar_proj = 5070, 
   resample = TRUE,
   feature_selection = 'ffs',
-  min_ffs_var = 5, 
+  min_ffs_var = 3, 
   fact = 3, 
   silent = 2 # print fewer messages during model fit.
   )
 ```
 
 ```{r save model, eval = F, echo = F}
-#setwd('~/Documents/assoRted/safeHavens/vignettes')
-#sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
-#sdModel$Predictors <- terra::wrap(sdModel$Predictors)
-#sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
-#sdModel$AOA <- terra::wrap(sdModel$AOA)
-#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+setwd('~/Documents/assoRted/safeHavens/vignettes')
+sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+sdModel$Predictors <- NULL ## need to save some memory
+sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
+sdModel$AOA <- terra::wrap(sdModel$AOA)
+saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
 ```
 
 Load a run of the model described above for the sake of this vignettes processing speed.
@@ -205,7 +201,8 @@ sdModel <- readRDS(
   )
 
 sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
-sdModel$Predictors <- terra::unwrap(sdModel$Predictors)
+sdModel$Predictors <- bio_current[[extract_posterior_betas(sdModel$Model, 'mean')$Variable]]
+# add the above back on, had to save memory
 sdModel$RasterPredictions_sd <- terra::unwrap(sdModel$RasterPredictions_sd)
 sdModel$AOA <- terra::unwrap(sdModel$AOA)
 ```
@@ -226,6 +223,7 @@ points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
 plot(sdModel$RasterPredictions_sd, main = 'sd prediction')
 points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black', cex = 0.5)
 points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
+par(mfrow = c(1, 1))
 ```
 
 The brms:: model summary can be accessed from the sdModel list.
@@ -333,7 +331,6 @@ Using Bayesian posteriors and clustering allows us to identify areas with higher
 Areas with higher proportions had higher colocation scores than those with lower proportions.
 
 ```{r plot stability raster with sample points}
-par(mfrow=c(1,1))
 plot(current_cluster$SummaryRaster$stability, main = 'Cluster Stability')
 points(current_cluster$SamplePoints, cex = 0.3)
 ```
@@ -389,17 +386,30 @@ future_rescaled <- projectClustersBayes(
   planar_proj = "epsg:5070",
 )
 
-nCl = max(future_rescaled$Geometry$ID)
-cus_pal <- RColorBrewer::brewer.pal(n = nCl, name = "Set3")
-names(cus_pal) <- 1:nCl
+nCl = seq(max(future_rescaled$Geometry$ID))
+full_pal = c(
+  '#a6cee3','#1f78b4','#b2df8a','#33a02c',
+  '#fb9a99','#e31a1c','#fdbf6f','#ff7f00',
+  '#cab2d6','#6a3d9a','#ffff99','#b15928'
+  )
+cus_pal <-full_pal[nCl]
+names(cus_pal) <- nCl
 
 bmap + 
-  geom_sf(data = current_cluster$Geometry, aes(fill = factor(ID))) +
+  geom_sf(
+    data = current_cluster$Geometry, 
+    aes(fill = factor(ID),
+    col = NA)
+    ) +
   scale_fill_manual(values = cus_pal) +
   theme(legend.position = 'none', NULL) + 
   labs(title = 'Current') +
 bmap +
-  geom_sf(data = future_rescaled$Geometry, aes(fill = factor(ID))) + 
+  geom_sf(
+    data = future_rescaled$Geometry, 
+    aes(fill = factor(ID)), 
+    col = NA
+    ) + 
   scale_fill_manual(values = cus_pal) + 
   labs(title = 'Future', fill = 'Cluster')
 
@@ -416,7 +426,7 @@ While the Bayesian hierarchical GLM does not produce excellent predictions of su
   2) It provides uncertainty around the contribution of each selected predictor (i.e. many predictors can be weighed differently to get similar results)
 
 ```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
-rm(rr, predictors, files, bp, bio_future, bio_current, bmap, bbox, bb, current_cluster, threshold_rasts)
+rm(rr, files, bio_future, bio_current, bmap, bbox, bb, current_cluster, threshold_rasts)
 ```
 
 ## bonus - model evaluation
@@ -433,14 +443,14 @@ As this package essentially runs automated modelling processes, nearly all model
 However, given the scale of the biodiversity crisis, automated approaches are neccessary. 
 
 
-```{r additional libraries for diagnostic plots}
+```{r additional libraries for diagnostic plots, message = F, warning=F}
 library(pROC)
 library(DHARMa)
 library(tidybayes)
 ```
 
 ```{r dark theme, echo = F}
-update_geom_defaults("line",   list(colour = "#dce3f0"))
+update_geom_defaults("line", list(colour = "#dce3f0"))
 ```
 
 The following three plots all come directly from brms and versions for checking the posteriors predictions. 
@@ -483,7 +493,7 @@ When the line deviates from the diagonal axis, it indicates a range of values th
 
 ```{r posterior predicted probabilities}
 loo_probs <- tibble(
-  pred_prob = brms::loo_epred(sdModel$Model)[, 1],
+  pred_prob = brms::loo_epred(sdModel$Model, moment_match = TRUE)[, 1],
   observed  = factor(sdModel$TrainData$occurrence)
 )
 # Get posterior predicted probabilities
@@ -491,7 +501,9 @@ pred_probs <- sdModel$TrainData |>
   add_epred_draws(sdModel$Model, ndraws = 100) |>
   group_by(.row, .draw) |>
   summarise(prob = mean(.epred), .groups = "drop")
+```
 
+```{r, plot loo predicted probabilities}
 loo_probs |>
   mutate(bin = cut(pred_prob, breaks = 10)) |>
   group_by(bin) |>
@@ -610,8 +622,12 @@ The widths show the uncertainty around the effect of each variable on the specie
 ```{r standardised posterior effects plot, warning = F}
 spr_draw |>
   mutate(across(everything(), scale)) |>
-  pivot_longer(everything(), names_to = "param", values_to = "value") |>
-  mutate(param = stringr::str_remove(param, "^b_")) |>
+  pivot_longer(
+    everything(),
+    names_to = "param",
+    names_transform = list(param = \(x) sub("^b_", "", x)),
+    values_to = "value"
+  )|>
   ggplot(aes(x = value, y = reorder(param, value))) +
   stat_halfeye(col = '#8B2635', fill = '#9191E9') +
   xlim(-5, 5) + ## tighten this up for visualizing on vignette html page
@@ -655,9 +671,8 @@ patchwork::wrap_plots(plots, ncol = 2) +
   ))
 
 update_geom_defaults("line", list(colour = "black"))
-
 ```
 
 ```{r, eval=F}
-rm(theme_navy, spr_draw, sdModel,plots, sims, dharma_res, loo_probs,pred_probs)
+rm(theme_navy, spr_draw, sdModel, plots, sims, dharma_res, loo_probs,pred_probs)
 ```

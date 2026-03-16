@@ -24,8 +24,8 @@ Load the required packages.
 
 ```{r required packages, message=FALSE}
 library(safeHavens)
-library(ggplot2)
-library(patchwork)
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 set.seed(99)
 ```
 
