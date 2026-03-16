@@ -193,8 +193,6 @@ RescaleRasters_bayes <- function(
 #' @param model brmsfit
 #' @param beta_summary Which summary column to use as BetaWeight
 #' @return Data frame: Variable, Estimate, Est.Error, Q2.5, Q97.5, BetaWeight
-#' @keywords internal
-#' @noRd
 extract_posterior_betas <- function(model, beta_summary) {
   # brms::fixef returns matrix: rows = params, cols = Estimate/Est.Error/Q2.5/Q97.5
   fe <- as.data.frame(brms::fixef(model, summary = TRUE))
