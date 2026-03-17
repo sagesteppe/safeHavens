@@ -34,7 +34,6 @@ Suggests:
     covr,
     withr,
     rlang,
-    safeHavens,
     geodata,
     tidybayes,
     pROC

@@ -91,7 +91,8 @@ jobs:
             "geodata", "ggplot2", "patchwork", "spData",
             "DiagrammeR", "rgbif", "purrr", "tidyr",
             "sp", "lwgeom", "gstat", "MASS", "lattice",
-            "withr", "rlang"
+            "withr", "rlang", "BH", "collapse","DHARMa", 
+            "marginaleffects", "tidybayes", "pROC"
           ), repos = getOption("repos"))
         shell: Rscript {0}
 
