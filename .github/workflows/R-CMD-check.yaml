@@ -81,6 +81,7 @@ jobs:
           # Use "hard" deps only for speed; soft deps (Suggests) installed
           # selectively below where they matter (rstan, cmdstanr)
           dependencies: '"hard"'
+          cache-version: ${{ matrix.config.r == 'devel' && github.run_id || '1' }}
 
       # ── Suggests needed by vignettes (skipped by dependencies: '"hard"') ───
       # geodata, DiagrammeR, rgbif etc. are Suggests so setup-r-dependencies
@@ -132,24 +133,25 @@ jobs:
       # file if you have one; otherwise it rebuilds when the runner image
       # rotates (acceptable).
       - name: Cache CmdStan
+        id: cache-cmdstan
         uses: actions/cache@v4
         with:
           path: ~/.cmdstan
-          key: cmdstan-${{ runner.os }}-${{ matrix.config.r }}-${{ hashFiles('**/.cmdstan_version') }}
+          key: cmdstan-${{ runner.os }}-${{ matrix.config.r }}-v2.38.0
           restore-keys: |
             cmdstan-${{ runner.os }}-${{ matrix.config.r }}-
-            cmdstan-${{ runner.os }}-
 
       - name: Install CmdStan
+        if: steps.cache-cmdstan.outputs.cache-hit != 'true'
+        run: cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        shell: Rscript {0}
+
+      - name: Verify CmdStan path
         run: |
-          needs_install <- tryCatch({
-            !dir.exists(cmdstanr::cmdstan_path())
-          }, error = function(e) TRUE)
-          if (needs_install) {
-            cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
-          } else {
-            message("CmdStan already cached at: ", cmdstanr::cmdstan_path())
-          }
+          cmdstanr::set_cmdstan_path(
+            list.files("~/.cmdstan", pattern = "cmdstan-", full.names = TRUE)[1]
+          )
+          message("CmdStan path: ", cmdstanr::cmdstan_path())
         shell: Rscript {0}
 
       # ── R CMD check ───────────────────────────────────────────────────────
