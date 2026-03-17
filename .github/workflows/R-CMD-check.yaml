@@ -28,8 +28,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      # Tell cmdstanr where to look; safe no-op if not installed yet
-      CMDSTAN: ~/.cmdstan
+      # Must point to the versioned subdirectory, not the parent dir,
+      # so cmdstanr can resolve cmdstan_path() correctly on all platforms.
+      CMDSTAN: ~/.cmdstan/cmdstan-2.38.0
 
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +75,8 @@ jobs:
           echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
       # ── R package dependencies ────────────────────────────────────────────
+      # For r-devel, disable package caching to avoid ABI mismatches when the
+      # devel build rotates (causes errors like undefined symbol: SETLENGTH).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, checkhelper
@@ -92,7 +95,7 @@ jobs:
             "geodata", "ggplot2", "patchwork", "spData",
             "DiagrammeR", "rgbif", "purrr", "tidyr",
             "sp", "lwgeom", "gstat", "MASS", "lattice",
-            "withr", "rlang", "BH", "collapse","DHARMa", 
+            "withr", "rlang", "BH", "collapse","DHARMa",
             "marginaleffects", "tidybayes", "pROC"
           ), repos = getOption("repos"))
         shell: Rscript {0}
@@ -128,29 +131,38 @@ jobs:
           )
         shell: Rscript {0}
 
-      # Cache the CmdStan toolchain installation (~400 MB) so subsequent runs
-      # skip the 5-minute compile step.  The cache key is OS + a version pin
-      # file if you have one; otherwise it rebuilds when the runner image
-      # rotates (acceptable).
+      # ── CmdStan cache ─────────────────────────────────────────────────────
+      # Cache key is pinned to the explicit CmdStan version so a cache hit
+      # guarantees the correct versioned directory exists and install is skipped
+      # entirely — avoiding the "already exists" collision on Windows.
       - name: Cache CmdStan
         id: cache-cmdstan
         uses: actions/cache@v4
         with:
           path: ~/.cmdstan
           key: cmdstan-${{ runner.os }}-${{ matrix.config.r }}-v2.38.0
-          restore-keys: |
-            cmdstan-${{ runner.os }}-${{ matrix.config.r }}-
 
       - name: Install CmdStan
         if: steps.cache-cmdstan.outputs.cache-hit != 'true'
         run: cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
         shell: Rscript {0}
 
-      - name: Verify CmdStan path
+      # ── Set CmdStan path (cross-platform) ────────────────────────────────
+      # On Windows, ~ expansion in the CMDSTAN env var can behave differently
+      # in R vs the shell, so we set the path explicitly using R's own home
+      # resolution to guarantee cmdstan_path() works before R CMD check runs.
+      - name: Set CmdStan path (Windows)
+        if: runner.os == 'Windows'
         run: |
-          cmdstanr::set_cmdstan_path(
-            list.files("~/.cmdstan", pattern = "cmdstan-", full.names = TRUE)[1]
-          )
+          path <- file.path(Sys.getenv("USERPROFILE"), ".cmdstan", "cmdstan-2.38.0")
+          cmdstanr::set_cmdstan_path(path)
+          message("CmdStan path: ", cmdstanr::cmdstan_path())
+        shell: Rscript {0}
+
+      - name: Set CmdStan path (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cmdstanr::set_cmdstan_path("~/.cmdstan/cmdstan-2.38.0")
           message("CmdStan path: ", cmdstanr::cmdstan_path())
         shell: Rscript {0}
 
