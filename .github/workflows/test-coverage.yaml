@@ -26,6 +26,7 @@ jobs:
         with:
           extra-packages: |
             any::covr
+            any::testthat
 
           needs: coverage
           dependencies: '"hard"' 

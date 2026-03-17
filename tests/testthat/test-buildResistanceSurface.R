@@ -1,4 +1,6 @@
 library(terra)
+library(testthat)
+
 
 test_that("buildResistanceSurface creates resistance surface correctly", {
   # Setup: Create base raster

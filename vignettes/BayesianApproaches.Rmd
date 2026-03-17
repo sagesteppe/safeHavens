@@ -48,6 +48,9 @@ library(dplyr) ## general data handling
 library(tidyr) ## general data handling
 library(ggplot2) ## plotting 
 library(patchwork) ## multiplots
+library(pROC)
+library(DHARMa)
+library(tidybayes)
 ```
 
 ```{r Download species occurrence data, echo = FALSE}
@@ -443,13 +446,6 @@ They further provide functionality to determine areas to which inference from th
 In this section we briefly showcase a variety of model evaluation frameworks for understanding how performant models are. 
 As this package essentially runs automated modelling processes, nearly all models *could* be improved upon manually by an analyst. 
 However, given the scale of the biodiversity crisis, automated approaches are neccessary. 
-
-
-```{r additional libraries for diagnostic plots, message = F, warning=F}
-library(pROC)
-library(DHARMa)
-library(tidybayes)
-```
 
 ```{r dark theme, echo = F}
 update_geom_defaults("line", list(colour = "#dce3f0"))
