@@ -100,7 +100,6 @@ reference:
     - RescaleRasters_bayes
     - PosteriorCluster
     - projectClustersBayes
-    - extract_posterior_betas
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations
   contents:

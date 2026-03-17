@@ -1,4 +1,3 @@
-library(testthat)
 library(terra)
 library(sf)
 library(dplyr)

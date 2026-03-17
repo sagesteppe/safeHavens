@@ -1,7 +1,6 @@
 # Test suite for elasticSDM helper functions
 # Uses dismo package example data (Bradypus occurrence data)
 
-library(testthat)
 library(terra)
 library(sf)
 library(dplyr)
