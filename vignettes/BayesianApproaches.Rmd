@@ -200,9 +200,11 @@ sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'BayesSDM.rds')
   )
 
-sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
-sdModel$Predictors <- bio_current[[extract_posterior_betas(sdModel$Model, 'mean')$Variable]]
+coefs <- rownames(as.data.frame(brms::fixef(sdModel$Model, summary = TRUE)))
+sdModel$Predictors <- bio_current[[ coefs[grep('bio_', coefs)]]]
+
 # add the above back on, had to save memory
+sdModel$RasterPredictions <- terra::unwrap(sdModel$RasterPredictions)
 sdModel$RasterPredictions_sd <- terra::unwrap(sdModel$RasterPredictions_sd)
 sdModel$AOA <- terra::unwrap(sdModel$AOA)
 ```
