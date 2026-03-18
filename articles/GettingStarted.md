@@ -13,12 +13,12 @@ same species.
 
 ``` r
 library(safeHavens)
-library(ggplot2)
-library(sf)
-library(terra)
-library(spData)
-library(dplyr)
-library(patchwork)
+library(sf) ## vector operations
+library(terra) ## raster operations
+library(spData) ## basemap data
+library(dplyr) ## general data handling
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 set.seed(23) 
 
 planar_proj <- "+proj=laea +lat_0=-15 +lon_0=-60 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"

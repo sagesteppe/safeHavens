@@ -58,7 +58,7 @@ system.time(
   out <- OpportunisticSample(polygon = ri, collections = existing_collections, BS.reps=999)
 )
 #>    user  system elapsed 
-#>   6.953   0.083   7.039 
+#>   7.152   0.069   7.224 
 ggplot2::ggplot() +
   ggplot2::geom_sf(data = out$Geometry, ggplot2::aes(fill = ID)) +
   ggplot2::geom_sf(data = existing_collections)

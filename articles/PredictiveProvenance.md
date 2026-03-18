@@ -45,13 +45,13 @@ on our functions.
 
 ``` r
 library(safeHavens)
-library(terra)
-library(geodata)
-library(sf)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(patchwork)
+library(sf) ## vector operations
+library(terra) ## raster operations
+library(geodata) ## environmental variables
+library(dplyr) ## general data handling
+library(tidyr) ## general data handling
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 set.seed(22)
 ```
 
@@ -232,40 +232,8 @@ eSDM_model <- elasticSDM(
 
 # Test with just 3 runs to see variability quickly
 run1 <- elasticSDM(hemi, bio_current, 5070)
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.915674e-09 (eff. df= 196.6507 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.915674e-09 (eff. df= 196.6507 )
 run2 <- elasticSDM(hemi, bio_current, 5070)
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
 run3 <- elasticSDM(hemi, bio_current, 5070)
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  6.456425e-09 (eff. df= 196.65 )
 
 # Compare coefficients
 coef1 <- as.matrix(coef(run1$Model))
@@ -283,23 +251,23 @@ compare <- data.frame(
 compare[is.na(compare)] <- 0
 compare$cv <- apply(compare[,-1], 1, function(x) sd(x)/mean(x))
 print(compare)
-           var        run1        run2        run3         cv
-1  (Intercept)  0.96113097  1.63123032  1.63123032  0.2748007
-2       bio_03 -0.03427818 -0.05265923 -0.05265923 -0.2280635
-3       bio_15  0.00000000  0.00000000  0.00000000        NaN
-4       bio_14  0.00000000  0.00000000  0.00000000        NaN
-5       bio_16  0.00000000  0.00000000  0.00000000        NaN
-6       bio_04  0.00000000  0.00000000  0.00000000        NaN
-7       bio_08  0.02953027  0.03609195  0.03609195  0.1117363
-8       bio_13  0.00000000  0.00000000  0.00000000        NaN
-9       bio_07  0.00000000  0.00000000  0.00000000        NaN
-10      bio_06  0.00000000  0.00000000  0.00000000        NaN
-11      bio_01  0.00000000  0.00000000  0.00000000        NaN
-12      bio_10  0.00000000  0.00000000  0.00000000        NaN
-13       PCNM4 18.21217064 15.51873762 15.51873762  0.0947248
-14       PCNM9  0.00000000  0.00000000  0.00000000        NaN
-15       PCNM2  0.00000000 -4.77088330 -4.77088330 -0.8660254
-16       PCNM1  0.00000000  6.78260982  6.78260982  0.8660254
+           var        run1        run2        run3          cv
+1  (Intercept)  0.96113090  1.63123033  1.63123033  0.27480078
+2       bio_03 -0.03427818 -0.05265923 -0.05265923 -0.22806355
+3       bio_15  0.00000000  0.00000000  0.00000000         NaN
+4       bio_14  0.00000000  0.00000000  0.00000000         NaN
+5       bio_16  0.00000000  0.00000000  0.00000000         NaN
+6       bio_04  0.00000000  0.00000000  0.00000000         NaN
+7       bio_08  0.02953026  0.03609195  0.03609195  0.11173640
+8       bio_13  0.00000000  0.00000000  0.00000000         NaN
+9       bio_07  0.00000000  0.00000000  0.00000000         NaN
+10      bio_06  0.00000000  0.00000000  0.00000000         NaN
+11      bio_01  0.00000000  0.00000000  0.00000000         NaN
+12      bio_10  0.00000000  0.00000000  0.00000000         NaN
+13       PCNM4 18.21217043 15.51873776 15.51873776  0.09472479
+14       PCNM9  0.00000000  0.00000000  0.00000000         NaN
+15       PCNM2  0.00000000 -4.77088194 -4.77088194 -0.86602540
+16       PCNM1  0.00000000  6.78260977  6.78260977  0.86602540
 ```
 
 We will use the eSDM_model function for this workstream; however, it is
@@ -584,14 +552,14 @@ the scenarios.
 ``` r
 future_clusts$changes
   cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
-1          1       264999.735      164724.097       -37.83990         105.49128
-2          2        24891.178       15001.671       -39.73097          10.99216
-3          3         3258.543       14966.818       359.31012         308.80211
-4          4        17708.733        3071.191       -82.65719         410.52330
-5          5        22110.323           0.000      -100.00000                NA
-6          6            0.000        4205.955              NA                NA
-7          7            0.000        2747.449              NA                NA
-8          8            0.000        3837.942              NA                NA
+1          1       264982.720      164724.153       -37.83589          105.4912
+2          2        24891.179       15001.703       -39.73084          457.0139
+3          3         3258.544       14966.825       359.31026          308.2902
+4          4        17708.734        3071.195       -82.65717          410.5232
+5          5        22110.327           0.000      -100.00000                NA
+6          6            0.000        4205.958              NA                NA
+7          7            0.000        2747.455              NA                NA
+8          8            0.000        3837.947              NA                NA
 ```
 
 ## Conclusion

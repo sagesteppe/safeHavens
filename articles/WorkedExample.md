@@ -25,12 +25,12 @@ package.
 ``` r
 library(safeHavens)
 library(sf) # spatial data
-library(dplyr) # general data handling
-library(tidyr) # general data handling
-library(purrr) # mapping functions across lists.
-library(ggplot2) ## for maps 
 library(rgbif) # species occurrence data.
 library(spData) # example cartography data
+library(dplyr) # general data handling
+library(tidyr) # general data handling
+library(purrr) # sub for lapplying functions across lists
+library(ggplot2) ## for maps 
 ```
 
 Using `rgbif`, we’ll download occurrence data for a couple of species.
@@ -49,7 +49,7 @@ cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
 table( cymu[['data']]['geodeticDatum']) 
 geodeticDatum
 WGS84 
-  681 
+  706 
 
 ## subset the data to relevant columns 
 cymu_cols <- cymu[['data']][,cols]
@@ -270,7 +270,7 @@ of more desirable/less desirable portions of the range to ideally
 collect in.
 
 ``` r
-ibd_samples_priority <- ibd_samples %>%
+ibd_samples_priority <- ibd_samples |>
   purrr::map(~ st_transform(.x$Geometry, 5070)) |> 
   purrr::map(~ list(PrioritizeSample(.x, n_breaks = 3)))
 

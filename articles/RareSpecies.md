@@ -8,8 +8,8 @@ Load the required packages.
 
 ``` r
 library(safeHavens)
-library(ggplot2)
-library(patchwork)
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 set.seed(99)
 ```
 
@@ -73,7 +73,7 @@ distance matrix derived from the first two axes of a PCA, as described
 in more detail below.
 
 ``` r
-dist_mat <- sapply(1:nrow(df), function(i) {
+dist_mat <- sapply(seq_len(nrow(df)), function(i) {
    greatCircleDistance(
      df$lat[i], df$lon[i],
      df$lat, df$lon
@@ -167,9 +167,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 26.671 |
-| sys.self   |  0.043 |
-| elapsed    | 26.719 |
+| user.self  | 26.603 |
+| sys.self   |  0.054 |
+| elapsed    | 26.661 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
@@ -349,7 +349,7 @@ From the above, we see that the first two PCA axes account for a large
 portion of the variance observed in this landscape.
 
 ``` r
-terra::plot(terra::subset(pca_raster, c(1:2))) # prediction of the pca onto a new raster
+terra::plot(terra::subset(pca_raster, 1:2)) # prediction of the pca onto a new raster
 ```
 
 ![](RareSpecies_files/figure-html/plot%20pca%20layers-1.png)
@@ -420,9 +420,9 @@ knitr::kable(st)
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 35.202 |
-| sys.self   |  0.003 |
-| elapsed    | 35.210 |
+| user.self  | 34.327 |
+| sys.self   |  0.004 |
+| elapsed    | 34.336 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 

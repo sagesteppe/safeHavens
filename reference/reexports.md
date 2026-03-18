@@ -6,7 +6,3 @@ to see their documentation.
 - dplyr:
 
   [`any_of`](https://dplyr.tidyverse.org/reference/reexports.html)
-
-- magrittr:
-
-  `%>%`

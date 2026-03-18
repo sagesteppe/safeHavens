@@ -89,10 +89,6 @@ sdModel <- elasticSDM(
   quantile_v = 0.025,
   planar_proj = planar_proj
   )
-Warning: 
-Grid searches over lambda (nugget and sill variances) with  minima at the endpoints: 
-  (GCV) Generalized Cross-Validation 
-   minimum at  right endpoint  lambda  =  1.459607e-07 (eff. df= 174.8003 )
 ```
 
 Under the hood this function uses `caret` to help out with `glmnet`, as

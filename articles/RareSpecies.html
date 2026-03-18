@@ -73,7 +73,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">safeHavens</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -119,8 +119,8 @@ data.</p>
 <p>Load the required packages.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sagesteppe.github.io/safeHavens/">safeHavens</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span> <span class="co">## plotting </span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span> <span class="co">## multiplots</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">99</span><span class="op">)</span></span></code></pre></div>
 <p>For this vignette, we will use the Bradypus data included in the
 <code>dismo</code> package.</p>
@@ -218,7 +218,7 @@ results. As an alternative, you can use an environmental distance matrix
 derived from the first two axes of a PCA, as described in more detail
 below.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dist_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<code class="sourceCode R"><span><span class="va">dist_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
 <span>   <span class="fu"><a href="../reference/greatCircleDistance.html">greatCircleDistance</a></span><span class="op">(</span></span>
 <span>     <span class="va">df</span><span class="op">$</span><span class="va">lat</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="va">df</span><span class="op">$</span><span class="va">lon</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,</span>
 <span>     <span class="va">df</span><span class="op">$</span><span class="va">lat</span>, <span class="va">df</span><span class="op">$</span><span class="va">lon</span></span>
@@ -300,15 +300,15 @@ least 999 bootstraps for real-world applications.</p>
 <tbody>
 <tr class="odd">
 <td align="left">user.self</td>
-<td align="right">26.671</td>
+<td align="right">26.603</td>
 </tr>
 <tr class="even">
 <td align="left">sys.self</td>
-<td align="right">0.043</td>
+<td align="right">0.054</td>
 </tr>
 <tr class="odd">
 <td align="left">elapsed</td>
-<td align="right">26.719</td>
+<td align="right">26.661</td>
 </tr>
 <tr class="even">
 <td align="left">user.child</td>
@@ -620,7 +620,7 @@ them.</p>
 <p>From the above, we see that the first two PCA axes account for a
 large portion of the variance observed in this landscape.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pca_raster</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># prediction of the pca onto a new raster</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pca_raster</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="co"># prediction of the pca onto a new raster</span></span></code></pre></div>
 <p><img src="RareSpecies_files/figure-html/plot%20pca%20layers-1.png" class="r-plt" alt="" width="700"></p>
 <p>We keep the first two PCA layers for calculating the environmental
 distance. Including more layers increases dimensionality and may reduce
@@ -680,15 +680,15 @@ matrix.</p>
 <tbody>
 <tr class="odd">
 <td align="left">user.self</td>
-<td align="right">35.202</td>
+<td align="right">34.327</td>
 </tr>
 <tr class="even">
 <td align="left">sys.self</td>
-<td align="right">0.003</td>
+<td align="right">0.004</td>
 </tr>
 <tr class="odd">
 <td align="left">elapsed</td>
-<td align="right">35.210</td>
+<td align="right">34.336</td>
 </tr>
 <tr class="even">
 <td align="left">user.child</td>

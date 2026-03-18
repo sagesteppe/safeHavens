@@ -73,7 +73,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">safeHavens</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -198,16 +198,13 @@ pseudo-absence data by calculating the distance from each occurrence
 point to the nearest neighbor, and then selecting a quantile of these
 distances to create a buffer around each occurrence point. Points
 outside of this buffer are used pseudo-absences.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>sdModel <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">x =</span> x,</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">predictors =</span> predictors,</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">quantile_v =</span> <span class="fl">0.025</span>,</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">planar_proj =</span> planar_proj</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  )</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>Warning<span class="sc">:</span> </span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>Grid searches over <span class="fu">lambda</span> (nugget and sill variances) with  minima at the endpoints<span class="sc">:</span> </span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  (GCV) Generalized Cross<span class="sc">-</span>Validation </span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>   minimum at  right endpoint  lambda  <span class="ot">=</span>  <span class="fl">1.459607e-07</span> (eff. <span class="at">df=</span> <span class="fl">174.8003</span> )</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sdModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/elasticSDM.html">elasticSDM</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">x</span>,</span>
+<span>  predictors <span class="op">=</span> <span class="va">predictors</span>,</span>
+<span>  quantile_v <span class="op">=</span> <span class="fl">0.025</span>,</span>
+<span>  planar_proj <span class="op">=</span> <span class="va">planar_proj</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
 <p>Under the hood this function uses <code>caret</code> to help out with
 <code>glmnet</code>, as it provides output which is very easy to explore
 and interact with. Elastic net modelS bridge the world of lasso and

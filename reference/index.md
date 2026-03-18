@@ -79,6 +79,9 @@ Bayesian approaches for generating clusters in light of uncertainty
   brms SDM
 - [`PosteriorCluster()`](https://sagesteppe.github.io/safeHavens/reference/PosteriorCluster.md)
   : Cluster environmental space using posterior beta draws
+- [`projectClustersBayes()`](https://sagesteppe.github.io/safeHavens/reference/projectClustersBayes.md)
+  : Project posterior-clustered environmental space onto a future
+  climate scenario
 
 ## Rare Plant Sampling
 
