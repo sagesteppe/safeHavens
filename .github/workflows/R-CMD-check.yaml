@@ -86,6 +86,15 @@ jobs:
           dependencies: '"hard"'
           cache-version: ${{ matrix.config.r == 'devel' && github.run_id || '1' }}
 
+      # ── Reinstall rlang from source on r-devel ────────────────────────────
+      # The r-devel build rotates frequently; any cached rlang binary compiled
+      # against a prior devel build causes SETLENGTH ABI crashes when loaded.
+      # Reinstalling from source against the current R guarantees a clean .so.
+      - name: Reinstall rlang from source (r-devel)
+        if: matrix.config.r == 'devel'
+        run: install.packages("rlang", type = "source", repos = "https://cran.rstudio.com/")
+        shell: Rscript {0}
+        
       # ── Suggests needed by vignettes (skipped by dependencies: '"hard"') ───
       # geodata, DiagrammeR, rgbif etc. are Suggests so setup-r-dependencies
       # won't install them under hard mode — install them explicitly here.
