@@ -1,15 +1,9 @@
-#' @importFrom magrittr %>%
-#' @keywords internal
-#' @export
-magrittr::`%>%`
-
 #' @importFrom dplyr any_of
 #' @keywords internal
 #' @export
 dplyr::any_of
 
 ## usethis namespace: start
-#' @importFrom magrittr %>%
 #' @importFrom stats dist
 #' @importFrom stats lm
 #' @importFrom stats predict

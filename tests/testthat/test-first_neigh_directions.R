@@ -1,3 +1,5 @@
+library(testthat)
+
 test_that("first_neigh_directions returns logical vector of correct length", {
   from <- sf::st_sfc(sf::st_point(c(0, 0)), crs = 3857)
 

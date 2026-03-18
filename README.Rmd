@@ -110,7 +110,8 @@ Q --> R[PredictiveProvenance]
 Q --> M
 R --> M
 S --> T[PosteriorCluster]
-T --> R
+T --> U[projectClustersBayes]
+U --> M
 classDef geoColor fill:#d95f02,color:#FFFFFF
 classDef polyColor fill:#66a61e,color:#FFFFFF
 classDef envColor fill:#1b9e77,color:#FFFFFF
@@ -120,7 +121,7 @@ classDef rareColor fill:#e6ab02,color:#FFFFFF
 classDef ibrColor fill:#e7298a,color:#FFFFFF
 class D,E,F,G geoColor
 class H,M polyColor
-class J,K,O,P,S,T,U,Q,R envColor
+class J,K,O,P,S,T,U,Q,R,U envColor
 class A,B dataColor
 class N decisionColor
 class L rareColor

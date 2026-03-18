@@ -1,4 +1,6 @@
 # Test helper functions first ----
+library(testthat)
+
 
 test_that("add_weighted_coordinates adds x and y layers", {
   # Create simple test raster

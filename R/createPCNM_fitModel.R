@@ -231,9 +231,18 @@ interpolate_pcnm_to_raster <- function(
     return(p)
   }
 
-  fit <- suppressMessages(fields::Tps(coordinates, pcnm_vector))
+  invisible(utils::capture.output(
+    fit <- fields::Tps(coordinates, pcnm_vector),
+    type = "output"
+  ))
+
   p <- terra::rast(template_raster)
-  pcnm <- terra::interpolate(p, fit)
+
+  invisible(utils::capture.output(
+    pcnm <- terra::interpolate(p, fit),
+    type = 'output'
+  ))
+
   terra::mask(pcnm, template_raster)
 }
 

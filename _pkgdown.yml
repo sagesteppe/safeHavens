@@ -99,6 +99,7 @@ reference:
     - bayesianSDM
     - RescaleRasters_bayes
     - PosteriorCluster
+    - projectClustersBayes
 - title: Rare Plant Sampling
   desc: Optimization based site selection helpers for known populations
   contents:

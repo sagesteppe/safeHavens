@@ -40,13 +40,13 @@ For most safeHavens users worldwide, this may be your ideal source of climate da
 
 ```{r attach packages, message = F, warning = F}
 library(safeHavens)
-library(terra)
-library(geodata)
-library(sf)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(patchwork)
+library(sf) ## vector operations
+library(terra) ## raster operations
+library(geodata) ## environmental variables
+library(dplyr) ## general data handling
+library(tidyr) ## general data handling
+library(ggplot2) ## plotting 
+library(patchwork) ## multiplots
 set.seed(22)
 ```
 

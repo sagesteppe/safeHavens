@@ -129,24 +129,23 @@ PosteriorCluster <- function(
   }
   # beta_draws: n_draws × length(env_vars), named columns
 
-  # ── 3. Compute training-data moments (fixed across draws) ────────────────────
-  sdN <- function(x) sqrt(mean((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE))
-  pm <- as.data.frame(pred_mat)[, env_vars, drop = FALSE]
-  var_mu <- vapply(
-    env_vars,
-    function(v) mean(pm[[v]], na.rm = TRUE),
-    numeric(1)
-  )
-  var_sd <- vapply(env_vars, function(v) sdN(pm[[v]]), numeric(1))
-  zero_sd <- var_sd == 0
-  if (any(zero_sd)) {
+  # ── 3. Posterior mean betas (fixed across draws) ─────────────────────────────
+  # `predictors` has already been processed by RescaleRasters_bayes upstream,
+  # so pt_env values are on the scale: ((raw - mu) / sd) * |mean_beta|.
+  # We do NOT recompute var_mu/var_sd from pred_mat here — doing so and passing
+  # them to rescale_points_by_betas would triple-transform the data.
+  # Instead, per-draw reweighting is applied as a beta ratio in the draw loop.
+  mean_betas <- colMeans(beta_draws)
+
+  # Guard: drop variables where mean beta is exactly zero (degenerate draws)
+  zero_beta <- abs(mean_betas) < .Machine$double.eps
+  if (any(zero_beta)) {
     warning(sprintf(
-      "Variable(s) with zero SD excluded from draw clustering: %s",
-      paste(env_vars[zero_sd], collapse = ", ")
+      "Variable(s) with zero posterior mean beta excluded from clustering: %s",
+      paste(env_vars[zero_beta], collapse = ", ")
     ))
-    env_vars <- env_vars[!zero_sd]
-    var_mu <- var_mu[!zero_sd]
-    var_sd <- var_sd[!zero_sd]
+    env_vars   <- env_vars[!zero_beta]
+    mean_betas <- mean_betas[!zero_beta]
     beta_draws <- beta_draws[, env_vars, drop = FALSE]
   }
 
@@ -203,14 +202,13 @@ PosteriorCluster <- function(
     betas_d <- as.numeric(betas_d) # Convert to vector
     names(betas_d) <- colnames(beta_draws) # Restore column names as names
 
-    # Rescale point matrix by this draw's betas
-    pt_scaled <- rescale_points_by_betas(
-      pt_env,
-      env_vars,
-      var_mu,
-      var_sd,
-      betas_d
-    )
+    # Reweight by beta ratio: pt_env is already scaled by |mean_beta| via
+    # RescaleRasters_bayes. Multiply by |beta_d| / |mean_beta| to get the
+    # draw-specific weighting without re-standardising.
+    pt_scaled <- pt_env
+    for (v in env_vars) {
+      pt_scaled[[v]] <- pt_env[[v]] * (abs(betas_d[v]) / abs(mean_betas[v]))
+    }
 
     # Append (already-weighted) coordinates — same across draws
     pt_full <- cbind(
@@ -264,8 +262,6 @@ PosteriorCluster <- function(
     top3_labels = top3_results$labels_matrix, # n_pts × 3 matrix
     predictors = predictors,
     env_vars = env_vars,
-    var_mu = var_mu,
-    var_sd = var_sd,
     mean_betas = mean_betas,
     coord_wt = coord_wt,
     mask_rast = mask_rast,
@@ -277,31 +273,61 @@ PosteriorCluster <- function(
   final_raster <- terra::project(reordered$raster, terra::crs(f_rasts))
   cluster_vects <- sf::st_transform(reordered$vectors, terra::crs(f_rasts))
 
+  # ── 11b. Extract raw->geographic label mapping and retrain KNNs ──────────────
+  # The KNNs in rast_list were trained on raw cutree labels (1:n). After
+  # geographic reordering the raster uses different IDs. We extract the mapping
+  # by sampling the pre- and post-reorder rasters at the fixed sample points,
+  # then retrain all KNNs on the remapped labels so future predictions return
+  # geographically-ordered IDs consistent with Geometry$ID.
+  label_lookup <- .build_label_lookup(
+    raw_raster = rast_list$cluster_raster,
+    geo_raster = reordered$raster
+  )
+
+  # Remap consensus_labels and top3 matrices to geographic IDs
+  consensus_labels_geo <- unname(label_lookup[as.character(consensus_labels)])
+  top3_geo <- apply(
+    top3_results$labels_matrix, 2,
+    function(col) unname(label_lookup[as.character(col)])
+  )
+
+  # Retrain KNNs on remapped labels using the same feature matrix
+  rast_list_geo <- .retrain_knns_with_geo_labels(
+    rast_list        = rast_list,
+    sample_pts       = sample_pts,
+    consensus_labels = consensus_labels_geo,
+    top3_labels      = top3_geo,
+    stability_scores = stability_scores,
+    predictors       = predictors,
+    env_vars         = env_vars,
+    coord_wt         = coord_wt
+  )
+
   # Project stability raster back to original CRS
   stability_final <- terra::project(
-    rast_list$stability_raster,
+    rast_list_geo$stability_raster,
     terra::crs(f_rasts)
   )
 
   # Project top-3 rasters
-  rank2_final <- terra::project(rast_list$rank2_raster, terra::crs(f_rasts))
-  rank3_final <- terra::project(rast_list$rank3_raster, terra::crs(f_rasts))
+  rank2_final <- terra::project(rast_list_geo$rank2_raster, terra::crs(f_rasts))
+  rank3_final <- terra::project(rast_list_geo$rank3_raster, terra::crs(f_rasts))
 
-  # Build tabular lookup with sample point coordinates and top-3 assignments
+  # Build tabular lookup with geographically-ordered cluster IDs
   sample_pts_sf <- sf::st_as_sf(sample_pts)
   coords_df <- as.data.frame(sf::st_coordinates(sample_pts_sf))
 
   top3_lookup <- data.frame(
-    point_id = seq_len(nrow(top3_results$labels_matrix)),
+    point_id = seq_len(nrow(top3_geo)),
     x = coords_df$X,
     y = coords_df$Y,
-    rank1_cluster = top3_results$labels_matrix[, 1],
+    rank1_cluster = top3_geo[, 1],
     rank1_pct = round(top3_results$pct_matrix[, 1], 1),
-    rank2_cluster = top3_results$labels_matrix[, 2],
+    rank2_cluster = top3_geo[, 2],
     rank2_pct = round(top3_results$pct_matrix[, 2], 1),
-    rank3_cluster = top3_results$labels_matrix[, 3],
+    rank3_cluster = top3_geo[, 3],
     rank3_pct = round(top3_results$pct_matrix[, 3], 1),
-    uncertainty = round(100 - top3_results$pct_matrix[, 1], 1) # 1 - rank1_pct
+    uncertainty = round(100 - top3_results$pct_matrix[, 1], 1)
   )
 
   main_r <- c(final_raster, stability_final)
@@ -321,19 +347,36 @@ PosteriorCluster <- function(
 
     ## Cluster_data
     ClusterData = list(
-      Top3Lookup = top3_lookup, ## combine these two, two sublists
+      Top3Lookup = top3_lookup,
       DrawClusterings = draw_clusterings
-    ), 
+    ),
 
     SamplePoints = sample_pts_sf,
 
-    # KNN_pixel_assign_models
+    # KNN_pixel_assign_models — all trained on geographically-ordered labels
     KNNModels = list(
-      KNN_Cluster = rast_list$knn_cluster, ## combine these into a sublist.
-      KNN_Rank2 = rast_list$knn_rank2,
-      KNN_Rank3 = rast_list$knn_rank3,
-      KNN_Stability = rast_list$knn_stability
-    )
+      KNN_Cluster   = rast_list_geo$knn_cluster,
+      KNN_Rank2     = rast_list_geo$knn_rank2,
+      KNN_Rank3     = rast_list_geo$knn_rank3,
+      KNN_Stability = rast_list_geo$knn_stability
+    ),
+
+    # Scaling moments, posterior mean betas, and the full beta draw matrix used
+    # to build the current-era feature space. Exposed here so that
+    # projectClustersBayes() can:
+    #   (a) rescale future predictors on exactly the same scale, and
+    #   (b) replay draws on the future surface to compute forward-looking
+    #       stability without re-sampling from the posterior.
+    ScalingParams = list(
+      mean_betas   = mean_betas,   # named numeric: posterior mean |beta| per var
+      beta_draws   = beta_draws,   # matrix n_draws x n_vars: raw posterior draws
+      coord_wt     = coord_wt      # numeric: coordinate weight used in clustering
+    ),
+
+    # raw cutree ID -> geographic ID lookup (from reassign_cluster_ids).
+    # Exposed for inspection/debugging — KNNModels are already trained on
+    # geo-ordered labels so this does not need to be applied downstream.
+    LabelLookup = label_lookup
   )
 }
 
@@ -649,8 +692,6 @@ project_consensus_to_raster <- function(
   top3_labels,
   predictors,
   env_vars,
-  var_mu,
-  var_sd,
   mean_betas,
   coord_wt,
   mask_rast,
@@ -660,7 +701,7 @@ project_consensus_to_raster <- function(
     planar_proj <- paste0('epsg:', planar_proj)
   }
 
-    zero_beta_vars <- env_vars[abs(mean_betas[env_vars]) < .Machine$double.eps]
+  zero_beta_vars <- env_vars[abs(mean_betas[env_vars]) < .Machine$double.eps]
   if (length(zero_beta_vars) > 0L) {
     warning(sprintf(
       paste0(
@@ -674,8 +715,6 @@ project_consensus_to_raster <- function(
     ))
     env_vars   <- setdiff(env_vars, zero_beta_vars)
     mean_betas <- mean_betas[env_vars]
-    var_mu     <- var_mu[env_vars]
-    var_sd     <- var_sd[env_vars]
   }
 
   if (length(env_vars) == 0L) {
@@ -687,21 +726,12 @@ project_consensus_to_raster <- function(
   }
 
 
-  # ── 1. Extract raw predictor values at the 500 fixed points ────────────────
+  # ── 1. Extract predictor values at the fixed points ────────────────────────
+  # `predictors` is already RescaleRasters_bayes-scaled: values are on the
+  # scale ((raw - mu) / sd) * |mean_beta|. Use them directly — no further
+  # standardisation needed.
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
-
-  # ── 2. Rescale using posterior mean betas ──────────────────────────────────
-  pt_rescaled <- as.data.frame(matrix(
-    NA_real_,
-    nrow = nrow(pt_env),
-    ncol = length(env_vars)
-  ))
-  colnames(pt_rescaled) <- env_vars
-
-  for (v in env_vars) {
-    pt_rescaled[[v]] <- ((pt_env[[v]] - var_mu[v]) / var_sd[v]) *
-      abs(mean_betas[v])
-  }
+  pt_rescaled <- as.data.frame(pt_env)
 
   # ── 3. Add weighted coordinates ────────────────────────────────────────────
   pt_rescaled <- add_coord_weights_to_points(
@@ -778,12 +808,9 @@ project_consensus_to_raster <- function(
     y = pt_train$stability
   )
 
-  # ── 6. Build posterior-mean-rescaled raster stack ──────────────────────────
-  scaled_layers <- lapply(env_vars, function(v) {
-    ((predictors[[v]] - var_mu[v]) / var_sd[v]) * abs(mean_betas[v])
-  })
-  pred_rescale <- terra::rast(scaled_layers)
-  names(pred_rescale) <- env_vars
+  # ── 6. Build prediction raster stack ──────────────────────────────────────
+  # predictors is already RescaleRasters_bayes-scaled — use layers directly.
+  pred_rescale <- predictors[[env_vars]]
 
   # Add weighted coordinates to raster (creates 'x' and 'y' layers)
   pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
@@ -856,5 +883,169 @@ project_consensus_to_raster <- function(
     knn_rank2 = knn_rank2$fit.knn,
     knn_rank3 = knn_rank3$fit.knn,
     knn_stability = knn_stability
+  )
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Label-remapping helpers for geographic reordering
+# ══════════════════════════════════════════════════════════════════════════════
+
+#' Build a raw->geographic label lookup vector from pre/post reorder rasters
+#'
+#' Wraps `reassign_cluster_ids` to produce a named integer vector suitable
+#' for remapping consensus_labels and top3 matrices from raw cutree IDs to
+#' geographically-ordered IDs. Uses a stratified 1-point-per-class sample
+#' so every class is guaranteed to appear in the lookup.
+#'
+#' @param raw_raster `SpatRaster` of raw cutree cluster IDs.
+#' @param geo_raster `SpatRaster` of geographically-reordered cluster IDs.
+#' @returns Named integer vector: names are raw labels, values are geo labels.
+#'   Safe to use as a lookup via `lookup[as.character(raw_label_vector)]`.
+#' @keywords internal
+#' @noRd
+.build_label_lookup <- function(raw_raster, geo_raster) {
+  mapping <- reassign_cluster_ids(raw_raster, geo_raster)
+  lookup_vec <- as.integer(mapping[, "new"])
+  names(lookup_vec) <- as.character(mapping[, "old"])
+  lookup_vec
+}
+
+
+#' Used to overwrite the original, raw, cluster ids. 
+#' Allowing all reported values to follow the from NW most to SE most cluster ID numbering convention. 
+#' @param old_rast SpatRast. The original classified raster
+#' @param new_rast SpatRast. The re-numbered classified raster
+#' @return A two column matrix, with nrows equal to the number of classes, with the old and new cluster IDs. 
+#' @keywords internal
+#' @noRd
+reassign_cluster_ids <- function(old_rast, new_rast){
+
+  class_pts <- terra::spatSample(
+    x = old_rast,
+    size = 1,
+    method = 'stratified',
+    as.points = TRUE
+  )
+
+  new_class <- terra::extract(
+    x = new_rast,
+    y = class_pts
+  )
+
+  setNames( # and figure out the return obj
+    as.data.frame(
+      cbind( 
+        terra::as.data.frame(class_pts)[[1]],
+        new_class[[2]]
+      )
+    ),
+    nm = c('old', 'new')
+  )
+}
+
+#' Retrain all KNNs using geographically-ordered cluster labels
+#'
+#' After geographic reordering the raw cutree labels no longer match the IDs
+#' in Geometry$ID. This function rebuilds the feature matrix used in
+#' project_consensus_to_raster and retrains KNN_Cluster, KNN_Rank2, KNN_Rank3,
+#' and KNN_Stability on the remapped labels, so that all future KNN predictions
+#' return geographically-ordered IDs.
+#'
+#' @param rast_list Return value of `project_consensus_to_raster` (used only
+#'   for the stability raster and rank rasters; KNN models are replaced).
+#' @param sample_pts `SpatVector` of fixed sample points.
+#' @param consensus_labels Integer vector of geo-remapped rank1 labels.
+#' @param top3_labels Integer matrix (n_pts x 3) of geo-remapped top-3 labels.
+#' @param stability_scores Numeric vector of stability scores (unchanged).
+#' @param predictors `SpatRaster` of raw environmental predictors.
+#' @param env_vars Character vector of predictor names.
+#' @param var_mu Named numeric vector of training-data means.
+#' @param var_sd Named numeric vector of training-data SDs.
+#' @param mean_betas Named numeric vector of posterior mean betas.
+#' @param coord_wt Numeric coordinate weight.
+#' @returns List mirroring `project_consensus_to_raster` output with KNN
+#'   models retrained on geographic labels.
+#' @keywords internal
+#' @noRd
+.retrain_knns_with_geo_labels <- function(
+  rast_list,
+  sample_pts,
+  consensus_labels,
+  top3_labels,
+  stability_scores,
+  predictors,
+  env_vars,
+  coord_wt
+) {
+  # Rebuild the same feature matrix as project_consensus_to_raster.
+  # predictors is already RescaleRasters_bayes-scaled — extract directly,
+  # no re-standardisation needed.
+  pt_env      <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
+  pt_rescaled <- as.data.frame(pt_env)
+  pt_rescaled <- add_coord_weights_to_points(
+    sample_pts, pt_rescaled, coord_wt, env_vars
+  )
+
+  # Attach geo-remapped labels
+  pt_rescaled$rank1_cluster <- factor(consensus_labels)
+  pt_rescaled$rank2_cluster <- factor(top3_labels[, 2])
+  pt_rescaled$rank3_cluster <- factor(top3_labels[, 3])
+  pt_rescaled$stability      <- stability_scores
+
+  complete_rows <- stats::complete.cases(pt_rescaled)
+  pt_train      <- pt_rescaled[complete_rows, ]
+
+  cluster_features <- setdiff(
+    names(pt_train),
+    c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
+  )
+
+  can_train_knn <- function(y, min_per_class = 2) {
+    if (length(unique(y)) < 2L) return(FALSE)
+    all(table(y) >= min_per_class)
+  }
+
+  # Rank1
+  knn_data_rank1      <- pt_train[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID   <- pt_train$rank1_cluster
+  knn_rank1           <- trainKNN(knn_data_rank1, split_prop = 0.8)
+
+  # Rank2
+  if (can_train_knn(pt_train$rank2_cluster)) {
+    knn_data_rank2    <- pt_train[, cluster_features, drop = FALSE]
+    knn_data_rank2$ID <- pt_train$rank2_cluster
+    knn_rank2         <- trainKNN(knn_data_rank2, split_prop = 0.8)
+  } else {
+    knn_rank2 <- knn_rank1
+  }
+
+  # Rank3
+  if (can_train_knn(pt_train$rank3_cluster)) {
+    knn_data_rank3    <- pt_train[, cluster_features, drop = FALSE]
+    knn_data_rank3$ID <- pt_train$rank3_cluster
+    knn_rank3         <- trainKNN(knn_data_rank3, split_prop = 0.8)
+  } else {
+    knn_rank3 <- knn_rank1
+  }
+
+  # Stability regression (labels unchanged — stability scores are not IDs)
+  knn_stability <- train_regression_knn(
+    X = pt_train[, cluster_features, drop = FALSE],
+    y = pt_train$stability
+  )
+
+  # Return same structure as project_consensus_to_raster, replacing KNNs
+  # Rasters are taken from the original rast_list (they are painted by the
+  # old KNN but the geographic reordering happens via reorder_clusters_geographically
+  # on the raster directly, so they are already correct)
+  list(
+    cluster_raster   = rast_list$cluster_raster,
+    stability_raster = rast_list$stability_raster,
+    rank2_raster     = rast_list$rank2_raster,
+    rank3_raster     = rast_list$rank3_raster,
+    knn_cluster      = knn_rank1$fit.knn,
+    knn_rank2        = knn_rank2$fit.knn,
+    knn_rank3        = knn_rank3$fit.knn,
+    knn_stability    = knn_stability
   )
 }

@@ -1214,8 +1214,6 @@ call_pcr <- function(f, ...) {
     top3_labels      = f$top3_labels,
     predictors       = f$predictors,
     env_vars         = f$env_vars,
-    var_mu           = f$var_mu,
-    var_sd           = f$var_sd,
     mean_betas       = f$mean_betas,
     coord_wt         = f$coord_wt,
     mask_rast        = f$mask_rast,
@@ -1254,8 +1252,6 @@ test_that("pcr: numeric planar_proj (EPSG integer) is accepted", {
       top3_labels      = f$top3_labels,
       predictors       = f$predictors,
       env_vars         = f$env_vars,
-      var_mu           = f$var_mu,
-      var_sd           = f$var_sd,
       mean_betas       = f$mean_betas,
       coord_wt         = f$coord_wt,
       mask_rast        = f$mask_rast,
@@ -1286,8 +1282,6 @@ test_that("pcr: fewer than 50 complete predictor rows stops with informative mes
       top3_labels      = f$top3_labels,
       predictors       = bad_predictors,
       env_vars         = f$env_vars,
-      var_mu           = f$var_mu,
-      var_sd           = f$var_sd,
       mean_betas       = f$mean_betas,
       coord_wt         = f$coord_wt,
       mask_rast        = f$mask_rast,
@@ -1315,8 +1309,6 @@ test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
         top3_labels      = degenerate_top3,
         predictors       = f$predictors,
         env_vars         = f$env_vars,
-        var_mu           = f$var_mu,
-        var_sd           = f$var_sd,
         mean_betas       = f$mean_betas,
         coord_wt         = f$coord_wt,
         mask_rast        = f$mask_rast,
@@ -1481,8 +1473,6 @@ test_that("pcr: numeric EPSG and equivalent string EPSG yield identical output C
     top3_labels      = f$top3_labels,
     predictors       = f$predictors,
     env_vars         = f$env_vars,
-    var_mu           = f$var_mu,
-    var_sd           = f$var_sd,
     mean_betas       = f$mean_betas,
     coord_wt         = f$coord_wt,
     mask_rast        = f$mask_rast,
@@ -1546,8 +1536,6 @@ test_that("pcr: partial NAs in predictors (but >= 50 complete rows) proceeds nor
       top3_labels      = f$top3_labels,
       predictors       = bad_pred,
       env_vars         = f$env_vars,
-      var_mu           = f$var_mu,
-      var_sd           = f$var_sd,
       mean_betas       = f$mean_betas,
       coord_wt         = f$coord_wt,
       mask_rast        = f$mask_rast,
@@ -2096,6 +2084,7 @@ test_that("pc: supplying beta_draws bypasses extract_beta_draws", {
   local_mocked_bindings(
     project_consensus_to_raster      = function(...) rast_stub,
     reorder_clusters_geographically  = function(r, ...) make_reorder_stub(r),
+    .retrain_knns_with_geo_labels    = function(...) rast_stub,
     .package = 'safeHavens'
   )
   local_mocked_bindings(
@@ -2152,6 +2141,7 @@ test_that("pc: var_mu and var_sd are computed from pred_mat columns", {
   local_mocked_bindings(
     project_consensus_to_raster     = function(...) rast_stub,
     reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .retrain_knns_with_geo_labels   = function(...) rast_stub,
     .package = 'safeHavens'
   )
   local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
@@ -2165,48 +2155,6 @@ test_that("pc: var_mu and var_sd are computed from pred_mat columns", {
       n_draws = 10, n = 3, n_pts = 60,
       planar_proj = "EPSG:32632", beta_draws = bd
     )
-  )
-})
-
-# =============================================================================
-# G6.  Zero-SD variable → warning + dropped from env_vars
-# =============================================================================
-test_that("pc: constant predictor column emits zero-SD warning and is dropped", {
-  skip_if_not_installed("sf")
-  skip_if_not_installed("caret")
-
-  set.seed(3)
-  env_vars   <- c("bio1", "bio2")
-  mask       <- make_pc_raster()
-  predictors <- make_pc_predictors(mask, env_vars = env_vars)
-  pts        <- make_pc_pts(mask, n = 60)
-  # bio2 is constant → SD = 0
-  pred_mat   <- data.frame(
-    bio1 = rnorm(100, 5, 1),
-    bio2 = rep(7.0, 100)        # constant
-  )
-  bd        <- make_beta_draws(env_vars = env_vars, n_draws = 10)
-  fixef_mat <- make_fixef_matrix(env_vars = env_vars)
-  rast_stub <- make_rast_list_stub(mask)
-
-  local_mocked_bindings(fixef = function(...) fixef_mat, .package = "brms")
-  local_mocked_bindings(spatSample = function(...) pts,  .package = "terra")
-  local_mocked_bindings(
-    project_consensus_to_raster     = function(...) rast_stub,
-    reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
-    .package = 'safeHavens'
-  )
-  local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
-  local_mocked_bindings(st_transform = function(x, ...) x, .package = "sf")
-
-  expect_warning(
-    PosteriorCluster(
-      model = NULL, predictors = predictors, f_rasts = mask,
-      pred_mat = pred_mat, training_data = NULL,
-      n_draws = 10, n = 3, n_pts = 60,
-      planar_proj = "EPSG:32632", beta_draws = bd
-    ),
-    regexp = "zero SD"
   )
 })
 
@@ -2237,6 +2185,7 @@ test_that("pc: complete.cases filtering reduces n_pts_actual when NAs present", 
   local_mocked_bindings(
     project_consensus_to_raster     = function(...) rast_stub,
     reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .retrain_knns_with_geo_labels   = function(...) rast_stub,
     .package = 'safeHavens'
   )
   local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
@@ -2289,6 +2238,7 @@ test_that("pc: draw progress message emitted at draw 25 when n_draws >= 25", {
   local_mocked_bindings(
     project_consensus_to_raster     = function(...) rast_stub,
     reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .retrain_knns_with_geo_labels   = function(...) rast_stub,
     .package = 'safeHavens'
   )
   local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
@@ -2338,6 +2288,7 @@ test_that("pc: consensus_method = 'pam' runs without error", {
   local_mocked_bindings(
     project_consensus_to_raster     = function(...) rast_stub,
     reorder_clusters_geographically = function(r, ...) make_reorder_stub(r),
+    .retrain_knns_with_geo_labels   = function(...) rast_stub,
     .package = 'safeHavens'
   )
   local_mocked_bindings(project      = function(x, ...) x, .package = "terra")
