@@ -62,7 +62,6 @@ jobs:
           extra-packages: any::pkgdown, local::.
           needs: website
 
-
       - name: Compile sf from source
         if: runner.os == 'Linux'
         run: install.packages("sf", type = "source", repos = "https://cran.rstudio.com/")
