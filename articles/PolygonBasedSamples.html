@@ -99,10 +99,8 @@
 
 
 
-<link href="PolygonBasedSamples_files/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
-<script src="PolygonBasedSamples_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><script src="PolygonBasedSamples_files/d3-3.3.8/d3.min.js"></script><script src="PolygonBasedSamples_files/dagre-0.4.0/dagre-d3.min.js"></script><link href="PolygonBasedSamples_files/mermaid-0.3.0/dist/mermaid.css" rel="stylesheet">
-<script src="PolygonBasedSamples_files/mermaid-0.3.0/dist/mermaid.slim.min.js"></script><link href="PolygonBasedSamples_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
-<script src="PolygonBasedSamples_files/chromatography-0.1/chromatography.js"></script><script src="PolygonBasedSamples_files/DiagrammeR-binding-1.0.11/DiagrammeR.js"></script><div class="row">
+
+<div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Polygon Based Sampling</h1>
             
@@ -132,8 +130,49 @@ scenarios. 1) number of polygons per class<br>
 by the Isolation by Distance, Resistance, and Environmental workflows
 when a user wants to decouple the clustering process from the number of
 samples.</p>
-<div class="DiagrammeR html-widget html-fill-item" id="htmlwidget-ac96cb3ee4656e2e9ec3" style="width:700px;height:432.632880098888px;"></div>
-<script type="application/json" data-for="htmlwidget-ac96cb3ee4656e2e9ec3">{"x":{"diagram":"\n%%{init: {'theme':'dark', 'themeVariables': { \n    'primaryTextColor':'#000', \n    'lineColor':'#000', \n    'lineWidth':'24px',\n    'fontSize':'20px', \n    'edgeSize':'20px',\n    'fontFamily':'Arial'}}}%%\n\nflowchart LR \nA[No. of Collections<br/>Requested]\nA ==> B[More collections<br/>than zones<br/>- Decrease]\nB ==> C{Total Area of pSTZ}\nC ==> D[Larger areas ++]\nC ==> E[Smaller areas ++]\nB ==> F{Count of pSTZ polygons}\nF ==> G[more polygons ++]\nF ==> H[fewer polygons ++]\nB ==> I{Climate of pSTZ}\nI ==> J[Warmer pSTZ ++]\nI ==> K[Drier pSTZ ++]\nA ==> L[Less collections<br/>than zones<br/>- Increase]\nL ==> M{Total Area of pSTZ}\nM ==> N[Largest n zones only]\nM ==> O[Smallest n zones only]\nL ==> P{Count of pSTZ polygons}\nP ==> Q[Most zones only]\nP ==> R[Fewest zones only]\nL ==> S{Climate of pSTZ}\nS ==> T[Warmer zones only]\nS ==> U[Drier zones only]\n%% Define color classes\nclassDef requestedColor fill:#272AB0,color:#FFFFFF\nclassDef areaColor fill:#9c2780,color:#000000\nclassDef polygonColor fill:#57ACDC,color:#000000\nclassDef climateColor fill:#E91E63,color:#000000\nclassDef decisionColor fill:#60C689,color:#000000\n%% Apply classes to nodes\nclass A requestedColor\nclass C,M,D,E,N,O areaColor\nclass F,P,G,H,Q,R polygonColor\nclass I,S,J,K,T,U climateColor\nclass B,L decisionColor\n"},"evals":[],"jsHooks":[]}</script><p>See <code><a href="../reference/PolygonBasedSample.html">?PolygonBasedSample</a></code> for notes on implementation.</p>
+<pre class="mermaid"><code>%%{init: {'theme':'dark', 'themeVariables': { 
+    'primaryTextColor':'#000', 
+    'lineColor':'#000', 
+    'lineWidth':'24px',
+    'fontSize':'20px', 
+    'edgeSize':'20px',
+    'fontFamily':'Arial'}}}%%
+
+flowchart LR 
+A[No. of Collections&lt;br/&gt;Requested]
+A ==&gt; B[More collections&lt;br/&gt;than zones&lt;br/&gt;- Decrease]
+B ==&gt; C{Total Area of pSTZ}
+C ==&gt; D[Larger areas ++]
+C ==&gt; E[Smaller areas ++]
+B ==&gt; F{Count of pSTZ polygons}
+F ==&gt; G[more polygons ++]
+F ==&gt; H[fewer polygons ++]
+B ==&gt; I{Climate of pSTZ}
+I ==&gt; J[Warmer pSTZ ++]
+I ==&gt; K[Drier pSTZ ++]
+A ==&gt; L[Less collections&lt;br/&gt;than zones&lt;br/&gt;- Increase]
+L ==&gt; M{Total Area of pSTZ}
+M ==&gt; N[Largest n zones only]
+M ==&gt; O[Smallest n zones only]
+L ==&gt; P{Count of pSTZ polygons}
+P ==&gt; Q[Most zones only]
+P ==&gt; R[Fewest zones only]
+L ==&gt; S{Climate of pSTZ}
+S ==&gt; T[Warmer zones only]
+S ==&gt; U[Drier zones only]
+%% Define color classes
+classDef requestedColor fill:#272AB0,color:#FFFFFF
+classDef areaColor fill:#9c2780,color:#000000
+classDef polygonColor fill:#57ACDC,color:#000000
+classDef climateColor fill:#E91E63,color:#000000
+classDef decisionColor fill:#60C689,color:#000000
+%% Apply classes to nodes
+class A requestedColor
+class C,M,D,E,N,O areaColor
+class F,P,G,H,Q,R polygonColor
+class I,S,J,K,T,U climateColor
+class B,L decisionColor</code></pre>
+<p>See <code><a href="../reference/PolygonBasedSample.html">?PolygonBasedSample</a></code> for notes on implementation.</p>
   </main>
 </div>
 
