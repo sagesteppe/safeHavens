@@ -9,38 +9,41 @@ description: >
   Using Bayesian approaches for EnvironmentalBasedSample.
 ---
 
-```{r, include = FALSE}
+```{r universal knitr options, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "",
-  eval=FALSE
+  comment = ""
 )
 ```
 
 # Species Distribution Modelling
 
-Before proceeding, please refer to all other vignettes, as they provide valuable foundational context. 
-While the rationale here is roughly the same, this approach focuses on improved uncertainty estimation during processing.
+Before proceeding, please refer to all other vignettes, as they provide valuable foundational context, that will not be covered here.
+While the rationale here is roughly the same to the 'Species Distribution Modelling' and 'Predictive Provenance' vignettes, this approach focuses on improved uncertainty estimation during processing.
 
 ## Background
 
-This vignette details the steps required to create a Bayesian Species Distribution Model (SDM) using functions from `safeHavens`, which serve as wrappers for brms::brms(). Building on the foundational rationale mentioned previously, the following information guides you through the Bayesian-specific setup.
-The SDM is then post-processed to create a binary raster map of suitable and unsuitable habitat, which is used to rescale the environmental predictor variables based on the model's parameter posteriors.
-These parameter posteriors are then used in a clustering algorithm to partition the species range into environmentally distinct regions for germplasm sampling.
+This vignette details the steps required to create a Bayesian Species Distribution Model (SDM) using functions from `safeHavens`, which serve as wrappers for brms::brms(). 
+Building on the foundational rationale mentioned previously, the following information guides you through the Bayesian-specific setup.
+The SDM raster surface is then post-processed to create a binary raster map of suitable and unsuitable habitat, which is used to rescale the environmental predictor variables based on the SDM statistical models parameter posteriors.
+These parameter posteriors are then used in a clustering algorithm to partition the species range into more environmentallly similar regions for germplasm sampling.
 
 The goal of most SDMs is to create a model that accurately predicts where a species will be located in environmental space and can then be predicted in geographic space.
 The goal of these models is to understand the degree and direction to which various environmental features correlate with a species' observed range.
 
 ## About
 
-In this section, we use Bayesian hierarchical models to estimate coefficient uncertainty. This enables clustering climatically similar areas using an SDM approach, linking the previously described methodology to specific analytical outcomes.
+In this section, we use Bayesian hierarchical models to model both the probability of suitable habitat for the species and paramter (indepdent variables) uncertainty of each variables contribution to the model.
+This enables clustering climatically similar areas using an SDM approach, linking the previously described methodology to specific analytical outcomes.
 
 ### prep data 
 
-The data preparation steps described below are also found at the start of the 'Predictive Provenance' vignette. Recall these foundational steps as we transition into Bayesian-specific applications.
-To keep this vignette concise, some intermediate processing steps will be 'hidden.' This ensures the focus remains on the distinct Bayesian approach discussed in the sections above.
+The data preparation steps described below are also found at the start of the 'Predictive Provenance' vignette. 
+Recall these foundational steps as we transition into Bayesian-specific applications.
+To keep this vignette concise, some intermediate processing steps will be 'hidden.' 
+This ensures the focus remains on the distinct Bayesian approach discussed in the sections above.
 
-```{r load libraries, message =F, warning = F}
+```{r load libraries, message = F, warning = F}
 library(safeHavens)
 library(sf) ## vector operations
 library(terra) ## raster operations
@@ -49,9 +52,9 @@ library(dplyr) ## general data handling
 library(tidyr) ## general data handling
 library(ggplot2) ## plotting 
 library(patchwork) ## multiplots
-library(pROC)
-library(DHARMa)
-library(tidybayes)
+library(pROC) ## for AUC and ROC curve plots
+library(DHARMa) ## model resiudals
+library(tidybayes) ## various posterior plots
 ```
 
 ```{r Download species occurrence data, echo = FALSE}
@@ -189,12 +192,12 @@ sdModel <- bayesianSDM(
 ```
 
 ```{r save model, eval = F, echo = F}
-setwd('~/Documents/assoRted/safeHavens/vignettes')
-sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
-sdModel$Predictors <- NULL ## need to save some memory
-sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
-sdModel$AOA <- terra::wrap(sdModel$AOA)
-saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
+#setwd('~/Documents/assoRted/safeHavens/vignettes')
+#sdModel$RasterPredictions <- terra::wrap(sdModel$RasterPredictions)
+#sdModel$Predictors <- NULL ## need to save some memory
+#sdModel$RasterPredictions_sd <- terra::wrap(sdModel$RasterPredictions_sd)
+#sdModel$AOA <- terra::wrap(sdModel$AOA)
+#saveRDS(sdModel, file.path('..', 'inst', 'extdata', 'BayesSDM.rds'))
 ```
 
 Load a run of the model described above for the sake of this vignettes processing speed.
@@ -382,6 +385,8 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 
 ## predictive provenance
 
+Here we use the predictive provenance approach for future time climate scenarios. 
+
 ```{r projected clusters into future time point, message = F}
 future_rescaled <- projectClustersBayes(
   bSDM_object = sdModel,
@@ -391,7 +396,10 @@ future_rescaled <- projectClustersBayes(
   threshold_rasts = threshold_rasts,
   planar_proj = "epsg:5070",
 )
+```
 
+We visualize the results for the current and future scenarios below. 
+```{plot predictive provenance}
 nCl = seq(max(future_rescaled$Geometry$ID))
 full_pal = c(
   '#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -429,7 +437,7 @@ rm(nCl, cus_pal)
 
 While the Bayesian hierarchical GLM does not produce excellent predictions of suitable habitat, it has several advantages.
   1) It can incorporate spatial smoothers (splines) from mcgv to reduce the effects of spatial autocorrelation on model parameter estimates.
-  2) It provides uncertainty around the contribution of each selected predictor (i.e. many predictors can be weighed differently to get similar results)
+  2) It provides uncertainty around the contribution of each selected predictor (i.e. many predictors can be weighed differently to get similar results).
 
 ```{r Clean up SDM variables, warning=FALSE, echo = FALSE}
 rm(rr, files, bio_future, bio_current, bmap, bbox, bb, current_cluster, threshold_rasts)
@@ -522,7 +530,7 @@ loo_probs |>
   theme_navy()
 ```
 
-Bayesian meethods allow for a posterior AUC distribution, these complement a mean point approach. 
+Bayesian methods allow for a posterior AUC distribution, these complement a mean point approach. 
 
 ```{r auc plot, message = F, warning = F}
 pred_probs |>
@@ -672,6 +680,6 @@ patchwork::wrap_plots(plots, ncol = 2) +
 update_geom_defaults("line", list(colour = "black"))
 ```
 
-```{r, eval=F}
+```{r, eval=F, echo=F}
 rm(theme_navy, spr_draw, sdModel, plots, sims, dharma_res, loo_probs,pred_probs)
 ```
