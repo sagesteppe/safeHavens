@@ -3,9 +3,10 @@
 ## Species Distribution Modelling
 
 Before proceeding, please refer to all other vignettes, as they provide
-valuable foundational context. While the rationale here is roughly the
-same, this approach focuses on improved uncertainty estimation during
-processing.
+valuable foundational context, that will not be covered here. While the
+rationale here is roughly the same to the ‘Species Distribution
+Modelling’ and ‘Predictive Provenance’ vignettes, this approach focuses
+on improved uncertainty estimation during processing.
 
 ### Background
 
@@ -13,12 +14,12 @@ This vignette details the steps required to create a Bayesian Species
 Distribution Model (SDM) using functions from `safeHavens`, which serve
 as wrappers for brms::brms(). Building on the foundational rationale
 mentioned previously, the following information guides you through the
-Bayesian-specific setup. The SDM is then post-processed to create a
-binary raster map of suitable and unsuitable habitat, which is used to
-rescale the environmental predictor variables based on the model’s
-parameter posteriors. These parameter posteriors are then used in a
-clustering algorithm to partition the species range into environmentally
-distinct regions for germplasm sampling.
+Bayesian-specific setup. The SDM raster surface is then post-processed
+to create a binary raster map of suitable and unsuitable habitat, which
+is used to rescale the environmental predictor variables based on the
+SDM statistical models parameter posteriors. These parameter posteriors
+are then used in a clustering algorithm to partition the species range
+into more environmentallly similar regions for germplasm sampling.
 
 The goal of most SDMs is to create a model that accurately predicts
 where a species will be located in environmental space and can then be
@@ -28,10 +29,12 @@ correlate with a species’ observed range.
 
 ### About
 
-In this section, we use Bayesian hierarchical models to estimate
-coefficient uncertainty. This enables clustering climatically similar
-areas using an SDM approach, linking the previously described
-methodology to specific analytical outcomes.
+In this section, we use Bayesian hierarchical models to model both the
+probability of suitable habitat for the species and paramter (indepdent
+variables) uncertainty of each variables contribution to the model. This
+enables clustering climatically similar areas using an SDM approach,
+linking the previously described methodology to specific analytical
+outcomes.
 
 #### prep data
 
@@ -51,10 +54,12 @@ library(dplyr) ## general data handling
 library(tidyr) ## general data handling
 library(ggplot2) ## plotting 
 library(patchwork) ## multiplots
-library(pROC)
-library(DHARMa)
-library(tidybayes)
+library(pROC) ## for AUC and ROC curve plots
+library(DHARMa) ## model resiudals
+library(tidybayes) ## various posterior plots
 ```
+
+![](BayesianApproaches_files/figure-html/prep%20basemap-1.png)
 
 ### fit the model
 
@@ -117,6 +122,11 @@ points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
 plot(sdModel$RasterPredictions_sd, main = 'sd prediction')
 points(vect(sdm_td[sdm_td$occurrence==1,]),col = 'black', cex = 0.5)
 points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
+```
+
+![](BayesianApproaches_files/figure-html/Explore%20SDM%20output%20-%20Different%20alpha-1.png)
+
+``` r
 par(mfrow = c(1, 1))
 ```
 
@@ -124,6 +134,34 @@ The brms:: model summary can be accessed from the sdModel list.
 
 ``` r
 sdModel$Model
+Warning: There were 32 divergent transitions after warmup. Increasing
+adapt_delta above 0.99 may help. See
+http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+ Family: bernoulli 
+  Links: mu = logit 
+Formula: occurrence ~ bio_02 + bio_03 + bio_04 + bio_09 + bio_14 + s(gp_x, gp_y, bs = "gp", k = 50) 
+   Data: sf::st_drop_geometry(train) (Number of observations: 415) 
+  Draws: 4 chains, each with iter = 5000; warmup = 2000; thin = 1;
+         total post-warmup draws = 12000
+
+Smoothing Spline Hyperparameters:
+                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sds(sgp_xgp_y_1)  1076.12    420.52   479.08  2109.27 1.00     2349     4826
+
+Regression Coefficients:
+            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept       5.15      7.15    -3.30    21.86 1.00     2420     5747
+bio_02         -0.03      0.11    -0.32     0.09 1.00     5916     5747
+bio_03         -0.06      0.10    -0.31     0.03 1.00     3753     6509
+bio_04         -0.00      0.00    -0.02     0.00 1.00     2778     6755
+bio_09          0.00      0.02    -0.03     0.05 1.00     9355     9702
+bio_14         -0.05      0.06    -0.19     0.01 1.00     2793     7626
+sgp_xgp_y_1    -0.00      0.25    -0.28     0.28 1.00    11289     7949
+sgp_xgp_y_2    -0.01      0.26    -0.32     0.25 1.00    12436     8781
+
+Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
 rHat \< 1.01 is ideal; \< 1.05 is acceptable. Both ESS should be greater
@@ -141,10 +179,23 @@ surfaces from CAST.
 plot(sdModel$AOA)
 ```
 
+![](BayesianApproaches_files/figure-html/plot%20aoa-1.png)
+
 Diagnostics on the model come directly from Stan and brms::.
 
 ``` r
 sdModel$Diagnostics
+$max_Rhat
+[1] 1.004849
+
+$min_BulkESS
+[1] 2131.685
+
+$min_TailESS
+[1] 4453.781
+
+$n_divergent
+[1] 32
 ```
 
 To assess how well the model predicts the suitable habitat for the
@@ -158,6 +209,20 @@ important characteristics of the species.
 ``` r
 knitr::kable(sdModel$ConfusionMatrix$byClass)
 ```
+
+|                      |         x |
+|:---------------------|----------:|
+| Sensitivity          | 0.5416667 |
+| Specificity          | 0.9102564 |
+| Pos Pred Value       | 0.6500000 |
+| Neg Pred Value       | 0.8658537 |
+| Precision            | 0.6500000 |
+| Recall               | 0.5416667 |
+| F1                   | 0.5909091 |
+| Prevalence           | 0.2352941 |
+| Detection Rate       | 0.1274510 |
+| Detection Prevalence | 0.1960784 |
+| Balanced Accuracy    | 0.7259615 |
 
 Observe how the selected model predicts the state of the test data. Note
 that these accuracy results are slightly higher than those from the CV
@@ -187,12 +252,18 @@ threshold_rasts <- PostProcessSDM(
 knitr::kable(threshold_rasts$Threshold)
 ```
 
+|            |    kappa | spec_sens | no_omission | prevalence | equal_sens_spec | sensitivity |
+|:-----------|---------:|----------:|------------:|-----------:|----------------:|------------:|
+| thresholds | 0.220913 |  0.220913 |   0.0510473 |  0.2444197 |       0.2866278 |   0.2444197 |
+
 We can compare the results of applying this function side by side using
 the function’s output.
 
 ``` r
 terra::plot(threshold_rasts$FinalRasters)
 ```
+
+![](BayesianApproaches_files/figure-html/Compare%20Threshold%20Results-1.png)
 
 #### rescale predictor variables
 
@@ -211,12 +282,16 @@ rr <- RescaleRasters_bayes(
 terra::plot(rr$RescaledPredictors)
 ```
 
+![](BayesianApproaches_files/figure-html/Rescale%20Predictor%20Variables-1.png)
+
 An optionally returned layer (via `include_uncertainty` = TRUE) depicts
 areas with greater uncertainty towards the prediction.
 
 ``` r
 plot(subset(rr$RescaledPredictors, 'coef_uncertainty'))
 ```
+
+![](BayesianApproaches_files/figure-html/plot%20coef%20uncertainty%20layer-1.png)
 
 We can also show the variables that contributed the most to the sdm
 models’ predictions, along with their signs.
@@ -227,6 +302,14 @@ knitr::kable(
     order(abs(rr$BetaCoefficients$Estimate),decreasing = T), 
     ])
 ```
+
+|     | Variable |   Estimate | Est.Error |       Q2.5 |     Q97.5 |
+|:----|:---------|-----------:|----------:|-----------:|----------:|
+| 2   | bio_03   | -0.0597135 | 0.1015725 | -0.3129111 | 0.0253125 |
+| 5   | bio_14   | -0.0481234 | 0.0588451 | -0.1918073 | 0.0109816 |
+| 1   | bio_02   | -0.0287647 | 0.1124815 | -0.3225050 | 0.0859241 |
+| 3   | bio_04   | -0.0047051 | 0.0048937 | -0.0158306 | 0.0014900 |
+| 4   | bio_09   |  0.0041970 | 0.0163085 | -0.0253077 | 0.0466395 |
 
 To delineate putative seed collection zones, we use the
 `PosteriorCluster` function. It will use the raster surfaces of the mean
@@ -244,6 +327,19 @@ current_cluster <- PosteriorCluster(
   coord_wt = 0.5,
   n_pts = 5000
 )
+Drawing 100 posterior beta samples ...
+Sampling fixed point set from prediction surface ...
+  5000 of 5000 requested points have complete predictor data.
+Clustering over 100 posterior draws ...
+  Draw 25 / 100
+  Draw 50 / 100
+  Draw 75 / 100
+  Draw 100 / 100
+Computing co-occurrence matrix ...
+Deriving consensus clustering ...
+Computing top-3 cluster assignments per point ...
+Projecting consensus clusters to raster ...
+Loading required package: lattice
 ```
 
 Using Bayesian posteriors and clustering allows us to identify areas
@@ -256,6 +352,8 @@ plot(current_cluster$SummaryRaster$stability, main = 'Cluster Stability')
 points(current_cluster$SamplePoints, cex = 0.3)
 ```
 
+![](BayesianApproaches_files/figure-html/plot%20stability%20raster%20with%20sample%20points-1.png)
+
 As with the other sampling functions, spatial polygons are returned for
 use with other applications.
 
@@ -263,7 +361,11 @@ use with other applications.
 bmap +
   geom_sf(data = current_cluster$Geometry, aes(fill = factor(ID))) + 
   labs(fill = 'Cluster', title = 'Consensus Clusters')
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
+
+![](BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png)
 
 Interested users can see what the second-most and third-most stable
 clustering scenarios would look like via the following ranks. Do note
@@ -276,6 +378,11 @@ par(mfrow = c(1, 3))
 plot(as.factor(current_cluster$SummaryRaster$consensus), main = 'Consensus')
 plot(current_cluster$RankRaster$rank2_final, main = '2nd most')
 plot(current_cluster$RankRaster$rank3_final, main = '3rd most')
+```
+
+![](BayesianApproaches_files/figure-html/view%20top%203%20ranks%20side%20by%20side-1.png)
+
+``` r
 par(mfrow = c(1,1))
 ```
 
@@ -302,6 +409,9 @@ list.files( file.path(bp, 'results', 'SDM'), recursive = TRUE )
 
 ### predictive provenance
 
+Here we use the predictive provenance approach for future time climate
+scenarios.
+
 ``` r
 future_rescaled <- projectClustersBayes(
   bSDM_object = sdModel,
@@ -311,7 +421,43 @@ future_rescaled <- projectClustersBayes(
   threshold_rasts = threshold_rasts,
   planar_proj = "epsg:5070",
 )
+Warning: [spatSample] fewer cells returned than requested
+```
 
+![](BayesianApproaches_files/figure-html/projected%20clusters%20into%20future%20time%20point-1.png)
+
+    *** : The Hubert index is a graphical method of determining the number of clusters.
+                    In the plot of Hubert index, we seek a significant knee that corresponds to a 
+                    significant increase of the value of the measure i.e the significant peak in Hubert
+                    index second differences plot. 
+     
+
+![](BayesianApproaches_files/figure-html/projected%20clusters%20into%20future%20time%20point-2.png)
+
+    *** : The D index is a graphical method of determining the number of clusters. 
+                    In the plot of D index, we seek a significant knee (the significant peak in Dindex
+                    second differences plot) that corresponds to a significant increase of the value of
+                    the measure. 
+     
+    ******************************************************************* 
+    * Among all indices:                                                
+    * 4 proposed 2 as the best number of clusters 
+    * 10 proposed 3 as the best number of clusters 
+    * 2 proposed 4 as the best number of clusters 
+    * 2 proposed 5 as the best number of clusters 
+    * 2 proposed 7 as the best number of clusters 
+    * 3 proposed 20 as the best number of clusters 
+
+                       ***** Conclusion *****                            
+     
+    * According to the majority rule, the best number of clusters is  3 
+     
+     
+    ******************************************************************* 
+
+We visualize the results for the current and future scenarios below.
+
+``` plot
 nCl = seq(max(future_rescaled$Geometry$ID))
 full_pal = c(
   '#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -340,6 +486,9 @@ bmap +
   labs(title = 'Future', fill = 'Cluster')
 ```
 
+    Warning in rm(nCl, cus_pal): object 'nCl' not found
+    Warning in rm(nCl, cus_pal): object 'cus_pal' not found
+
 #### wrapping up
 
 While the Bayesian hierarchical GLM does not produce excellent
@@ -347,7 +496,8 @@ predictions of suitable habitat, it has several advantages. 1) It can
 incorporate spatial smoothers (splines) from mcgv to reduce the effects
 of spatial autocorrelation on model parameter estimates. 2) It provides
 uncertainty around the contribution of each selected predictor
-(i.e. many predictors can be weighed differently to get similar results)
+(i.e. many predictors can be weighed differently to get similar
+results).
 
 ### bonus - model evaluation
 
@@ -389,6 +539,8 @@ brms::pp_check(sdModel$Model, ndraws = 10) +
   ) 
 ```
 
+![](BayesianApproaches_files/figure-html/pp%20checks%201-1.png)
+
 ``` r
 brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) + 
   labs(title = 'more') + 
@@ -399,6 +551,8 @@ brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) +
     caption  = "Bars heights within the uncertainty range (point and line) indicates the model reproduces the observed presence/absence ratio."
   ) 
 ```
+
+![](BayesianApproaches_files/figure-html/pp%20checks%202-1.png)
 
 ``` r
 brms::pp_check(sdModel$Model, type = "stat", stat = "mean") + 
@@ -411,6 +565,8 @@ brms::pp_check(sdModel$Model, type = "stat", stat = "mean") +
   ) 
 ```
 
+![](BayesianApproaches_files/figure-html/pp%20checks%203-1.png)
+
 Areas of probability that the model has more difficulty predicting can
 also be visualized, using the method below. When the line deviates from
 the diagonal axis, it indicates a range of values they model is being
@@ -421,6 +577,9 @@ loo_probs <- tibble(
   pred_prob = brms::loo_epred(sdModel$Model, moment_match = TRUE)[, 1],
   observed  = factor(sdModel$TrainData$occurrence)
 )
+Running PSIS to compute weights
+Recompiling the model with 'rstan'
+Recompilation done
 # Get posterior predicted probabilities
 pred_probs <- sdModel$TrainData |>
   add_epred_draws(sdModel$Model, ndraws = 100) |>
@@ -448,7 +607,9 @@ loo_probs |>
   theme_navy()
 ```
 
-Bayesian meethods allow for a posterior AUC distribution, these
+![](BayesianApproaches_files/figure-html/plot%20loo%20predicted%20probabilities-1.png)
+
+Bayesian methods allow for a posterior AUC distribution, these
 complement a mean point approach.
 
 ``` r
@@ -473,6 +634,8 @@ pred_probs |>
   theme_navy()
 ```
 
+![](BayesianApproaches_files/figure-html/auc%20plot-1.png)
+
 A simple receiver operator curve based on the LOO validation can be
 computed. These show the tradeoff in sensitivity and specificity across
 the models range.
@@ -488,7 +651,11 @@ roc(loo_probs$observed, loo_probs$pred_prob) |>
     caption  = "The curve shows the tradeoff between true positive and false positive rates across all classification thresholds.\nCurves closer to the top-left corner indicate strong out-of-sample discrimination."
   ) + 
   theme_navy()
+Setting levels: control = 0, case = 1
+Setting direction: controls < cases
 ```
+
+![](BayesianApproaches_files/figure-html/loo%20roc%20plot-1.png)
 
 The ability for the model to discrimate between categorical classes,
 such as from a bernoulli model, can be visualized as well. In the
@@ -510,6 +677,8 @@ loo_probs |>
     )
 ```
 
+![](BayesianApproaches_files/figure-html/loo%20predicted%20probs%20by%20class-1.png)
+
 We can also check model residuals after transformation to determine if
 assumptions of indepdenence of individual errors are violated using
 DHARMa.
@@ -525,6 +694,8 @@ dharma_res <- createDHARMa(
 
 plot(dharma_res)# QQ + residuals vs fitted
 ```
+
+![](BayesianApproaches_files/figure-html/qqplot%20from%20dharma-1.png)
 
 We can see the simulated posterior effect of each predictor on the
 models outcome.
@@ -547,6 +718,8 @@ spr_draw |>
     caption  = "Wider distributions indicate greater uncertainty in a variable's effect.\nDistributions overlapping zero suggest weaker or less certain contributions to the model."
   )
 ```
+
+![](BayesianApproaches_files/figure-html/posterior%20distribution%20per%20predictor-1.png)
 
 The posterior distribution of each predictor is shown above. The widths
 show the uncertainty around the effect of each variable on the species
@@ -574,6 +747,8 @@ spr_draw |>
     ) + 
   theme_navy() 
 ```
+
+![](BayesianApproaches_files/figure-html/standardised%20posterior%20effects%20plot-1.png)
 
 Variables with tighter density of predictions, and further from 0, have
 the largest effects on the outcome in the model.
@@ -603,10 +778,16 @@ patchwork::wrap_plots(plots, ncol = 2) +
     plot.subtitle   = element_text(colour = "#dce3f0", size = rel(1.1)),
     plot.caption   = element_text(colour = "#dce3f0", size = rel(1))
   ))
-
-update_geom_defaults("line", list(colour = "black"))
+Warning:  [1m [22mUsing alpha for a discrete variable is not advised.
+ [1m [22mUsing alpha for a discrete variable is not advised.
+ [1m [22mUsing alpha for a discrete variable is not advised.
+ [1m [22mUsing alpha for a discrete variable is not advised.
+ [1m [22mUsing alpha for a discrete variable is not advised.
 ```
 
+![](BayesianApproaches_files/figure-html/marginal%20effects%20plot-1.png)
+
 ``` r
-rm(theme_navy, spr_draw, sdModel, plots, sims, dharma_res, loo_probs,pred_probs)
+
+update_geom_defaults("line", list(colour = "black"))
 ```

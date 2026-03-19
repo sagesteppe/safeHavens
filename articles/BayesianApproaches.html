@@ -115,9 +115,11 @@
 <h2 id="species-distribution-modelling">Species Distribution Modelling<a class="anchor" aria-label="anchor" href="#species-distribution-modelling"></a>
 </h2>
 <p>Before proceeding, please refer to all other vignettes, as they
-provide valuable foundational context. While the rationale here is
-roughly the same, this approach focuses on improved uncertainty
-estimation during processing.</p>
+provide valuable foundational context, that will not be covered here.
+While the rationale here is roughly the same to the ‘Species
+Distribution Modelling’ and ‘Predictive Provenance’ vignettes, this
+approach focuses on improved uncertainty estimation during
+processing.</p>
 <div class="section level3">
 <h3 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h3>
@@ -125,12 +127,13 @@ estimation during processing.</p>
 Distribution Model (SDM) using functions from <code>safeHavens</code>,
 which serve as wrappers for brms::brms(). Building on the foundational
 rationale mentioned previously, the following information guides you
-through the Bayesian-specific setup. The SDM is then post-processed to
-create a binary raster map of suitable and unsuitable habitat, which is
-used to rescale the environmental predictor variables based on the
-model’s parameter posteriors. These parameter posteriors are then used
-in a clustering algorithm to partition the species range into
-environmentally distinct regions for germplasm sampling.</p>
+through the Bayesian-specific setup. The SDM raster surface is then
+post-processed to create a binary raster map of suitable and unsuitable
+habitat, which is used to rescale the environmental predictor variables
+based on the SDM statistical models parameter posteriors. These
+parameter posteriors are then used in a clustering algorithm to
+partition the species range into more environmentallly similar regions
+for germplasm sampling.</p>
 <p>The goal of most SDMs is to create a model that accurately predicts
 where a species will be located in environmental space and can then be
 predicted in geographic space. The goal of these models is to understand
@@ -140,10 +143,12 @@ correlate with a species’ observed range.</p>
 <div class="section level3">
 <h3 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
 </h3>
-<p>In this section, we use Bayesian hierarchical models to estimate
-coefficient uncertainty. This enables clustering climatically similar
-areas using an SDM approach, linking the previously described
-methodology to specific analytical outcomes.</p>
+<p>In this section, we use Bayesian hierarchical models to model both
+the probability of suitable habitat for the species and paramter
+(indepdent variables) uncertainty of each variables contribution to the
+model. This enables clustering climatically similar areas using an SDM
+approach, linking the previously described methodology to specific
+analytical outcomes.</p>
 <div class="section level4">
 <h4 id="prep-data">prep data<a class="anchor" aria-label="anchor" href="#prep-data"></a>
 </h4>
@@ -162,9 +167,10 @@ discussed in the sections above.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span> <span class="co">## general data handling</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span> <span class="co">## plotting </span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span> <span class="co">## multiplots</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://xrobin.github.io/pROC/" class="external-link">pROC</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://florianhartig.github.io/DHARMa/" class="external-link">DHARMa</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mjskay.github.io/tidybayes/" class="external-link">tidybayes</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://xrobin.github.io/pROC/" class="external-link">pROC</a></span><span class="op">)</span> <span class="co">## for AUC and ROC curve plots</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://florianhartig.github.io/DHARMa/" class="external-link">DHARMa</a></span><span class="op">)</span> <span class="co">## model resiudals</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mjskay.github.io/tidybayes/" class="external-link">tidybayes</a></span><span class="op">)</span> <span class="co">## various posterior plots</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/prep%20basemap-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
 <div class="section level3">
@@ -222,11 +228,40 @@ interpretability of the model’s parameters.</p>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions_sd</span>, main <span class="op">=</span> <span class="st">'sd prediction'</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="va">sdm_td</span><span class="op">[</span><span class="va">sdm_td</span><span class="op">$</span><span class="va">occurrence</span><span class="op">==</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span>,col <span class="op">=</span> <span class="st">'black'</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="va">sdm_td</span><span class="op">[</span><span class="va">sdm_td</span><span class="op">$</span><span class="va">occurrence</span><span class="op">==</span><span class="fl">0</span>,<span class="op">]</span><span class="op">)</span>,col <span class="op">=</span> <span class="st">'red'</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The brms:: model summary can be accessed from the sdModel list.</p>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="va">sdm_td</span><span class="op">[</span><span class="va">sdm_td</span><span class="op">$</span><span class="va">occurrence</span><span class="op">==</span><span class="fl">0</span>,<span class="op">]</span><span class="op">)</span>,col <span class="op">=</span> <span class="st">'red'</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/Explore%20SDM%20output%20-%20Different%20alpha-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The brms:: model summary can be accessed from the sdModel list.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Model</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Warning<span class="sc">:</span> There were <span class="dv">32</span> divergent transitions after warmup. Increasing</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>adapt_delta above <span class="fl">0.99</span> may help. See</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>http<span class="sc">:</span><span class="er">//</span>mc<span class="sc">-</span>stan.org<span class="sc">/</span>misc<span class="sc">/</span>warnings.html<span class="co">#divergent-transitions-after-warmup</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a> Family<span class="sc">:</span> bernoulli </span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  Links<span class="sc">:</span> mu <span class="ot">=</span> logit </span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>Formula<span class="sc">:</span> occurrence <span class="sc">~</span> bio_02 <span class="sc">+</span> bio_03 <span class="sc">+</span> bio_04 <span class="sc">+</span> bio_09 <span class="sc">+</span> bio_14 <span class="sc">+</span> <span class="fu">s</span>(gp_x, gp_y, <span class="at">bs =</span> <span class="st">"gp"</span>, <span class="at">k =</span> <span class="dv">50</span>) </span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>   Data<span class="sc">:</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>(train) (Number of observations<span class="sc">:</span> <span class="dv">415</span>) </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  Draws<span class="sc">:</span> <span class="dv">4</span> chains, each with iter <span class="ot">=</span> <span class="dv">5000</span>; warmup <span class="ot">=</span> <span class="dv">2000</span>; thin <span class="ot">=</span> <span class="dv">1</span>;</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>         total post<span class="sc">-</span>warmup draws <span class="ot">=</span> <span class="dv">12000</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>Smoothing Spline Hyperparameters<span class="sc">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>                 Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="fu">sds</span>(sgp_xgp_y_1)  <span class="fl">1076.12</span>    <span class="fl">420.52</span>   <span class="fl">479.08</span>  <span class="fl">2109.27</span> <span class="fl">1.00</span>     <span class="dv">2349</span>     <span class="dv">4826</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>Regression Coefficients<span class="sc">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>            Estimate Est.Error l<span class="dv">-95</span><span class="sc">% CI u-95%</span> CI Rhat Bulk_ESS Tail_ESS</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>Intercept       <span class="fl">5.15</span>      <span class="fl">7.15</span>    <span class="sc">-</span><span class="fl">3.30</span>    <span class="fl">21.86</span> <span class="fl">1.00</span>     <span class="dv">2420</span>     <span class="dv">5747</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>bio_02         <span class="sc">-</span><span class="fl">0.03</span>      <span class="fl">0.11</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.09</span> <span class="fl">1.00</span>     <span class="dv">5916</span>     <span class="dv">5747</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>bio_03         <span class="sc">-</span><span class="fl">0.06</span>      <span class="fl">0.10</span>    <span class="sc">-</span><span class="fl">0.31</span>     <span class="fl">0.03</span> <span class="fl">1.00</span>     <span class="dv">3753</span>     <span class="dv">6509</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>bio_04         <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.00</span>    <span class="sc">-</span><span class="fl">0.02</span>     <span class="fl">0.00</span> <span class="fl">1.00</span>     <span class="dv">2778</span>     <span class="dv">6755</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>bio_09          <span class="fl">0.00</span>      <span class="fl">0.02</span>    <span class="sc">-</span><span class="fl">0.03</span>     <span class="fl">0.05</span> <span class="fl">1.00</span>     <span class="dv">9355</span>     <span class="dv">9702</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>bio_14         <span class="sc">-</span><span class="fl">0.05</span>      <span class="fl">0.06</span>    <span class="sc">-</span><span class="fl">0.19</span>     <span class="fl">0.01</span> <span class="fl">1.00</span>     <span class="dv">2793</span>     <span class="dv">7626</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>sgp_xgp_y_1    <span class="sc">-</span><span class="fl">0.00</span>      <span class="fl">0.25</span>    <span class="sc">-</span><span class="fl">0.28</span>     <span class="fl">0.28</span> <span class="fl">1.00</span>    <span class="dv">11289</span>     <span class="dv">7949</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>sgp_xgp_y_2    <span class="sc">-</span><span class="fl">0.01</span>      <span class="fl">0.26</span>    <span class="sc">-</span><span class="fl">0.32</span>     <span class="fl">0.25</span> <span class="fl">1.00</span>    <span class="dv">12436</span>     <span class="dv">8781</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>Draws were sampled using <span class="fu">sample</span>(hmc). For each parameter, Bulk_ESS</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>scale reduction factor on split <span class="fu">chains</span> (at convergence, <span class="at">Rhat =</span> <span class="dv">1</span>).</span></code></pre></div>
 <p>rHat &lt; 1.01 is ideal; &lt; 1.05 is acceptable. Both ESS should be
 greater than 400; increase iterations to achieve this. Divergence of 0
 is ideal; any divergence is a flag for a possibly misspecified
@@ -236,11 +271,22 @@ some information on them here, as well as warnings (as may be depicted
 above) <a href="https://mc-stan.org/misc/warnings/" class="external-link uri">https://mc-stan.org/misc/warnings/</a></p>
 <p>Similar to <code>elasticSDM</code>, we also have an area of
 applicability and other surfaces from CAST.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span><span class="op">)</span></span></code></pre></div>
-<p>Diagnostics on the model come directly from Stan and brms::.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sdModel</span><span class="op">$</span><span class="va">Diagnostics</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">AOA</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/plot%20aoa-1.png" class="r-plt" alt="" width="700"></p>
+<p>Diagnostics on the model come directly from Stan and brms::.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>sdModel<span class="sc">$</span>Diagnostics</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="sc">$</span>max_Rhat</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.004849</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="sc">$</span>min_BulkESS</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2131.685</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="sc">$</span>min_TailESS</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">4453.781</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="sc">$</span>n_divergent</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">32</span></span></code></pre></div>
 <p>To assess how well the model predicts the suitable habitat for the
 hold-out sample, the confusion matrix can be obtained from the test and
 train splits. While balanced accuracy for these is generally low, as
@@ -248,8 +294,60 @@ these models are not intended for prediction, so much as understanding
 the relationships between environmental variables driving the species
 distribution, the results show the model was able to learn some
 important characteristics of the species.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">ConfusionMatrix</span><span class="op">$</span><span class="va">byClass</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sensitivity</td>
+<td align="right">0.5416667</td>
+</tr>
+<tr class="even">
+<td align="left">Specificity</td>
+<td align="right">0.9102564</td>
+</tr>
+<tr class="odd">
+<td align="left">Pos Pred Value</td>
+<td align="right">0.6500000</td>
+</tr>
+<tr class="even">
+<td align="left">Neg Pred Value</td>
+<td align="right">0.8658537</td>
+</tr>
+<tr class="odd">
+<td align="left">Precision</td>
+<td align="right">0.6500000</td>
+</tr>
+<tr class="even">
+<td align="left">Recall</td>
+<td align="right">0.5416667</td>
+</tr>
+<tr class="odd">
+<td align="left">F1</td>
+<td align="right">0.5909091</td>
+</tr>
+<tr class="even">
+<td align="left">Prevalence</td>
+<td align="right">0.2352941</td>
+</tr>
+<tr class="odd">
+<td align="left">Detection Rate</td>
+<td align="right">0.1274510</td>
+</tr>
+<tr class="even">
+<td align="left">Detection Prevalence</td>
+<td align="right">0.1960784</td>
+</tr>
+<tr class="odd">
+<td align="left">Balanced Accuracy</td>
+<td align="right">0.7259615</td>
+</tr>
+</tbody>
+</table>
 <p>Observe how the selected model predicts the state of the test data.
 Note that these accuracy results are slightly higher than those from the
 CV folds. Understand that this is not a bug; CV folds test on their own
@@ -265,7 +363,7 @@ the model by using CAST for spatially informed cross-validation.</p>
 </h4>
 <p>The Bayesian SDM is post-processed using the same
 <code>PostProcessSDM</code> function as the elasticSDM workflow.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">threshold_rasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PostProcessSDM.html">PostProcessSDM</a></span><span class="op">(</span></span>
 <span>  rast_cont <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">RasterPredictions</span>, </span>
 <span>  test <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TestData</span>,</span>
@@ -275,10 +373,40 @@ the model by using CAST for spatially informed cross-validation.</p>
 <span>  quant_amt <span class="op">=</span> <span class="fl">0.2</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">Threshold</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="13%">
+<col width="11%">
+<col width="12%">
+<col width="14%">
+<col width="13%">
+<col width="19%">
+<col width="14%">
+</colgroup>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">kappa</th>
+<th align="right">spec_sens</th>
+<th align="right">no_omission</th>
+<th align="right">prevalence</th>
+<th align="right">equal_sens_spec</th>
+<th align="right">sensitivity</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">thresholds</td>
+<td align="right">0.220913</td>
+<td align="right">0.220913</td>
+<td align="right">0.0510473</td>
+<td align="right">0.2444197</td>
+<td align="right">0.2866278</td>
+<td align="right">0.2444197</td>
+</tr></tbody>
+</table>
 <p>We can compare the results of applying this function side by side
 using the function’s output.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/Compare%20Threshold%20Results-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="rescale-predictor-variables">rescale predictor variables<a class="anchor" aria-label="anchor" href="#rescale-predictor-variables"></a>
@@ -286,7 +414,7 @@ using the function’s output.</p>
 <p>The <code>bayesianSDM</code> requires a different function from
 elasticSDM for creating weighted surfaces, with the suffix
 <code>RescaleRasters_bayes</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RescaleRasters_bayes.html">RescaleRasters_bayes</a></span><span class="op">(</span></span>
 <span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
 <span>  predictors <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Predictors</span>, </span>
@@ -296,63 +424,134 @@ elasticSDM for creating weighted surfaces, with the suffix
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/Rescale%20Predictor%20Variables-1.png" class="r-plt" alt="" width="700"></p>
 <p>An optionally returned layer (via <code>include_uncertainty</code> =
 TRUE) depicts areas with greater uncertainty towards the prediction.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="st">'coef_uncertainty'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/plot%20coef%20uncertainty%20layer-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also show the variables that contributed the most to the sdm
 models’ predictions, along with their signs.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
 <span>  <span class="va">rr</span><span class="op">$</span><span class="va">BetaCoefficients</span><span class="op">[</span> </span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">BetaCoefficients</span><span class="op">$</span><span class="va">Estimate</span><span class="op">)</span>,decreasing <span class="op">=</span> <span class="cn">T</span><span class="op">)</span>, </span>
 <span>    <span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="left">Variable</th>
+<th align="right">Estimate</th>
+<th align="right">Est.Error</th>
+<th align="right">Q2.5</th>
+<th align="right">Q97.5</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">2</td>
+<td align="left">bio_03</td>
+<td align="right">-0.0597135</td>
+<td align="right">0.1015725</td>
+<td align="right">-0.3129111</td>
+<td align="right">0.0253125</td>
+</tr>
+<tr class="even">
+<td align="left">5</td>
+<td align="left">bio_14</td>
+<td align="right">-0.0481234</td>
+<td align="right">0.0588451</td>
+<td align="right">-0.1918073</td>
+<td align="right">0.0109816</td>
+</tr>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">bio_02</td>
+<td align="right">-0.0287647</td>
+<td align="right">0.1124815</td>
+<td align="right">-0.3225050</td>
+<td align="right">0.0859241</td>
+</tr>
+<tr class="even">
+<td align="left">3</td>
+<td align="left">bio_04</td>
+<td align="right">-0.0047051</td>
+<td align="right">0.0048937</td>
+<td align="right">-0.0158306</td>
+<td align="right">0.0014900</td>
+</tr>
+<tr class="odd">
+<td align="left">4</td>
+<td align="left">bio_09</td>
+<td align="right">0.0041970</td>
+<td align="right">0.0163085</td>
+<td align="right">-0.0253077</td>
+<td align="right">0.0466395</td>
+</tr>
+</tbody>
+</table>
 <p>To delineate putative seed collection zones, we use the
 <code>PosteriorCluster</code> function. It will use the raster surfaces
 of the mean beta coefficient importance.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">current_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PosteriorCluster.html">PosteriorCluster</a></span><span class="op">(</span></span>
-<span>  model <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>,</span>
-<span>  predictors <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">rr</span><span class="op">$</span><span class="va">RescaledPredictors</span>, <span class="st">'coef_uncertainty'</span>, negate <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  f_rasts <span class="op">=</span> <span class="va">threshold_rasts</span><span class="op">$</span><span class="va">FinalRasters</span>,</span>
-<span>  lyr <span class="op">=</span> <span class="st">'Supplemented'</span>,</span>
-<span>  pred_mat <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">PredictMatrix</span>,</span>
-<span>  training_data <span class="op">=</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Train</span>,</span>
-<span>  planar_proj <span class="op">=</span> <span class="fl">5070</span>,</span>
-<span>  coord_wt <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  n_pts <span class="op">=</span> <span class="fl">5000</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>current_cluster <span class="ot">&lt;-</span> <span class="fu">PosteriorCluster</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="at">model =</span> sdModel<span class="sc">$</span>Model,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">subset</span>(rr<span class="sc">$</span>RescaledPredictors, <span class="st">'coef_uncertainty'</span>, <span class="at">negate =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="at">f_rasts =</span> threshold_rasts<span class="sc">$</span>FinalRasters,</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="at">lyr =</span> <span class="st">'Supplemented'</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="at">pred_mat =</span> sdModel<span class="sc">$</span>PredictMatrix,</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>  <span class="at">training_data =</span> sdModel<span class="sc">$</span>Train,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>  <span class="at">planar_proj =</span> <span class="dv">5070</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  <span class="at">coord_wt =</span> <span class="fl">0.5</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  <span class="at">n_pts =</span> <span class="dv">5000</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>)</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>Drawing <span class="dv">100</span> posterior beta samples ...</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>Sampling fixed point set from prediction surface ...</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>  <span class="dv">5000</span> of <span class="dv">5000</span> requested points have complete predictor data.</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>Clustering over <span class="dv">100</span> posterior draws ...</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a>  Draw <span class="dv">25</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>  Draw <span class="dv">50</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a>  Draw <span class="dv">75</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a>  Draw <span class="dv">100</span> <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>Computing co<span class="sc">-</span>occurrence matrix ...</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>Deriving consensus clustering ...</span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a>Computing top<span class="dv">-3</span> cluster assignments per point ...</span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a>Projecting consensus clusters to raster ...</span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a>Loading required package<span class="sc">:</span> lattice</span></code></pre></div>
 <p>Using Bayesian posteriors and clustering allows us to identify areas
 with higher and lower uncertainty in clustering assignments. Areas with
 higher proportions had higher colocation scores than those with lower
 proportions.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">stability</span>, main <span class="op">=</span> <span class="st">'Cluster Stability'</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/lines.html" class="external-link">points</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">SamplePoints</span>, cex <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/plot%20stability%20raster%20with%20sample%20points-1.png" class="r-plt" alt="" width="700"></p>
 <p>As with the other sampling functions, spatial polygons are returned
 for use with other applications.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmap</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">current_cluster</span><span class="op">$</span><span class="va">Geometry</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">'Cluster'</span>, title <span class="op">=</span> <span class="st">'Consensus Clusters'</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>bmap <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> current_cluster<span class="sc">$</span>Geometry, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">factor</span>(ID))) <span class="sc">+</span> </span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">'Cluster'</span>, <span class="at">title =</span> <span class="st">'Consensus Clusters'</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mCoordinate system already present.</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a> [<span class="dv">36</span>mℹ [<span class="dv">39</span>m Adding new coordinate system, which will replace the existing one.</span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png" class="r-plt" alt="" width="700"></p>
 <p>Interested users can see what the second-most and third-most stable
 clustering scenarios would look like via the following ranks. Do note
 that the renumbering of clusters from NW to SE (left to right, as many
 language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/is.bool.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">consensus</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">'Consensus'</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank2_final</span>, main <span class="op">=</span> <span class="st">'2nd most'</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank3_final</span>, main <span class="op">=</span> <span class="st">'3rd most'</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank3_final</span>, main <span class="op">=</span> <span class="st">'3rd most'</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/view%20top%203%20ranks%20side%20by%20side-1.png" class="r-plt" alt="" width="700"></p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="save-results">save results<a class="anchor" aria-label="anchor" href="#save-results"></a>
 </h4>
 <p>writeSDMresults can also be used to save most of the core SDM output
 from the Bayesian workflow.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bp</span> <span class="op">&lt;-</span> <span class="st">'~/Documents/assoRted/StrategizingGermplasmCollections'</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/writeSDMresults.html">writeSDMresults</a></span><span class="op">(</span></span>
@@ -371,17 +570,47 @@ from the Bayesian workflow.</p>
 <div class="section level3">
 <h3 id="predictive-provenance">predictive provenance<a class="anchor" aria-label="anchor" href="#predictive-provenance"></a>
 </h3>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">future_rescaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/projectClustersBayes.html">projectClustersBayes</a></span><span class="op">(</span></span>
-<span>  bSDM_object <span class="op">=</span> <span class="va">sdModel</span>,</span>
-<span>  posterior_clusters <span class="op">=</span> <span class="va">current_cluster</span>,</span>
-<span>  future_predictors <span class="op">=</span> <span class="va">bio_future</span>,</span>
-<span>  current_predictors <span class="op">=</span> <span class="va">bio_current</span>,</span>
-<span>  threshold_rasts <span class="op">=</span> <span class="va">threshold_rasts</span>,</span>
-<span>  planar_proj <span class="op">=</span> <span class="st">"epsg:5070"</span>,</span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">nCl</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">future_rescaled</span><span class="op">$</span><span class="va">Geometry</span><span class="op">$</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span></span>
+<p>Here we use the predictive provenance approach for future time
+climate scenarios.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>future_rescaled <span class="ot">&lt;-</span> <span class="fu">projectClustersBayes</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>  <span class="at">bSDM_object =</span> sdModel,</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  <span class="at">posterior_clusters =</span> current_cluster,</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="at">future_predictors =</span> bio_future,</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>  <span class="at">current_predictors =</span> bio_current,</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  <span class="at">threshold_rasts =</span> threshold_rasts,</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="at">planar_proj =</span> <span class="st">"epsg:5070"</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>)</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>Warning<span class="sc">:</span> [spatSample] fewer cells returned than requested</span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/projected%20clusters%20into%20future%20time%20point-1.png" class="r-plt" alt="" width="700"></p>
+<pre><code>*** : The Hubert index is a graphical method of determining the number of clusters.
+                In the plot of Hubert index, we seek a significant knee that corresponds to a 
+                significant increase of the value of the measure i.e the significant peak in Hubert
+                index second differences plot. 
+ </code></pre>
+<p><img src="BayesianApproaches_files/figure-html/projected%20clusters%20into%20future%20time%20point-2.png" class="r-plt" alt="" width="700"></p>
+<pre><code>*** : The D index is a graphical method of determining the number of clusters. 
+                In the plot of D index, we seek a significant knee (the significant peak in Dindex
+                second differences plot) that corresponds to a significant increase of the value of
+                the measure. 
+ 
+******************************************************************* 
+* Among all indices:                                                
+* 4 proposed 2 as the best number of clusters 
+* 10 proposed 3 as the best number of clusters 
+* 2 proposed 4 as the best number of clusters 
+* 2 proposed 5 as the best number of clusters 
+* 2 proposed 7 as the best number of clusters 
+* 3 proposed 20 as the best number of clusters 
+
+                   ***** Conclusion *****                            
+ 
+* According to the majority rule, the best number of clusters is  3 
+ 
+ 
+******************************************************************* </code></pre>
+<p>We visualize the results for the current and future scenarios
+below.</p>
+<pre class="plot"><code><span><span class="va">nCl</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">future_rescaled</span><span class="op">$</span><span class="va">Geometry</span><span class="op">$</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">full_pal</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">'#a6cee3'</span>,<span class="st">'#1f78b4'</span>,<span class="st">'#b2df8a'</span>,<span class="st">'#33a02c'</span>,</span>
 <span>  <span class="st">'#fb9a99'</span>,<span class="st">'#e31a1c'</span>,<span class="st">'#fdbf6f'</span>,<span class="st">'#ff7f00'</span>,</span>
@@ -406,7 +635,9 @@ from the Bayesian workflow.</p>
 <span>    col <span class="op">=</span> <span class="cn">NA</span></span>
 <span>    <span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">cus_pal</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Future'</span>, fill <span class="op">=</span> <span class="st">'Cluster'</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'Future'</span>, fill <span class="op">=</span> <span class="st">'Cluster'</span><span class="op">)</span></span></code></pre>
+<pre><code>Warning in rm(nCl, cus_pal): object 'nCl' not found
+Warning in rm(nCl, cus_pal): object 'cus_pal' not found</code></pre>
 <div class="section level4">
 <h4 id="wrapping-up">wrapping up<a class="anchor" aria-label="anchor" href="#wrapping-up"></a>
 </h4>
@@ -416,7 +647,7 @@ incorporate spatial smoothers (splines) from mcgv to reduce the effects
 of spatial autocorrelation on model parameter estimates. 2) It provides
 uncertainty around the contribution of each selected predictor
 (i.e. many predictors can be weighed differently to get similar
-results)</p>
+results).</p>
 </div>
 </div>
 <div class="section level3">
@@ -447,7 +678,7 @@ the scale of the biodiversity crisis, automated approaches are
 neccessary.</p>
 <p>The following three plots all come directly from brms and versions
 for checking the posteriors predictions.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/pp_check.html" class="external-link">pp_check</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, ndraws <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'stuff'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -456,7 +687,8 @@ for checking the posteriors predictions.</p>
 <span>    subtitle <span class="op">=</span> <span class="st">"Simulated datasets from the model (light) overlaid on observed data (dark)"</span>,</span>
 <span>    caption  <span class="op">=</span> <span class="st">"Lines closely following the observed distribution suggest the model captures the data generating process well."</span></span>
 <span>  <span class="op">)</span> </span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<p><img src="BayesianApproaches_files/figure-html/pp%20checks%201-1.png" class="r-plt" alt="" width="700"></p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/pp_check.html" class="external-link">pp_check</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, type <span class="op">=</span> <span class="st">"bars"</span>, ndraws <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'more'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -465,7 +697,8 @@ for checking the posteriors predictions.</p>
 <span>    subtitle <span class="op">=</span> <span class="st">"Predicted counts of 0s and 1s vs observed across posterior draws"</span>,</span>
 <span>    caption  <span class="op">=</span> <span class="st">"Bars heights within the uncertainty range (point and line) indicates the model reproduces the observed presence/absence ratio."</span></span>
 <span>  <span class="op">)</span> </span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<p><img src="BayesianApproaches_files/figure-html/pp%20checks%202-1.png" class="r-plt" alt="" width="700"></p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/pp_check.html" class="external-link">pp_check</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, type <span class="op">=</span> <span class="st">"stat"</span>, stat <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">'more'</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span>  <span class="op">+</span></span>
@@ -474,21 +707,24 @@ for checking the posteriors predictions.</p>
 <span>    subtitle <span class="op">=</span> <span class="st">"Distribution of predicted means across draws vs the observed mean (vertical line)"</span>,</span>
 <span>    caption  <span class="op">=</span> <span class="st">"The observed mean should fall near the center of the predicted distribution. Models outside of this area are likely biased."</span></span>
 <span>  <span class="op">)</span> </span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/pp%20checks%203-1.png" class="r-plt" alt="" width="700"></p>
 <p>Areas of probability that the model has more difficulty predicting
 can also be visualized, using the method below. When the line deviates
 from the diagonal axis, it indicates a range of values they model is
 being overly or underconfident about assigning.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">loo_probs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  pred_prob <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/loo_predict.brmsfit.html" class="external-link">loo_epred</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, moment_match <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
-<span>  observed  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">TrainData</span><span class="op">$</span><span class="va">occurrence</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># Get posterior predicted probabilities</span></span>
-<span><span class="va">pred_probs</span> <span class="op">&lt;-</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">TrainData</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://mjskay.github.io/tidybayes/reference/add_predicted_draws.html" class="external-link">add_epred_draws</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, ndraws <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">.row</span>, <span class="va">.draw</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>prob <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">.epred</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>loo_probs <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  <span class="at">pred_prob =</span> brms<span class="sc">::</span><span class="fu">loo_epred</span>(sdModel<span class="sc">$</span>Model, <span class="at">moment_match =</span> <span class="cn">TRUE</span>)[, <span class="dv">1</span>],</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="at">observed  =</span> <span class="fu">factor</span>(sdModel<span class="sc">$</span>TrainData<span class="sc">$</span>occurrence)</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>)</span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>Running PSIS to compute weights</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a>Recompiling the model with <span class="st">'rstan'</span></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>Recompilation done</span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="co"># Get posterior predicted probabilities</span></span>
+<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a>pred_probs <span class="ot">&lt;-</span> sdModel<span class="sc">$</span>TrainData <span class="sc">|&gt;</span></span>
+<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a>  <span class="fu">add_epred_draws</span>(sdModel<span class="sc">$</span>Model, <span class="at">ndraws =</span> <span class="dv">100</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a>  <span class="fu">group_by</span>(.row, .draw) <span class="sc">|&gt;</span></span>
+<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">prob =</span> <span class="fu">mean</span>(.epred), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">loo_probs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>bin <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">pred_prob</span>, breaks <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">bin</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -506,9 +742,10 @@ being overly or underconfident about assigning.</p>
 <span>    caption  <span class="op">=</span> <span class="st">"Points close to the diagonal indicate well-calibrated predictions. Deviation suggests the model is over or underconfident in certain probability ranges."</span></span>
 <span>    <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Bayesian meethods allow for a posterior AUC distribution, these
+<p><img src="BayesianApproaches_files/figure-html/plot%20loo%20predicted%20probabilities-1.png" class="r-plt" alt="" width="700"></p>
+<p>Bayesian methods allow for a posterior AUC distribution, these
 complement a mean point approach.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred_probs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">.draw</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
@@ -528,26 +765,29 @@ complement a mean point approach.</p>
 <span>    caption  <span class="op">=</span> <span class="st">"AUC closer to 1 indicates better separation between presences and absences.\nThis is estimated on training data and will be optimistic use the matrix data from function."</span></span>
 <span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/auc%20plot-1.png" class="r-plt" alt="" width="700"></p>
 <p>A simple receiver operator curve based on the LOO validation can be
 computed. These show the tradeoff in sensitivity and specificity across
 the models range.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/update_defaults.html" class="external-link">update_geom_defaults</a></span><span class="op">(</span><span class="st">"line"</span>,   <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#dce3f0"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/pROC/man/roc.html" class="external-link">roc</a></span><span class="op">(</span><span class="va">loo_probs</span><span class="op">$</span><span class="va">observed</span>, <span class="va">loo_probs</span><span class="op">$</span><span class="va">pred_prob</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/pROC/man/ggroc.html" class="external-link">ggroc</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">1</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, col <span class="op">=</span> <span class="st">"#dce3f0"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
-<span>    title    <span class="op">=</span> <span class="st">"LOO ROC Curve"</span>,</span>
-<span>    subtitle <span class="op">=</span> <span class="st">"Receiver operating characteristic curve using leave-one-out predicted probabilities"</span>,</span>
-<span>    caption  <span class="op">=</span> <span class="st">"The curve shows the tradeoff between true positive and false positive rates across all classification thresholds.\nCurves closer to the top-left corner indicate strong out-of-sample discrimination."</span></span>
-<span>  <span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">update_geom_defaults</span>(<span class="st">"line"</span>,   <span class="fu">list</span>(<span class="at">colour =</span> <span class="st">"#dce3f0"</span>))</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">roc</span>(loo_probs<span class="sc">$</span>observed, loo_probs<span class="sc">$</span>pred_prob) <span class="sc">|&gt;</span></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a>  <span class="fu">ggroc</span>() <span class="sc">+</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">col =</span> <span class="st">"#dce3f0"</span>) <span class="sc">+</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"LOO ROC Curve"</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Receiver operating characteristic curve using leave-one-out predicted probabilities"</span>,</span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>    <span class="at">caption  =</span> <span class="st">"The curve shows the tradeoff between true positive and false positive rates across all classification thresholds.</span><span class="sc">\n</span><span class="st">Curves closer to the top-left corner indicate strong out-of-sample discrimination."</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a>  ) <span class="sc">+</span> </span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>  <span class="fu">theme_navy</span>()</span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a>Setting levels<span class="sc">:</span> control <span class="ot">=</span> <span class="dv">0</span>, case <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a>Setting direction<span class="sc">:</span> controls <span class="sc">&lt;</span> cases</span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/loo%20roc%20plot-1.png" class="r-plt" alt="" width="700"></p>
 <p>The ability for the model to discrimate between categorical classes,
 such as from a bernoulli model, can be visualized as well. In the
 following plot perfectly separated densities would indicate a model with
 perfect discrimination. The plot below will roughly tie into the ideas
 behind the threshold metrics used in <code>PostProcessSDM</code>.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">loo_probs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">pred_prob</span>, fill <span class="op">=</span> <span class="va">observed</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://mjskay.github.io/ggdist/reference/stat_halfeye.html" class="external-link">stat_halfeye</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
@@ -559,10 +799,11 @@ behind the threshold metrics used in <code>PostProcessSDM</code>.</p>
 <span>    subtitle <span class="op">=</span> <span class="st">"LOO predicted probability distributions for pseudo-absences (0) and observed presences (1)"</span>,</span>
 <span>    caption  <span class="op">=</span> <span class="st">"Less overlap between distributions indicates the model better separates suitable from unsuitable habitat.\nA high-performing model shows two distinct, separated peaks."</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/loo%20predicted%20probs%20by%20class-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also check model residuals after transformation to determine
 if assumptions of indepdenence of individual errors are violated using
 DHARMa.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sims</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstantools/reference/posterior_predict.html" class="external-link">posterior_predict</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, ndraws <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">dharma_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DHARMa/man/createDHARMa.html" class="external-link">createDHARMa</a></span><span class="op">(</span></span>
@@ -572,9 +813,10 @@ DHARMa.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">dharma_res</span><span class="op">)</span><span class="co"># QQ + residuals vs fitted</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/qqplot%20from%20dharma-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can see the simulated posterior effect of each predictor on the
 models outcome.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spr_draw</span> <span class="op">&lt;-</span> <span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://mjskay.github.io/tidybayes/reference/spread_draws.html" class="external-link">spread_draws</a></span><span class="op">(</span><span class="va">`b_.*`</span>, regex <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">'b_bio'</span><span class="op">)</span><span class="op">)</span> </span>
@@ -591,10 +833,11 @@ models outcome.</p>
 <span>    subtitle <span class="op">=</span> <span class="st">"Each panel shows the full posterior sample of a predictor's coefficient on its own scale"</span>,</span>
 <span>    caption  <span class="op">=</span> <span class="st">"Wider distributions indicate greater uncertainty in a variable's effect.\nDistributions overlapping zero suggest weaker or less certain contributions to the model."</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/posterior%20distribution%20per%20predictor-1.png" class="r-plt" alt="" width="700"></p>
 <p>The posterior distribution of each predictor is shown above. The
 widths show the uncertainty around the effect of each variable on the
 species distribution.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spr_draw</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/everything.html" class="external-link">everything</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">scale</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">pivot_longer</a></span><span class="op">(</span></span>
@@ -615,37 +858,42 @@ species distribution.</p>
 <span>    caption  <span class="op">=</span> <span class="st">"Variables further from zero have stronger effects on predicted occurrence.\nTighter distributions indicate more certainty — wide distributions crossing zero warrant caution."</span></span>
 <span>    <span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span> </span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/standardised%20posterior%20effects%20plot-1.png" class="r-plt" alt="" width="700"></p>
 <p>Variables with tighter density of predictions, and further from 0,
 have the largest effects on the outcome in the model.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"^b_"</span>, <span class="st">''</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">spr_draw</span><span class="op">)</span> <span class="op">)</span>, <span class="op">~</span></span>
-<span>  <span class="fu">marginaleffects</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/plot_predictions.html" class="external-link">plot_predictions</a></span><span class="op">(</span><span class="va">sdModel</span><span class="op">$</span><span class="va">Model</span>, condition <span class="op">=</span> <span class="va">.x</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="va">.x</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">xlab</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/lims.html" class="external-link">ylim</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">theme_navy</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'none'</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/update_defaults.html" class="external-link">update_geom_defaults</a></span><span class="op">(</span><span class="st">"ribbon"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#8b2635"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/update_defaults.html" class="external-link">update_geom_defaults</a></span><span class="op">(</span><span class="st">"line"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span> </span>
-<span></span>
-<span><span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">plots</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span></span>
-<span>    title    <span class="op">=</span> <span class="st">"Marginal Effects per Predictor"</span>,</span>
-<span>    subtitle <span class="op">=</span> <span class="st">"Predicted occurrence probability across each variable's range, averaged over all other predictors"</span>,</span>
-<span>    caption  <span class="op">=</span> <span class="st">"The shape of each curve reveals whether a variable has a linear, threshold, or unimodal relationship with occurrence.\nWider ribbons indicate greater uncertainty, often at the extremes of a variable's range."</span></span>
-<span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>theme <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span></span>
-<span>    plot.background <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_rect</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#0a0e1a"</span>, colour <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span>, </span>
-<span>    plot.title      <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>face <span class="op">=</span> <span class="st">"bold"</span>, size <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">rel</a></span><span class="op">(</span><span class="fl">1.2</span><span class="op">)</span>,colour <span class="op">=</span> <span class="st">"#dce3f0"</span><span class="op">)</span>,</span>
-<span>    plot.subtitle   <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#dce3f0"</span>, size <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">rel</a></span><span class="op">(</span><span class="fl">1.1</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    plot.caption   <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"#dce3f0"</span>, size <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">rel</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>plots <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>  <span class="fu">gsub</span>(<span class="st">"^b_"</span>, <span class="st">''</span>, <span class="fu">colnames</span>(spr_draw) ), <span class="sc">~</span></span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>  marginaleffects<span class="sc">::</span><span class="fu">plot_predictions</span>(sdModel<span class="sc">$</span>Model, <span class="at">condition =</span> .x) <span class="sc">+</span></span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> .x) <span class="sc">+</span></span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="cn">NULL</span>) <span class="sc">+</span> </span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>    <span class="fu">ylim</span>(<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>    <span class="fu">theme_navy</span>() <span class="sc">+</span></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">'none'</span>) <span class="sc">+</span></span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">update_geom_defaults</span>(<span class="st">"ribbon"</span>, <span class="fu">list</span>(<span class="at">fill =</span> <span class="st">"#8b2635"</span>)) <span class="sc">+</span></span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">update_geom_defaults</span>(<span class="st">"line"</span>, <span class="fu">list</span>(<span class="at">colour =</span> <span class="st">"white"</span>))</span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a>) </span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a></span>
+<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a>patchwork<span class="sc">::</span><span class="fu">wrap_plots</span>(plots, <span class="at">ncol =</span> <span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a>  <span class="fu">plot_annotation</span>(</span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"Marginal Effects per Predictor"</span>,</span>
+<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Predicted occurrence probability across each variable's range, averaged over all other predictors"</span>,</span>
+<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a>    <span class="at">caption  =</span> <span class="st">"The shape of each curve reveals whether a variable has a linear, threshold, or unimodal relationship with occurrence.</span><span class="sc">\n</span><span class="st">Wider ribbons indicate greater uncertainty, often at the extremes of a variable's range."</span></span>
+<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a>) <span class="sc">+</span> </span>
+<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a>  <span class="fu">plot_annotation</span>(<span class="at">theme =</span> <span class="fu">theme</span>(</span>
+<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a>    <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#0a0e1a"</span>, <span class="at">colour =</span> <span class="cn">NA</span>), </span>
+<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a>    <span class="at">plot.title      =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="fu">rel</span>(<span class="fl">1.2</span>),<span class="at">colour =</span> <span class="st">"#dce3f0"</span>),</span>
+<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a>    <span class="at">plot.subtitle   =</span> <span class="fu">element_text</span>(<span class="at">colour =</span> <span class="st">"#dce3f0"</span>, <span class="at">size =</span> <span class="fu">rel</span>(<span class="fl">1.1</span>)),</span>
+<span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a>    <span class="at">plot.caption   =</span> <span class="fu">element_text</span>(<span class="at">colour =</span> <span class="st">"#dce3f0"</span>, <span class="at">size =</span> <span class="fu">rel</span>(<span class="dv">1</span>))</span>
+<span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a>  ))</span>
+<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a>Warning<span class="sc">:</span>  [<span class="dv">1</span>m [<span class="dv">22</span>mUsing alpha <span class="cf">for</span> a discrete variable is not advised.</span>
+<span id="cb37-26"><a href="#cb37-26" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mUsing alpha <span class="cf">for</span> a discrete variable is not advised.</span>
+<span id="cb37-27"><a href="#cb37-27" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mUsing alpha <span class="cf">for</span> a discrete variable is not advised.</span>
+<span id="cb37-28"><a href="#cb37-28" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mUsing alpha <span class="cf">for</span> a discrete variable is not advised.</span>
+<span id="cb37-29"><a href="#cb37-29" tabindex="-1"></a> [<span class="dv">1</span>m [<span class="dv">22</span>mUsing alpha <span class="cf">for</span> a discrete variable is not advised.</span></code></pre></div>
+<p><img src="BayesianApproaches_files/figure-html/marginal%20effects%20plot-1.png" class="r-plt" alt="" width="700"></p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/update_defaults.html" class="external-link">update_geom_defaults</a></span><span class="op">(</span><span class="st">"line"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">theme_navy</span>, <span class="va">spr_draw</span>, <span class="va">sdModel</span>, <span class="va">plots</span>, <span class="va">sims</span>, <span class="va">dharma_res</span>, <span class="va">loo_probs</span>,<span class="va">pred_probs</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
