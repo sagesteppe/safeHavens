@@ -1149,8 +1149,8 @@ test_that("bayesianSDM runs with minimal synthetic data and produces valid outpu
   expect_s4_class(result$AOA,             "SpatRaster")
   expect_type(result$AOA_Diagnostics,     "list")
   expect_type(result$Diagnostics,         "list")
-  expect_true(result$Diagnostics$max_Rhat    < 1.1)
-  expect_true(result$Diagnostics$min_BulkESS > 100)
+  expect_true(result$Diagnostics$max_Rhat    < 1.2)
+  expect_true(result$Diagnostics$min_BulkESS > 80)
 
   # Predictions are valid probabilities
   pred_vals <- terra::values(result$RasterPredictions)

@@ -31,6 +31,7 @@ Suggests:
     marginaleffects,
     tidyr,
     testthat,
+    quarto,
     covr,
     withr,
     rlang,
