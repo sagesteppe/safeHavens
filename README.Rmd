@@ -63,10 +63,6 @@ The following table shows the eight sampling approaches available in safeHavens,
 | `KMedoidsBasedSample`     | For rare species with known occurrences|  M   |   M  |
 | `PosteriorCluster`        | Uses posteriors from an SDM to cluster |  H   |   H  |
 
-```{r Install Package, message=FALSE, eval = F}
-remotes::install_github('sagesteppe/safeHavens') 
-# devtools::install_github('sagesteppe/safeHavens')
-```
 
 An overview of the functionality in the package is below. 
 
