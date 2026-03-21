@@ -79,7 +79,6 @@ An overview of the functionality in the package is below.
 flowchart LR
 A[/Species Occurrence Data/]
 B[/Environmental Covariates/]
-
 A --> D(PointBasedSample)
 A --> E(EqualAreaSample)
 A --> F(OpportunisticSample)
@@ -94,11 +93,10 @@ D --> N[PrioritizeSample]
 E --> N
 F --> N
 G --> N
-A --> U[populationResistance]
 B --> H[buildResistanceSurface]
-H --> U
-U --> V[IBRSurface]
-V --> M[PolygonBasedSample]
+H --> V[populationResistance]
+V --> W[IBRSurface]
+W -.-> M[PolygonBasedSample]
 M --> N
 J --> O{postProcessSDM}
 K --> O
@@ -106,11 +104,12 @@ O --> P{RescaleRaster}
 O --> S{RescaleRasterBayes}
 P --> Q(EnvironmentalBasedSample)
 Q --> R[PredictiveProvenance]
-Q --> M
-R --> M
+Q -.-> M
+R -.-> M
 S --> T[PosteriorCluster]
-T --> U[projectClustersBayes]
-U --> M
+T --> U2[projectClustersBayes]
+U2 -.-> M
+T -.-> M
 classDef geoColor fill:#d95f02,color:#FFFFFF
 classDef polyColor fill:#66a61e,color:#FFFFFF
 classDef envColor fill:#1b9e77,color:#FFFFFF
@@ -119,12 +118,12 @@ classDef decisionColor fill:#7570b3,color:#FFFFFF
 classDef rareColor fill:#e6ab02,color:#FFFFFF
 classDef ibrColor fill:#e7298a,color:#FFFFFF
 class D,E,F,G geoColor
-class H,M polyColor
-class J,K,O,P,S,T,U,Q,R,U envColor
+class M polyColor
+class J,K,O,P,S,T,Q,R,U2 envColor
 class A,B dataColor
 class N decisionColor
 class L rareColor
-class H,U,V ibrColor
+class H,V,W ibrColor
 ```
 
 ## Acknowledgements
