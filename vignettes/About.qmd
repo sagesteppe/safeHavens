@@ -54,7 +54,6 @@ The `PointBasedSample` and `EqualAreaSample` functions would be used when *estab
 This method is slightly more computationally expensive than the previous geographic distance methods. 
 
 ### using regions 
-
 The `PolygonBasedSample` may be the most commonly encountered method in North America, and in various formats, is driving two major germplasm banking projects in both the Midwest and Southeastern United States, as well as at a high level, composing the way that numerous native seed collection coordinators are structured in the West. 
 This method uses environmental variation as an implicit guide to target populations for seed collections; that is, the different ecoregions serve as stratification agents. 
 In broad strokes, the general thinking is that these regions represent continuous transitions in the environment faced by the species, and populations across these ranges will be differently adapted to these environments. 
@@ -67,12 +66,16 @@ The least-cost paths between occupied portions of the species range will then ca
 Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone are desired. 
 
 ### environmental distance 
-
-`EnvironmentalBasedSample`, is both the most computationally expensive and the most environmentally explicit. 
+`EnvironmentalBasedSample`, is the most environmentally explicit smapling approach. 
 This function fits a Species Distribution Model (SDM), generated via a generalized linear model (glmnet), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
 On paper, this draws together all aspects of the above functions; however no empirical testing of this approach has been implemented. 
 
 Spatial data from the end of this process can be passed into `PolygonBasedSample` if more than one collection per zone are desired. 
+
+## environmental distance bayesian
+`posteriorCluster`, is the most computationally intensive and environmentally explicti sampling approach. 
+This function fits a Species Distribution Model (SDM), generated via bayesian hierarchical modeling (glmm), supported by this package, to cluster populations based on environmental variables related to their observed distributions and the spatial configuration and distance between them. 
+This function samples from the posteriors of parameter distributions to account for uncertainty in each indepdent variables contributions, creating the most resilient estimates of environmental clusters. 
 
 ## rare species sampling approach
 
@@ -82,8 +85,6 @@ However, for rare species, where the occurrence of individual populations are tr
 
 The `KMedoidsBasedSample` method utilizes either geographic distances alone or geographic distances in conjunction with a distance matrix developed from a few key environmental variables to suggest which populations should be prioritized for seed collections. 
 This method is based on the concept of maximizing the dispersion of selected points in geographic and environmental spaces to best capture the overall variation present in the species range. 
-
-## BAYESIAN GOES HERE
 
 ### installation 
 

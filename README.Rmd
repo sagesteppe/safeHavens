@@ -31,14 +31,14 @@ The package also creates species distribution models, but with the goal of germp
 This package helps germplasm curators communicate areas of interest to collection teams for them to collect new material for accession. It provides seven different sampling approaches for curators to choose from for each individual taxon they hope to process. 
 
 ## Installation
-`safeHavens` is available only on github. 
+`safeHavens` is available only on GitHub. 
 It can be installed using `remotes` or `devtools`
 ```
 install.packages('remotes') 
 remotes::install_github('sagesteppe/safeHavens')
 ```
 
-Once installed it can be attached for use like any other package from github or CRAN
+Once installed it can be attached for use like any other package from GitHub or CRAN
 ```
 library(safeHavens)
 ```
@@ -49,7 +49,7 @@ library(safeHavens)
 
 ### Available Sampling Schemes
 
-The following table shows the eight sampling approaches available in safeHavens, with their computational complexity (Comp.) and environmental data complexity5 (Envi.): L = Low, M = Medium, H = High.
+The following table shows the nine sampling approaches available in safeHavens, with their computational complexity (Comp.) and environmental data complexity5 (Envi.): L = Low, M = Medium, H = High.
 
 |        Function           |              Description               | Comp.| Envi.|
 |---------------------------|----------------------------------------|------|------|
