@@ -3,7 +3,7 @@ title: "Polygon Based Sampling"
 description: "Sampling provisional seed transfer zones and ecoregions"
 format:
   html:
-    mermaid-format: svg
+    self-contained: true
 vignette: >
   %\VignetteIndexEntry{Polygon Based Sampling}
   %\VignetteEngine{quarto::html}
@@ -23,7 +23,12 @@ Three options are available for both scenarios.
 
 Additionally, this function can be applied to the clusters identified by the Isolation by Distance, Resistance, and Environmental workflows when a user wants to decouple the clustering process from the number of samples.
 
-```{mermaid}
+```{r}
+#| echo: false
+#| eval: false
+#This is the mermaid source for PolygonBasedSample-workflow.svg
+#| (archived for reference, rendered version embedded below as static SVG)
+#| 
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#000', 
     'lineColor':'#000', 
@@ -67,5 +72,7 @@ class F,P,G,H,Q,R polygonColor
 class I,S,J,K,T,U climateColor
 class B,L decisionColor
 ```
+
+![Polygon Based Sampling workflow](../inst/doc/PolygonBasedSample-workflow.svg)
 
 See `?PolygonBasedSample` for notes on implementation.
