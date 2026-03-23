@@ -20,12 +20,7 @@ Three options are available for both scenarios.
 
 Additionally, this function can be applied to the clusters identified by the Isolation by Distance, Resistance, and Environmental workflows when a user wants to decouple the clustering process from the number of samples.
 
-```{r}
-#| echo: false
-#| eval: false
-#This is the mermaid source for PolygonBasedSample-workflow.svg
-#| (archived for reference, rendered version embedded below as static SVG)
-#| 
+```{r, echo = F, eval = F}
 %%{init: {'theme':'dark', 'themeVariables': { 
     'primaryTextColor':'#000', 
     'lineColor':'#000', 
