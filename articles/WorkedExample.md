@@ -49,7 +49,7 @@ cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
 table( cymu[['data']]['geodeticDatum']) 
 geodeticDatum
 WGS84 
-  706 
+  726 
 
 ## subset the data to relevant columns 
 cymu_cols <- cymu[['data']][,cols]

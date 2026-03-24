@@ -108,17 +108,29 @@ more than one collection per zone are desired.
 
 ### environmental distance
 
-`EnvironmentalBasedSample`, is both the most computationally expensive
-and the most environmentally explicit. This function fits a Species
-Distribution Model (SDM), generated via a generalized linear model
-(glmnet), supported by this package, to cluster populations based on
-environmental variables related to their observed distributions and the
-spatial configuration and distance between them. On paper, this draws
-together all aspects of the above functions; however no empirical
-testing of this approach has been implemented.
+`EnvironmentalBasedSample`, is the most environmentally explicit
+smapling approach. This function fits a Species Distribution Model
+(SDM), generated via a generalized linear model (glmnet), supported by
+this package, to cluster populations based on environmental variables
+related to their observed distributions and the spatial configuration
+and distance between them. On paper, this draws together all aspects of
+the above functions; however no empirical testing of this approach has
+been implemented.
 
 Spatial data from the end of this process can be passed into
 `PolygonBasedSample` if more than one collection per zone are desired.
+
+## environmental distance bayesian
+
+`posteriorCluster`, is the most computationally intensive and
+environmentally explicti sampling approach. This function fits a Species
+Distribution Model (SDM), generated via bayesian hierarchical modeling
+(glmm), supported by this package, to cluster populations based on
+environmental variables related to their observed distributions and the
+spatial configuration and distance between them. This function samples
+from the posteriors of parameter distributions to account for
+uncertainty in each indepdent variables contributions, creating the most
+resilient estimates of environmental clusters.
 
 ## rare species sampling approach
 
@@ -140,8 +152,6 @@ based on the concept of maximizing the dispersion of selected points in
 geographic and environmental spaces to best capture the overall
 variation present in the species range.
 
-## BAYESIAN GOES HERE
-
 ### installation
 
 `safeHavens` can be installed directly from github, using either
@@ -160,5 +170,3 @@ also requiring C++ toolkits. These can take a few minutes to figure out.
 ``` r
 remotes::install_github('sagesteppe/safeHavens') 
 ```
-
-An overview of the functionality in the package is below.

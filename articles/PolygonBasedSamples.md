@@ -12,60 +12,21 @@ The function requires modes for two main scenarios: when a user wants
 **more** collections than zones exist in the data, the function needs to
 use an ‘increase’ method. When a user wants **fewer** collections than
 there are zones, a decrease method needs to be implemented. Three
-options are available for both scenarios. 1) number of polygons per
-class  
-2) total area of each class  
-3) simple climate parameters for each class
+options are available for both scenarios.
+
+1.  number of polygons per class
+2.  total area of each class
+3.  simple climate parameters for each class
 
 Additionally, this function can be applied to the clusters identified by
 the Isolation by Distance, Resistance, and Environmental workflows when
 a user wants to decouple the clustering process from the number of
 samples.
 
-``` mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 
-    'primaryTextColor':'#000', 
-    'lineColor':'#000', 
-    'lineWidth':'24px',
-    'fontSize':'20px', 
-    'edgeSize':'20px',
-    'fontFamily':'Arial'}}}%%
+![Polygon Based Sampling
+workflow](images/PolygonBasedSample-workflow.svg)
 
-flowchart LR 
-A[No. of Collections<br/>Requested]
-A ==> B[More collections<br/>than zones<br/>- Decrease]
-B ==> C{Total Area of pSTZ}
-C ==> D[Larger areas ++]
-C ==> E[Smaller areas ++]
-B ==> F{Count of pSTZ polygons}
-F ==> G[more polygons ++]
-F ==> H[fewer polygons ++]
-B ==> I{Climate of pSTZ}
-I ==> J[Warmer pSTZ ++]
-I ==> K[Drier pSTZ ++]
-A ==> L[Less collections<br/>than zones<br/>- Increase]
-L ==> M{Total Area of pSTZ}
-M ==> N[Largest n zones only]
-M ==> O[Smallest n zones only]
-L ==> P{Count of pSTZ polygons}
-P ==> Q[Most zones only]
-P ==> R[Fewest zones only]
-L ==> S{Climate of pSTZ}
-S ==> T[Warmer zones only]
-S ==> U[Drier zones only]
-%% Define color classes
-classDef requestedColor fill:#272AB0,color:#FFFFFF
-classDef areaColor fill:#9c2780,color:#000000
-classDef polygonColor fill:#57ACDC,color:#000000
-classDef climateColor fill:#E91E63,color:#000000
-classDef decisionColor fill:#60C689,color:#000000
-%% Apply classes to nodes
-class A requestedColor
-class C,M,D,E,N,O areaColor
-class F,P,G,H,Q,R polygonColor
-class I,S,J,K,T,U climateColor
-class B,L decisionColor
-```
+Polygon Based Sampling workflow
 
 See
 [`?PolygonBasedSample`](https://sagesteppe.github.io/safeHavens/reference/PolygonBasedSample.md)

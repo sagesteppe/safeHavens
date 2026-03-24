@@ -23,12 +23,11 @@ for each individual taxon they hope to process.
 ## Installation
 
 `safeHavens` is available only on github. It can be installed using
-`remotes` or `devtools` like so:
+`remotes` or `devtools`
 
 ``` R
 install.packages('remotes') 
 remotes::install_github('sagesteppe/safeHavens')
-#devtools::install_github('sagesteppe/safeHavens') # if needed
 ```
 
 Once installed it can be attached for use like any other package from
@@ -47,27 +46,19 @@ sampling schemes.
 
 The following table shows the eight sampling approaches available in
 safeHavens, with their computational complexity (Comp.) and
-environmental data requirements (Envi.): L = Low, M = Medium, H = High.
+environmental data complexity5 (Envi.): L = Low, M = Medium, H = High.
 
 | Function                   | Description                             | Comp. | Envi. |
 |----------------------------|-----------------------------------------|-------|-------|
-| `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
+| `PointBasedSample`         | Creates points to make grids over area  | L     | L     |
 | `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
 | `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
-| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
-| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
+| `IBDBasedSample`           | Breaks species range into clusters      | H     | L     |
+| `IBRSurface`               | Breaks species range into clusters      | H     | M     |
+| `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
 | `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
-
-The species distribution modelling section has a couple functions which
-are essential for achieving the `EnvironmentalBasedSample` design, these
-are: `elasticSDM`, `PostProcessSDM`, `RescaleRasters` and
-`writeSDMresults`.
-
-``` r
-remotes::install_github('sagesteppe/safeHavens') 
-# devtools::install_github('sagesteppe/safeHavens')
-```
+| `KMedoidsBasedSample`      | For rare species with known occurrences | M     | M     |
+| `PosteriorCluster`         | Uses posteriors from an SDM to cluster  | H     | H     |
 
 An overview of the functionality in the package is below.
 
@@ -76,12 +67,11 @@ An overview of the functionality in the package is below.
     'primaryTextColor':'#ffffff',
     'lineColor':'#ffffff',
     'lineWidth':'24px',
-    'fontSize':'18px',
+    'fontSize':'30px',
     'fontFamily':'Arial'}}}%%
 flowchart LR
 A[/Species Occurrence Data/]
 B[/Environmental Covariates/]
-
 A --> D(PointBasedSample)
 A --> E(EqualAreaSample)
 A --> F(OpportunisticSample)
@@ -96,11 +86,10 @@ D --> N[PrioritizeSample]
 E --> N
 F --> N
 G --> N
-A --> U[populationResistance]
 B --> H[buildResistanceSurface]
-H --> U
-U --> V[IBRSurface]
-V --> M[PolygonBasedSample]
+H --> V[populationResistance]
+V --> W[IBRSurface]
+W -.-> M[PolygonBasedSample]
 M --> N
 J --> O{postProcessSDM}
 K --> O
@@ -108,10 +97,12 @@ O --> P{RescaleRaster}
 O --> S{RescaleRasterBayes}
 P --> Q(EnvironmentalBasedSample)
 Q --> R[PredictiveProvenance]
-Q --> M
-R --> M
+Q -.-> M
+R -.-> M
 S --> T[PosteriorCluster]
-T --> R
+T --> U2[projectClustersBayes]
+U2 -.-> M
+T -.-> M
 classDef geoColor fill:#d95f02,color:#FFFFFF
 classDef polyColor fill:#66a61e,color:#FFFFFF
 classDef envColor fill:#1b9e77,color:#FFFFFF
@@ -120,12 +111,12 @@ classDef decisionColor fill:#7570b3,color:#FFFFFF
 classDef rareColor fill:#e6ab02,color:#FFFFFF
 classDef ibrColor fill:#e7298a,color:#FFFFFF
 class D,E,F,G geoColor
-class H,M polyColor
-class J,K,O,P,S,T,U,Q,R envColor
+class M polyColor
+class J,K,O,P,S,T,Q,R,U2 envColor
 class A,B dataColor
 class N decisionColor
 class L rareColor
-class H,U,V ibrColor
+class H,V,W ibrColor
 ```
 
 ## Acknowledgements

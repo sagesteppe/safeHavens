@@ -349,7 +349,7 @@ proportions.
 
 ``` r
 plot(current_cluster$SummaryRaster$stability, main = 'Cluster Stability')
-points(current_cluster$SamplePoints, cex = 0.3)
+points(current_cluster$SamplePoints, cex = 0.1)
 ```
 
 ![](BayesianApproaches_files/figure-html/plot%20stability%20raster%20with%20sample%20points-1.png)
@@ -457,7 +457,7 @@ Warning: [spatSample] fewer cells returned than requested
 
 We visualize the results for the current and future scenarios below.
 
-``` plot
+``` r
 nCl = seq(max(future_rescaled$Geometry$ID))
 full_pal = c(
   '#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -484,10 +484,13 @@ bmap +
     ) + 
   scale_fill_manual(values = cus_pal) + 
   labs(title = 'Future', fill = 'Cluster')
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
-    Warning in rm(nCl, cus_pal): object 'nCl' not found
-    Warning in rm(nCl, cus_pal): object 'cus_pal' not found
+![](BayesianApproaches_files/figure-html/plot%20predictive%20provenance-1.png)
 
 #### wrapping up
 
@@ -548,7 +551,7 @@ brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) +
   labs(
     title    = "Posterior Predictive Check - Class Balance",
     subtitle = "Predicted counts of 0s and 1s vs observed across posterior draws",
-    caption  = "Bars heights within the uncertainty range (point and line) indicates the model reproduces the observed presence/absence ratio."
+    caption  = "Bars heights within the uncertainty range (point and line)\nindicates the model reproduces the observed presence/absence ratio."
   ) 
 ```
 
@@ -561,7 +564,7 @@ brms::pp_check(sdModel$Model, type = "stat", stat = "mean") +
   labs(
     title    = "Posterior Predictive Check - Mean",
     subtitle = "Distribution of predicted means across draws vs the observed mean (vertical line)",
-    caption  = "The observed mean should fall near the center of the predicted distribution. Models outside of this area are likely biased."
+    caption  = "The observed mean should fall near the center of the predicted\ndistribution. Models outside of this area are likely biased."
   ) 
 ```
 
@@ -602,7 +605,7 @@ loo_probs |>
     y = "Observed frequency",
     title    = "LOO Calibration",
     subtitle = "Leave-one-out predicted probabilities vs observed frequencies, binned across the probability range",
-    caption  = "Points close to the diagonal indicate well-calibrated predictions. Deviation suggests the model is over or underconfident in certain probability ranges."
+    caption  = "Points close to the diagonal indicate well-calibrated predictions.\nDeviation suggests the model is over or underconfident in certain probability ranges."
     ) +
   theme_navy()
 ```
@@ -648,7 +651,7 @@ roc(loo_probs$observed, loo_probs$pred_prob) |>
   labs(
     title    = "LOO ROC Curve",
     subtitle = "Receiver operating characteristic curve using leave-one-out predicted probabilities",
-    caption  = "The curve shows the tradeoff between true positive and false positive rates across all classification thresholds.\nCurves closer to the top-left corner indicate strong out-of-sample discrimination."
+    caption  = "The curve shows the tradeoff between true positive and false positive rates\nacross all classification thresholds.\nCurves closer to the top-left corner indicate strong out-of-sample discrimination."
   ) + 
   theme_navy()
 Setting levels: control = 0, case = 1
@@ -673,7 +676,7 @@ loo_probs |>
   labs(
     title    = "Predicted Probability by Class",
     subtitle = "LOO predicted probability distributions for pseudo-absences (0) and observed presences (1)",
-    caption  = "Less overlap between distributions indicates the model better separates suitable from unsuitable habitat.\nA high-performing model shows two distinct, separated peaks."
+    caption  = "Less overlap between distributions indicates the model better\nseparates suitable from unsuitable habitat. A high-performing model shows\ntwo distinct, separated peaks."
     )
 ```
 
@@ -743,7 +746,7 @@ spr_draw |>
     y = NULL, 
     title    = "Standardised Posterior Effects",
     subtitle = "Predictor coefficients scaled to unit variance, allowing direct comparison of effect sizes",
-    caption  = "Variables further from zero have stronger effects on predicted occurrence.\nTighter distributions indicate more certainty — wide distributions crossing zero warrant caution."
+    caption  = "Variables further from zero have stronger effects on predicted occurrence.\nTighter distributions indicate more certainty - wide distributions crossing zero warrant caution."
     ) + 
   theme_navy() 
 ```
@@ -770,7 +773,7 @@ patchwork::wrap_plots(plots, ncol = 2) +
   plot_annotation(
     title    = "Marginal Effects per Predictor",
     subtitle = "Predicted occurrence probability across each variable's range, averaged over all other predictors",
-    caption  = "The shape of each curve reveals whether a variable has a linear, threshold, or unimodal relationship with occurrence.\nWider ribbons indicate greater uncertainty, often at the extremes of a variable's range."
+    caption  = "The shape of each curve reveals whether a variable has a linear, threshold,\nor unimodal relationship with occurrence. Wider ribbons indicate greater uncertainty,\noften at the extremes of a variable's range."
 ) + 
   plot_annotation(theme = theme(
     plot.background = element_rect(fill = "#0a0e1a", colour = NA), 
