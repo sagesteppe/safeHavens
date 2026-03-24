@@ -65,6 +65,6 @@ class I,S,J,K,T,U climateColor
 class B,L decisionColor
 ```
 
-![Polygon Based Sampling workflow](../inst/doc/PolygonBasedSample-workflow.svg)
+![Polygon Based Sampling workflow](./images/PolygonBasedSample-workflow.svg)
 
 See `?PolygonBasedSample` for notes on implementation.

@@ -120,7 +120,7 @@ articles:
     - BayesianApproaches
   - title: "Sampling schema for rare species"
     desc: "A supplemental schema for rare species"
-    contents: 
+    contents:
     - RareSpecies
 
 figures:
