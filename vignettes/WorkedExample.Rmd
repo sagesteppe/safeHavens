@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Introduction 
+## Introduction 
 
 The previous tutorials focus on the individual functions in the package but do little to show how to integrate them into common workflows for developing spatial products for sampling.
 Here we show a minimal example of how a curator may load occurrence data for a species, apply a couple of sampling approaches to these data, and save the results for use.
@@ -190,7 +190,8 @@ rm(spp_convex)
 ```
 
 For the sake of the example, we will use only the concave ranges with a ratio of 0.4 going forward.
-## Perform sampling for the species ranges 
+
+### Perform sampling for the species ranges 
 
 First, we will perform equal area sampling with a relatively small number of points and repetitions.
 
@@ -282,7 +283,7 @@ rm(bb)
 
 The map above shows a possible general order to guide the prioritisation of individual sample areas, along with simplified visuals of where within those areas to target.
 
-### wrapping up 
+## wrapping up 
 
 Upon completion of using safeHavens, results should be written to individual geopackages for long-term storage.
 A significant benefit of a geopackage is its ability to store multiple geometry types (polygons, points, rasters, etc.), which can be lost when stored in separate directories.

@@ -34,7 +34,7 @@ They include:
   - lakes, Lehner et al. 2025, [GLWD](https://figshare.com/articles/dataset/Global_Lakes_and_Wetlands_Database_GLWD_version_2_0/28519994)  
   - oceans from Natural Earth, https://www.naturalearthdata.com/downloads/10m-physical-vectors/  
   - rivers from [FAO](https://data.apps.fao.org/catalog/dataset/  76e4aacc-b89e-4091-831f-63986fe029f9/resource/3adb69dc-ac23-4a36-acad-a4b65ac727e9), 
-  - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography  
+  - tri (terrain ruggedness index), Amatulli et al. 2018, https://www.earthenv.org/topography   
 
 ```{r libraries, warning =F, message = F}
 library(safeHavens)
@@ -56,7 +56,7 @@ planar_proj <- 3857 # Web Mercator for planar distance calcs
 
 ## data prep
 
-Each of the environmental variable data sources needs some pre-processing before being fed into the IBR workflow; most of them just need to be converted from vector to raster formats - a process we call ‘rasterisation’.
+Each of the environmental variable data sources needs some pre-processing before being fed into the IBR workflow; most of them just need to be converted from vector to raster formats - a process we call ‘rasterisation’. 
 We will also rescale the tri rasters to put them on a similar numeric scale to the other datasets.
 
 ```{r clean vector data sets}
@@ -262,42 +262,41 @@ Here we will add it to the surface.
 
 We will also show another way to add the topographic ruggedness index that bypasses the assumed linear relationship in the weighting scheme.
 
-```{r}
+```{r read in sdm}
 sdm <- terra::rast(
   file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
   )
 plot(sdm['Predictions'])
 ```
 
-Note that we will have to reverse the predictions from this layer; currently, higher values indicate a more suitable habitat.
+We will have to reverse the predictions from this layer; currently, higher values indicate a more suitable habitat.
 We want higher values in the probability surface function to indicate greater resistance to movement.
 
-```{r}
+```{r invert sdm}
 inverted_sdm <- 1 - sdm['Predictions']
 plot(inverted_sdm)
 ```
 
 And indeed, we may actually just want to remove weights in a suitable habitat, or set them to an arbitrarily low value.
-```{r}
+```{r mask suitable habitat}
 inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
 plot(inverted_sdm)
 ```
 
 And we will convert it to the same integer scale as the other predictors.
-```{r}
+```{r convert sdm to integer}
 inverted_sdm = round(inverted_sdm * 100, 0)
 plot(inverted_sdm)
 ```
 
 Note that we will have to make sure our SDM aligns with the existing layers
-```{r}
+```{r align sdm}
 inverted_sdm <- crop(inverted_sdm, ocean_r)
 inverted_sdm <- resample(inverted_sdm, ocean_r)
 inverted_sdm[is.na(inverted_sdm)] <- 99
 
 plot(inverted_sdm)
 ```
-
 
 ### non-linear weight
 
