@@ -33,14 +33,18 @@ library(purrr) # sub for lapplying functions across lists
 library(ggplot2) ## for maps 
 ```
 
-Using `rgbif`, we’ll download occurrence data for a couple of species.
+Using `rgbif`, we’ll download occurrence data for a couple of species,
+you can readily swap these out and supply a much longer list of species
+use their proper GBIF codes.
+
 This way, we can set up the code for mapping multiple species in a
 realistic manner.
 
 ``` r
 ## small subset of useful columns for example
-cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 'acceptedScientificName', 'datasetName', 
-  'coordinateUncertaintyInMeters', 'basisOfRecord', 'institutionCode', 'catalogNumber')
+cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 
+  'acceptedScientificName', 'datasetName', 'coordinateUncertaintyInMeters', 
+  'basisOfRecord', 'institutionCode', 'catalogNumber')
 
 ## download species data using scientificName, can use keys and lookup tables for automating many taxa. 
 cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
@@ -62,16 +66,16 @@ bowa_cols <- bowa[['data']][,cols]
 spp <- bind_rows(bowa_cols, cymu_cols) |>
   drop_na(decimalLatitude, decimalLongitude) |> # any missing coords need dropped. 
   st_as_sf(coords = c( 'decimalLongitude', 'decimalLatitude'), crs = 4326, remove = F)
-
-rm(cymu, bowa, cols, cymu_cols, bowa_cols)
 ```
 
-Quickly check the data for obvious errors. One point’s location is
-incorrect; its latitude is great - we removed it below.
+We will make a very quick and simple basemap for use in the vignette
 
 ``` r
 western_states <- spData::us_states |> ## for making a quick basemap. 
-  dplyr::filter(REGION == 'West' & ! NAME %in% c('Montana', 'Washington', 'Idaho', 'Oregon', 'Wyoming') |
+  dplyr::filter(
+    REGION == 'West' & ! NAME %in% ## SW / South focus rm, Northern states
+      c('Montana', 'Washington', 'Idaho', 'Oregon', 'Wyoming') 
+    | ## OR -  to keep some of the steppe
    NAME %in% c('Oklahoma', 'Texas', 'Kansas')) |>
   dplyr::select(NAME, geometry) |>
   st_transform(4326)
@@ -83,12 +87,14 @@ ggplot() +
   theme(legend.position = 'bottom')
 ```
 
-![](WorkedExample_files/figure-html/check%20gbif%20data-1.png)
+![](WorkedExample_files/figure-html/quick%20basemap-1.png)
+
+Quickly check the data for obvious errors. One point’s location is
+incorrect; its latitude is clearly wrong - we removed it below.
 
 ``` r
-
 ## check the outlying record. 
-arrange(spp, by = decimalLatitude, desc=FALSE) |>
+arrange(spp, by = decimalLatitude, desc=TRUE) |>
   head(5) |>
   knitr::kable()
 ```
@@ -103,14 +109,18 @@ arrange(spp, by = decimalLatitude, desc=FALSE) |>
 
 ``` r
 
-## remove it based on it's latitude. 
+## remove the mis-geocoded record based on its latitude. 
 spp <- filter(spp, decimalLatitude <= 40)
 ```
 
-A few tools exist for quickly cleaning GBIF data; gatoRs is a recent,
-great choice.
+A few tools exist for quickly cleaning GBIF data we will not get into
+them here. However, tey should make cleaning and subsetting records much
+easier for users.
+[gatoRs](https://bsapubs.onlinelibrary.wiley.com/doi/full/10.1002/aps3.11575)
+is a recent package and great choice.
 
-Map the data again, and keep the ggplot around as a basemap for the rest
+Below we map the data again, - accounting for the removal of the
+mis-geocoded point, and keep the ggplot around as a basemap for the rest
 of the vignette.
 
 ``` r
@@ -123,21 +133,22 @@ western_states <- st_crop(western_states, bb)
 
 base <- ggplot() +
   geom_sf(data = western_states, color = 'white') +
-  geom_sf(data = spp, aes(color = species, fill = species)) +
+  geom_sf(data = spp, aes(color = species)) +
   theme_void() +
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom') + 
+  guides(color = guide_legend(nrow = 2))
 
 base
 ```
 
 ![](WorkedExample_files/figure-html/create%20basemap-1.png)
 
-### using safeHavens
+## using safeHavens
 
 Now we will use the safeHavens functionality in our setup environment
 with GBIF data.
 
-#### Create species ranges
+### Create species ranges
 
 We will showcase two methods for generating species-range geometries,
 which are used by most of the packages’ functions. Both of these rely on
@@ -191,11 +202,6 @@ base +
 
 ![](WorkedExample_files/figure-html/plot%20convex%20hulls-1.png)
 
-``` r
-
-rm(spp_convex)
-```
-
 For the sake of the example, we will use only the concave ranges with a
 ratio of 0.4 going forward.
 
@@ -209,19 +215,28 @@ eas <- spp_concave |>
   purrr::map(~ EqualAreaSample(.x, n = 10, pts = 250, planar_proj = 5070, reps = 25))
 
 base +
-  geom_sf(data = eas[[2]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
+  geom_sf(
+    data = eas[[2]][['Geometry']], 
+    aes(fill = factor(ID)), 
+    alpha = 0.2
+    ) +
+  labs(fill = 'region') 
 ```
 
 ![](WorkedExample_files/figure-html/perform%20sampling-1.png)
 
 The plot above shows only the results for *Vesper multinervatus*.
 
-Below, we perform isolation-by-distance (IBD)- based sampling.
+Below, we perform isolation-by-distance (IBD)- based sampling. It is
+called within a purr::map(~), operating on the spp_concave object. This
+could be swapped out for other safeHavens functions.
 
 ``` r
 # create an arbitrary template for example - best to do this over your real range of all species collections
 # so that it can be recycled across species. 
-template <- terra::rast(terra::ext(bb), crs = terra::crs(spp), resolution = c(0.1, 0.1))
+template <- terra::rast(
+  terra::ext(bb), crs = terra::crs(spp), resolution = c(0.1, 0.1)
+  )
 terra::values(template) <- 0
 
 # the species range now gets 'burned' into the raster template. 
@@ -237,7 +252,11 @@ ibd_samples <- spp_concave |>
   purrr::map(~ IBDBasedSample(.x, n = 10, fixedClusters = FALSE, template = template, planar_proj = 5070))
 
 base + ## visualize for a single taxon. 
-  geom_sf(data = ibd_samples[[1]][['Geometry']], aes(fill = factor(ID)), alpha = 0.2)
+  geom_sf(
+    data = ibd_samples[[1]][['Geometry']], 
+    aes(fill = factor(ID)), 
+    alpha = 0.2
+    )
 ```
 
 ![](WorkedExample_files/figure-html/ibd%20sampling-1.png)
@@ -245,7 +264,7 @@ base + ## visualize for a single taxon.
 The isolation-by-distance plot above highlights individual sample areas
 for *Bouteloua warnockii*.
 
-#### prioritize sample areas
+### prioritize sample areas
 
 In addition to creating spatial geometries to guide sampling efforts,
 `safeHavens` can also provide visual guidance on general areas where
@@ -275,7 +294,12 @@ ibd_samples_priority <- ibd_samples |>
   purrr::map(~ list(PrioritizeSample(.x, n_breaks = 3)))
 
 base + 
-  geom_sf(data = ibd_samples_priority[[2]][[1]][['Geometry']], aes(fill = factor(Level)), alpha = 0.2)
+  geom_sf(
+    data = ibd_samples_priority[[2]][[1]][['Geometry']], 
+    aes(fill = factor(Level)),
+    alpha = 0.2
+    ) +
+  labs(fill = 'Priority Level') 
 ```
 
 ![](WorkedExample_files/figure-html/prioritize%20sample%20areas-1.png)
@@ -284,7 +308,7 @@ The map above shows a possible general order to guide the prioritisation
 of individual sample areas, along with simplified visuals of where
 within those areas to target.
 
-#### wrapping up
+## wrapping up
 
 Upon completion of using safeHavens, results should be written to
 individual geopackages for long-term storage. A significant benefit of a
@@ -300,27 +324,67 @@ p2Collections <- file.path('~', 'Documents', 'WorkedExample_Output')
 dir.create(p2Collections, showWarnings = FALSE)
 
 ## we will only save the template raster once since it is recycled across taxa. 
-dir.create(file.path(p2Collections, 'IBD_raster_template'), showWarnings = FALSE)
-terra::writeRaster(template, 
-  filename = file.path(p2Collections, 'IBD_raster_template', 'IBD_template.tif'), overwrite = FALSE)
+dir.create(
+  file.path(p2Collections, 'IBD_raster_template'), 
+  showWarnings = FALSE
+  )
 
-## save each species as a unique geopackage. 
+terra::writeRaster(template, 
+  filename = file.path(
+    p2Collections, 'IBD_raster_template', 'IBD_template.tif'),
+    overwrite = FALSE)
+
+## save each species as a unique geopackage.
+## geopackage will keep contents from getting split up.  
 for(i in seq_along(sppL)){
 
-  fp = file.path(p2Collections, paste0(gsub(' ', '_', sppL[[i]]$species[1]), '.gpkg'))
+  fp = file.path(
+    p2Collections, 
+    paste0(gsub(' ', '_', sppL[[i]]$species[1]), '.gpkg')
+    )
 
   ### GBIF occurrence points
-  st_write(sppL[[i]], dsn = fp, layer =  'occurrence_points', quiet = TRUE)
+  st_write(
+    sppL[[i]], 
+    dsn = fp, 
+    layer = 'occurrence_points', 
+    quiet = TRUE
+    )
 
   ### results of equal area sampling  
-  st_write(eas[[i]]$Geometry,  dsn = fp, layer =  'equal_area_samples', quiet = TRUE, append = TRUE)
+  st_write(
+    eas[[i]]$Geometry, 
+    dsn = fp, 
+    layer =  'equal_area_samples', 
+    quiet = TRUE, 
+    append = TRUE
+    )
 
-  ### ibd based sample (note can be reconstruced from the hulls of ibd samples priority)
-  st_write(ibd_samples[[i]]$Geometry, dsn = fp, layer =  'ibd_samples', quiet = TRUE, append = TRUE)
+  ### ibd based sample (can be reconstructed from the hulls of ibd samples priority)
+  st_write(
+    ibd_samples[[i]]$Geometry, 
+    dsn = fp, 
+    layer =  'ibd_samples', 
+    quiet = TRUE, 
+    append = TRUE
+    )
 
   ### prioritized information for the IBD samples. 
-  st_write(ibd_samples_priority[[i]][[1]]$Geometry, dsn = fp, layer =  'ibd_sampling_priority', quiet = TRUE, append = TRUE)
+  st_write(
+    ibd_samples_priority[[i]][[1]]$Geometry, 
+    dsn = fp, 
+    layer =  'ibd_sampling_priority', 
+    quiet = TRUE, 
+    append = TRUE
+    )
 
-  message(format(object.size(fp), standard = "IEC", units = "MiB", digits = 4))
+ ## print object size of saved data. 
+  message(
+    format(
+      object.size(fp), 
+      standard = "IEC", 
+      units = "MiB",
+      digits = 4)
+      )
 }
 ```

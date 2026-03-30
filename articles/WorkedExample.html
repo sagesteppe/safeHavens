@@ -141,12 +141,15 @@ need is the R package.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span> <span class="co"># sub for lapplying functions across lists</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span> <span class="co">## for maps </span></span></code></pre></div>
 <p>Using <code>rgbif</code>, we’ll download occurrence data for a couple
-of species. This way, we can set up the code for mapping multiple
-species in a realistic manner.</p>
+of species, you can readily swap these out and supply a much longer list
+of species use their proper GBIF codes.</p>
+<p>This way, we can set up the code for mapping multiple species in a
+realistic manner.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## small subset of useful columns for example</span></span>
-<span><span class="va">cols</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'decimalLatitude'</span>, <span class="st">'decimalLongitude'</span>, <span class="st">'dateIdentified'</span>, <span class="st">'species'</span>, <span class="st">'acceptedScientificName'</span>, <span class="st">'datasetName'</span>, </span>
-<span>  <span class="st">'coordinateUncertaintyInMeters'</span>, <span class="st">'basisOfRecord'</span>, <span class="st">'institutionCode'</span>, <span class="st">'catalogNumber'</span><span class="op">)</span></span>
+<span><span class="va">cols</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'decimalLatitude'</span>, <span class="st">'decimalLongitude'</span>, <span class="st">'dateIdentified'</span>, <span class="st">'species'</span>, </span>
+<span>  <span class="st">'acceptedScientificName'</span>, <span class="st">'datasetName'</span>, <span class="st">'coordinateUncertaintyInMeters'</span>, </span>
+<span>  <span class="st">'basisOfRecord'</span>, <span class="st">'institutionCode'</span>, <span class="st">'catalogNumber'</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">## download species data using scientificName, can use keys and lookup tables for automating many taxa. </span></span>
 <span><span class="va">cymu</span> <span class="op">&lt;-</span> <span class="fu">rgbif</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/occ_search.html" class="external-link">occ_search</a></span><span class="op">(</span>scientificName <span class="op">=</span> <span class="st">"Vesper multinervatus"</span>, limit <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
@@ -167,14 +170,15 @@ species in a realistic manner.</p>
 <span><span class="co">## contrived multispecies example. </span></span>
 <span><span class="va">spp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">bowa_cols</span>, <span class="va">cymu_cols</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/drop_na.html" class="external-link">drop_na</a></span><span class="op">(</span><span class="va">decimalLatitude</span>, <span class="va">decimalLongitude</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># any missing coords need dropped. </span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span>coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">'decimalLongitude'</span>, <span class="st">'decimalLatitude'</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span>, remove <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">cymu</span>, <span class="va">bowa</span>, <span class="va">cols</span>, <span class="va">cymu_cols</span>, <span class="va">bowa_cols</span><span class="op">)</span></span></code></pre></div>
-<p>Quickly check the data for obvious errors. One point’s location is
-incorrect; its latitude is great - we removed it below.</p>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span>coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">'decimalLongitude'</span>, <span class="st">'decimalLatitude'</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span>, remove <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span></code></pre></div>
+<p>We will make a very quick and simple basemap for use in the
+vignette</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">western_states</span> <span class="op">&lt;-</span> <span class="fu">spData</span><span class="fu">::</span><span class="va"><a href="https://jakubnowosad.com/spData/reference/us_states.html" class="external-link">us_states</a></span> <span class="op">|&gt;</span> <span class="co">## for making a quick basemap. </span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">REGION</span> <span class="op">==</span> <span class="st">'West'</span> <span class="op">&amp;</span> <span class="op">!</span> <span class="va">NAME</span> <span class="op"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Montana'</span>, <span class="st">'Washington'</span>, <span class="st">'Idaho'</span>, <span class="st">'Oregon'</span>, <span class="st">'Wyoming'</span><span class="op">)</span> <span class="op">|</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
+<span>    <span class="va">REGION</span> <span class="op">==</span> <span class="st">'West'</span> <span class="op">&amp;</span> <span class="op">!</span> <span class="va">NAME</span> <span class="op"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">%in%</a></span> <span class="co">## SW / South focus rm, Northern states</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Montana'</span>, <span class="st">'Washington'</span>, <span class="st">'Idaho'</span>, <span class="st">'Oregon'</span>, <span class="st">'Wyoming'</span><span class="op">)</span> </span>
+<span>    <span class="op">|</span> <span class="co">## OR -  to keep some of the steppe</span></span>
 <span>   <span class="va">NAME</span> <span class="op"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Oklahoma'</span>, <span class="st">'Texas'</span>, <span class="st">'Kansas'</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">NAME</span>, <span class="va">geometry</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="fl">4326</span><span class="op">)</span></span>
@@ -184,11 +188,12 @@ incorrect; its latitude is great - we removed it below.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">spp</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color <span class="op">=</span> <span class="va">species</span>, shape <span class="op">=</span> <span class="va">species</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'bottom'</span><span class="op">)</span></span></code></pre></div>
-<p><img src="WorkedExample_files/figure-html/check%20gbif%20data-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="WorkedExample_files/figure-html/quick%20basemap-1.png" class="r-plt" alt="" width="700"></p>
+<p>Quickly check the data for obvious errors. One point’s location is
+incorrect; its latitude is clearly wrong - we removed it below.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="co">## check the outlying record. </span></span>
-<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">spp</span>, by <span class="op">=</span> <span class="va">decimalLatitude</span>, desc<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="co">## check the outlying record. </span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">spp</span>, by <span class="op">=</span> <span class="va">decimalLatitude</span>, desc<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -291,12 +296,15 @@ México</td>
 </table>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="co">## remove it based on it's latitude. </span></span>
+<span><span class="co">## remove the mis-geocoded record based on its latitude. </span></span>
 <span><span class="va">spp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">spp</span>, <span class="va">decimalLatitude</span> <span class="op">&lt;=</span> <span class="fl">40</span><span class="op">)</span></span></code></pre></div>
-<p>A few tools exist for quickly cleaning GBIF data; gatoRs is a recent,
-great choice.</p>
-<p>Map the data again, and keep the ggplot around as a basemap for the
-rest of the vignette.</p>
+<p>A few tools exist for quickly cleaning GBIF data we will not get into
+them here. However, tey should make cleaning and subsetting records much
+easier for users. <a href="https://bsapubs.onlinelibrary.wiley.com/doi/full/10.1002/aps3.11575" class="external-link">gatoRs</a>
+is a recent package and great choice.</p>
+<p>Below we map the data again, - accounting for the removal of the
+mis-geocoded point, and keep the ggplot around as a basemap for the rest
+of the vignette.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">spp</span>, <span class="fl">5070</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_buffer</a></span><span class="op">(</span><span class="fl">100000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -307,20 +315,22 @@ rest of the vignette.</p>
 <span></span>
 <span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">western_states</span>, color <span class="op">=</span> <span class="st">'white'</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">spp</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color <span class="op">=</span> <span class="va">species</span>, fill <span class="op">=</span> <span class="va">species</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">spp</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color <span class="op">=</span> <span class="va">species</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'bottom'</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">'bottom'</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>color <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_legend.html" class="external-link">guide_legend</a></span><span class="op">(</span>nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">base</span></span></code></pre></div>
 <p><img src="WorkedExample_files/figure-html/create%20basemap-1.png" class="r-plt" alt="" width="700"></p>
-<div class="section level3">
-<h3 id="using-safehavens">using safeHavens<a class="anchor" aria-label="anchor" href="#using-safehavens"></a>
-</h3>
+</div>
+<div class="section level2">
+<h2 id="using-safehavens">using safeHavens<a class="anchor" aria-label="anchor" href="#using-safehavens"></a>
+</h2>
 <p>Now we will use the safeHavens functionality in our setup environment
 with GBIF data.</p>
-<div class="section level4">
-<h4 id="create-species-ranges">Create species ranges<a class="anchor" aria-label="anchor" href="#create-species-ranges"></a>
-</h4>
+<div class="section level3">
+<h3 id="create-species-ranges">Create species ranges<a class="anchor" aria-label="anchor" href="#create-species-ranges"></a>
+</h3>
 <p>We will showcase two methods for generating species-range geometries,
 which are used by most of the packages’ functions. Both of these rely on
 the <code>st_concave_hull</code> function from <code>sf</code>.
@@ -363,32 +373,37 @@ narrow for both of these species.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">spp_convex</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">species</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">spp_convex</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">species</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="WorkedExample_files/figure-html/plot%20convex%20hulls-1.png" class="r-plt" alt="" width="700"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">spp_convex</span><span class="op">)</span></span></code></pre></div>
 <p>For the sake of the example, we will use only the concave ranges with
 a ratio of 0.4 going forward.</p>
-</div>
 </div>
 <div class="section level3">
 <h3 id="perform-sampling-for-the-species-ranges">Perform sampling for the species ranges<a class="anchor" aria-label="anchor" href="#perform-sampling-for-the-species-ranges"></a>
 </h3>
 <p>First, we will perform equal area sampling with a relatively small
 number of points and repetitions.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eas</span> <span class="op">&lt;-</span> <span class="va">spp_concave</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="op">~</span> <span class="fu"><a href="../reference/EqualAreaSample.html">EqualAreaSample</a></span><span class="op">(</span><span class="va">.x</span>, n <span class="op">=</span> <span class="fl">10</span>, pts <span class="op">=</span> <span class="fl">250</span>, planar_proj <span class="op">=</span> <span class="fl">5070</span>, reps <span class="op">=</span> <span class="fl">25</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">base</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">eas</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">eas</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span>, </span>
+<span>    alpha <span class="op">=</span> <span class="fl">0.2</span></span>
+<span>    <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">'region'</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="WorkedExample_files/figure-html/perform%20sampling-1.png" class="r-plt" alt="" width="700"></p>
 <p>The plot above shows only the results for <em>Vesper
 multinervatus</em>.</p>
-<p>Below, we perform isolation-by-distance (IBD)- based sampling.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Below, we perform isolation-by-distance (IBD)- based sampling. It is
+called within a purr::map(~), operating on the spp_concave object. This
+could be swapped out for other safeHavens functions.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># create an arbitrary template for example - best to do this over your real range of all species collections</span></span>
 <span><span class="co"># so that it can be recycled across species. </span></span>
-<span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/ext.html" class="external-link">ext</a></span><span class="op">(</span><span class="va">bb</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/crs.html" class="external-link">crs</a></span><span class="op">(</span><span class="va">spp</span><span class="op">)</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span></span>
+<span>  <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/ext.html" class="external-link">ext</a></span><span class="op">(</span><span class="va">bb</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/crs.html" class="external-link">crs</a></span><span class="op">(</span><span class="va">spp</span><span class="op">)</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="co"># the species range now gets 'burned' into the raster template. </span></span>
@@ -404,13 +419,18 @@ multinervatus</em>.</p>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="op">~</span> <span class="fu"><a href="../reference/IBDBasedSample.html">IBDBasedSample</a></span><span class="op">(</span><span class="va">.x</span>, n <span class="op">=</span> <span class="fl">10</span>, fixedClusters <span class="op">=</span> <span class="cn">FALSE</span>, template <span class="op">=</span> <span class="va">template</span>, planar_proj <span class="op">=</span> <span class="fl">5070</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">base</span> <span class="op">+</span> <span class="co">## visualize for a single taxon. </span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ibd_samples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">ibd_samples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span>, </span>
+<span>    alpha <span class="op">=</span> <span class="fl">0.2</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="WorkedExample_files/figure-html/ibd%20sampling-1.png" class="r-plt" alt="" width="700"></p>
 <p>The isolation-by-distance plot above highlights individual sample
 areas for <em>Bouteloua warnockii</em>.</p>
-<div class="section level4">
-<h4 id="prioritize-sample-areas">prioritize sample areas<a class="anchor" aria-label="anchor" href="#prioritize-sample-areas"></a>
-</h4>
+</div>
+<div class="section level3">
+<h3 id="prioritize-sample-areas">prioritize sample areas<a class="anchor" aria-label="anchor" href="#prioritize-sample-areas"></a>
+</h3>
 <p>In addition to creating spatial geometries to guide sampling efforts,
 <code>safeHavens</code> can also provide visual guidance on general
 areas where germplasm can be sampled to maximise the distance between
@@ -432,58 +452,102 @@ show concentric rings around the geographic centre of each sample unit.
 Keeping the number of rings low allows for some pragmatic communication
 of more desirable/less desirable portions of the range to ideally
 collect in.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ibd_samples_priority</span> <span class="op">&lt;-</span> <span class="va">ibd_samples</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="op">~</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">.x</span><span class="op">$</span><span class="va">Geometry</span>, <span class="fl">5070</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/PrioritizeSample.html">PrioritizeSample</a></span><span class="op">(</span><span class="va">.x</span>, n_breaks <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">base</span> <span class="op">+</span> </span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">ibd_samples_priority</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Level</span><span class="op">)</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">ibd_samples_priority</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">'Geometry'</span><span class="op">]</span><span class="op">]</span>, </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">Level</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    alpha <span class="op">=</span> <span class="fl">0.2</span></span>
+<span>    <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">'Priority Level'</span><span class="op">)</span> </span></code></pre></div>
 <p><img src="WorkedExample_files/figure-html/prioritize%20sample%20areas-1.png" class="r-plt" alt="" width="700"></p>
 <p>The map above shows a possible general order to guide the
 prioritisation of individual sample areas, along with simplified visuals
 of where within those areas to target.</p>
 </div>
-<div class="section level4">
-<h4 id="wrapping-up">wrapping up<a class="anchor" aria-label="anchor" href="#wrapping-up"></a>
-</h4>
+</div>
+<div class="section level2">
+<h2 id="wrapping-up">wrapping up<a class="anchor" aria-label="anchor" href="#wrapping-up"></a>
+</h2>
 <p>Upon completion of using safeHavens, results should be written to
 individual geopackages for long-term storage. A significant benefit of a
 geopackage is its ability to store multiple geometry types (polygons,
 points, rasters, etc.), which can be lost when stored in separate
 directories.</p>
 <p>Here is how to write out species data.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## create a directory to hold the outputs</span></span>
 <span><span class="va">p2Collections</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">'~'</span>, <span class="st">'Documents'</span>, <span class="st">'WorkedExample_Output'</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">p2Collections</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">## we will only save the template raster once since it is recycled across taxa. </span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p2Collections</span>, <span class="st">'IBD_raster_template'</span><span class="op">)</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">template</span>, </span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p2Collections</span>, <span class="st">'IBD_raster_template'</span>, <span class="st">'IBD_template.tif'</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p2Collections</span>, <span class="st">'IBD_raster_template'</span><span class="op">)</span>, </span>
+<span>  showWarnings <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="co">## save each species as a unique geopackage. </span></span>
+<span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">template</span>, </span>
+<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>    <span class="va">p2Collections</span>, <span class="st">'IBD_raster_template'</span>, <span class="st">'IBD_template.tif'</span><span class="op">)</span>,</span>
+<span>    overwrite <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## save each species as a unique geopackage.</span></span>
+<span><span class="co">## geopackage will keep contents from getting split up.  </span></span>
 <span><span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">sppL</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span></span>
-<span>  <span class="va">fp</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p2Collections</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">' '</span>, <span class="st">'_'</span>, <span class="va">sppL</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">species</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="st">'.gpkg'</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">fp</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span></span>
+<span>    <span class="va">p2Collections</span>, </span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">' '</span>, <span class="st">'_'</span>, <span class="va">sppL</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">species</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="st">'.gpkg'</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
 <span>  <span class="co">### GBIF occurrence points</span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span><span class="va">sppL</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>, dsn <span class="op">=</span> <span class="va">fp</span>, layer <span class="op">=</span>  <span class="st">'occurrence_points'</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span></span>
+<span>    <span class="va">sppL</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>, </span>
+<span>    dsn <span class="op">=</span> <span class="va">fp</span>, </span>
+<span>    layer <span class="op">=</span> <span class="st">'occurrence_points'</span>, </span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
 <span>  <span class="co">### results of equal area sampling  </span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span><span class="va">eas</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>,  dsn <span class="op">=</span> <span class="va">fp</span>, layer <span class="op">=</span>  <span class="st">'equal_area_samples'</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, append <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span></span>
+<span>    <span class="va">eas</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>, </span>
+<span>    dsn <span class="op">=</span> <span class="va">fp</span>, </span>
+<span>    layer <span class="op">=</span>  <span class="st">'equal_area_samples'</span>, </span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>    append <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
-<span>  <span class="co">### ibd based sample (note can be reconstruced from the hulls of ibd samples priority)</span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span><span class="va">ibd_samples</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>, dsn <span class="op">=</span> <span class="va">fp</span>, layer <span class="op">=</span>  <span class="st">'ibd_samples'</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, append <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="co">### ibd based sample (can be reconstructed from the hulls of ibd samples priority)</span></span>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span></span>
+<span>    <span class="va">ibd_samples</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>, </span>
+<span>    dsn <span class="op">=</span> <span class="va">fp</span>, </span>
+<span>    layer <span class="op">=</span>  <span class="st">'ibd_samples'</span>, </span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>    append <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
 <span>  <span class="co">### prioritized information for the IBD samples. </span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span><span class="va">ibd_samples_priority</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>, dsn <span class="op">=</span> <span class="va">fp</span>, layer <span class="op">=</span>  <span class="st">'ibd_sampling_priority'</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, append <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_write.html" class="external-link">st_write</a></span><span class="op">(</span></span>
+<span>    <span class="va">ibd_samples_priority</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">Geometry</span>, </span>
+<span>    dsn <span class="op">=</span> <span class="va">fp</span>, </span>
+<span>    layer <span class="op">=</span>  <span class="st">'ibd_sampling_priority'</span>, </span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>    append <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">fp</span><span class="op">)</span>, standard <span class="op">=</span> <span class="st">"IEC"</span>, units <span class="op">=</span> <span class="st">"MiB"</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span> <span class="co">## print object size of saved data. </span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">fp</span><span class="op">)</span>, </span>
+<span>      standard <span class="op">=</span> <span class="st">"IEC"</span>, </span>
+<span>      units <span class="op">=</span> <span class="st">"MiB"</span>,</span>
+<span>      digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span>      <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-</div>
-</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

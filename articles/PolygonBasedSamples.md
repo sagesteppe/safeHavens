@@ -24,7 +24,7 @@ a user wants to decouple the clustering process from the number of
 samples.
 
 ![Polygon Based Sampling
-workflow](images/PolygonBasedSample-workflow.svg)
+workflow](./images/PolygonBasedSample-workflow.svg)
 
 Polygon Based Sampling workflow
 

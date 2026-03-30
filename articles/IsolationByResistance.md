@@ -306,19 +306,19 @@ sdm <- terra::rast(
 plot(sdm['Predictions'])
 ```
 
-![](IsolationByResistance_files/figure-html/unnamed-chunk-3-1.png)
+![](IsolationByResistance_files/figure-html/read%20in%20sdm-1.png)
 
-Note that we will have to reverse the predictions from this layer;
-currently, higher values indicate a more suitable habitat. We want
-higher values in the probability surface function to indicate greater
-resistance to movement.
+We will have to reverse the predictions from this layer; currently,
+higher values indicate a more suitable habitat. We want higher values in
+the probability surface function to indicate greater resistance to
+movement.
 
 ``` r
 inverted_sdm <- 1 - sdm['Predictions']
 plot(inverted_sdm)
 ```
 
-![](IsolationByResistance_files/figure-html/unnamed-chunk-4-1.png)
+![](IsolationByResistance_files/figure-html/invert%20sdm-1.png)
 
 And indeed, we may actually just want to remove weights in a suitable
 habitat, or set them to an arbitrarily low value.
@@ -328,7 +328,7 @@ inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
 plot(inverted_sdm)
 ```
 
-![](IsolationByResistance_files/figure-html/unnamed-chunk-5-1.png)
+![](IsolationByResistance_files/figure-html/mask%20suitable%20habitat-1.png)
 
 And we will convert it to the same integer scale as the other
 predictors.
@@ -338,7 +338,7 @@ inverted_sdm = round(inverted_sdm * 100, 0)
 plot(inverted_sdm)
 ```
 
-![](IsolationByResistance_files/figure-html/unnamed-chunk-6-1.png)
+![](IsolationByResistance_files/figure-html/convert%20sdm%20to%20integer-1.png)
 
 Note that we will have to make sure our SDM aligns with the existing
 layers
@@ -351,7 +351,7 @@ inverted_sdm[is.na(inverted_sdm)] <- 99
 plot(inverted_sdm)
 ```
 
-![](IsolationByResistance_files/figure-html/unnamed-chunk-7-1.png)
+![](IsolationByResistance_files/figure-html/align%20sdm-1.png)
 
 #### non-linear weight
 
