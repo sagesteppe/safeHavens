@@ -193,6 +193,7 @@ Isolation by Distance is the fundamental idea behind this package.
 This function applies Isolation by Distance (IBD) without added parameters, creating clusters based solely on spatial genetic structure, not geographic spacing or area balancing, which distinguishes it from previous methods.
 
 Note that this function requires a raster, rather than a vector, input.
+Here we can prepare the surface. 
 
 ```{r Isolatation by Distance Example, warning=FALSE, message = FALSE}
 files <- list.files( 
@@ -206,7 +207,11 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 
 # and here we specify the field/column with our variable we want to become an attribute of our raster
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
+```
 
+Run the function here. 
+ 
+```{r Isolatation by Distance Example run, warning=FALSE, message=FALSE}
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(
     x = v, 
@@ -215,7 +220,11 @@ ibdbs <- IBDBasedSample(
     template = predictors, 
     planar_proj = planar_proj
     )
+```
 
+And plot the results below. 
+
+```{r plot ibd results,messsage=F,warning=F}
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
