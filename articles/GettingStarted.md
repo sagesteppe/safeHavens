@@ -206,6 +206,7 @@ geographic spacing or area balancing, which distinguishes it from
 previous methods.
 
 Note that this function requires a raster, rather than a vector, input.
+Here we can prepare the surface.
 
 ``` r
 files <- list.files( 
@@ -219,7 +220,11 @@ x_buff.sf <- sf::st_as_sf(x_buff) |>
 
 # and here we specify the field/column with our variable we want to become an attribute of our raster
 v <- terra::rasterize(x_buff.sf, predictors, field = 'Range') 
+```
 
+Run the function here.
+
+``` r
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(
     x = v, 
@@ -228,12 +233,18 @@ ibdbs <- IBDBasedSample(
     template = predictors, 
     planar_proj = planar_proj
     )
+```
 
+And plot the results below.
+
+``` r
 ibdbs.p <- map + 
   geom_sf(data = ibdbs[['Geometry']], aes(fill = factor(ID))) + 
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'IBDistance') + 
   coord_sf(expand = F)
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 
 ## for the sake of comparing areas below, we will intersect this to the same extents as the earlier surfaces. 
 ibdbs_crop <- sf::st_intersection(ibdbs[['Geometry']], sf::st_union(x_buff.sf))
@@ -242,11 +253,13 @@ ibdbs.p2 <- map +
 #  geom_sf_label(data = os.sf, aes(label = ID), alpha = 0.4) + 
   labs(title = 'IBDistance') + 
   coord_sf(expand = F)
+ [1m [22mCoordinate system already present.
+ [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 
 ibdbs.p
 ```
 
-![](GettingStarted_files/figure-html/Isolatation%20by%20Distance%20Example-1.png)
+![](GettingStarted_files/figure-html/plot%20ibd%20results-1.png)
 
 Because results are derived from rasters, clusters have straight lines
 and 90-degree corners. Despite the raster effects, cluster borders look
