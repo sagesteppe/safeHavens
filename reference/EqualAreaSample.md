@@ -82,7 +82,7 @@ system.time(
 #> Warning: did not converge in 10 iterations
 #> Warning: did not converge in 10 iterations
 #>    user  system elapsed 
-#>   5.211   0.020   5.232 
+#>   5.312   0.019   5.333 
 
 plot(nc, main = 'Counties of North Carolina')
 

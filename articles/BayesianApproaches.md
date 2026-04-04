@@ -583,6 +583,114 @@ loo_probs <- tibble(
 Running PSIS to compute weights
 Recompiling the model with 'rstan'
 Recompilation done
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
+Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
+returning -Inf
 # Get posterior predicted probabilities
 pred_probs <- sdModel$TrainData |>
   add_epred_draws(sdModel$Model, ndraws = 100) |>
