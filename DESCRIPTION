@@ -46,6 +46,7 @@ Imports:
     dplyr,
     fields,
     glmnet,
+    matrixStats,
     NbClust,
     nptest,
     posterior,

@@ -65,7 +65,7 @@
 #' @param iter Integer. Total iterations per chain (including warmup). Defaults
 #'   to `5000`.
 #' @param warmup Integer. Warmup iterations per chain. Defaults to `1000`.
-#' @param cores Integer. Parallel cores. Defaults to `parallel::detectCores()`.
+#' @param cores Integer. Parallel cores. Defaults to 4.
 #' @param k Integer. Number of spatial CV folds (CAST `knndm`). Defaults to
 #'   `5`.
 #' @param seed Integer. Random seed for reproducibility. Defaults to `42`.
@@ -610,80 +610,43 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
 #' @return List: `mean` SpatRaster, `sd` SpatRaster, `pred_matrix` data.frame
 #' @keywords internal
 #' @noRd
-create_bayes_spatial_predictions <- function(
-  fit,
-  predictors,
-  pred_names,
-  planar_projection,
-  iter
-) {
-  # Build coordinate rasters in planar projection (km scale)
+create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
+                                              planar_projection, iter) {
   template <- predictors[[1]]
-  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c(
-    "x",
-    "y"
-  )]
-
-  # Project to planar km
-  coords_vect <- terra::vect(
-    coords_lonlat,
-    geom = c("x", "y"),
-    crs = terra::crs(predictors)
-  )
+  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
+  coords_vect <- terra::vect(coords_lonlat, geom = c("x", "y"), crs = terra::crs(predictors))
   coords_proj <- terra::project(coords_vect, planar_projection)
   coords_km <- terra::crds(coords_proj) / 1000
 
-  # Create coordinate rasters
   gp_x_rast <- terra::rast(template)
   gp_y_rast <- terra::rast(template)
   terra::values(gp_x_rast) <- coords_km[, 1]
   terra::values(gp_y_rast) <- coords_km[, 2]
   names(gp_x_rast) <- "gp_x"
   names(gp_y_rast) <- "gp_y"
-
-  # Combine predictors with coordinate rasters
   pred_stack <- c(predictors[[pred_names]], gp_x_rast, gp_y_rast)
 
-  # Custom predict function for terra
-  # terra passes data as a data.frame with column names matching raster layer names
+  ndraws_use <- min(round(iter / 2, 0), 500L)
+
   predict_mean_sd <- function(model, data, ...) {
-    # Subsample posterior for speed
-    epred <- brms::posterior_epred(
-      model,
-      newdata = data,
-      allow_new_levels = TRUE,
-      ndraws = round(iter / 2, 0)
-    )
-    # Return both mean and sd as a 2-column matrix
-    cbind(
-      mean = colMeans(epred),
-      sd = apply(epred, 2, stats::sd)
-    )
+    epred <- brms::posterior_epred(model, newdata = data,
+      allow_new_levels = TRUE, ndraws = ndraws_use)
+    cbind(mean = colMeans(epred), sd = matrixStats::colSds(epred))
   }
 
-  # Let terra handle all the chunking/memory management
-  result <- terra::predict(
-    pred_stack,
-    model = fit,
-    fun = predict_mean_sd,
-    na.rm = TRUE,
-    cores = 1 # brms isn't thread-safe for this, keep sequential
-  )
+  old_memfrac <- terra::terraOptions()$memfrac
+  terra::terraOptions(memfrac = 0.05)
+  on.exit(terra::terraOptions(memfrac = old_memfrac))
 
-  # Split into separate rasters
+  result <- terra::predict(pred_stack, model = fit, fun = predict_mean_sd,
+    na.rm = TRUE, cores = 1)
+
   rast_mean <- result[[1]]
-  rast_sd <- result[[2]]
+  rast_sd   <- result[[2]]
   names(rast_mean) <- "occurrence_prob_mean"
-  names(rast_sd) <- "occurrence_prob_sd"
-
-  # Build pred_matrix for downstream compatibility
+  names(rast_sd)   <- "occurrence_prob_sd"
   pred_vals <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
-
-  list(
-    mean = rast_mean,
-    sd = rast_sd,
-    pred_matrix = pred_vals
-  )
+  list(mean = rast_mean, sd = rast_sd, pred_matrix = pred_vals)
 }
 
 
