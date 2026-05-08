@@ -139,7 +139,7 @@ rm(cols, western_states)
 
 ```{r download data, echo = FALSE}
 # Download WorldClim bioclim at ~10 km
-geodata_path()
+geodata_path('.')
 bio_current <- worldclim_global(var="bioc", res=2.5)
 
 bio_future <- cmip6_world(
