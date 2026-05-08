@@ -112,6 +112,7 @@ Do note that the source also includes a ~1km at-equator resolution data set (30 
 
 ```{r download data}
 # Download WorldClim bioclim at ~10 km
+geodata_path()
 bio_current <- worldclim_global(var="bioc", res=2.5)
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method
