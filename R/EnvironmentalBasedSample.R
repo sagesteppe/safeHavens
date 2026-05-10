@@ -51,6 +51,7 @@ EnvironmentalBasedSample <- function(
   max.nc = 20,
   ...
 ) {
+  planar_proj <- planar_proj_terra(planar_proj)
   # Add weighted coordinates to predictors
   # nocov start
   pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)

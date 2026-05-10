@@ -697,9 +697,7 @@ project_consensus_to_raster <- function(
   mask_rast,
   planar_proj
 ) {
-  if (is.numeric(planar_proj)) {
-    planar_proj <- paste0('epsg:', planar_proj)
-  }
+  planar_proj <- planar_proj_terra(planar_proj)
 
   zero_beta_vars <- env_vars[abs(mean_betas[env_vars]) < .Machine$double.eps]
   if (length(zero_beta_vars) > 0L) {

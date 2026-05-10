@@ -528,7 +528,7 @@ project_future_draws <- function(
     geom = c("x", "y"),
     crs  = terra::crs(future_predictors)
   )
-  coords_proj <- terra::project(coords_vect, planar_proj)
+  coords_proj <- terra::project(coords_vect, planar_proj_terra(planar_proj))
   coords_km   <- terra::crds(coords_proj) / 1000
 
   gp_x_rast <- terra::rast(template)
