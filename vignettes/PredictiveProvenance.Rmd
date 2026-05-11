@@ -111,15 +111,7 @@ We will download the coarse 2.5-minute resolution data, ca. ~70km at the equator
 Do note that the source also includes a ~1km at-equator resolution data set (30 seconds), but this would take too long for the vignette.
 
 ```{r deal with geodata path, echo=F}
-local({
-  old <- Sys.getenv("HOME")
-  on.exit(Sys.setenv(HOME = old))
-  td <- tempdir()
-  Sys.setenv(HOME = td)
-  # geodata_path writes its config to a subdirectory — ensure it exists
-  dir.create(file.path(td, ".config", "R", "geodata"), recursive = TRUE, showWarnings = FALSE)
-  geodata::geodata_path(td)
-})
+options(geodata_default_path = tempdir())
 ```
 
 ```{r download data}
