@@ -102,7 +102,7 @@ jobs:
       # used writeLines which fails on Ubuntu runners. Install from GitHub
       # until 0.6-10 is on CRAN, then replace with a min-version in DESCRIPTION.
       - name: Install geodata dev version
-        run: remotes::install_github("rspatial/geodata")
+        run: pak::pkg_install("rspatial/geodata")
         shell: Rscript {0}
 
       - name: Install vignette Suggests
