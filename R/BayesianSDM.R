@@ -315,7 +315,7 @@ bayesianSDM <- function(
   rast_list <- create_bayes_spatial_predictions(
     fit,
     predictors,
-    planar_projection = paste0('EPSG:', planar_projection),
+    planar_projection = planar_proj_terra(planar_projection),
     pred_names,
     iter
   )
@@ -615,7 +615,7 @@ create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
   template <- predictors[[1]]
   coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
   coords_vect <- terra::vect(coords_lonlat, geom = c("x", "y"), crs = terra::crs(predictors))
-  coords_proj <- terra::project(coords_vect, planar_projection)
+  coords_proj <- terra::project(coords_vect, planar_proj_terra(planar_projection))
   coords_km <- terra::crds(coords_proj) / 1000
 
   gp_x_rast <- terra::rast(template)

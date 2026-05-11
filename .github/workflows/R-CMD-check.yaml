@@ -98,10 +98,17 @@ jobs:
       # ── Suggests needed by vignettes (skipped by dependencies: '"hard"') ───
       # geodata, DiagrammeR, rgbif etc. are Suggests so setup-r-dependencies
       # won't install them under hard mode — install them explicitly here.
+      # geodata 0.6-10 (GitHub) uses options() for path config; 0.6-9 (CRAN)
+      # used writeLines which fails on Ubuntu runners. Install from GitHub
+      # until 0.6-10 is on CRAN, then replace with a min-version in DESCRIPTION.
+      - name: Install geodata dev version
+        run: pak::pkg_install("rspatial/geodata")
+        shell: Rscript {0}
+
       - name: Install vignette Suggests
         run: |
           install.packages(c(
-            "geodata", "ggplot2", "patchwork", "spData",
+            "ggplot2", "patchwork", "spData",
             "DiagrammeR", "rgbif", "purrr", "tidyr",
             "sp", "lwgeom", "gstat", "MASS", "lattice",
             "withr", "rlang", "BH", "collapse","DHARMa",

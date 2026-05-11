@@ -110,9 +110,12 @@ For our future scenario, we will use the [CMIP6](https://wcrp-cmip.org/cmip-phas
 We will download the coarse 2.5-minute resolution data, ca. ~70km at the equator.
 Do note that the source also includes a ~1km at-equator resolution data set (30 seconds), but this would take too long for the vignette.
 
+```{r deal with geodata path, echo=F}
+options(geodata_default_path = tempdir())
+```
+
 ```{r download data}
 # Download WorldClim bioclim at ~10 km
-geodata_path(tempdir())
 bio_current <- worldclim_global(var="bioc", res=2.5)
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method

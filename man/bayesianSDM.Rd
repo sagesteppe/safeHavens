@@ -96,7 +96,7 @@ to \code{5000}.}
 
 \item{warmup}{Integer. Warmup iterations per chain. Defaults to \code{1000}.}
 
-\item{cores}{Integer. Parallel cores. Defaults to \code{parallel::detectCores()}.}
+\item{cores}{Integer. Parallel cores. Defaults to 4.}
 
 \item{k}{Integer. Number of spatial CV folds (CAST \code{knndm}). Defaults to
 \code{5}.}
