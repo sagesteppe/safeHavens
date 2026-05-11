@@ -141,8 +141,11 @@ rm(cols, western_states)
 local({
   old <- Sys.getenv("HOME")
   on.exit(Sys.setenv(HOME = old))
-  Sys.setenv(HOME = tempdir())
-  geodata::geodata_path(tempdir())
+  td <- tempdir()
+  Sys.setenv(HOME = td)
+  # geodata_path writes its config to a subdirectory — ensure it exists
+  dir.create(file.path(td, ".config", "R", "geodata"), recursive = TRUE, showWarnings = FALSE)
+  geodata::geodata_path(td)
 })
 ```
 
