@@ -137,9 +137,17 @@ bmap +
 rm(cols, western_states)
 ```
 
+```{r deal with geodata path, echo =F}
+local({
+  old <- Sys.getenv("HOME")
+  on.exit(Sys.setenv(HOME = old))
+  Sys.setenv(HOME = tempdir())
+  geodata::geodata_path(tempdir())
+})
+```
+
 ```{r download data, echo = FALSE}
 # Download WorldClim bioclim at ~10 km
-geodata_path(tempdir())
 bio_current <- worldclim_global(var="bioc", res=2.5)
 
 bio_future <- cmip6_world(
