@@ -23,6 +23,7 @@ for larger data downloads, but for this example, all you need is the R
 package.
 
 ``` r
+
 library(safeHavens)
 library(sf) # spatial data
 library(rgbif) # species occurrence data.
@@ -41,6 +42,7 @@ This way, we can set up the code for mapping multiple species in a
 realistic manner.
 
 ``` r
+
 ## small subset of useful columns for example
 cols = c('decimalLatitude', 'decimalLongitude', 'dateIdentified', 'species', 
   'acceptedScientificName', 'datasetName', 'coordinateUncertaintyInMeters', 
@@ -53,7 +55,7 @@ cymu <- rgbif::occ_search(scientificName = "Vesper multinervatus", limit = 1000)
 table( cymu[['data']]['geodeticDatum']) 
 geodeticDatum
 WGS84 
-  729 
+  732 
 
 ## subset the data to relevant columns 
 cymu_cols <- cymu[['data']][,cols]
@@ -71,6 +73,7 @@ spp <- bind_rows(bowa_cols, cymu_cols) |>
 We will make a very quick and simple basemap for use in the vignette
 
 ``` r
+
 western_states <- spData::us_states |> ## for making a quick basemap. 
   dplyr::filter(
     REGION == 'West' & ! NAME %in% ## SW / South focus rm, Northern states
@@ -93,21 +96,23 @@ Quickly check the data for obvious errors. One point’s location is
 incorrect; its latitude is clearly wrong - we removed it below.
 
 ``` r
+
 ## check the outlying record. 
 arrange(spp, by = decimalLatitude, desc=TRUE) |>
   head(5) |>
   knitr::kable()
 ```
 
-| decimalLatitude | decimalLongitude | dateIdentified | species             | acceptedScientificName              | datasetName                                                                                                  | coordinateUncertaintyInMeters | basisOfRecord      | institutionCode | catalogNumber | geometry                   |
-|----------------:|-----------------:|:---------------|:--------------------|:------------------------------------|:-------------------------------------------------------------------------------------------------------------|------------------------------:|:-------------------|:----------------|:--------------|:---------------------------|
-|        26.24360 |        -102.8460 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology                                                                                          |                            NA | PRESERVED_SPECIMEN | US              | US 3419592    | POINT (-102.846 26.2436)   |
-|        26.24361 |        -102.8461 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México                                                        |                            50 | PRESERVED_SPECIMEN | CIIDIR-IPN      | 13158         | POINT (-102.8461 26.24361) |
-|        26.24361 |        -102.8461 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Computarización de colecciones y adquisición de infraestructura (mobiliario) para el herbario CIIDIR-Durango |                            NA | PRESERVED_SPECIMEN | CIIDIR-IPN      | 34657         | POINT (-102.8461 26.24361) |
-|        26.30530 |        -101.3430 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology                                                                                          |                            NA | PRESERVED_SPECIMEN | US              | US 3481177    | POINT (-101.343 26.3053)   |
-|        26.30833 |        -101.3583 | NA             | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México                                                        |                            50 | PRESERVED_SPECIMEN | UAAAN           | 18673         | POINT (-101.3583 26.30833) |
+| decimalLatitude | decimalLongitude | dateIdentified | species | acceptedScientificName | datasetName | coordinateUncertaintyInMeters | basisOfRecord | institutionCode | catalogNumber | geometry |
+|---:|---:|:---|:---|:---|:---|---:|:---|:---|:---|:---|
+| 26.24360 | -102.8460 | NA | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology | NA | PRESERVED_SPECIMEN | US | US 3419592 | POINT (-102.846 26.2436) |
+| 26.24361 | -102.8461 | NA | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México | 50 | PRESERVED_SPECIMEN | CIIDIR-IPN | 13158 | POINT (-102.8461 26.24361) |
+| 26.24361 | -102.8461 | NA | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Computarización de colecciones y adquisición de infraestructura (mobiliario) para el herbario CIIDIR-Durango | NA | PRESERVED_SPECIMEN | CIIDIR-IPN | 34657 | POINT (-102.8461 26.24361) |
+| 26.30530 | -101.3430 | NA | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | NMNH Extant Biology | NA | PRESERVED_SPECIMEN | US | US 3481177 | POINT (-101.343 26.3053) |
+| 26.30833 | -101.3583 | NA | Bouteloua warnockii | Bouteloua warnockii Gould & Kapadia | Estudio biosistemático del género Bouteloua de México | 50 | PRESERVED_SPECIMEN | UAAAN | 18673 | POINT (-101.3583 26.30833) |
 
 ``` r
+
 
 ## remove the mis-geocoded record based on its latitude. 
 spp <- filter(spp, decimalLatitude <= 40)
@@ -124,6 +129,7 @@ mis-geocoded point, and keep the ggplot around as a basemap for the rest
 of the vignette.
 
 ``` r
+
 bb <- st_transform(spp, 5070) |>
   st_buffer(100000) |>
   st_transform(4326) |>
@@ -159,6 +165,7 @@ ratio = 0.0 creates a true concave hull. Results below a ratio of 0.4
 appear too narrow for both of these species.
 
 ``` r
+
 sppL <- split(spp, f = spp$species)
 
 concavities <- function(x, d, rat){
@@ -185,6 +192,7 @@ rm(concavities)
 Visualize the concave hulls.
 
 ``` r
+
 base +
   geom_sf(data = spp_concave[[1]], aes(fill = species), alpha = 0.2) +
   geom_sf(data = spp_concave[[2]],  aes(fill = species), alpha = 0.2) 
@@ -195,6 +203,7 @@ base +
 Visualize the convex hulls.
 
 ``` r
+
 base +
   geom_sf(data = spp_convex[[1]],  aes(fill = species), alpha = 0.2) +
   geom_sf(data = spp_convex[[2]], aes(fill = species), alpha = 0.2) 
@@ -211,6 +220,7 @@ First, we will perform equal area sampling with a relatively small
 number of points and repetitions.
 
 ``` r
+
 eas <- spp_concave |>
   purrr::map(~ EqualAreaSample(.x, n = 10, pts = 250, planar_proj = 5070, reps = 25))
 
@@ -232,6 +242,7 @@ called within a purr::map(~), operating on the spp_concave object. This
 could be swapped out for other safeHavens functions.
 
 ``` r
+
 # create an arbitrary template for example - best to do this over your real range of all species collections
 # so that it can be recycled across species. 
 template <- terra::rast(
@@ -289,6 +300,7 @@ of more desirable/less desirable portions of the range to ideally
 collect in.
 
 ``` r
+
 ibd_samples_priority <- ibd_samples |>
   purrr::map(~ st_transform(.x$Geometry, 5070)) |> 
   purrr::map(~ list(PrioritizeSample(.x, n_breaks = 3)))
@@ -319,6 +331,7 @@ directories.
 Here is how to write out species data.
 
 ``` r
+
 ## create a directory to hold the outputs
 p2Collections <- file.path('~', 'Documents', 'WorkedExample_Output')
 dir.create(p2Collections, showWarnings = FALSE)

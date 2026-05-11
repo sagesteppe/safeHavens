@@ -7,6 +7,7 @@
 Load the required packages.
 
 ``` r
+
 library(safeHavens)
 library(ggplot2) ## plotting 
 library(patchwork) ## multiplots
@@ -17,6 +18,7 @@ For this vignette, we will use the Bradypus data included in the `dismo`
 package.
 
 ``` r
+
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
@@ -40,6 +42,7 @@ site_id, coord_uncertainty, lon, and lat. Please verify your data frame
 includes each of these columns to ensure proper function performance.
 
 ``` r
+
 n_sites <- nrow(x) 
 df <- data.frame(
   site_id = seq_len(n_sites),
@@ -73,6 +76,7 @@ distance matrix derived from the first two axes of a PCA, as described
 in more detail below.
 
 ``` r
+
 dist_mat <- sapply(seq_len(nrow(df)), function(i) {
    greatCircleDistance(
      df$lat[i], df$lon[i],
@@ -90,6 +94,7 @@ nature preserves that support the germplasm collection by already
 possessing samples or guaranteed access.
 
 ``` r
+
 dists2c <- greatCircleDistance(
   median(df$lat), 
   median(df$lon), 
@@ -106,6 +111,7 @@ ranging from 1 km to 40 km. Coordinate uncertainty is always measured in
 meters.
 
 ``` r
+
 uncertain_sites <- sample(
   setdiff(seq_len(n_sites), 
   which(df$required)), 
@@ -162,14 +168,15 @@ will take longer with more complex scenarios. We recommend using at
 least 999 bootstraps for real-world applications.
 
 ``` r
+
 knitr::kable(st)
 ```
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 26.805 |
-| sys.self   |  0.053 |
-| elapsed    | 26.860 |
+| user.self  | 26.480 |
+| sys.self   |  0.059 |
+| elapsed    | 26.546 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
@@ -208,6 +215,7 @@ The stability score shows how often the most frequently selected network
 of sites was selected from the bootstrapped runs.
 
 ``` r
+
 knitr::kable(head(geo_res$stability_score))
 ```
 
@@ -219,6 +227,7 @@ The stability data frame records how many times each site is selected
 during all bootstrap runs.
 
 ``` r
+
 knitr::kable(head(geo_res$stability))
 ```
 
@@ -235,21 +244,23 @@ Many users may find that combining their input data with a few columns
 is all they need to continue after the results.
 
 ``` r
+
 knitr::kable(head(geo_res$input_data))
 ```
 
-|     | site_id | required | coord_uncertainty |      lon |      lat | certain | cooccur_strength | is_seed | selected | sample_rank |
-|:----|--------:|:---------|------------------:|---------:|---------:|:--------|-----------------:|:--------|:---------|------------:|
-| 47  |      47 | TRUE     |              0.00 | -74.3000 |   4.5833 | FALSE   |               40 | TRUE    | TRUE     |           1 |
-| 21  |      21 | FALSE    |              0.00 | -55.1333 |  -2.8333 | FALSE   |               28 | FALSE   | TRUE     |           2 |
-| 5   |       5 | FALSE    |              0.00 | -63.8500 | -17.4000 | FALSE   |               24 | FALSE   | FALSE    |           3 |
-| 83  |      83 | FALSE    |          37283.66 | -79.8167 |   9.1667 | FALSE   |               20 | FALSE   | TRUE     |           4 |
-| 100 |     100 | FALSE    |          13616.63 | -74.0833 |  -2.3667 | FALSE   |               20 | FALSE   | FALSE    |           4 |
-| 6   |       6 | FALSE    |              0.00 | -64.4167 | -16.0000 | FALSE   |               16 | FALSE   | TRUE     |           5 |
+|  | site_id | required | coord_uncertainty | lon | lat | certain | cooccur_strength | is_seed | selected | sample_rank |
+|:---|---:|:---|---:|---:|---:|:---|---:|:---|:---|---:|
+| 47 | 47 | TRUE | 0.00 | -74.3000 | 4.5833 | FALSE | 40 | TRUE | TRUE | 1 |
+| 21 | 21 | FALSE | 0.00 | -55.1333 | -2.8333 | FALSE | 28 | FALSE | TRUE | 2 |
+| 5 | 5 | FALSE | 0.00 | -63.8500 | -17.4000 | FALSE | 24 | FALSE | FALSE | 3 |
+| 83 | 83 | FALSE | 37283.66 | -79.8167 | 9.1667 | FALSE | 20 | FALSE | TRUE | 4 |
+| 100 | 100 | FALSE | 13616.63 | -74.0833 | -2.3667 | FALSE | 20 | FALSE | FALSE | 4 |
+| 6 | 6 | FALSE | 0.00 | -64.4167 | -16.0000 | FALSE | 16 | FALSE | TRUE | 5 |
 
 Run parameters are saved in the settings element.
 
 ``` r
+
 knitr::kable(head(geo_res$settings))
 ```
 
@@ -262,6 +273,7 @@ knitr::kable(head(geo_res$settings))
 We can plot the required and selected site locations.
 
 ``` r
+
 map + 
   geom_point(data = geo_res$input_data, 
   aes(
@@ -286,6 +298,7 @@ combinations are found and articulated in the results for site
 locations.
 
 ``` r
+
 map + 
   geom_point(data = geo_res$input_data, 
     aes(
@@ -322,6 +335,7 @@ First, to facilitate environmental distance calculations, we read in the
 required raster layers.
 
 ``` r
+
 files <- list.files(
   path = file.path(system.file(package="dismo"), 'ex'), 
   pattern = 'grd',  full.names=TRUE )
@@ -349,6 +363,7 @@ From the above, we see that the first two PCA axes account for a large
 portion of the variance observed in this landscape.
 
 ``` r
+
 terra::plot(terra::subset(pca_raster, 1:2)) # prediction of the pca onto a new raster
 ```
 
@@ -361,6 +376,7 @@ distance calculation for these, as the values are truly in the position
 of the pca plot.
 
 ``` r
+
 env_values <- terra::extract(pca_raster, 
   sf::st_coordinates(
     sf::st_as_sf(
@@ -379,6 +395,7 @@ We’ll ensure that these data are in a proper matrix format for feeding
 into the function.
 
 ``` r
+
 env_dist_mat <- as.matrix(
     dist(env_values)
   )
@@ -415,20 +432,22 @@ This run takes longer than the runs with only the geographic distance
 matrix.
 
 ``` r
+
 knitr::kable(st)
 ```
 
 |            |      x |
 |:-----------|-------:|
-| user.self  | 34.649 |
-| sys.self   |  0.009 |
-| elapsed    | 34.663 |
+| user.self  | 35.050 |
+| sys.self   |  0.001 |
+| elapsed    | 35.056 |
 | user.child |  0.000 |
 | sys.child  |  0.000 |
 
 The environmental distance run takes about 10 seconds longer.
 
 ``` r
+
 knitr::kable(head(env_res$stability_score))
 ```
 
@@ -445,6 +464,7 @@ relationship between geographic and environmental distance is somewhat
 strong in this landscape.
 
 ``` r
+
 map + 
   geom_point(data = env_res$input_data, 
     aes(
@@ -474,6 +494,7 @@ local changes, as the effects of drift are overcome by more frequent
 dispersal.
 
 ``` r
+
 dens <- with(df, MASS::kde2d(lon, lat, n = 200))
 max_idx <- which(dens$z == max(dens$z), arr.ind = TRUE)[1,]
 max_point <- c(dens$x[max_idx[1]], dens$y[max_idx[2]])
@@ -488,6 +509,7 @@ Alternatively, we can identify the population which is closest to the
 ‘centre’ of the environmental variable space.
 
 ``` r
+
 env_centered <- sweep(env_values, 2, sapply(env_values, median), "-")
 env_centered_id <- which.min(rowSums(abs(env_centered^2)))
 
@@ -500,6 +522,7 @@ bias, and you may want to check that the recorded populations are
 deduplicated to account for this.
 
 ``` r
+
 # geographic centroid was pt 47
 centers <- df[ c(env_centered_id, pop_centered_id, 47), ] 
 centers$type <- c('Environmental', 'Population', 'Geographic')

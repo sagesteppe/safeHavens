@@ -46,17 +46,17 @@ thousand of species overnight, with the faster methods, should be
 possible. The table below presents the currently implemented sampling
 scheme and the user-facing function associated with them.
 
-| Function                   | Description                             | Comp. | Envi. |
-|----------------------------|-----------------------------------------|-------|-------|
-| `PointBasedSample`         | Creates points to make grids over area  | L     | L     |
-| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
-| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
-| `IBDBasedSample`           | Breaks species range into clusters      | H     | L     |
-| `IBRSurface`               | Breaks species range into clusters      | H     | M     |
-| `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
-| `KMedoidsBasedSample`      | For rare species with known occurrences | M     | M     |
-| `PosteriorCluster`         | Uses posteriors from an SDM to cluster  | H     | H     |
+| Function | Description | Comp. | Envi. |
+|----|----|----|----|
+| `PointBasedSample` | Creates points to make grids over area | L | L |
+| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
+| `OpportunisticSample` | Using PBS with existing records | L | L |
+| `IBDBasedSample` | Breaks species range into clusters | H | L |
+| `IBRSurface` | Breaks species range into clusters | H | M |
+| `PolygonBasedSample` | Using existing ecoregions or STZs | L | H |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
+| `KMedoidsBasedSample` | For rare species with known occurrences | M | M |
+| `PosteriorCluster` | Uses posteriors from an SDM to cluster | H | H |
 
 ### geographic distance
 
@@ -168,5 +168,6 @@ also requiring C++ toolkits. These can take a few minutes to figure out.
 `safeHavens` can be installed from GitHub with `remotes`.
 
 ``` r
+
 remotes::install_github('sagesteppe/safeHavens') 
 ```

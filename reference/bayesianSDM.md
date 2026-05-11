@@ -167,8 +167,7 @@ bayesianSDM(
 
 - cores:
 
-  Integer. Parallel cores. Defaults to
-  [`parallel::detectCores()`](https://rdrr.io/r/parallel/detectCores.html).
+  Integer. Parallel cores. Defaults to 4.
 
 - k:
 

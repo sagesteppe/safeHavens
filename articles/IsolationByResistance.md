@@ -36,6 +36,7 @@ tri (terrain ruggedness index), Amatulli et al. 2018,
 <https://www.earthenv.org/topography>
 
 ``` r
+
 library(safeHavens)
 library(sf) ## vector operations
 library(terra) ## raster operations
@@ -46,6 +47,7 @@ library(ggplot2) ## plotting
 We’ll load the species occurrence data and make it explicitly spatial.
 
 ``` r
+
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
@@ -62,6 +64,7 @@ need to be converted from vector to raster formats - a process we call
 similar numeric scale to the other datasets.
 
 ``` r
+
 tri <- terra::rast(file.path(system.file(package = "safeHavens"), "extdata", "tri.tif"))
 names(tri) <- 'tri'
 
@@ -100,6 +103,7 @@ We’ll convert each of the above spatVect objects to spatRasters and clip
 them to an analysis area around our species records.
 
 ``` r
+
 x_buff <- sf::st_transform(x, planar_proj) |>
   # huge buffer for the bbox. 
   st_buffer(200000) |> 
@@ -119,6 +123,7 @@ Convert the vector data to raster format using terra’s `rasterise`
 function.
 
 ``` r
+
 ocean_r <- rasterize(ocean_v, tri, field = 'Value', background = 0.1)
 lakes_r <- rasterize(lakes_v, tri, field = 'Value',  background = 0.1)
 rivers_r <- rasterize(rivers_v, tri, field = 'Value',  background = 0.1)
@@ -133,6 +138,7 @@ plot(tri)
 ![](IsolationByResistance_files/figure-html/rasterize%20data-1.png)
 
 ``` r
+
 par(mfrow=c(1,1))
 
 rm(ocean_v, lakes_v, rivers_v)
@@ -159,6 +165,7 @@ hand; although an ecologist with experience in this region may beg to
 differ, and I would not argue with them.
 
 ``` r
+
 res_surface <- buildResistanceSurface(
   base_raster = rast(ocean_r), # template
 
@@ -221,6 +228,7 @@ names(pop_res_graphs)
 Buffered locations appear as shown; IDs are meaningless.
 
 ``` r
+
 plot(pop_res_graphs$pop_raster)
 ```
 
@@ -230,6 +238,7 @@ This function underperforms with user-prespecified `n`; passing `min.nc`
 to NbClust generally yields the analyst-specified value.
 
 ``` r
+
 ibr_groups <- IBRSurface(
   base_raster = rast(ocean_r),
   resistance_surface = res_surface, 
@@ -245,6 +254,7 @@ ibr_groups <- IBRSurface(
 Clustering results are shown below.
 
 ``` r
+
 classified_pts = ibr_groups$points
 plot(res_surface)
 points(
@@ -261,6 +271,7 @@ points(
 Occupied area clusters are visualised below.
 
 ``` r
+
 ggplot() +
   geom_sf(data = ibr_groups$geometry, aes(fill = factor(ID))) + 
   theme_minimal()
@@ -273,6 +284,7 @@ union the geometries to be the species range, and supply the groups to
 the x argument, in lieu of an ecoregion or pSTZ-type surface.
 
 ``` r
+
 out <- PolygonBasedSample(
   x = st_union(ibr_groups$geometry),
   zones = ibr_groups$geometry, 
@@ -300,6 +312,7 @@ We will also show another way to add the topographic ruggedness index
 that bypasses the assumed linear relationship in the weighting scheme.
 
 ``` r
+
 sdm <- terra::rast(
   file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
   )
@@ -314,6 +327,7 @@ the probability surface function to indicate greater resistance to
 movement.
 
 ``` r
+
 inverted_sdm <- 1 - sdm['Predictions']
 plot(inverted_sdm)
 ```
@@ -324,6 +338,7 @@ And indeed, we may actually just want to remove weights in a suitable
 habitat, or set them to an arbitrarily low value.
 
 ``` r
+
 inverted_sdm <- terra::ifel(inverted_sdm < 0.5, 0.01, inverted_sdm)
 plot(inverted_sdm)
 ```
@@ -334,6 +349,7 @@ And we will convert it to the same integer scale as the other
 predictors.
 
 ``` r
+
 inverted_sdm = round(inverted_sdm * 100, 0)
 plot(inverted_sdm)
 ```
@@ -344,6 +360,7 @@ Note that we will have to make sure our SDM aligns with the existing
 layers
 
 ``` r
+
 inverted_sdm <- crop(inverted_sdm, ocean_r)
 inverted_sdm <- resample(inverted_sdm, ocean_r)
 inverted_sdm[is.na(inverted_sdm)] <- 99
@@ -360,6 +377,7 @@ movement. Indeed, something like terrain ruggedness may have only a
 small effect until reaching an asymptote.
 
 ``` r
+
 x <- 1:100
 rs <- function(x, to = c(0, 100)) {
   rng <- range(x, na.rm = TRUE)
@@ -382,6 +400,7 @@ We will apply a fourth-order polynomial to the input tri data to
 accommodate a non-linear effect.
 
 ``` r
+
 tri_rscl <- app(tri, function(x) { rs(x^2, to = c(1, 80)) })
 
 par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
@@ -394,6 +413,7 @@ plot(tri_rscl, main = 'Rescaled')
 And we can create a new resistance surface
 
 ``` r
+
 res_surface <- buildResistanceSurface(
 
   base_raster = rast(ocean_r), # template

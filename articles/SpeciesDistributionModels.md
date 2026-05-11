@@ -45,6 +45,7 @@ are well documented, and maintained.
 #### prep data
 
 ``` r
+
 library(safeHavens)
 ```
 
@@ -58,6 +59,7 @@ in `dismo` we use a built in data set for *Bradypus variegatus*
 provided in `dismo` as well.
 
 ``` r
+
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
@@ -83,6 +85,7 @@ create a buffer around each occurrence point. Points outside of this
 buffer are used pseudo-absences.
 
 ``` r
+
 sdModel <- elasticSDM(
   x = x,
   predictors = predictors,
@@ -159,6 +162,7 @@ Consider the output from CVStructure to be a bit more realistic.
 #### binarize the output
 
 ``` r
+
 terra::plot(sdModel$RasterPredictions)
 ```
 
@@ -221,6 +225,7 @@ with increasing the distances greatly is that the sampling methods may
 then puts grids in many areas without populations to collect from.
 
 ``` r
+
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
@@ -235,6 +240,7 @@ We can compare the results of applying this function side by side using
 the output from the function.
 
 ``` r
+
 terra::plot(threshold_rasts$FinalRasters)
 ```
 
@@ -260,6 +266,7 @@ these beta coefficients with the `writeSDMresults` function right
 afterwards.
 
 ``` r
+
 rr <- RescaleRasters(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -292,6 +299,7 @@ it is best practice to save many of these objects.
 #### save results
 
 ``` r
+
 bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
 
 writeSDMresults(

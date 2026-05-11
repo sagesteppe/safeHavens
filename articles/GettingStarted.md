@@ -8,10 +8,12 @@ same species.
 `safeHavens` can be installed directly from github.
 
 ``` r
+
 # remotes::install_github('sagesteppe/safeHavens') 
 ```
 
 ``` r
+
 library(safeHavens)
 library(sf) ## vector operations
 library(terra) ## raster operations
@@ -36,6 +38,7 @@ Below we will use `sf` to simply buffer occurrence points to create a
 species range across multiple South American nations.
 
 ``` r
+
 x <- read.csv(file.path(system.file(package="dismo"), 'ex', 'bradypus.csv'))
 x <- x[,c('lon', 'lat')]
 x <- sf::st_as_sf(x, coords = c('lon', 'lat'), crs = 4326)
@@ -95,15 +98,15 @@ Now that we have some data which can represent species ranges, we can
 run the various sampling approaches. The table in the introduction is
 reproduced here.
 
-| Function                   | Description                             | Comp. | Envi. |
-|----------------------------|-----------------------------------------|-------|-------|
-| `PointBasedSample`         | Creates points to make pieces over area | L     | L     |
-| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
-| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
-| `KMedoidsBasedSample`      | Use ecoregions or STSz for sample       | L     | M     |
-| `IBDBasedSample`           | Breaks species range into clusters      | H     | M     |
-| `PolygonBasedSample`       | Using existing ecoregions to sample     | L     | H     |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
+| Function | Description | Comp. | Envi. |
+|----|----|----|----|
+| `PointBasedSample` | Creates points to make pieces over area | L | L |
+| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
+| `OpportunisticSample` | Using PBS with existing records | L | L |
+| `KMedoidsBasedSample` | Use ecoregions or STSz for sample | L | M |
+| `IBDBasedSample` | Breaks species range into clusters | H | M |
+| `PolygonBasedSample` | Using existing ecoregions to sample | L | H |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
 
 *Note in this table ‘Comp.’ and ‘Envi.’ refer to computational and
 environmental complexity respectively, and range from low (L) through
@@ -118,6 +121,7 @@ differentiator. It will work very well for common species without many
 gaps in their distributions.
 
 ``` r
+
 pbs <- PointBasedSample(x_buff, reps = 50, BS.reps = 333)
 pbs.sf <- pbs[['Geometry']]
 
@@ -149,6 +153,7 @@ points and relies on area-balancing clustering. This allows for more
 equally sized regions.
 
 ``` r
+
 eas <- EqualAreaSample(x_buff, planar_proj = planar_proj) 
 
 eas.p <- map + 
@@ -175,6 +180,7 @@ somewhat similar results, so we used the `PointBasedSample` as the
 framework for embedding in this function.
 
 ``` r
+
 exist_pts <- sf::st_sample(x_buff, size = 10) |> 
    sf::st_as_sf() |> # ^^ randomly sampling 10 points in the species range
    dplyr::rename(geometry = x)
@@ -209,6 +215,7 @@ Note that this function requires a raster, rather than a vector, input.
 Here we can prepare the surface.
 
 ``` r
+
 files <- list.files( 
   path = file.path(system.file(package="dismo"), 'ex'),
   pattern = 'grd',  full.names=TRUE ) 
@@ -225,6 +232,7 @@ v <- terra::rasterize(x_buff.sf, predictors, field = 'Range')
 Run the function here.
 
 ``` r
+
 # now we run the function demanding 20 areas to make accessions from, 
 ibdbs <- IBDBasedSample(
     x = v, 
@@ -310,6 +318,7 @@ our example, we call ‘neo_eco’; this may be the only field with ecolevel
 information!
 
 ``` r
+
 neo_eco <- sf::st_read(
   file.path(system.file(package="safeHavens"), 'extdata', 'NeoTropicsEcoregions.gpkg'), 
   quiet = TRUE) |>
@@ -329,6 +338,7 @@ head(st_drop_geometry(neo_eco)[,c('Provincias', 'Dominio', 'Subregion')]) |>
 | Caatinga province         | Chacoan      | Chacoan                        |
 
 ``` r
+
 
 x_buff <- sf::st_transform(x_buff, sf::st_crs(neo_eco))
 ebs.sf <- PolygonBasedSample(x_buff, zones = neo_eco, n = 20, zone_key = 'Provincias')
@@ -359,6 +369,7 @@ this vignette.
 Here, we load the results of the sdm processing from the package data.
 
 ``` r
+
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'sdModel.rds')
   )
@@ -371,6 +382,7 @@ sdModel$PCNM <- terra::unwrap(sdModel$PCNM)
 And load the threshold predictions
 
 ``` r
+
 sdm <- terra::rast(
   file.path(system.file(package="safeHavens"), 'extdata',  'SDM_thresholds.tif')
   )
@@ -481,6 +493,7 @@ similar to me when plotted one after another. Let’s plot them together
 and see if that’s still the case.
 
 ``` r
+
 pbs.p + eas.p + os.p  +  ibdbs.p2 + ibr.p + ENVIbs.p + 
   plot_layout(ncol = 3)
 ```

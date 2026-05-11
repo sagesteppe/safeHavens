@@ -44,6 +44,7 @@ data. `geodata` is developed and maintained by Robert Hijman, similar to
 on our functions.
 
 ``` r
+
 library(safeHavens)
 library(sf) ## vector operations
 library(terra) ## raster operations
@@ -127,6 +128,7 @@ but this would take too long for the vignette.
 ``` r
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
+Cached as: /tmp/RtmpRKmU90/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method
   ssp   = "245", ## "Middle of the Road" scenario
@@ -134,6 +136,7 @@ bio_future <- cmip6_world(
   var   = "bioc", # just use the bioclim variables
   res   = 2.5
 )
+Cached as: /tmp/RtmpRKmU90/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
 
 # Crop to domain - use a large BB to accomodate range shift
 # under future time points. 
@@ -186,6 +189,7 @@ can diff the two products to see where the largest changes occur in
 geographic space.
 
 ``` r
+
 pct_diff <- function(x, y){((x - y)/((x + y)/2)) * 100}
 difference <- pct_diff(bio_current, bio_future)
 plot(difference)
@@ -251,23 +255,27 @@ compare <- data.frame(
 compare[is.na(compare)] <- 0
 compare$cv <- apply(compare[,-1], 1, function(x) sd(x)/mean(x))
 print(compare)
-           var        run1        run2        run3          cv
-1  (Intercept)  0.96113090  1.63123033  1.63123033  0.27480078
-2       bio_03 -0.03427818 -0.05265923 -0.05265923 -0.22806355
-3       bio_15  0.00000000  0.00000000  0.00000000         NaN
-4       bio_14  0.00000000  0.00000000  0.00000000         NaN
-5       bio_16  0.00000000  0.00000000  0.00000000         NaN
-6       bio_04  0.00000000  0.00000000  0.00000000         NaN
-7       bio_08  0.02953026  0.03609195  0.03609195  0.11173640
-8       bio_13  0.00000000  0.00000000  0.00000000         NaN
-9       bio_07  0.00000000  0.00000000  0.00000000         NaN
-10      bio_06  0.00000000  0.00000000  0.00000000         NaN
-11      bio_01  0.00000000  0.00000000  0.00000000         NaN
-12      bio_10  0.00000000  0.00000000  0.00000000         NaN
-13       PCNM4 18.21217043 15.51873776 15.51873776  0.09472479
-14       PCNM9  0.00000000  0.00000000  0.00000000         NaN
-15       PCNM2  0.00000000 -4.77088194 -4.77088194 -0.86602540
-16       PCNM1  0.00000000  6.78260977  6.78260977  0.86602540
+           var        run1          run2          run3         cv
+1  (Intercept) 40.39976332  4.870494e+00  4.870494e+00  1.2273151
+2       bio_15 -0.21638898 -4.935768e-03 -4.935768e-03 -1.6186992
+3       bio_06 -1.79013711  0.000000e+00  0.000000e+00 -1.7320508
+4       bio_14 -0.40912337  0.000000e+00  0.000000e+00 -1.7320508
+5       bio_19 -0.05222452  0.000000e+00  0.000000e+00 -1.7320508
+6       bio_16  0.07622092  0.000000e+00  0.000000e+00  1.7320508
+7       bio_18 -0.02635047  0.000000e+00  0.000000e+00 -1.7320508
+8       bio_07 -0.62896352  0.000000e+00  0.000000e+00 -1.7320508
+9       bio_03 -0.57492789 -1.373735e-01 -1.373735e-01 -0.8919489
+10      bio_09  0.03504658  0.000000e+00  0.000000e+00  1.7320508
+11      bio_01  1.76209086  0.000000e+00  0.000000e+00  1.7320508
+12      bio_04 -0.02115389  4.134668e-04  4.134668e-04 -1.8377448
+13      bio_17  0.06551926  0.000000e+00  0.000000e+00  1.7320508
+14       PCNM1  9.67291420  0.000000e+00  0.000000e+00  1.7320508
+15       PCNM2 -0.17546042 -1.202533e+01 -1.202533e+01 -0.8472085
+16      bio_13  0.00000000  0.000000e+00  0.000000e+00        NaN
+17      bio_08  0.00000000  2.704826e-02  2.704826e-02  0.8660254
+18       PCNM4  0.00000000  1.266518e+01  1.266518e+01  0.8660254
+19       PCNM7  0.00000000  1.070483e+01  1.070483e+01  0.8660254
+20       PCNM9  0.00000000  0.000000e+00  0.000000e+00        NaN
 ```
 
 We will use the eSDM_model function for this workstream; however, it is
@@ -280,18 +288,20 @@ predictors to try and maintain `eDist` usage (just for this step), but
 if this fails will fall back to the eRandom method instead.
 
 ``` r
+
 knitr::kable(eSDM_model$ConfusionMatrix$byClass[
   c('Sensitivity', 'Specificity', 'Recall', 'Balanced Accuracy')])
 ```
 
 |                   |         x |
 |:------------------|----------:|
-| Sensitivity       | 0.7200000 |
-| Specificity       | 0.8461538 |
-| Recall            | 0.7200000 |
-| Balanced Accuracy | 0.7830769 |
+| Sensitivity       | 0.8000000 |
+| Specificity       | 0.8846154 |
+| Recall            | 0.8000000 |
+| Balanced Accuracy | 0.8423077 |
 
 ``` r
+
 plot(eSDM_model$RasterPredictions)
 ```
 
@@ -311,6 +321,7 @@ current and future scenarios to have an idea of expectations for the
 final results.
 
 ``` r
+
 bio_current_rs <- RescaleRasters(
     model = eSDM_model$Model, 
     predictors = eSDM_model$Predictors,
@@ -324,6 +335,7 @@ plot(bio_current_rs$RescaledPredictors)
 ![](PredictiveProvenance_files/figure-html/rescale%20rasters-1.png)
 
 ``` r
+
 
 bio_future_rs <- rescaleFuture(
   eSDM_model$Model, 
@@ -346,6 +358,7 @@ we can take the absolute difference between the relevant raster layers
 to see where the largest changes occur.
 
 ``` r
+
 difference_rs <- pct_diff(bio_current_rs$RescaledPredictors, bio_future_rs)
 plot(difference_rs)
 ```
@@ -364,6 +377,7 @@ FALSE. When using `PostProcessSDM`, the same `thresh metric` should be
 used as the one applied to `PredictiveProvenance`.
 
 ``` r
+
 threshold_rasts <- PostProcessSDM(
   rast_cont = eSDM_model$RasterPredictions, 
   test = eSDM_model$TestData,
@@ -380,14 +394,16 @@ plot(threshold_rasts$FinalRasters)
 ![](PredictiveProvenance_files/figure-html/identify%20current%20clusters-1.png)
 
 ``` r
+
 knitr::kable(threshold_rasts$Threshold$equal_sens_spec)
 ```
 
 |         x |
 |----------:|
-| 0.4329911 |
+| 0.4841719 |
 
 ``` r
+
 
 bmap + 
   geom_sf(data = 
@@ -409,6 +425,7 @@ PCNM, we cannot know the distribution of actual populations in the
 future.
 
 ``` r
+
 ENVIbs <- EnvironmentalBasedSample(
   pred_rescale = bio_current_rs$RescaledPredictors, 
   write2disk = FALSE, # we are not writing, but showing how to provide some arguments
@@ -428,6 +445,7 @@ ENVIbs <- EnvironmentalBasedSample(
 ![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-1.png)![](PredictiveProvenance_files/figure-html/EnvironmentalBasedSample-2.png)
 
 ``` r
+
 bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) + 
   geom_sf(data = hemi) + 
@@ -444,6 +462,7 @@ this workflow; it requires the outputs from `elasticSDM`,
 `PostProcessSDM`, and `EnvironmentalBasedSample`.
 
 ``` r
+
 future_clusts <- projectClusters(
   eSDM_object = eSDM_model, 
   current_clusters = ENVIbs,
@@ -476,9 +495,11 @@ future_clusts <- projectClusters(
     * 6 proposed 2 as the best number of clusters 
     * 9 proposed 3 as the best number of clusters 
     * 1 proposed 4 as the best number of clusters 
-    * 2 proposed 6 as the best number of clusters 
-    * 1 proposed 7 as the best number of clusters 
-    * 2 proposed 20 as the best number of clusters 
+    * 2 proposed 8 as the best number of clusters 
+    * 1 proposed 9 as the best number of clusters 
+    * 1 proposed 10 as the best number of clusters 
+    * 1 proposed 18 as the best number of clusters 
+    * 3 proposed 20 as the best number of clusters 
 
                        ***** Conclusion *****                            
      
@@ -494,12 +515,14 @@ performance cannot be evaluated. However, it seems these may be suitable
 habitats, and we can plan for that scenario.
 
 ``` r
+
 plot(future_clusts$mess)
 ```
 
 ![](PredictiveProvenance_files/figure-html/plot%20the%20mess%20surfaces-1.png)
 
 ``` r
+
 bmap +
   geom_sf(data = 
     st_as_sf(terra::as.polygons(future_clusts$novel_mask)), 
@@ -513,6 +536,7 @@ Once we identify these areas, if they are sufficiently large, we can
 pass them to a new NbClust scenario, and it can cluster them anew.
 
 ``` r
+
 current = bmap + 
   geom_sf(data = ENVIbs$Geometry, aes(fill = factor(ID))) +
   labs(title = 'Current', fill = 'Cluster') +
@@ -534,14 +558,14 @@ clusters share branches with existing clusters. This is the method we
 employ to identify the most similar existing climate groups.
 
 ``` r
+
 knitr::kable(future_clusts$novel_similarity)
 ```
 
 | novel_cluster_id | nearest_existing_id | avg_silhouette_width |
 |-----------------:|--------------------:|---------------------:|
-|                6 |                   1 |            0.5741401 |
-|                7 |                   3 |            0.6024110 |
-|                8 |                   3 |            0.4904208 |
+|                6 |                  NA |            0.4976980 |
+|                7 |                   4 |            0.3029438 |
 
 It is from these groups that we are most likely to collect germplasm
 relevant to the future scenarios.
@@ -552,14 +576,13 @@ the scenarios.
 ``` r
 future_clusts$changes
   cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
-1          1       264982.720      164724.153       -37.83589          105.4912
-2          2        24891.179       15001.703       -39.73084          457.0139
-3          3         3258.544       14966.825       359.31026          308.2902
-4          4        17708.734        3071.195       -82.65717          410.5232
-5          5        22110.327           0.000      -100.00000                NA
-6          6            0.000        4205.958              NA                NA
-7          7            0.000        2747.455              NA                NA
-8          8            0.000        3837.947              NA                NA
+1          1         2371.401     261064.0458     10908.85347          659.7835
+2          2       247188.684      24052.8597       -90.26943          238.2640
+3          3        16975.136      13171.8144       -22.40525          472.3144
+4          4        27177.277      40894.9478        50.47478           52.5251
+5          5        20421.344       2302.5222       -88.72492         1063.9605
+6          6            0.000       1988.8601              NA                NA
+7          7            0.000        778.4415              NA                NA
 ```
 
 ## Conclusion

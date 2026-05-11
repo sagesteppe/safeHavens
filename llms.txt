@@ -48,17 +48,17 @@ The following table shows the eight sampling approaches available in
 safeHavens, with their computational complexity (Comp.) and
 environmental data complexity5 (Envi.): L = Low, M = Medium, H = High.
 
-| Function                   | Description                             | Comp. | Envi. |
-|----------------------------|-----------------------------------------|-------|-------|
-| `PointBasedSample`         | Creates points to make grids over area  | L     | L     |
-| `EqualAreaSample`          | Breaks area into similar size pieces    | L     | L     |
-| `OpportunisticSample`      | Using PBS with existing records         | L     | L     |
-| `IBDBasedSample`           | Breaks species range into clusters      | H     | L     |
-| `IBRSurface`               | Breaks species range into clusters      | H     | M     |
-| `PolygonBasedSample`       | Using existing ecoregions or STZs       | L     | H     |
-| `EnvironmentalBasedSample` | Uses correlations from SDM to sample    | H     | H     |
-| `KMedoidsBasedSample`      | For rare species with known occurrences | M     | M     |
-| `PosteriorCluster`         | Uses posteriors from an SDM to cluster  | H     | H     |
+| Function | Description | Comp. | Envi. |
+|----|----|----|----|
+| `PointBasedSample` | Creates points to make grids over area | L | L |
+| `EqualAreaSample` | Breaks area into similar size pieces | L | L |
+| `OpportunisticSample` | Using PBS with existing records | L | L |
+| `IBDBasedSample` | Breaks species range into clusters | H | L |
+| `IBRSurface` | Breaks species range into clusters | H | M |
+| `PolygonBasedSample` | Using existing ecoregions or STZs | L | H |
+| `EnvironmentalBasedSample` | Uses correlations from SDM to sample | H | H |
+| `KMedoidsBasedSample` | For rare species with known occurrences | M | M |
+| `PosteriorCluster` | Uses posteriors from an SDM to cluster | H | H |
 
 An overview of the functionality in the package is below.
 

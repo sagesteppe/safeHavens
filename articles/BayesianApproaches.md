@@ -46,6 +46,7 @@ This ensures the focus remains on the distinct Bayesian approach
 discussed in the sections above.
 
 ``` r
+
 library(safeHavens)
 library(sf) ## vector operations
 library(terra) ## raster operations
@@ -61,6 +62,9 @@ library(tidybayes) ## various posterior plots
 
 ![](BayesianApproaches_files/figure-html/prep%20basemap-1.png)
 
+    Cached as: /tmp/Rtmpapopec/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
+    Cached as: /tmp/Rtmpapopec/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
+
 ### fit the model
 
 Here we fit as SDM using `bayesianSDM`. For arguments, it requires
@@ -70,6 +74,7 @@ calculate distances between occurrence data and possible pseudo-absence
 points.
 
 ``` r
+
 sdModel <- bayesianSDM( 
   x = hemi,
   pca_predictors = FALSE,
@@ -88,6 +93,7 @@ Load a run of the model described above for the sake of this vignettes
 processing speed.
 
 ``` r
+
 sdModel <- readRDS(
   file.path(system.file(package="safeHavens"), 'extdata',  'BayesSDM.rds')
   )
@@ -112,6 +118,7 @@ parameters.
 Plot the predictions
 
 ``` r
+
 sdm_td <- sdModel$TrainData
 
 par(mfrow = c(1, 2))
@@ -127,6 +134,7 @@ points(vect(sdm_td[sdm_td$occurrence==0,]),col = 'red', cex = 0.5)
 ![](BayesianApproaches_files/figure-html/Explore%20SDM%20output%20-%20Different%20alpha-1.png)
 
 ``` r
+
 par(mfrow = c(1, 1))
 ```
 
@@ -176,6 +184,7 @@ Similar to `elasticSDM`, we also have an area of applicability and other
 surfaces from CAST.
 
 ``` r
+
 plot(sdModel$AOA)
 ```
 
@@ -207,6 +216,7 @@ distribution, the results show the model was able to learn some
 important characteristics of the species.
 
 ``` r
+
 knitr::kable(sdModel$ConfusionMatrix$byClass)
 ```
 
@@ -241,6 +251,7 @@ The Bayesian SDM is post-processed using the same `PostProcessSDM`
 function as the elasticSDM workflow.
 
 ``` r
+
 threshold_rasts <- PostProcessSDM(
   rast_cont = sdModel$RasterPredictions, 
   test = sdModel$TestData,
@@ -252,14 +263,15 @@ threshold_rasts <- PostProcessSDM(
 knitr::kable(threshold_rasts$Threshold)
 ```
 
-|            |    kappa | spec_sens | no_omission | prevalence | equal_sens_spec | sensitivity |
-|:-----------|---------:|----------:|------------:|-----------:|----------------:|------------:|
-| thresholds | 0.220913 |  0.220913 |   0.0510473 |  0.2444197 |       0.2866278 |   0.2444197 |
+|  | kappa | spec_sens | no_omission | prevalence | equal_sens_spec | sensitivity |
+|:---|---:|---:|---:|---:|---:|---:|
+| thresholds | 0.220913 | 0.220913 | 0.0510473 | 0.2444197 | 0.2866278 | 0.2444197 |
 
 We can compare the results of applying this function side by side using
 the function’s output.
 
 ``` r
+
 terra::plot(threshold_rasts$FinalRasters)
 ```
 
@@ -271,6 +283,7 @@ The `bayesianSDM` requires a different function from elasticSDM for
 creating weighted surfaces, with the suffix `RescaleRasters_bayes`.
 
 ``` r
+
 rr <- RescaleRasters_bayes(
   model = sdModel$Model,
   predictors = sdModel$Predictors, 
@@ -288,6 +301,7 @@ An optionally returned layer (via `include_uncertainty` = TRUE) depicts
 areas with greater uncertainty towards the prediction.
 
 ``` r
+
 plot(subset(rr$RescaledPredictors, 'coef_uncertainty'))
 ```
 
@@ -297,6 +311,7 @@ We can also show the variables that contributed the most to the sdm
 models’ predictions, along with their signs.
 
 ``` r
+
 knitr::kable(
   rr$BetaCoefficients[ 
     order(abs(rr$BetaCoefficients$Estimate),decreasing = T), 
@@ -348,6 +363,7 @@ higher proportions had higher colocation scores than those with lower
 proportions.
 
 ``` r
+
 plot(current_cluster$SummaryRaster$stability, main = 'Cluster Stability')
 points(current_cluster$SamplePoints, cex = 0.1)
 ```
@@ -374,6 +390,7 @@ language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.
 
 ``` r
+
 par(mfrow = c(1, 3))
 plot(as.factor(current_cluster$SummaryRaster$consensus), main = 'Consensus')
 plot(current_cluster$RankRaster$rank2_final, main = '2nd most')
@@ -383,6 +400,7 @@ plot(current_cluster$RankRaster$rank3_final, main = '3rd most')
 ![](BayesianApproaches_files/figure-html/view%20top%203%20ranks%20side%20by%20side-1.png)
 
 ``` r
+
 par(mfrow = c(1,1))
 ```
 
@@ -392,6 +410,7 @@ writeSDMresults can also be used to save most of the core SDM output
 from the Bayesian workflow.
 
 ``` r
+
 bp <- '~/Documents/assoRted/StrategizingGermplasmCollections'
 
 writeSDMresults(
@@ -458,6 +477,7 @@ Warning: [spatSample] fewer cells returned than requested
 We visualize the results for the current and future scenarios below.
 
 ``` r
+
 nCl = seq(max(future_rescaled$Geometry$ID))
 full_pal = c(
   '#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -532,6 +552,7 @@ The following three plots all come directly from brms and versions for
 checking the posteriors predictions.
 
 ``` r
+
 brms::pp_check(sdModel$Model, ndraws = 10) + 
   labs(title = 'stuff') + 
   theme_navy() +
@@ -545,6 +566,7 @@ brms::pp_check(sdModel$Model, ndraws = 10) +
 ![](BayesianApproaches_files/figure-html/pp%20checks%201-1.png)
 
 ``` r
+
 brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) + 
   labs(title = 'more') + 
   theme_navy() +
@@ -558,6 +580,7 @@ brms::pp_check(sdModel$Model, type = "bars", ndraws = 10) +
 ![](BayesianApproaches_files/figure-html/pp%20checks%202-1.png)
 
 ``` r
+
 brms::pp_check(sdModel$Model, type = "stat", stat = "mean") + 
   labs(title = 'more') + 
   theme_navy()  +
@@ -699,6 +722,7 @@ pred_probs <- sdModel$TrainData |>
 ```
 
 ``` r
+
 loo_probs |>
   mutate(bin = cut(pred_prob, breaks = 10)) |>
   group_by(bin) |>
@@ -724,6 +748,7 @@ Bayesian methods allow for a posterior AUC distribution, these
 complement a mean point approach.
 
 ``` r
+
 pred_probs |>
   group_by(.draw) |>
   summarise(
@@ -775,6 +800,7 @@ perfect discrimination. The plot below will roughly tie into the ideas
 behind the threshold metrics used in `PostProcessSDM`.
 
 ``` r
+
 loo_probs |>
   ggplot(aes(x = pred_prob, fill = observed)) +
   stat_halfeye(alpha = 0.6) +
@@ -795,6 +821,7 @@ assumptions of indepdenence of individual errors are violated using
 DHARMa.
 
 ``` r
+
 sims <- brms::posterior_predict(sdModel$Model, ndraws = 500)
 
 dharma_res <- createDHARMa(
@@ -812,6 +839,7 @@ We can see the simulated posterior effect of each predictor on the
 models outcome.
 
 ``` r
+
 spr_draw <- sdModel$Model |>
   spread_draws(`b_.*`, regex = TRUE) |>
   select(starts_with('b_bio')) 
@@ -837,6 +865,7 @@ show the uncertainty around the effect of each variable on the species
 distribution.
 
 ``` r
+
 spr_draw |>
   mutate(across(everything(), scale)) |>
   pivot_longer(
@@ -899,6 +928,7 @@ Warning:  [1m [22mUsing alpha for a discrete variable is not advised.
 ![](BayesianApproaches_files/figure-html/marginal%20effects%20plot-1.png)
 
 ``` r
+
 
 update_geom_defaults("line", list(colour = "black"))
 ```
