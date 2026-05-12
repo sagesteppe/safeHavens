@@ -256,7 +256,7 @@ bayesianSDM <- function(
   env_terms <- paste(pred_names, collapse = " + ")
   bf_formula <- stats::as.formula(
     sprintf(
-      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp', k = 50)",
+      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp')",
       env_terms
     )
   )
