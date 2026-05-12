@@ -313,11 +313,11 @@ bayesianSDM <- function(
   # ── 13. Spatial raster predictions ───────────────────────────────────────────
   # nocov start
   rast_list <- create_bayes_spatial_predictions(
-    fit,
-    predictors,
+    fit = fit,
+    predictors = predictors,
+    pred_names = pred_names,
     planar_projection = planar_proj_terra(planar_projection),
-    pred_names,
-    iter
+    iter = iter
   )
 
   # -- 14. Area of Applicability surface
