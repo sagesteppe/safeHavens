@@ -627,26 +627,29 @@ create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
   names(gp_y_rast) <- "gp_y"
   pred_stack <- c(predictors[[pred_names]], gp_x_rast, gp_y_rast)
 
-  ndraws_use <- min(round(iter / 2, 0), 500L)
+  pred_vals     <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
+  complete_rows <- which(complete.cases(pred_vals))
+  chunks        <- split(complete_rows, ceiling(seq_along(complete_rows) / 5000))
+  ndraws_use    <- min(round(iter / 2, 0), 500L)
 
-  predict_mean_sd <- function(model, data, ...) {
-    epred <- brms::posterior_epred(model, newdata = data,
+  out_mean <- rep(NA_real_, nrow(pred_vals))
+  out_sd   <- rep(NA_real_, nrow(pred_vals))
+
+  for (i in seq_along(chunks)) {
+    idx   <- chunks[[i]]
+    epred <- brms::posterior_epred(fit, newdata = pred_vals[idx, ],
       allow_new_levels = TRUE, ndraws = ndraws_use)
-    cbind(mean = colMeans(epred), sd = matrixStats::colSds(epred))
+    out_mean[idx] <- colMeans(epred)
+    out_sd[idx]   <- matrixStats::colSds(epred)
   }
 
-  old_memfrac <- terra::terraOptions()$memfrac
-  terra::terraOptions(memfrac = 0.05)
-  on.exit(terra::terraOptions(memfrac = old_memfrac))
-
-  result <- terra::predict(pred_stack, model = fit, fun = predict_mean_sd,
-    na.rm = TRUE, cores = 1)
-
-  rast_mean <- result[[1]]
-  rast_sd   <- result[[2]]
+  rast_mean <- terra::rast(template)
+  rast_sd   <- terra::rast(template)
+  terra::values(rast_mean) <- out_mean
+  terra::values(rast_sd)   <- out_sd
   names(rast_mean) <- "occurrence_prob_mean"
   names(rast_sd)   <- "occurrence_prob_sd"
-  pred_vals <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
+
   list(mean = rast_mean, sd = rast_sd, pred_matrix = pred_vals)
 }
 
