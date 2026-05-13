@@ -312,6 +312,7 @@ bayesianSDM <- function(
 
   # ── 13. Spatial raster predictions ───────────────────────────────────────────
   # nocov start
+  message("Predicting model onto raster surface ...")
   rast_list <- create_bayes_spatial_predictions(
     fit = fit,
     predictors = predictors,
@@ -321,7 +322,7 @@ bayesianSDM <- function(
   )
 
   # -- 14. Area of Applicability surface
-  # message("Computing Area of Applicability (AOA) ...")
+  message("Computing Area of Applicability (AOA) ...")
   aoa_result <- compute_aoa_bayes(
     model = fit,
     train = train,
