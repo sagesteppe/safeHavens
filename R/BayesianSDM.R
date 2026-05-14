@@ -220,7 +220,7 @@ bayesianSDM <- function(
   feature_selection <- match.arg(feature_selection)
   if (feature_selection != "none") {
     message(sprintf(
-      "Running %s feature selection ...",
+      "Running %s feature selection (step 6 / 14)...",
       toupper(feature_selection)
     ))
     # nocov start
@@ -273,6 +273,7 @@ bayesianSDM <- function(
   )
 
   # --- 9. Fit model ------------------------------------------------------------------
+  message("Fitting model (step 10/14) ...")
   fit <- brms::brm(
     formula = bf_formula,
     data = sf::st_drop_geometry(train),
@@ -304,15 +305,16 @@ bayesianSDM <- function(
   }
 
   # --- 11. LOO cross-validation ---------------------------------------------------------
-  message("Computing PSIS-LOO ...")
+  message("Computing PSIS-LOO (step 11/14) ...")
   loo_result <- brms::loo(fit, moment_match = TRUE, reloo = TRUE)
 
   # --- 12. Test-set confusion matrix ----------------------------------------------------
+  message("Performing Model evaluation  (step 12/14) ...")
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
   # --- 13. Spatial raster predictions --------------------------------------------------
   # nocov start
-  message("Predicting model onto raster surface ...")
+  message("Predicting model onto raster surface (step 13/14) ...")
   rast_list <- create_bayes_spatial_predictions(
     fit = fit,
     predictors = predictors,
@@ -322,7 +324,7 @@ bayesianSDM <- function(
   )
 
   # -- 14. Area of Applicability surface
-  message("Computing Area of Applicability (AOA) ...")
+  message("Computing Area of Applicability (AOA) (step 14/14) ...")
   aoa_result <- compute_aoa_bayes(
     model = fit,
     train = train,
@@ -761,10 +763,6 @@ compute_aoa_bayes <- function(
   }
 
   # ----─ 3. Format CV folds for CAST ---------------------------------------------
-  # CAST expects:
-  # CVtest: list where each element contains row indices of held-out data
-  # CVtrain: list where each element contains row indices of training data
-
   CVtest <- cv_folds$indx_test
   CVtrain <- cv_folds$indx_train
 
