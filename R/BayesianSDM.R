@@ -173,7 +173,7 @@ bayesianSDM <- function(
     predictors <- terra::subset(predictors, vif_results@results$Variables)
   }
 
-  # ── 0. Optional PCA on raster surface ──────────────────────────────────────
+  # --- 0. Optional PCA on raster surface ----------------------------------
   # Run PCA BEFORE background generation so eDist method works on orthogonal axes
   # rather than potentially collinear raw predictors (avoids singular covariance)
   pca_model <- NULL
@@ -190,7 +190,7 @@ bayesianSDM <- function(
     min_ffs_var = 2
   }
 
-  # ── 1. Background points & occurrence column ────────────────────────────────
+  # --- 1. Background points & occurrence column -------------------------------
   if (!"occurrence" %in% names(x)) {
     x$occurrence <- 1L
     pa <- generate_background_points(predictors, x, fact, resample)
@@ -198,25 +198,25 @@ bayesianSDM <- function(
   }
   x <- dplyr::mutate(x, occurrence = as.integer(as.character(occurrence)))
 
-  # ── 2. Spatial thinning ─────────────────────────────────────────────────────
+  # --- 2. Spatial thinning ----------------------------------------------------
   x <- thin_occurrence_points(x, quantile_v)
 
-  # ── 3. Extract predictor values ─────────────────────────────────────────────
+  # --- 3. Extract predictor values ---------------------------------------------
   x <- extract_predictors_to_points(x, predictors)
 
   # Drop any rows with NA in extracted predictors
   complete <- stats::complete.cases(sf::st_drop_geometry(x)[, pred_names])
   x <- x[complete, ]
 
-  # ── 4. Train / test split ────────────────────────────────────────────────────
+  # --- 4. Train / test split --------------------------------------------------
   index <- unlist(caret::createDataPartition(factor(x$occurrence), p = 0.8))
   train <- x[index, ]
   test <- x[-index, ]
 
-  # ── 5. Spatial CV folds (CAST knndm) ────────────────────────────────────────
+  # --- 5. Spatial CV folds (CAST knndm) ----------------------------------------
   cv_folds <- create_spatial_cv_folds(train, predictors, k = k)
 
-  # ── 6. Optional feature selection ───────────────────────────────────────────
+  # --- 6. Optional feature selection -------------------------------------------
   feature_selection <- match.arg(feature_selection)
   if (feature_selection != "none") {
     message(sprintf(
@@ -247,21 +247,21 @@ bayesianSDM <- function(
     }
   }
 
-  # ── 6. Build GP coordinates (planar, scaled) ─────────────────────────────────
+  # --- 6. Build GP coordinates (planar, scaled) ---------------------------------
   # brms gp() uses raw coordinate columns; we work in km for numerical stability
   train <- add_planar_coords(train, planar_projection, scale_km = TRUE)
   test <- add_planar_coords(test, planar_projection, scale_km = TRUE)
 
-  # ── 7. Assemble model formula ────────────────────────────────────────────────
+  # --- 7. Assemble model formula -------------------------------------------------
   env_terms <- paste(pred_names, collapse = " + ")
   bf_formula <- stats::as.formula(
     sprintf(
-      "occurrence ~ %s + s(gp_x, gp_y, bs = 'gp')",
+      "occurrence ~ %s + s(gp_x, gp_y, bs = 'tp')",
       env_terms
     )
   )
 
-  # ── 8. Priors ────────────────────────────────────────────────────────────────
+  # --- 8. Priors ------------------------------------------------------------------
   # nocov start
   model_prior <- build_priors(
     prior_type = prior_type,
@@ -272,7 +272,7 @@ bayesianSDM <- function(
     gp_prior = gp_scale_prior
   )
 
-  # ── 9. Fit model ─────────────────────────────────────────────────────────────
+  # --- 9. Fit model ------------------------------------------------------------------
   fit <- brms::brm(
     formula = bf_formula,
     data = sf::st_drop_geometry(train),
@@ -291,7 +291,7 @@ bayesianSDM <- function(
 
   # nocov end
 
-  # ── 10. Convergence diagnostics ───────────────────────────────────────────────
+  # --- 10. Convergence diagnostics -----------------------------------------------------
   diagnostics <- check_convergence(fit)
   if (diagnostics$max_Rhat > 1.05) {
     warning(
@@ -303,14 +303,14 @@ bayesianSDM <- function(
     )
   }
 
-  # ── 11. LOO cross-validation ──────────────────────────────────────────────────
+  # --- 11. LOO cross-validation ---------------------------------------------------------
   message("Computing PSIS-LOO ...")
   loo_result <- brms::loo(fit, moment_match = TRUE, reloo = TRUE)
 
-  # ── 12. Test-set confusion matrix ─────────────────────────────────────────────
+  # --- 12. Test-set confusion matrix ----------------------------------------------------
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
-  # ── 13. Spatial raster predictions ───────────────────────────────────────────
+  # --- 13. Spatial raster predictions --------------------------------------------------
   # nocov start
   message("Predicting model onto raster surface ...")
   rast_list <- create_bayes_spatial_predictions(
@@ -389,6 +389,7 @@ perform_feature_selection_bayes <- function(
   if (method == "ffs") {
     # Forward feature selection using spatial CV folds
     # nocov start
+    ffs_cores <- if (.Platform$OS.type == "unix") max(1L, parallel::detectCores() - 1L) else 1L
     ffs_result <- suppressMessages(
       CAST::ffs(
         predictors = train_df[, pred_names, drop = FALSE],
@@ -404,7 +405,8 @@ perform_feature_selection_bayes <- function(
           savePredictions = FALSE,
           verboseIter = FALSE
         ),
-        verbose = FALSE
+        verbose = FALSE,
+        cores = ffs_cores
       )
     )
     # nocov end
@@ -635,12 +637,34 @@ create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
   out_mean <- rep(NA_real_, nrow(pred_vals))
   out_sd   <- rep(NA_real_, nrow(pred_vals))
 
+  has_matrixStats <- requireNamespace("matrixStats", quietly = TRUE)
+  if (!has_matrixStats)
+    message("matrixStats not installed; using base R for column SDs. ",
+            "Install matrixStats for faster posterior SD computation.")
+  col_sds <- if (has_matrixStats) matrixStats::colSds else
+    function(x) apply(x, 2, sd)
+
+  process_chunk <- function(idx) {
+    epred <- brms::posterior_epred(
+      fit, newdata = pred_vals[idx, ],
+      allow_new_levels = TRUE, ndraws = ndraws_use
+    )
+    list(mean = colMeans(epred), sd = col_sds(epred))
+  }
+
+  has_future <- requireNamespace("future.apply", quietly = TRUE)
+  if (!has_future && length(chunks) > 1)
+    message(length(chunks), " prediction chunks to process — ",
+            "install future.apply to parallelize across a future plan.")
+  chunk_results <- if (has_future) {
+    future.apply::future_lapply(chunks, process_chunk, future.seed = TRUE)
+  } else {
+    lapply(chunks, process_chunk)
+  }
+
   for (i in seq_along(chunks)) {
-    idx   <- chunks[[i]]
-    epred <- brms::posterior_epred(fit, newdata = pred_vals[idx, ],
-      allow_new_levels = TRUE, ndraws = ndraws_use)
-    out_mean[idx] <- colMeans(epred)
-    out_sd[idx]   <- matrixStats::colSds(epred)
+    out_mean[chunks[[i]]] <- chunk_results[[i]]$mean
+    out_sd[chunks[[i]]]   <- chunk_results[[i]]$sd
   }
 
   rast_mean <- terra::rast(template)
@@ -693,7 +717,7 @@ compute_aoa_bayes <- function(
   maxLPD = 1,
   ...
 ) {
-  # ── 1. Extract environmental variable names ────────────────────────────────
+  # --- 1. Extract environmental variable names ------------------------------------
   fe_names <- rownames(brms::fixef(model))
   fe_names <- sub("^b_", "", fe_names)
   # Filter out: Intercept and GAM smooth basis terms
@@ -710,7 +734,7 @@ compute_aoa_bayes <- function(
     paste(env_vars, collapse = ", ")
   ))
 
-  # ── 2. Extract variable weights from posterior mean coefficients ───────────
+  # --- 2. Extract variable weights from posterior mean coefficients ---------------
   if (use_posterior_mean) {
     # Get posterior means (analogous to variable importance)
     fixef_summary <- brms::fixef(model, summary = TRUE)
@@ -736,7 +760,7 @@ compute_aoa_bayes <- function(
     message("Variables weighted equally.")
   }
 
-  # ── 3. Format CV folds for CAST ────────────────────────────────────────────
+  # ----─ 3. Format CV folds for CAST ---------------------------------------------
   # CAST expects:
   # CVtest: list where each element contains row indices of held-out data
   # CVtrain: list where each element contains row indices of training data
@@ -744,13 +768,15 @@ compute_aoa_bayes <- function(
   CVtest <- cv_folds$indx_test
   CVtrain <- cv_folds$indx_train
 
-  # ── 4. Prepare training data ────────────────────────────────────────────────
+  # --- 4. Prepare training data -------------------------------------------------
   # CAST needs only the predictor columns, not occurrence
   train_predictors <- train[, env_vars, drop = FALSE] |>
     sf::st_drop_geometry()
 
-  # ── 5. Call CAST::aoa ───────────────────────────────────────────────────────
+  # ---- 5. Call CAST::aoa -------------------------------------------------------
   # nocov start
+  aoa_linux <- Sys.info()[["sysname"]] == "Linux"
+  aoa_cores <- if (aoa_linux) max(1L, parallel::detectCores() - 1L) else 1L
   aoa_result <- CAST::aoa(
     newdata = predictors,
     train = train_predictors,
@@ -763,6 +789,8 @@ compute_aoa_bayes <- function(
     useCV = TRUE,
     LPD = LPD,
     maxLPD = maxLPD,
+    parallel = aoa_linux,
+    cores = aoa_cores,
     verbose = FALSE,
     ...
   )

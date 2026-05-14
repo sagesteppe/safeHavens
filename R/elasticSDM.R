@@ -136,17 +136,21 @@ elasticSDM <- function(
   # Create spatial predictions
   rast_cont <- create_spatial_predictions(mod, predictors, vars)
 
+  aoa_linux <- Sys.info()[["sysname"]] == "Linux"
+  aoa_cores <- if (aoa_linux) max(1L, parallel::detectCores() - 1L) else 1L
   aoa_result <- CAST::aoa(
     newdata   = predictors,
-    model     = NA,              
-    train     = pred_matrix[, vars, drop = FALSE],   
-    variables = vars,  
+    model     = NA,
+    train     = pred_matrix[, vars, drop = FALSE],
+    variables = vars,
     useWeight = FALSE,
     CVtest    = indices_knndm$indx_test,
     CVtrain   = indices_knndm$indx_train,
     method    = "L2",
     useCV     = TRUE,
     LPD       = TRUE,
+    parallel  = aoa_linux,
+    cores     = aoa_cores,
     verbose   = FALSE
   )
 
