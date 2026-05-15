@@ -617,11 +617,17 @@ evaluate_bayes_model <- function(fit, test_data, pred_names) {
 #' @noRd
 create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
                                               planar_projection, iter) {
+  
   template <- predictors[[1]]
-  coords_lonlat <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
-  coords_vect <- terra::vect(coords_lonlat, geom = c("x", "y"), crs = terra::crs(predictors))
-  coords_proj <- terra::project(coords_vect, planar_proj_terra(planar_projection))
-  coords_km <- terra::crds(coords_proj) / 1000
+
+  coords_ll <- terra::xyFromCell(template, 1:terra::ncell(template))
+    coords_km <- sf::st_coordinates(
+      sf::st_transform(
+        sf::st_as_sf(as.data.frame(coords_ll), coords = c("x", "y"),
+                     crs = sf::st_crs(terra::crs(template))),
+        planar_projection
+      )
+    ) / 1000
 
   gp_x_rast <- terra::rast(template)
   gp_y_rast <- terra::rast(template)
@@ -629,8 +635,8 @@ create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
   terra::values(gp_y_rast) <- coords_km[, 2]
   names(gp_x_rast) <- "gp_x"
   names(gp_y_rast) <- "gp_y"
+  
   pred_stack <- c(predictors[[pred_names]], gp_x_rast, gp_y_rast)
-
   pred_vals     <- as.data.frame(pred_stack, xy = FALSE, na.rm = FALSE)
   complete_rows <- which(complete.cases(pred_vals))
   chunks        <- split(complete_rows, ceiling(seq_along(complete_rows) / 5000))
