@@ -286,6 +286,7 @@ bayesianSDM <- function(
     seed = seed,
     backend = backend,
     save_pars = brms::save_pars(all = TRUE),
+    save_cmdstan_config = TRUE,
     control = list(adapt_delta = 0.99),
     ...
   )
