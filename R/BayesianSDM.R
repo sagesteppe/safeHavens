@@ -273,23 +273,33 @@ bayesianSDM <- function(
   )
 
   # --- 9. Fit model ------------------------------------------------------------------
-  message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
-  fit <- brms::brm(
-    formula = bf_formula,
-    data = sf::st_drop_geometry(train),
-    family = brms::bernoulli(link = "logit"),
-    prior = model_prior,
-    chains = chains,
-    iter = iter,
-    warmup = warmup,
-    cores = cores,
-    seed = seed,
-    backend = backend,
-    save_pars = brms::save_pars(all = TRUE),
-    save_cmdstan_config = TRUE,
-    control = list(adapt_delta = 0.99),
-    ...
+  merged_control <- utils::modifyList(
+    list(adapt_delta = 0.99),
+    if (!is.null(dots[["control"]])) dots[["control"]] else list()
   )
+  dots[["control"]] <- NULL
+
+  brm_args <- c(
+    list(
+      formula  = bf_formula,
+      data     = sf::st_drop_geometry(train),
+      family   = brms::bernoulli(link = "logit"),
+      prior    = model_prior,
+      chains   = chains,
+      iter     = iter,
+      warmup   = warmup,
+      cores    = cores,
+      seed     = seed,
+      backend  = backend,
+      save_pars = brms::save_pars(all = TRUE),
+      control  = merged_control
+    ),
+    if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
+    dots
+  )
+
+  message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
+  fit <- do.call(brms::brm, brm_args)
 
   # nocov end
 
