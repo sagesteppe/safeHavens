@@ -218,9 +218,9 @@ bayesianSDM <- function(
 
   # --- 6. Optional feature selection -------------------------------------------
   feature_selection <- match.arg(feature_selection)
-  if (feature_selection != "none") {
+  if (feature_selection != "none") {  
     message(sprintf(
-      "Running %s feature selection (step 6 / 14)...",
+      "Running %s feature selection (step 6 / 14) ...",
       toupper(feature_selection)
     ))
     # nocov start
@@ -273,7 +273,7 @@ bayesianSDM <- function(
   )
 
   # --- 9. Fit model ------------------------------------------------------------------
-  message("Fitting model (step 10/14) ...")
+  message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
   fit <- brms::brm(
     formula = bf_formula,
     data = sf::st_drop_geometry(train),
@@ -305,16 +305,21 @@ bayesianSDM <- function(
   }
 
   # --- 11. LOO cross-validation ---------------------------------------------------------
-  message("Computing PSIS-LOO (step 11/14) ...")
-  loo_result <- brms::loo(fit, moment_match = TRUE, reloo = TRUE)
+  message("Computing PSIS-LOO (step 11/14) [", format(Sys.time(), '%H:%M:%S'),  "] ...")
+  loo_result <- brms::loo(
+    fit, 
+    cores = cores,
+    moment_match = TRUE, 
+    reloo = TRUE
+  )
 
   # --- 12. Test-set confusion matrix ----------------------------------------------------
-  message("Performing Model evaluation  (step 12/14) ...")
+  message("Performing Model evaluation  (step 12/14) [", format(Sys.time(),'%H:%M:%S'),  "] ...")
   cm <- evaluate_bayes_model(fit, test, pred_names)
 
   # --- 13. Spatial raster predictions --------------------------------------------------
   # nocov start
-  message("Predicting model onto raster surface (step 13/14) ...")
+  message("Predicting model onto raster surface (step 13/14) [", format(Sys.time(),'%H:%M:%S'),  "] ...")
   rast_list <- create_bayes_spatial_predictions(
     fit = fit,
     predictors = predictors,
@@ -324,7 +329,7 @@ bayesianSDM <- function(
   )
 
   # -- 14. Area of Applicability surface
-  message("Computing Area of Applicability (AOA) (step 14/14) ...")
+  message("Computing Area of Applicability (AOA) (step 14/14) [", format(Sys.time(),'%H:%M:%S'),  "] ...")
   aoa_result <- compute_aoa_bayes(
     model = fit,
     train = train,
