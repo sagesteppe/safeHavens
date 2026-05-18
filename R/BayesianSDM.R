@@ -797,7 +797,7 @@ compute_aoa_bayes <- function(
   # nocov start
   aoa_linux <- Sys.info()[["sysname"]] == "Linux"
   aoa_cores <- if (aoa_linux) max(1L, parallel::detectCores() - 1L) else 1L
-  aoa_result <- CAST::aoa(
+  aoa_result <- withCallingHandlers(CAST::aoa(
     newdata = predictors,
     train = train_predictors,
     variables = env_vars,
@@ -813,7 +813,11 @@ compute_aoa_bayes <- function(
     cores = aoa_cores,
     verbose = FALSE,
     ...
-  )
+  ),
+  message = function(m) {
+    if (grepl("Progress cannot be visualized", conditionMessage(m), fixed = TRUE))
+      invokeRestart("muffleMessage")
+  })
   # nocov end
 
 }
