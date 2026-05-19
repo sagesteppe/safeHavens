@@ -274,7 +274,7 @@ bayesianSDM <- function(
 
   # --- 9. Fit model ------------------------------------------------------------------
   merged_control <- utils::modifyList(
-    list(adapt_delta = 0.99, max_treedepth = 12),
+    list(adapt_delta = 0.99),
     if (!is.null(dots[["control"]])) dots[["control"]] else list()
   )
   dots[["control"]] <- NULL
@@ -292,8 +292,7 @@ bayesianSDM <- function(
       seed     = seed,
       backend  = backend,
       save_pars = brms::save_pars(all = TRUE),
-      control  = merged_control,
-      init     = if (is.null(dots[["init"]])) 0.1 else dots[["init"]]
+      control  = merged_control
     ),
     if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
     dots[names(dots) != "init"]
