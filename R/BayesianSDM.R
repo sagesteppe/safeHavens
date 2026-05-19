@@ -274,7 +274,7 @@ bayesianSDM <- function(
 
   # --- 9. Fit model ------------------------------------------------------------------
   merged_control <- utils::modifyList(
-    list(adapt_delta = 0.99),
+    list(adapt_delta = 0.99, max_treedepth = 12),
     if (!is.null(dots[["control"]])) dots[["control"]] else list()
   )
   dots[["control"]] <- NULL
@@ -292,10 +292,11 @@ bayesianSDM <- function(
       seed     = seed,
       backend  = backend,
       save_pars = brms::save_pars(all = TRUE),
-      control  = merged_control
+      control  = merged_control,
+      init     = if (is.null(dots[["init"]])) 0.1 else dots[["init"]]
     ),
     if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
-    dots
+    dots[names(dots) != "init"]
   )
 
   message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
@@ -378,9 +379,9 @@ bayesianSDM <- function(
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  Internal helpers
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 #' Perform feature selection before Bayesian model fitting
 #'
@@ -486,7 +487,7 @@ run_pca_on_raster <- function(predictors, pca_axes) {
   pca_axes <- min(pca_axes, length(pred_names))
   pc_names <- paste0("PC", seq_len(pca_axes))
 
-  # Project raster — terra::predict calls stats::predict on a per-cell basis
+  # Project raster - terra::predict calls stats::predict on a per-cell basis
   pc_raster <- terra::predict(
     predictors,
     model = pca_model,
@@ -678,7 +679,7 @@ create_bayes_spatial_predictions <- function(fit, predictors, pred_names,
 
   has_future <- requireNamespace("future.apply", quietly = TRUE)
   if (!has_future && length(chunks) > 1)
-    message(length(chunks), " prediction chunks to process — ",
+    message(length(chunks), " prediction chunks to process - ",
             "install future.apply to parallelize across a future plan.")
   chunk_results <- if (has_future) {
     future.apply::future_lapply(chunks, process_chunk, future.seed = TRUE)
@@ -784,7 +785,7 @@ compute_aoa_bayes <- function(
     message("Variables weighted equally.")
   }
 
-  # ----─ 3. Format CV folds for CAST ---------------------------------------------
+  # ---- 3. Format CV folds for CAST ---------------------------------------------
   CVtest <- cv_folds$indx_test
   CVtrain <- cv_folds$indx_train
 
@@ -796,7 +797,10 @@ compute_aoa_bayes <- function(
   # ---- 5. Call CAST::aoa -------------------------------------------------------
   # nocov start
   aoa_linux <- Sys.info()[["sysname"]] == "Linux"
-  aoa_cores <- if (aoa_linux) max(1L, parallel::detectCores() - 1L) else 1L
+  aoa_cores <- if (aoa_linux) {
+    limit <- !is.na(Sys.getenv("_R_CHECK_LIMIT_CORES_", unset = NA))
+    if (limit) 2L else max(1L, parallel::detectCores() - 1L)
+  } else 1L
   aoa_result <- withCallingHandlers(CAST::aoa(
     newdata = predictors,
     train = train_predictors,
