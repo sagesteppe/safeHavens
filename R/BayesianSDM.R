@@ -66,6 +66,11 @@
 #'   to `5000`.
 #' @param warmup Integer. Warmup iterations per chain. Defaults to `1000`.
 #' @param cores Integer. Parallel cores. Defaults to 4.
+#' @param loo_subsample_n Integer or `NULL`. When the training set exceeds 5 000
+#'   observations, LOO is computed via subsampling. If `NULL` (default), the
+#'   subsample size is set automatically (20 \% at n = 5 000, tapering to 5 \%
+#'   at n >= 10 000). Supply an integer (e.g. `500`) to override this — useful
+#'   on machines with limited memory or when a quick diagnostic run is needed.
 #' @param k Integer. Number of spatial CV folds (CAST `knndm`). Defaults to
 #'   `5`.
 #' @param seed Integer. Random seed for reproducibility. Defaults to `42`.
@@ -74,7 +79,11 @@
 #'   `"cmdstanr"`.
 #' @param ... Additional arguments forwarded to [brms::brm()]. Also accepts
 #'   `p0` (integer, expected non-zero predictors) for the horseshoe prior;
-#'   defaults to `floor(ncol(pred_matrix) / 2)`.
+#'   defaults to `floor(ncol(pred_matrix) / 2)`. If you intend to save the
+#'   fitted model and run `loo_moment_match` in a later session, pass
+#'   `output_dir = "/persistent/path"` here so cmdstanr writes its CSV files to
+#'   a non-temporary location; without this the compiled model binary is lost
+#'   when the session ends and moment matching will fail on reload.
 #' @param fact Numeric, default 2.0.
 #'  Factor to multiple the number of occurrence records by to generate the number of background (absence) points. #'
 #' @returns A named list with the following elements, mirroring [elasticSDM()]:
@@ -161,6 +170,7 @@ bayesianSDM <- function(
   seed = 42,
   backend = "cmdstanr",
   fact = 3,
+  loo_subsample_n = NULL,
   ...
 ) {
   prior_type <- match.arg(prior_type)
@@ -247,12 +257,12 @@ bayesianSDM <- function(
     }
   }
 
-  # --- 6. Build GP coordinates (planar, scaled) ---------------------------------
+  # --- 7. Build GP coordinates (planar, scaled) ---------------------------------
   # brms gp() uses raw coordinate columns; we work in km for numerical stability
   train <- add_planar_coords(train, planar_projection, scale_km = TRUE)
   test <- add_planar_coords(test, planar_projection, scale_km = TRUE)
 
-  # --- 7. Assemble model formula -------------------------------------------------
+  # --- 8. Assemble model formula -------------------------------------------------
   env_terms <- paste(pred_names, collapse = " + ")
   bf_formula <- stats::as.formula(
     sprintf(
@@ -261,7 +271,7 @@ bayesianSDM <- function(
     )
   )
 
-  # --- 8. Priors ------------------------------------------------------------------
+  # --- 9. Priors ------------------------------------------------------------------
   # nocov start
   model_prior <- build_priors(
     prior_type = prior_type,
@@ -272,7 +282,8 @@ bayesianSDM <- function(
     gp_prior = gp_scale_prior
   )
 
-  # --- 9. Fit model ------------------------------------------------------------------
+  # --- 10. Fit model ------------------------------------------------------------------
+  options(mc.cores = cores)
   merged_control <- utils::modifyList(
     list(adapt_delta = 0.99),
     if (!is.null(dots[["control"]])) dots[["control"]] else list()
@@ -292,10 +303,11 @@ bayesianSDM <- function(
       seed     = seed,
       backend  = backend,
       save_pars = brms::save_pars(all = TRUE),
-      control  = merged_control
+      control  = merged_control,
+      init     = if (is.null(dots[["init"]])) 0.1 else dots[["init"]]
     ),
     if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
-    dots[names(dots) != "init"]
+    dots[!names(dots) %in% c("init", "p0")]
   )
 
   message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
@@ -303,7 +315,7 @@ bayesianSDM <- function(
 
   # nocov end
 
-  # --- 10. Convergence diagnostics -----------------------------------------------------
+  # --- 10b. Convergence diagnostics ----------------------------------------------------
   diagnostics <- check_convergence(fit)
   if (diagnostics$max_Rhat > 1.05) {
     warning(
@@ -317,12 +329,35 @@ bayesianSDM <- function(
 
   # --- 11. LOO cross-validation ---------------------------------------------------------
   message("Computing PSIS-LOO (step 11/14) [", format(Sys.time(), '%H:%M:%S'),  "] ...")
-  loo_result <- brms::loo(
-    fit, 
-    cores = cores,
-    moment_match = TRUE, 
-    reloo = TRUE
-  )
+  n_train <- nrow(train)
+  if (n_train > 5000) {
+    # Linear taper: 20 % at n=5000, 5 % at n>=100000
+    frac <- if (n_train >= 100000) 0.05 else 0.20 - (n_train - 5000) * (0.15 / 95000)
+    subsample_size <- if (!is.null(loo_subsample_n)) {
+      as.integer(loo_subsample_n)
+    } else {
+      max(100L, round(n_train * frac))
+    }
+    message(sprintf(
+      "  Large dataset (%d obs): using LOO subsampling (n = %d).",
+      n_train, subsample_size
+    ))
+    log_lik_mat <- brms::log_lik(fit)
+    r_eff       <- loo::relative_eff(exp(log_lik_mat), cores = cores)
+    loo_result  <- loo::loo_subsample(
+      log_lik_mat,
+      observations = subsample_size,
+      r_eff        = r_eff,
+      cores        = cores
+    )
+  } else {
+    loo_result <- brms::loo(
+      fit,
+      cores        = cores,
+      moment_match = TRUE,
+      reloo        = TRUE
+    )
+  }
 
   # --- 12. Test-set confusion matrix ----------------------------------------------------
   message("Performing Model evaluation  (step 12/14) [", format(Sys.time(),'%H:%M:%S'),  "] ...")

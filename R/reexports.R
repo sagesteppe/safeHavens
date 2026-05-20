@@ -5,6 +5,8 @@ dplyr::any_of
 
 ## usethis namespace: start
 #' @importFrom stats dist
+#' @importFrom stats sd
+#' @importFrom stats complete.cases
 #' @importFrom stats lm
 #' @importFrom stats predict
 #' @importFrom stats quantile
