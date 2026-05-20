@@ -283,7 +283,6 @@ bayesianSDM <- function(
   )
 
   # --- 10. Fit model ------------------------------------------------------------------
-  options(mc.cores = cores)
   merged_control <- utils::modifyList(
     list(adapt_delta = 0.99),
     if (!is.null(dots[["control"]])) dots[["control"]] else list()
