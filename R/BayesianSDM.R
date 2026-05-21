@@ -343,16 +343,16 @@ bayesianSDM <- function(
     ))
     log_lik_mat <- brms::log_lik(fit)
     r_eff       <- loo::relative_eff(
-      exp(log_lik_mat),              # likelihood (not log-likelihood)
+      exp(log_lik_mat),
       log      = FALSE,
       chain_id = rep(1:4, each = nrow(log_lik_mat) / 4),
       cores    = cores
     )
-    loo_result  <- loo::loo_subsample(
-      log_lik_mat,
-      observations = subsample_size,
-      r_eff        = r_eff,
-      cores        = cores
+    obs_idx    <- sample(seq_len(ncol(log_lik_mat)), size = subsample_size)
+    loo_result <- loo::loo(
+      log_lik_mat[, obs_idx],
+      r_eff = r_eff[obs_idx],
+      cores = cores
     )
   } else {
     loo_result <- brms::loo(
