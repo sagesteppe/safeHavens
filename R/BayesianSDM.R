@@ -335,15 +335,19 @@ bayesianSDM <- function(
     subsample_size <- if (!is.null(loo_subsample_n)) {
       as.integer(loo_subsample_n)
     } else {
-      max(100L, round(n_train * frac))
+      max(100L, as.integer(round(n_train * frac)))
     }
     message(sprintf(
       "  Large dataset (%d obs): using LOO subsampling (n = %d).",
       n_train, subsample_size
     ))
     log_lik_mat <- brms::log_lik(fit)
-    chain_id    <- rep(seq_len(brms::nchains(fit)), each = nrow(log_lik_mat) / brms::nchains(fit))
-    r_eff       <- loo::relative_eff(exp(log_lik_mat), chain_id = chain_id, cores = cores)
+    r_eff       <- loo::relative_eff(
+      exp(log_lik_mat),              # likelihood (not log-likelihood)
+      log      = FALSE,
+      chain_id = rep(1:4, each = nrow(log_lik_mat) / 4),
+      cores    = cores
+    )
     loo_result  <- loo::loo_subsample(
       log_lik_mat,
       observations = subsample_size,
