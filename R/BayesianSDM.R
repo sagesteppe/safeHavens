@@ -329,9 +329,9 @@ bayesianSDM <- function(
   # --- 11. LOO cross-validation ---------------------------------------------------------
   message("Computing PSIS-LOO (step 11/14) [", format(Sys.time(), '%H:%M:%S'),  "] ...")
   n_train <- nrow(train)
-  if (n_train > 5000) {
-    # Linear taper: 20 % at n=5000, 5 % at n>=100000
-    frac <- if (n_train >= 100000) 0.05 else 0.20 - (n_train - 5000) * (0.15 / 95000)
+  if (n_train > 3000) {
+    # Linear taper: 20 % at n=3000, 10 % at n>=10000
+    frac <- if (n_train >= 10000) 0.10 else 0.20 - (n_train - 3000) * (0.10 / 7000)
     subsample_size <- if (!is.null(loo_subsample_n)) {
       as.integer(loo_subsample_n)
     } else {
