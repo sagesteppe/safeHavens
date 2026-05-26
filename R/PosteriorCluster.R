@@ -758,22 +758,30 @@ project_consensus_to_raster <- function(
     c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
   )
 
-  # Helper to check if a factor has enough levels for train/test split
-  can_train_knn <- function(y, min_per_class = 2) {
-    if (length(unique(y)) < 2L) return(FALSE)   # ← new first line
+  # Helper to check if a factor has enough levels for train/test split.
+  # Requires enough per class that the test split (1 - split_prop) is non-empty.
+  can_train_knn <- function(y, split_prop = 0.8) {
+    if (length(unique(y)) < 2L) return(FALSE)
     counts <- table(y)
-    all(counts >= min_per_class)
+    min_needed <- ceiling(1 / (1 - split_prop))
+    all(counts >= min_needed)
   }
 
-  # Rank1 (consensus) clusters
-  if (!can_train_knn(pt_train$rank1_cluster)) {
+  # Rank1 (consensus) clusters — drop classes too small for train/test split,
+  # then stop only if fewer than 2 trainable classes survive.
+  min_needed <- ceiling(1 / (1 - 0.8))
+  rank1_counts <- table(pt_train$rank1_cluster)
+  keep_rank1 <- names(rank1_counts[rank1_counts >= min_needed])
+  if (length(keep_rank1) < 2L) {
     stop(
-      "Rank1 clusters: insufficient observations per cluster for KNN training. ",
+      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
       "Try increasing n_pts or decreasing n (number of clusters)."
     )
   }
-  knn_data_rank1 <- pt_train[, cluster_features, drop = FALSE]
-  knn_data_rank1$ID <- pt_train$rank1_cluster
+  pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
+  pt_rank1$rank1_cluster <- droplevels(pt_rank1$rank1_cluster)
+  knn_data_rank1 <- pt_rank1[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID <- pt_rank1$rank1_cluster
   knn_rank1 <- trainKNN(knn_data_rank1, split_prop = 0.8)
 
   # Rank2 clusters - may have degenerate cases if all points assigned to same cluster

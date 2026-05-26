@@ -112,7 +112,8 @@ PostProcessSDM <- function(
       terra::project(terra::crs(rast_binary)) |>
       terra::rasterize(rast_binary, field = 'occurrence')
 
-    rast_clipped_supplemented <- max(rast_clipped, outside_binary, na.rm = TRUE)
+    rast_clipped_supplemented <- terra::cover(rast_clipped, outside_binary)
+
   } else {
     # No points outside binary raster, so supplemented = clipped
     rast_clipped_supplemented <- rast_clipped
