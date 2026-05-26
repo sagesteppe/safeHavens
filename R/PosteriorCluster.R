@@ -1006,14 +1006,26 @@ reassign_cluster_ids <- function(old_rast, new_rast){
     c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
   )
 
-  can_train_knn <- function(y, min_per_class = 2) {
+  can_train_knn <- function(y, split_prop = 0.8) {
     if (length(unique(y)) < 2L) return(FALSE)
-    all(table(y) >= min_per_class)
+    min_needed <- ceiling(1 / (1 - split_prop))
+    all(table(y) >= min_needed)
   }
 
-  # Rank1
-  knn_data_rank1      <- pt_train[, cluster_features, drop = FALSE]
-  knn_data_rank1$ID   <- pt_train$rank1_cluster
+  # Rank1 — drop classes too small for train/test split
+  min_needed <- ceiling(1 / (1 - 0.8))
+  rank1_counts <- table(pt_train$rank1_cluster)
+  keep_rank1 <- names(rank1_counts[rank1_counts >= min_needed])
+  if (length(keep_rank1) < 2L) {
+    stop(
+      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
+      "Try increasing n_pts or decreasing n (number of clusters)."
+    )
+  }
+  pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
+  pt_rank1$rank1_cluster <- droplevels(pt_rank1$rank1_cluster)
+  knn_data_rank1      <- pt_rank1[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID   <- pt_rank1$rank1_cluster
   knn_rank1           <- trainKNN(knn_data_rank1, split_prop = 0.8)
 
   # Rank2
