@@ -26,6 +26,7 @@ bayesianSDM(
   seed = 42,
   backend = "cmdstanr",
   fact = 3,
+  loo_subsample_n = NULL,
   ...
 )
 }
@@ -110,9 +111,19 @@ to \code{5000}.}
 \item{fact}{Numeric, default 2.0.
 Factor to multiple the number of occurrence records by to generate the number of background (absence) points. #'}
 
+\item{loo_subsample_n}{Integer or \code{NULL}. When the training set exceeds 5 000
+observations, LOO is computed via subsampling. If \code{NULL} (default), the
+subsample size is set automatically (20 \\% at n = 5 000, tapering to 5 \\%
+at n >= 10 000). Supply an integer (e.g. \code{500}) to override this — useful
+on machines with limited memory or when a quick diagnostic run is needed.}
+
 \item{...}{Additional arguments forwarded to \code{\link[brms:brm]{brms::brm()}}. Also accepts
 \code{p0} (integer, expected non-zero predictors) for the horseshoe prior;
-defaults to \code{floor(ncol(pred_matrix) / 2)}.}
+defaults to \code{floor(ncol(pred_matrix) / 2)}. If you intend to save the
+fitted model and run \code{loo_moment_match} in a later session, pass
+\code{output_dir = "/persistent/path"} here so cmdstanr writes its CSV files to
+a non-temporary location; without this the compiled model binary is lost
+when the session ends and moment matching will fail on reload.}
 }
 \value{
 A named list with the following elements, mirroring \code{\link[=elasticSDM]{elasticSDM()}}:

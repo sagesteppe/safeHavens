@@ -117,7 +117,10 @@ create_pcnm_vectors <- function(distance_matrix, n_vectors) {
 #' @noRd
 select_pcnm_features <- function(pcnm_df, occurrence_data, cv_indices) {
   ctrl <- caret::trainControl(method = "cv", index = cv_indices$index)
-  ffs_cores <- if (.Platform$OS.type == "unix") max(1L, parallel::detectCores() - 1L) else 1L
+  ffs_cores <- if (.Platform$OS.type == "unix") {
+    limit <- !is.na(Sys.getenv("_R_CHECK_LIMIT_CORES_", unset = NA))
+    if (limit) 2L else max(1L, parallel::detectCores() - 1L)
+  } else 1L
   ffsmodel <- suppressMessages(
     CAST::ffs(
       predictors = pcnm_df,

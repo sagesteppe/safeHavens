@@ -446,7 +446,10 @@ perform_feature_selection_bayes <- function(
   if (method == "ffs") {
     # Forward feature selection using spatial CV folds
     # nocov start
-    ffs_cores <- if (.Platform$OS.type == "unix") max(1L, parallel::detectCores() - 1L) else 1L
+    ffs_cores <- if (.Platform$OS.type == "unix") {
+      limit <- !is.na(Sys.getenv("_R_CHECK_LIMIT_CORES_", unset = NA))
+      if (limit) 2L else max(1L, parallel::detectCores() - 1L)
+    } else 1L
     ffs_result <- suppressMessages(
       CAST::ffs(
         predictors = train_df[, pred_names, drop = FALSE],
