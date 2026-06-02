@@ -1316,7 +1316,7 @@ test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
       ),
       warning = function(w) invokeRestart("muffleWarning")
     ),
-    regexp = "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. Try increasing n_pts or decreasing n (number of clusters)."
+    regexp = "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training"
   )
 })
 

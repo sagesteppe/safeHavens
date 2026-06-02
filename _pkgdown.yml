@@ -129,3 +129,4 @@ figures:
 
 deploy:
   install_metadata: true
+  
