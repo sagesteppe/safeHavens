@@ -28,9 +28,6 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      # Must point to the versioned subdirectory, not the parent dir,
-      # so cmdstanr can resolve cmdstan_path() correctly on all platforms.
-      CMDSTAN: ~/.cmdstan/cmdstan-2.38.0
 
     steps:
       - uses: actions/checkout@v4
@@ -160,27 +157,25 @@ jobs:
 
       - name: Install CmdStan
         if: steps.cache-cmdstan.outputs.cache-hit != 'true'
-        run: cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        run: cmdstanr::install_cmdstan(version = "2.38.0", cores = 2, quiet = TRUE)
         shell: Rscript {0}
 
-      # ── Set CmdStan path (cross-platform) ────────────────────────────────
-      # On Windows, ~ expansion in the CMDSTAN env var can behave differently
-      # in R vs the shell, so we set the path explicitly using R's own home
-      # resolution to guarantee cmdstan_path() works before R CMD check runs.
-      - name: Set CmdStan path (Windows)
+      # ── Export expanded CMDSTAN path for all subsequent steps ─────────────
+      # YAML env vars are literal strings; ~ is not shell-expanded there.
+      # Writing to $GITHUB_ENV here gives every later step a fully resolved path.
+      - name: Export CMDSTAN path (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          path <- file.path(Sys.getenv("USERPROFILE"), ".cmdstan", "cmdstan-2.38.0")
-          cmdstanr::set_cmdstan_path(path)
-          message("CmdStan path: ", cmdstanr::cmdstan_path())
-        shell: Rscript {0}
+          $path = "$env:USERPROFILE\.cmdstan\cmdstan-2.38.0"
+          echo "CMDSTAN=$path" >> $env:GITHUB_ENV
+          Write-Host "CmdStan path: $path"
 
-      - name: Set CmdStan path (Linux/macOS)
+      - name: Export CMDSTAN path (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          cmdstanr::set_cmdstan_path("~/.cmdstan/cmdstan-2.38.0")
-          message("CmdStan path: ", cmdstanr::cmdstan_path())
-        shell: Rscript {0}
+          echo "CMDSTAN=$HOME/.cmdstan/cmdstan-2.38.0" >> $GITHUB_ENV
+          echo "CmdStan path: $HOME/.cmdstan/cmdstan-2.38.0"
 
       # ── R CMD check ───────────────────────────────────────────────────────
       - uses: r-lib/actions/check-r-package@v2
