@@ -239,7 +239,8 @@ bayesianSDM <- function(
       pred_names = pred_names,
       cv_folds = cv_folds,
       min_ffs_var = min_ffs_var,
-      method = feature_selection
+      method = feature_selection,
+      cores = cores
     )
    # nocov end
 
@@ -386,7 +387,8 @@ bayesianSDM <- function(
     predictors = predictors,
     cv_folds = cv_folds,
     use_posterior_mean = TRUE,
-    LPD = TRUE
+    LPD = TRUE, 
+    cores = cores
   )
   # nocov end
 
@@ -439,17 +441,15 @@ perform_feature_selection_bayes <- function(
   pred_names,
   cv_folds,
   method,
-  min_ffs_var
+  min_ffs_var,
+  cores
 ) {
   train_df <- sf::st_drop_geometry(train)
 
   if (method == "ffs") {
     # Forward feature selection using spatial CV folds
     # nocov start
-    ffs_cores <- if (.Platform$OS.type == "unix") {
-      limit <- !is.na(Sys.getenv("_R_CHECK_LIMIT_CORES_", unset = NA))
-      if (limit) 2L else max(1L, parallel::detectCores() - 1L)
-    } else 1L
+    ffs_cores <- if (.Platform$OS.type == "unix"){cores} else 1L
     ffs_result <- suppressMessages(
       CAST::ffs(
         predictors = train_df[, pred_names, drop = FALSE],
@@ -781,6 +781,7 @@ compute_aoa_bayes <- function(
   use_posterior_mean = TRUE,
   LPD = TRUE,
   maxLPD = 1,
+  cores,
   ...
 ) {
   # --- 1. Extract environmental variable names ------------------------------------
@@ -838,10 +839,8 @@ compute_aoa_bayes <- function(
   # ---- 5. Call CAST::aoa -------------------------------------------------------
   # nocov start
   aoa_linux <- Sys.info()[["sysname"]] == "Linux"
-  aoa_cores <- if (aoa_linux) {
-    limit <- !is.na(Sys.getenv("_R_CHECK_LIMIT_CORES_", unset = NA))
-    if (limit) 2L else max(1L, parallel::detectCores() - 1L)
-  } else 1L
+  aoa_cores <- if (aoa_linux) {cores} else 1L
+
   aoa_result <- withCallingHandlers(CAST::aoa(
     newdata = predictors,
     train = train_predictors,
