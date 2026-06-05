@@ -311,9 +311,12 @@ bayesianSDM <- function(
       control  = merged_control,
       init     = if (is.null(dots[["init"]])) 0.1 else dots[["init"]]
     ),
-    if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
+    if (backend == "cmdstanr") {
+      out_dir <- if (!is.null(dots[["output_dir"]])) dots[["output_dir"]] else tempdir()
+      list(save_cmdstan_config = TRUE, output_dir = out_dir)
+    } else list(),
     if (use_threading) list(threads = brms::threading(threads_per_chain, static = TRUE)) else list(),
-    dots[!names(dots) %in% c("init", "p0")]
+    dots[!names(dots) %in% c("init", "p0", "output_dir")]
   )
 
   message("Fitting model (step 10/14) [", format(Sys.time(),'%Y-%m-%d %H:%M:%S'),  "] ...")
