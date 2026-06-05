@@ -165,7 +165,7 @@ bayesianSDM <- function(
   chains = 4,
   iter = 5000,
   warmup = 2000,
-  cores = 4,
+  cores = 8,
   k = 5,
   seed = 42,
   backend = "cmdstanr",
@@ -290,6 +290,11 @@ bayesianSDM <- function(
   )
   dots[["control"]] <- NULL
 
+  threads_per_chain <- floor(cores / chains)
+  use_threading <- backend == "cmdstanr" &&
+    threads_per_chain > 1L &&
+    nrow(train) > 2000L
+
   brm_args <- c(
     list(
       formula  = bf_formula,
@@ -307,6 +312,7 @@ bayesianSDM <- function(
       init     = if (is.null(dots[["init"]])) 0.1 else dots[["init"]]
     ),
     if (backend == "cmdstanr") list(save_cmdstan_config = TRUE) else list(),
+    if (use_threading) list(threads = brms::threading(threads_per_chain, static = TRUE)) else list(),
     dots[!names(dots) %in% c("init", "p0")]
   )
 
