@@ -787,7 +787,7 @@ compute_aoa_bayes <- function(
   use_posterior_mean = TRUE,
   LPD = TRUE,
   maxLPD = 1,
-  cores,
+  cores = 1L,
   ...
 ) {
   # --- 1. Extract environmental variable names ------------------------------------
