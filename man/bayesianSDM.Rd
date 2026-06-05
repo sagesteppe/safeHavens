@@ -21,7 +21,7 @@ bayesianSDM(
   chains = 4,
   iter = 5000,
   warmup = 2000,
-  cores = 4,
+  cores = 8,
   k = 5,
   seed = 42,
   backend = "cmdstanr",
