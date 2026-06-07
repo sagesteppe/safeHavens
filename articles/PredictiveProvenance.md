@@ -128,7 +128,7 @@ but this would take too long for the vignette.
 ``` r
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
-Cached as: /tmp/RtmpRKmU90/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
+Cached as: /tmp/RtmpNIoCoa/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method
   ssp   = "245", ## "Middle of the Road" scenario
@@ -136,7 +136,7 @@ bio_future <- cmip6_world(
   var   = "bioc", # just use the bioclim variables
   res   = 2.5
 )
-Cached as: /tmp/RtmpRKmU90/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
+Cached as: /tmp/RtmpNIoCoa/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
 
 # Crop to domain - use a large BB to accomodate range shift
 # under future time points. 
@@ -233,49 +233,6 @@ eSDM_model <- elasticSDM(
     planar_projection = 5070, 
     PCNM = FALSE ## set to FALSE for this workstream!!!!!
     )
-
-# Test with just 3 runs to see variability quickly
-run1 <- elasticSDM(hemi, bio_current, 5070)
-run2 <- elasticSDM(hemi, bio_current, 5070)
-run3 <- elasticSDM(hemi, bio_current, 5070)
-
-# Compare coefficients
-coef1 <- as.matrix(coef(run1$Model))
-coef2 <- as.matrix(coef(run2$Model))
-coef3 <- as.matrix(coef(run3$Model))
-
-# Quick comparison
-all_vars <- unique(c(rownames(coef1), rownames(coef2), rownames(coef3)))
-compare <- data.frame(
-  var = all_vars,
-  run1 = coef1[match(all_vars, rownames(coef1)), 1],
-  run2 = coef2[match(all_vars, rownames(coef2)), 1],
-  run3 = coef3[match(all_vars, rownames(coef3)), 1]
-)
-compare[is.na(compare)] <- 0
-compare$cv <- apply(compare[,-1], 1, function(x) sd(x)/mean(x))
-print(compare)
-           var        run1          run2          run3         cv
-1  (Intercept) 40.39976332  4.870494e+00  4.870494e+00  1.2273151
-2       bio_15 -0.21638898 -4.935768e-03 -4.935768e-03 -1.6186992
-3       bio_06 -1.79013711  0.000000e+00  0.000000e+00 -1.7320508
-4       bio_14 -0.40912337  0.000000e+00  0.000000e+00 -1.7320508
-5       bio_19 -0.05222452  0.000000e+00  0.000000e+00 -1.7320508
-6       bio_16  0.07622092  0.000000e+00  0.000000e+00  1.7320508
-7       bio_18 -0.02635047  0.000000e+00  0.000000e+00 -1.7320508
-8       bio_07 -0.62896352  0.000000e+00  0.000000e+00 -1.7320508
-9       bio_03 -0.57492789 -1.373735e-01 -1.373735e-01 -0.8919489
-10      bio_09  0.03504658  0.000000e+00  0.000000e+00  1.7320508
-11      bio_01  1.76209086  0.000000e+00  0.000000e+00  1.7320508
-12      bio_04 -0.02115389  4.134668e-04  4.134668e-04 -1.8377448
-13      bio_17  0.06551926  0.000000e+00  0.000000e+00  1.7320508
-14       PCNM1  9.67291420  0.000000e+00  0.000000e+00  1.7320508
-15       PCNM2 -0.17546042 -1.202533e+01 -1.202533e+01 -0.8472085
-16      bio_13  0.00000000  0.000000e+00  0.000000e+00        NaN
-17      bio_08  0.00000000  2.704826e-02  2.704826e-02  0.8660254
-18       PCNM4  0.00000000  1.266518e+01  1.266518e+01  0.8660254
-19       PCNM7  0.00000000  1.070483e+01  1.070483e+01  0.8660254
-20       PCNM9  0.00000000  0.000000e+00  0.000000e+00        NaN
 ```
 
 We will use the eSDM_model function for this workstream; however, it is
@@ -493,13 +450,9 @@ future_clusts <- projectClusters(
     ******************************************************************* 
     * Among all indices:                                                
     * 6 proposed 2 as the best number of clusters 
-    * 9 proposed 3 as the best number of clusters 
-    * 1 proposed 4 as the best number of clusters 
-    * 2 proposed 8 as the best number of clusters 
-    * 1 proposed 9 as the best number of clusters 
-    * 1 proposed 10 as the best number of clusters 
-    * 1 proposed 18 as the best number of clusters 
-    * 3 proposed 20 as the best number of clusters 
+    * 10 proposed 3 as the best number of clusters 
+    * 4 proposed 4 as the best number of clusters 
+    * 1 proposed 5 as the best number of clusters 
 
                        ***** Conclusion *****                            
      
@@ -564,8 +517,8 @@ knitr::kable(future_clusts$novel_similarity)
 
 | novel_cluster_id | nearest_existing_id | avg_silhouette_width |
 |-----------------:|--------------------:|---------------------:|
-|                6 |                  NA |            0.4976980 |
-|                7 |                   4 |            0.3029438 |
+|                6 |                  NA |            0.6259237 |
+|                7 |                   1 |            0.3691745 |
 
 It is from these groups that we are most likely to collect germplasm
 relevant to the future scenarios.
@@ -576,13 +529,13 @@ the scenarios.
 ``` r
 future_clusts$changes
   cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
-1          1         2371.401     261064.0458     10908.85347          659.7835
-2          2       247188.684      24052.8597       -90.26943          238.2640
-3          3        16975.136      13171.8144       -22.40525          472.3144
-4          4        27177.277      40894.9478        50.47478           52.5251
-5          5        20421.344       2302.5222       -88.72492         1063.9605
-6          6            0.000       1988.8601              NA                NA
-7          7            0.000        778.4415              NA                NA
+1          1       240313.327     265112.3428        10.31945          66.58470
+2          2        14876.702      21166.3537        42.27854          28.92169
+3          3         8018.406      38198.0808       376.37999         259.16551
+4          4        37413.540       6562.2069       -82.46034         167.01276
+5          5        13511.867      10659.9321       -21.10689         466.33214
+6          6            0.000       1846.9721              NA                NA
+7          7            0.000        708.0309              NA                NA
 ```
 
 ## Conclusion

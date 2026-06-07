@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Predictive Provenance">
 <meta name="description" content="Predictive Provenancing using Species Distribution Models.">
@@ -230,7 +230,7 @@ that the source also includes a ~1km at-equator resolution data set (30
 seconds), but this would take too long for the vignette.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Download WorldClim bioclim at ~10 km</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>bio_current <span class="ot">&lt;-</span> <span class="fu">worldclim_global</span>(<span class="at">var=</span><span class="st">"bioc"</span>, <span class="at">res=</span><span class="fl">2.5</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpRKmU90<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bio.zip</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpNIoCoa<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bio.zip</span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>bio_future <span class="ot">&lt;-</span> <span class="fu">cmip6_world</span>(</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">model =</span> <span class="st">"CNRM-CM6-1"</span>, <span class="do">## modelling method</span></span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">ssp   =</span> <span class="st">"245"</span>, <span class="do">## "Middle of the Road" scenario</span></span>
@@ -238,7 +238,7 @@ seconds), but this would take too long for the vignette.</p>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">var   =</span> <span class="st">"bioc"</span>, <span class="co"># just use the bioclim variables</span></span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">res   =</span> <span class="fl">2.5</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>)</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpRKmU90<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bioc_CNRM<span class="sc">-</span>CM6<span class="dv">-1</span>_ssp245_2041<span class="fl">-2060.</span>tif</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpNIoCoa<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bioc_CNRM<span class="sc">-</span>CM6<span class="dv">-1</span>_ssp245_2041<span class="fl">-2060.</span>tif</span>
 <span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
 <span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co"># Crop to domain - use a large BB to accomodate range shift</span></span>
 <span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co"># under future time points. </span></span>
@@ -323,50 +323,7 @@ our species.</p>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    <span class="at">predictors =</span> bio_current, </span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    <span class="at">planar_projection =</span> <span class="dv">5070</span>, </span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="at">PCNM =</span> <span class="cn">FALSE</span> <span class="do">## set to FALSE for this workstream!!!!!</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    )</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co"># Test with just 3 runs to see variability quickly</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>run1 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>run2 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>run3 <span class="ot">&lt;-</span> <span class="fu">elasticSDM</span>(hemi, bio_current, <span class="dv">5070</span>)</span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co"># Compare coefficients</span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>coef1 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run1<span class="sc">$</span>Model))</span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>coef2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run2<span class="sc">$</span>Model))</span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>coef3 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(run3<span class="sc">$</span>Model))</span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co"># Quick comparison</span></span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>all_vars <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">c</span>(<span class="fu">rownames</span>(coef1), <span class="fu">rownames</span>(coef2), <span class="fu">rownames</span>(coef3)))</span>
-<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>compare <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>  <span class="at">var =</span> all_vars,</span>
-<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>  <span class="at">run1 =</span> coef1[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef1)), <span class="dv">1</span>],</span>
-<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  <span class="at">run2 =</span> coef2[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef2)), <span class="dv">1</span>],</span>
-<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>  <span class="at">run3 =</span> coef3[<span class="fu">match</span>(all_vars, <span class="fu">rownames</span>(coef3)), <span class="dv">1</span>]</span>
-<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>)</span>
-<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>compare[<span class="fu">is.na</span>(compare)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>compare<span class="sc">$</span>cv <span class="ot">&lt;-</span> <span class="fu">apply</span>(compare[,<span class="sc">-</span><span class="dv">1</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">sd</span>(x)<span class="sc">/</span><span class="fu">mean</span>(x))</span>
-<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="fu">print</span>(compare)</span>
-<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>           var        run1          run2          run3         cv</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="dv">1</span>  (Intercept) <span class="fl">40.39976332</span>  <span class="fl">4.870494e+00</span>  <span class="fl">4.870494e+00</span>  <span class="fl">1.2273151</span></span>
-<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="dv">2</span>       bio_15 <span class="sc">-</span><span class="fl">0.21638898</span> <span class="sc">-</span><span class="fl">4.935768e-03</span> <span class="sc">-</span><span class="fl">4.935768e-03</span> <span class="sc">-</span><span class="fl">1.6186992</span></span>
-<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="dv">3</span>       bio_06 <span class="sc">-</span><span class="fl">1.79013711</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span> <span class="sc">-</span><span class="fl">1.7320508</span></span>
-<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="dv">4</span>       bio_14 <span class="sc">-</span><span class="fl">0.40912337</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span> <span class="sc">-</span><span class="fl">1.7320508</span></span>
-<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="dv">5</span>       bio_19 <span class="sc">-</span><span class="fl">0.05222452</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span> <span class="sc">-</span><span class="fl">1.7320508</span></span>
-<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="dv">6</span>       bio_16  <span class="fl">0.07622092</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>  <span class="fl">1.7320508</span></span>
-<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="dv">7</span>       bio_18 <span class="sc">-</span><span class="fl">0.02635047</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span> <span class="sc">-</span><span class="fl">1.7320508</span></span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="dv">8</span>       bio_07 <span class="sc">-</span><span class="fl">0.62896352</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span> <span class="sc">-</span><span class="fl">1.7320508</span></span>
-<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="dv">9</span>       bio_03 <span class="sc">-</span><span class="fl">0.57492789</span> <span class="sc">-</span><span class="fl">1.373735e-01</span> <span class="sc">-</span><span class="fl">1.373735e-01</span> <span class="sc">-</span><span class="fl">0.8919489</span></span>
-<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="dv">10</span>      bio_09  <span class="fl">0.03504658</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>  <span class="fl">1.7320508</span></span>
-<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="dv">11</span>      bio_01  <span class="fl">1.76209086</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>  <span class="fl">1.7320508</span></span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="dv">12</span>      bio_04 <span class="sc">-</span><span class="fl">0.02115389</span>  <span class="fl">4.134668e-04</span>  <span class="fl">4.134668e-04</span> <span class="sc">-</span><span class="fl">1.8377448</span></span>
-<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a><span class="dv">13</span>      bio_17  <span class="fl">0.06551926</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>  <span class="fl">1.7320508</span></span>
-<span id="cb6-52"><a href="#cb6-52" tabindex="-1"></a><span class="dv">14</span>       PCNM1  <span class="fl">9.67291420</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>  <span class="fl">1.7320508</span></span>
-<span id="cb6-53"><a href="#cb6-53" tabindex="-1"></a><span class="dv">15</span>       PCNM2 <span class="sc">-</span><span class="fl">0.17546042</span> <span class="sc">-</span><span class="fl">1.202533e+01</span> <span class="sc">-</span><span class="fl">1.202533e+01</span> <span class="sc">-</span><span class="fl">0.8472085</span></span>
-<span id="cb6-54"><a href="#cb6-54" tabindex="-1"></a><span class="dv">16</span>      bio_13  <span class="fl">0.00000000</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>        <span class="cn">NaN</span></span>
-<span id="cb6-55"><a href="#cb6-55" tabindex="-1"></a><span class="dv">17</span>      bio_08  <span class="fl">0.00000000</span>  <span class="fl">2.704826e-02</span>  <span class="fl">2.704826e-02</span>  <span class="fl">0.8660254</span></span>
-<span id="cb6-56"><a href="#cb6-56" tabindex="-1"></a><span class="dv">18</span>       PCNM4  <span class="fl">0.00000000</span>  <span class="fl">1.266518e+01</span>  <span class="fl">1.266518e+01</span>  <span class="fl">0.8660254</span></span>
-<span id="cb6-57"><a href="#cb6-57" tabindex="-1"></a><span class="dv">19</span>       PCNM7  <span class="fl">0.00000000</span>  <span class="fl">1.070483e+01</span>  <span class="fl">1.070483e+01</span>  <span class="fl">0.8660254</span></span>
-<span id="cb6-58"><a href="#cb6-58" tabindex="-1"></a><span class="dv">20</span>       PCNM9  <span class="fl">0.00000000</span>  <span class="fl">0.000000e+00</span>  <span class="fl">0.000000e+00</span>        <span class="cn">NaN</span></span></code></pre></div>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    )</span></code></pre></div>
 <p>We will use the eSDM_model function for this workstream; however, it
 is essential that PCNM is set to FALSE. There is no way to forecast or
 predict PCNM for future scenarios, so we cannot fit models with it.</p>
@@ -554,13 +511,9 @@ heart of this workflow; it requires the outputs from
 ******************************************************************* 
 * Among all indices:                                                
 * 6 proposed 2 as the best number of clusters 
-* 9 proposed 3 as the best number of clusters 
-* 1 proposed 4 as the best number of clusters 
-* 2 proposed 8 as the best number of clusters 
-* 1 proposed 9 as the best number of clusters 
-* 1 proposed 10 as the best number of clusters 
-* 1 proposed 18 as the best number of clusters 
-* 3 proposed 20 as the best number of clusters 
+* 10 proposed 3 as the best number of clusters 
+* 4 proposed 4 as the best number of clusters 
+* 1 proposed 5 as the best number of clusters 
 
                    ***** Conclusion *****                            
  
@@ -614,12 +567,12 @@ employ to identify the most similar existing climate groups.</p>
 <tr class="odd">
 <td align="right">6</td>
 <td align="right">NA</td>
-<td align="right">0.4976980</td>
+<td align="right">0.6259237</td>
 </tr>
 <tr class="even">
 <td align="right">7</td>
-<td align="right">4</td>
-<td align="right">0.3029438</td>
+<td align="right">1</td>
+<td align="right">0.3691745</td>
 </tr>
 </tbody>
 </table>
@@ -629,13 +582,13 @@ relevant to the future scenarios.</p>
 between the scenarios.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>changes</span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>         <span class="fl">2371.401</span>     <span class="fl">261064.0458</span>     <span class="fl">10908.85347</span>          <span class="fl">659.7835</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="dv">2</span>          <span class="dv">2</span>       <span class="fl">247188.684</span>      <span class="fl">24052.8597</span>       <span class="sc">-</span><span class="fl">90.26943</span>          <span class="fl">238.2640</span></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="dv">3</span>          <span class="dv">3</span>        <span class="fl">16975.136</span>      <span class="fl">13171.8144</span>       <span class="sc">-</span><span class="fl">22.40525</span>          <span class="fl">472.3144</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="dv">4</span>          <span class="dv">4</span>        <span class="fl">27177.277</span>      <span class="fl">40894.9478</span>        <span class="fl">50.47478</span>           <span class="fl">52.5251</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="dv">5</span>          <span class="dv">5</span>        <span class="fl">20421.344</span>       <span class="fl">2302.5222</span>       <span class="sc">-</span><span class="fl">88.72492</span>         <span class="fl">1063.9605</span></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="dv">6</span>          <span class="dv">6</span>            <span class="fl">0.000</span>       <span class="fl">1988.8601</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="dv">7</span>          <span class="dv">7</span>            <span class="fl">0.000</span>        <span class="fl">778.4415</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span></code></pre></div>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>       <span class="fl">240313.327</span>     <span class="fl">265112.3428</span>        <span class="fl">10.31945</span>          <span class="fl">66.58470</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="dv">2</span>          <span class="dv">2</span>        <span class="fl">14876.702</span>      <span class="fl">21166.3537</span>        <span class="fl">42.27854</span>          <span class="fl">28.92169</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="dv">3</span>          <span class="dv">3</span>         <span class="fl">8018.406</span>      <span class="fl">38198.0808</span>       <span class="fl">376.37999</span>         <span class="fl">259.16551</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="dv">4</span>          <span class="dv">4</span>        <span class="fl">37413.540</span>       <span class="fl">6562.2069</span>       <span class="sc">-</span><span class="fl">82.46034</span>         <span class="fl">167.01276</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="dv">5</span>          <span class="dv">5</span>        <span class="fl">13511.867</span>      <span class="fl">10659.9321</span>       <span class="sc">-</span><span class="fl">21.10689</span>         <span class="fl">466.33214</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="dv">6</span>          <span class="dv">6</span>            <span class="fl">0.000</span>       <span class="fl">1846.9721</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="dv">7</span>          <span class="dv">7</span>            <span class="fl">0.000</span>        <span class="fl">708.0309</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

@@ -37,11 +37,12 @@ bayesianSDM(
   chains = 4,
   iter = 5000,
   warmup = 2000,
-  cores = 4,
+  cores = 8,
   k = 5,
   seed = 42,
   backend = "cmdstanr",
   fact = 3,
+  loo_subsample_n = NULL,
   ...
 )
 ```
@@ -189,12 +190,25 @@ bayesianSDM(
   Numeric, default 2.0. Factor to multiple the number of occurrence
   records by to generate the number of background (absence) points. \#'
 
+- loo_subsample_n:
+
+  Integer or `NULL`. When the training set exceeds 5 000 observations,
+  LOO is computed via subsampling. If `NULL` (default), the subsample
+  size is set automatically (20 \\ at n \>= 10 000). Supply an integer
+  (e.g. `500`) to override this — useful on machines with limited memory
+  or when a quick diagnostic run is needed.
+
 - ...:
 
   Additional arguments forwarded to
   [`brms::brm()`](https://paulbuerkner.com/brms/reference/brm.html).
   Also accepts `p0` (integer, expected non-zero predictors) for the
-  horseshoe prior; defaults to `floor(ncol(pred_matrix) / 2)`.
+  horseshoe prior; defaults to `floor(ncol(pred_matrix) / 2)`. If you
+  intend to save the fitted model and run `loo_moment_match` in a later
+  session, pass `output_dir = "/persistent/path"` here so cmdstanr
+  writes its CSV files to a non-temporary location; without this the
+  compiled model binary is lost when the session ends and moment
+  matching will fail on reload.
 
 ## Value
 

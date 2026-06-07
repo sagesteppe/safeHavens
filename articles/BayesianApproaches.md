@@ -62,9 +62,6 @@ library(tidybayes) ## various posterior plots
 
 ![](BayesianApproaches_files/figure-html/prep%20basemap-1.png)
 
-    Cached as: /tmp/Rtmpapopec/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
-    Cached as: /tmp/Rtmpapopec/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
-
 ### fit the model
 
 Here we fit as SDM using `bayesianSDM`. For arguments, it requires
@@ -374,11 +371,10 @@ As with the other sampling functions, spatial polygons are returned for
 use with other applications.
 
 ``` r
+
 bmap +
   geom_sf(data = current_cluster$Geometry, aes(fill = factor(ID))) + 
   labs(fill = 'Cluster', title = 'Consensus Clusters')
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
 ![](BayesianApproaches_files/figure-html/show%20posterior%20clusters-1.png)
@@ -478,6 +474,7 @@ We visualize the results for the current and future scenarios below.
 
 ``` r
 
+
 nCl = seq(max(future_rescaled$Geometry$ID))
 full_pal = c(
   '#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -504,10 +501,6 @@ bmap +
     ) + 
   scale_fill_manual(values = cus_pal) + 
   labs(title = 'Future', fill = 'Cluster')
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
- [1m [22mCoordinate system already present.
- [36mℹ [39m Adding new coordinate system, which will replace the existing one.
 ```
 
 ![](BayesianApproaches_files/figure-html/plot%20predictive%20provenance-1.png)
@@ -586,7 +579,7 @@ brms::pp_check(sdModel$Model, type = "stat", stat = "mean") +
   theme_navy()  +
   labs(
     title    = "Posterior Predictive Check - Mean",
-    subtitle = "Distribution of predicted means across draws vs the observed mean (vertical line)",
+    subtitle = "Predicted means across draws vs the observed mean (vertical line)",
     caption  = "The observed mean should fall near the center of the predicted\ndistribution. Models outside of this area are likely biased."
   ) 
 ```
@@ -599,121 +592,11 @@ the diagonal axis, it indicates a range of values they model is being
 overly or underconfident about assigning.
 
 ``` r
+
 loo_probs <- tibble(
   pred_prob = brms::loo_epred(sdModel$Model, moment_match = TRUE)[, 1],
   observed  = factor(sdModel$TrainData$occurrence)
 )
-Running PSIS to compute weights
-Recompiling the model with 'rstan'
-Recompilation done
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
-Warning in max(left_k, right_k, na.rm = TRUE): no non-missing arguments to max;
-returning -Inf
 # Get posterior predicted probabilities
 pred_probs <- sdModel$TrainData |>
   add_epred_draws(sdModel$Model, ndraws = 100) |>
@@ -736,7 +619,7 @@ loo_probs |>
     x = "Mean LOO predicted probability", 
     y = "Observed frequency",
     title    = "LOO Calibration",
-    subtitle = "Leave-one-out predicted probabilities vs observed frequencies, binned across the probability range",
+    subtitle = "LOO predicted probabilities vs observed frequencies,\nbinned across the probability range",
     caption  = "Points close to the diagonal indicate well-calibrated predictions.\nDeviation suggests the model is over or underconfident in certain probability ranges."
     ) +
   theme_navy()
@@ -764,7 +647,7 @@ pred_probs |>
   labs(
     x = "AUC", 
     title    = "Posterior Distribution of AUC",
-    subtitle = "Uncertainty in discrimination ability estimated from posterior predicted probabilities on training data",
+    subtitle = "Uncertainty in discrimination estimated from posterior\npredicted probabilities on training data",
     caption  = "AUC closer to 1 indicates better separation between presences and absences.\nThis is estimated on training data and will be optimistic use the matrix data from function."
 ) + 
   theme_navy()
@@ -782,8 +665,8 @@ roc(loo_probs$observed, loo_probs$pred_prob) |>
   ggroc() +
   geom_abline(slope = 1, intercept = 1, linetype = "dashed", col = "#dce3f0") +
   labs(
-    title    = "LOO ROC Curve",
-    subtitle = "Receiver operating characteristic curve using leave-one-out predicted probabilities",
+    title    = "Leave-One-Out ROC Curve",
+    subtitle = "ROC curve using LOO predicted probabilities",
     caption  = "The curve shows the tradeoff between true positive and false positive rates\nacross all classification thresholds.\nCurves closer to the top-left corner indicate strong out-of-sample discrimination."
   ) + 
   theme_navy()
@@ -809,7 +692,7 @@ loo_probs |>
   theme_navy() + 
   labs(
     title    = "Predicted Probability by Class",
-    subtitle = "LOO predicted probability distributions for pseudo-absences (0) and observed presences (1)",
+    subtitle = "LOO predicted probability distributions for pseudo-absences (0) and presences (1)",
     caption  = "Less overlap between distributions indicates the model better\nseparates suitable from unsuitable habitat. A high-performing model shows\ntwo distinct, separated peaks."
     )
 ```
@@ -877,7 +760,7 @@ spr_draw |>
   ggplot(aes(x = value, y = reorder(param, value))) +
   stat_halfeye(col = '#8B2635', fill = '#9191E9') +
   xlim(-5, 5) + ## tighten this up for visualizing on vignette html page
-  geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.5, col = '#E0E2DB') +
+  geom_vline(xintercept = 0, linetype = "dashed", col = '#E0E2DB') +
   labs(
     x = "Posterior estimate", 
     y = NULL, 
@@ -906,10 +789,10 @@ plots <- purrr::map(
     ggplot2::update_geom_defaults("line", list(colour = "white"))
 ) 
 
-patchwork::wrap_plots(plots, ncol = 2) + 
+patchwork::wrap_plots(plots, ncol = 1) + 
   plot_annotation(
     title    = "Marginal Effects per Predictor",
-    subtitle = "Predicted occurrence probability across each variable's range, averaged over all other predictors",
+    subtitle = "Predicted occurrence probability across each variable's range,\naveraged over all other predictors",
     caption  = "The shape of each curve reveals whether a variable has a linear, threshold,\nor unimodal relationship with occurrence. Wider ribbons indicate greater uncertainty,\noften at the extremes of a variable's range."
 ) + 
   plot_annotation(theme = theme(
