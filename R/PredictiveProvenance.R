@@ -356,17 +356,23 @@ cluster_novel_areas <- function(
     warning(
       "Too few novel climate points for clustering. Assigning single novel cluster."
     )
-    novel_clusters <- novel_mask
     novel_clusters <- terra::ifel(novel_mask == 1, next_cluster_id, NA)
-    return(
-      list(
-        clusters_raster = novel_clusters
-      )
-    )
+    return(list(clusters_raster = novel_clusters))
   }
 
   # remove highly collinear features for nbclust
   clust_data <- prep_for_nbclust(clust_data)
+
+  # Each cluster needs at least (ncol + 1) points for W to be non-singular.
+  # Cap max.nc so NbClust never attempts more clusters than the data can support.
+  max_safe_nc <- max(2L, floor(nrow(clust_data) / (ncol(clust_data) + 1L)))
+  if (max_safe_nc < 2L) {
+    warning(
+      "Too few novel points relative to variables for clustering. Assigning single novel cluster."
+    )
+    novel_clusters <- terra::ifel(novel_mask == 1, next_cluster_id, NA)
+    return(list(clusters_raster = novel_clusters))
+  }
 
   # Distance matrix & NbClust
   d <- stats::dist(clust_data, method = "euclidean")
@@ -377,13 +383,16 @@ cluster_novel_areas <- function(
     diss = d,
     distance = NULL,
     min.nc = 2,
-    max.nc = 20,
+    max.nc = min(20L, max_safe_nc),
     method = "ward.D2",
     index = "all"
   )
 
+  nb_args <- utils::modifyList(nbclust_defaults, nbclust_args)
+  nb_args$max.nc <- min(nb_args$max.nc, max_safe_nc)
+
   nb_result <- suppressMessages(
-    do.call(NbClust::NbClust, utils::modifyList(nbclust_defaults, nbclust_args))
+    do.call(NbClust::NbClust, nb_args)
   )
   # nocov end
 

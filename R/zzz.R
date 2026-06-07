@@ -50,7 +50,7 @@ utils::globalVariables(c(
   # dplyr placeholder 
   ".",
 
-  # bayeisna
+  # bayesian
   "horseshoe",
   "b",
 

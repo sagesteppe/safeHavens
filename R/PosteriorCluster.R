@@ -105,7 +105,7 @@ PosteriorCluster <- function(
   set.seed(seed)
   consensus_method <- match.arg(consensus_method)
 
-  # ── 1. Identify environmental predictor names ────────────────────────────────
+  # -- 1. Identify environmental predictor names --------------------------------
   # Drop GP coordinate columns; keep only named fixed effects
   fe_names <- rownames(brms::fixef(model))
   fe_names <- sub("^b_", "", fe_names)
@@ -122,14 +122,14 @@ PosteriorCluster <- function(
     )
   }
 
-  # ── 2. Draw posterior beta samples ────────────────────────────────────────────
+  # -- 2. Draw posterior beta samples --------------------------------------------
   if (is.null(beta_draws)) {
     message(sprintf("Drawing %d posterior beta samples ...", n_draws))
     beta_draws <- extract_beta_draws(model, env_vars, n_draws)
   }
   # beta_draws: n_draws × length(env_vars), named columns
 
-  # ── 3. Posterior mean betas (fixed across draws) ─────────────────────────────
+  # -- 3. Posterior mean betas (fixed across draws) -----------------------------
   # `predictors` has already been processed by RescaleRasters_bayes upstream,
   # so pt_env values are on the scale: ((raw - mu) / sd) * |mean_beta|.
   # We do NOT recompute var_mu/var_sd from pred_mat here — doing so and passing
@@ -149,7 +149,7 @@ PosteriorCluster <- function(
     beta_draws <- beta_draws[, env_vars, drop = FALSE]
   }
 
-  # ── 4. Fix sample points across all draws ────────────────────────────────────
+  # -- 4. Fix sample points across all draws ------------------------------------
   # Points are sampled once from the SDM prediction surface and held constant.
   # This is essential: co-occurrence is only meaningful when comparing the
   # same spatial locations across draws.
@@ -176,7 +176,7 @@ PosteriorCluster <- function(
     n_pts
   ))
 
-  # ── 5. Add weighted coordinates to point matrix ───────────────────────────────
+  # -- 5. Add weighted coordinates to point matrix -------------------------------
   # Coordinates are added once (they don't vary across beta draws)
   pt_env_coords <- add_coord_weights_to_points(
     sample_pts,
@@ -185,7 +185,7 @@ PosteriorCluster <- function(
     env_vars
   )  
 
-  # ── 6. Cluster over posterior draws ──────────────────────────────────────────
+  # -- 6. Cluster over posterior draws ------------------------------------------
   message(sprintf("Clustering over %d posterior draws ...", n_draws))
   draw_clusterings <- matrix(
     NA_integer_,
@@ -223,11 +223,11 @@ PosteriorCluster <- function(
     draw_clusterings[seq_len(nrow(pt_full)), d] <- stats::cutree(hc_d, k = n)
   }
 
-  # ── 7. Build co-occurrence matrix ────────────────────────────────────────────
+  # -- 7. Build co-occurrence matrix --------------------------------------------
   message("Computing co-occurrence matrix ...")
   co_mat <- build_cooccurrence_matrix(draw_clusterings, n_pts_actual, n_draws)
 
-  # ── 8. Consensus clustering ───────────────────────────────────────────────────
+  # -- 8. Consensus clustering ---------------------------------------------------
   message("Deriving consensus clustering ...")
   diss_mat <- stats::as.dist(1 - co_mat)
   consensus_labels <- switch(
@@ -240,16 +240,16 @@ PosteriorCluster <- function(
       cluster::pam(diss_mat, k = n, diss = TRUE)$clustering
     }
   )
-  # ── 9. Stability surface ──────────────────────────────────────────────────────
+  # -- 9. Stability surface ------------------------------------------------------
   # For each point, stability = mean co-occurrence with all other points
   # sharing its consensus cluster label (its "within-cluster cohesion")
   stability_scores <- compute_stability_scores(co_mat, consensus_labels)
 
-  # ── 9b. Top-3 cluster rankings ───────────────────────────────────────────────
+  # -- 9b. Top-3 cluster rankings -----------------------------------------------
   message("Computing top-3 cluster assignments per point ...")
   top3_results <- compute_top3_clusters(draw_clusterings, n_pts_actual, n_draws)
 
-  # ── 10. Project clusters back to raster ──────────────────────────────────────
+  # -- 10. Project clusters back to raster --------------------------------------
   message("Projecting consensus clusters to raster ...")
 
   # Compute posterior mean betas
@@ -268,12 +268,12 @@ PosteriorCluster <- function(
     planar_proj = planar_proj
   )
 
-  # ── 11. Geographic reordering ─────────────────────────────────────────────────
+  # -- 11. Geographic reordering -------------------------------------------------
   reordered <- reorder_clusters_geographically(rast_list$cluster_raster)
   final_raster <- terra::project(reordered$raster, terra::crs(f_rasts))
   cluster_vects <- sf::st_transform(reordered$vectors, terra::crs(f_rasts))
 
-  # ── 11b. Extract raw->geographic label mapping and retrain KNNs ──────────────
+  # --- 11b. Extract raw->geographic label mapping and retrain KNNs ---------------
   # The KNNs in rast_list were trained on raw cutree labels (1:n). After
   # geographic reordering the raster uses different IDs. We extract the mapping
   # by sampling the pre- and post-reorder rasters at the fixed sample points,
@@ -381,9 +381,9 @@ PosteriorCluster <- function(
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  Internal helpers
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 #' Train a regression KNN for predicting continuous stability scores
 #'
@@ -724,14 +724,14 @@ project_consensus_to_raster <- function(
   }
 
 
-  # ── 1. Extract predictor values at the fixed points ────────────────────────
+  # -- 1. Extract predictor values at the fixed points ------------------------
   # `predictors` is already RescaleRasters_bayes-scaled: values are on the
   # scale ((raw - mu) / sd) * |mean_beta|. Use them directly — no further
   # standardisation needed.
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
   pt_rescaled <- as.data.frame(pt_env)
 
-  # ── 3. Add weighted coordinates ────────────────────────────────────────────
+  # -- 3. Add weighted coordinates --------------------------------------------
   pt_rescaled <- add_coord_weights_to_points(
     sample_pts,
     pt_rescaled,
@@ -739,7 +739,7 @@ project_consensus_to_raster <- function(
     env_vars
   )
 
-  # ── 4. Attach response variables and filter complete cases ─────────────────
+  # -- 4. Attach response variables and filter complete cases -----------------
   pt_rescaled$rank1_cluster <- factor(consensus_labels)
   pt_rescaled$rank2_cluster <- factor(top3_labels[, 2])
   pt_rescaled$rank3_cluster <- factor(top3_labels[, 3])
@@ -752,28 +752,36 @@ project_consensus_to_raster <- function(
     stop("Fewer than 50 complete cases for KNN training. Check for NA values.")
   }
 
-  # ── 5. Train KNNs ───────────────────────────────────────────────────────────
+  # -- 5. Train KNNs -----------------------------------------------------------
   cluster_features <- setdiff(
     names(pt_train),
     c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
   )
 
-  # Helper to check if a factor has enough levels for train/test split
-  can_train_knn <- function(y, min_per_class = 2) {
-    if (length(unique(y)) < 2L) return(FALSE)   # ← new first line
+  # Helper to check if a factor has enough levels for train/test split.
+  # Requires enough per class that the test split (1 - split_prop) is non-empty.
+  can_train_knn <- function(y, split_prop = 0.8) {
+    if (length(unique(y)) < 2L) return(FALSE)
     counts <- table(y)
-    all(counts >= min_per_class)
+    min_needed <- ceiling(1 / (1 - split_prop))
+    all(counts >= min_needed)
   }
 
-  # Rank1 (consensus) clusters
-  if (!can_train_knn(pt_train$rank1_cluster)) {
+  # Rank1 (consensus) clusters — drop classes too small for train/test split,
+  # then stop only if fewer than 2 trainable classes survive.
+  min_needed <- ceiling(1 / (1 - 0.8))
+  rank1_counts <- table(pt_train$rank1_cluster)
+  keep_rank1 <- names(rank1_counts[rank1_counts >= min_needed])
+  if (length(keep_rank1) < 2L) {
     stop(
-      "Rank1 clusters: insufficient observations per cluster for KNN training. ",
+      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
       "Try increasing n_pts or decreasing n (number of clusters)."
     )
   }
-  knn_data_rank1 <- pt_train[, cluster_features, drop = FALSE]
-  knn_data_rank1$ID <- pt_train$rank1_cluster
+  pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
+  pt_rank1$rank1_cluster <- droplevels(pt_rank1$rank1_cluster)
+  knn_data_rank1 <- pt_rank1[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID <- pt_rank1$rank1_cluster
   knn_rank1 <- trainKNN(knn_data_rank1, split_prop = 0.8)
 
   # Rank2 clusters - may have degenerate cases if all points assigned to same cluster
@@ -806,7 +814,7 @@ project_consensus_to_raster <- function(
     y = pt_train$stability
   )
 
-  # ── 6. Build prediction raster stack ──────────────────────────────────────
+  # -- 6. Build prediction raster stack --------------------------------------
   # predictors is already RescaleRasters_bayes-scaled — use layers directly.
   pred_rescale <- predictors[[env_vars]]
 
@@ -819,7 +827,7 @@ project_consensus_to_raster <- function(
 
   pred_rescale <- terra::mask(pred_rescale, mask_rast)
 
-  # ── 7. Predict to full raster ──────────────────────────────────────────────
+  # -- 7. Predict to full raster ----------------------------------------------
   cluster_raster <- terra::predict(
     pred_rescale,
     model = knn_rank1$fit.knn,
@@ -847,30 +855,13 @@ project_consensus_to_raster <- function(
   )
   names(stability_raster) <- "cluster_stability"
 
-  # ── 8. Project to planar CRS ────────────────────────────────────────────────
-  cluster_raster <- terra::project(cluster_raster, planar_proj)
-  cluster_raster <- terra::mask(
-    cluster_raster,
-    terra::project(mask_rast, planar_proj)
-  )
+  # --- 8. Project to planar CRS -------------------------------------------
+  mask_planar <- terra::project(mask_rast, planar_proj)
 
-  stability_raster <- terra::project(stability_raster, planar_proj)
-  stability_raster <- terra::mask(
-    stability_raster,
-    terra::project(mask_rast, planar_proj)
-  )
-
-  rank2_raster <- terra::project(rank2_raster, planar_proj)
-  rank2_raster <- terra::mask(
-    rank2_raster,
-    terra::project(mask_rast, planar_proj)
-  )
-
-  rank3_raster <- terra::project(rank3_raster, planar_proj)
-  rank3_raster <- terra::mask(
-    rank3_raster,
-    terra::project(mask_rast, planar_proj)
-  )
+  cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj), mask_planar)
+  stability_raster <- terra::mask(terra::project(stability_raster, planar_proj), mask_planar)
+  rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj), mask_planar)
+  rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj), mask_planar)
 
   list(
     cluster_raster = cluster_raster,
@@ -884,9 +875,9 @@ project_consensus_to_raster <- function(
   )
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  Label-remapping helpers for geographic reordering
-# ══════════════════════════════════════════════════════════════════════════════
+# ------------------------------------------------------------------------------
 
 #' Build a raw->geographic label lookup vector from pre/post reorder rasters
 #'
@@ -998,14 +989,26 @@ reassign_cluster_ids <- function(old_rast, new_rast){
     c("rank1_cluster", "rank2_cluster", "rank3_cluster", "stability")
   )
 
-  can_train_knn <- function(y, min_per_class = 2) {
+  can_train_knn <- function(y, split_prop = 0.8) {
     if (length(unique(y)) < 2L) return(FALSE)
-    all(table(y) >= min_per_class)
+    min_needed <- ceiling(1 / (1 - split_prop))
+    all(table(y) >= min_needed)
   }
 
-  # Rank1
-  knn_data_rank1      <- pt_train[, cluster_features, drop = FALSE]
-  knn_data_rank1$ID   <- pt_train$rank1_cluster
+  # Rank1 — drop classes too small for train/test split
+  min_needed <- ceiling(1 / (1 - 0.8))
+  rank1_counts <- table(pt_train$rank1_cluster)
+  keep_rank1 <- names(rank1_counts[rank1_counts >= min_needed])
+  if (length(keep_rank1) < 2L) {
+    stop(
+      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
+      "Try increasing n_pts or decreasing n (number of clusters)."
+    )
+  }
+  pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
+  pt_rank1$rank1_cluster <- droplevels(pt_rank1$rank1_cluster)
+  knn_data_rank1      <- pt_rank1[, cluster_features, drop = FALSE]
+  knn_data_rank1$ID   <- pt_rank1$rank1_cluster
   knn_rank1           <- trainKNN(knn_data_rank1, split_prop = 0.8)
 
   # Rank2

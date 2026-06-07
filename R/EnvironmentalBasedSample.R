@@ -182,9 +182,12 @@ add_weighted_coordinates <- function(pred_rescale, coord_wt) {
     pred_rescale$x <- scale(pred_rescale$x)
     pred_rescale$y <- scale(pred_rescale$y)
 
+    pred_rescale$x <- terra::mask(pred_rescale$x, pred_rescale[[1]])
+    pred_rescale$y <- terra::mask(pred_rescale$y, pred_rescale[[1]])
+
     coordRanges <- rbind(
-      terra::global(pred_rescale$y, fun = 'range'),
-      terra::global(pred_rescale$x, fun = 'range')
+      terra::global(pred_rescale$y, fun = 'range', na.rm = TRUE),
+      terra::global(pred_rescale$x, fun = 'range', na.rm = TRUE)
     )
 
     coordRanges$range <- (coordRanges$min - coordRanges$max)

@@ -70,16 +70,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cmdstan
-          key: cmdstan-${{ runner.os }}-${{ hashFiles('**/.cmdstan_version') }}
-          restore-keys: cmdstan-${{ runner.os }}-
+          key: cmdstan-${{ runner.os }}-v2.38.0
 
       - name: Install CmdStan
-        run: |
-          needs_install <- tryCatch({
-            !dir.exists(cmdstanr::cmdstan_path())
-          }, error = function(e) TRUE)
-          if (needs_install) cmdstanr::install_cmdstan(cores = 2, quiet = TRUE)
+        run: cmdstanr::install_cmdstan(version = "2.38.0", cores = 2, quiet = TRUE, overwrite = FALSE)
         shell: Rscript {0}
+
+      - name: Export CMDSTAN path
+        run: echo "CMDSTAN=$HOME/.cmdstan/cmdstan-2.38.0" >> $GITHUB_ENV
 
       - name: Test coverage
         run: |

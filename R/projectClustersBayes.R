@@ -520,16 +520,15 @@ project_future_draws <- function(
 #' @keywords internal
 #' @noRd
 .build_future_pred_stack <- function(future_predictors, env_vars, planar_proj) {
-  template    <- future_predictors[[env_vars[[1]]]]
-  coords_ll   <- terra::as.data.frame(template, xy = TRUE, cells = FALSE)[, c("x", "y")]
-
-  coords_vect <- terra::vect(
-    coords_ll,
-    geom = c("x", "y"),
-    crs  = terra::crs(future_predictors)
-  )
-  coords_proj <- terra::project(coords_vect, planar_proj_terra(planar_proj))
-  coords_km   <- terra::crds(coords_proj) / 1000
+  template  <- future_predictors[[env_vars[[1]]]]
+  coords_ll <- terra::xyFromCell(template, 1:terra::ncell(template))
+  coords_km <- sf::st_coordinates(
+    sf::st_transform(
+      sf::st_as_sf(as.data.frame(coords_ll), coords = c("x", "y"),
+                   crs = sf::st_crs(terra::crs(template))),
+      planar_proj
+    )
+  ) / 1000
 
   gp_x_rast <- terra::rast(template)
   gp_y_rast <- terra::rast(template)
