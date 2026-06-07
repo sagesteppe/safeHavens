@@ -38,7 +38,8 @@ Suggests:
     rlang,
     geodata,
     tidybayes,
-    pROC
+    pROC,
+    RcppEigen
 VignetteBuilder: knitr
 Imports: 
     brms,
