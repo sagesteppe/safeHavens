@@ -26,7 +26,7 @@
 #' @param n Integer. Number of clusters per draw. Passed to
 #'   [EnvironmentalBasedSample()] internals.
 #' @param n_pts Integer. Points to sample per draw for clustering. Defaults to
-#'   `500`. The same points are used across all draws (fixed spatial frame)
+#'   `1000`. The same points are used across all draws (fixed spatial frame)
 #'   so co-occurrence is directly comparable.
 #' @param lyr Character. Layer name in `f_rasts` to use as the spatial domain
 #'   mask. Defaults to `"Threshold"` (the [PostProcessSDM()] output
@@ -93,8 +93,8 @@ PosteriorCluster <- function(
   pred_mat,
   training_data,
   n_draws = 100,
-  n = 10,
-  n_pts = 500,
+  n = 25,
+  n_pts = 1000,
   lyr = "occurrence_prob_mean",
   planar_proj,
   coord_wt = 2.5,
