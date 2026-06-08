@@ -11,8 +11,8 @@ PosteriorCluster(
   pred_mat,
   training_data,
   n_draws = 100,
-  n = 10,
-  n_pts = 500,
+  n = 25,
+  n_pts = 1000,
   lyr = "occurrence_prob_mean",
   planar_proj,
   coord_wt = 2.5,
@@ -41,7 +41,7 @@ matrices for typical SDM datasets (< 2000 obs, < 20 vars).}
 \code{\link[=EnvironmentalBasedSample]{EnvironmentalBasedSample()}} internals.}
 
 \item{n_pts}{Integer. Points to sample per draw for clustering. Defaults to
-\code{500}. The same points are used across all draws (fixed spatial frame)
+\code{1000}. The same points are used across all draws (fixed spatial frame)
 so co-occurrence is directly comparable.}
 
 \item{lyr}{Character. Layer name in \code{f_rasts} to use as the spatial domain
