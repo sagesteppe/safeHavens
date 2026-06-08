@@ -24,8 +24,8 @@ PosteriorCluster(
   pred_mat,
   training_data,
   n_draws = 100,
-  n = 10,
-  n_pts = 500,
+  n = 25,
+  n_pts = 1000,
   lyr = "occurrence_prob_mean",
   planar_proj,
   coord_wt = 2.5,
@@ -78,7 +78,7 @@ PosteriorCluster(
 
 - n_pts:
 
-  Integer. Points to sample per draw for clustering. Defaults to `500`.
+  Integer. Points to sample per draw for clustering. Defaults to `1000`.
   The same points are used across all draws (fixed spatial frame) so
   co-occurrence is directly comparable.
 
