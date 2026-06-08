@@ -386,9 +386,9 @@ language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.
 
 ``` r
-
 par(mfrow = c(1, 3))
 plot(as.factor(current_cluster$SummaryRaster$consensus), main = 'Consensus')
+Warning: [plot] unknown categories in raster values
 plot(current_cluster$RankRaster$rank2_final, main = '2nd most')
 plot(current_cluster$RankRaster$rank3_final, main = '3rd most')
 ```
@@ -457,11 +457,13 @@ Warning: [spatSample] fewer cells returned than requested
     ******************************************************************* 
     * Among all indices:                                                
     * 4 proposed 2 as the best number of clusters 
-    * 10 proposed 3 as the best number of clusters 
-    * 2 proposed 4 as the best number of clusters 
-    * 2 proposed 5 as the best number of clusters 
-    * 2 proposed 7 as the best number of clusters 
-    * 3 proposed 20 as the best number of clusters 
+    * 9 proposed 3 as the best number of clusters 
+    * 1 proposed 4 as the best number of clusters 
+    * 3 proposed 6 as the best number of clusters 
+    * 1 proposed 9 as the best number of clusters 
+    * 1 proposed 10 as the best number of clusters 
+    * 1 proposed 15 as the best number of clusters 
+    * 3 proposed 16 as the best number of clusters 
 
                        ***** Conclusion *****                            
      
@@ -469,6 +471,7 @@ Warning: [spatSample] fewer cells returned than requested
      
      
     ******************************************************************* 
+    Warning: [spatSample] not all classes have 50 cells
 
 We visualize the results for the current and future scenarios below.
 

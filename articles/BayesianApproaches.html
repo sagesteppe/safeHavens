@@ -536,11 +536,11 @@ clustering scenarios would look like via the following ranks. Do note
 that the renumbering of clusters from NW to SE (left to right, as many
 language groups read books) has not yet occurred on these rasters, so
 the numbers differ from the consensus surface.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/is.bool.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">SummaryRaster</span><span class="op">$</span><span class="va">consensus</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">'Consensus'</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank2_final</span>, main <span class="op">=</span> <span class="st">'2nd most'</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">current_cluster</span><span class="op">$</span><span class="va">RankRaster</span><span class="op">$</span><span class="va">rank3_final</span>, main <span class="op">=</span> <span class="st">'3rd most'</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">as.factor</span>(current_cluster<span class="sc">$</span>SummaryRaster<span class="sc">$</span>consensus), <span class="at">main =</span> <span class="st">'Consensus'</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>Warning<span class="sc">:</span> [plot] unknown categories <span class="cf">in</span> raster values</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="fu">plot</span>(current_cluster<span class="sc">$</span>RankRaster<span class="sc">$</span>rank2_final, <span class="at">main =</span> <span class="st">'2nd most'</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">plot</span>(current_cluster<span class="sc">$</span>RankRaster<span class="sc">$</span>rank3_final, <span class="at">main =</span> <span class="st">'3rd most'</span>)</span></code></pre></div>
 <p><img src="BayesianApproaches_files/figure-html/view%20top%203%20ranks%20side%20by%20side-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -595,18 +595,21 @@ climate scenarios.</p>
 ******************************************************************* 
 * Among all indices:                                                
 * 4 proposed 2 as the best number of clusters 
-* 10 proposed 3 as the best number of clusters 
-* 2 proposed 4 as the best number of clusters 
-* 2 proposed 5 as the best number of clusters 
-* 2 proposed 7 as the best number of clusters 
-* 3 proposed 20 as the best number of clusters 
+* 9 proposed 3 as the best number of clusters 
+* 1 proposed 4 as the best number of clusters 
+* 3 proposed 6 as the best number of clusters 
+* 1 proposed 9 as the best number of clusters 
+* 1 proposed 10 as the best number of clusters 
+* 1 proposed 15 as the best number of clusters 
+* 3 proposed 16 as the best number of clusters 
 
                    ***** Conclusion *****                            
  
 * According to the majority rule, the best number of clusters is  3 
  
  
-******************************************************************* </code></pre>
+******************************************************************* 
+Warning: [spatSample] not all classes have 50 cells</code></pre>
 <p>We visualize the results for the current and future scenarios
 below.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
