@@ -357,6 +357,22 @@ project_future_draws <- function(
   future_rescaled <- future_rescaled_rr$RescaledPredictors
   mean_betas_vec  <- colMeans(beta_draws)
 
+  # Drop variables with negligible beta contribution, mirroring PosteriorCluster.
+  # mean_betas_vec is computed from the draw subset (n_future_draws rows), so
+  # column means can shift relative to the full posterior — recheck the threshold.
+  contrib     <- abs(mean_betas_vec) / sum(abs(mean_betas_vec))
+  low_contrib <- contrib < 0.01
+  if (any(low_contrib)) {
+    message(sprintf(
+      "Dropping %d variable(s) with < 1%% beta contribution in future draws: %s",
+      sum(low_contrib),
+      paste(env_vars[low_contrib], collapse = ", ")
+    ))
+    env_vars       <- env_vars[!low_contrib]
+    beta_draws     <- beta_draws[, env_vars, drop = FALSE]
+    mean_betas_vec <- mean_betas_vec[env_vars]
+  }
+
   # --- 1. Sample fixed points from future suitable habitat ------------------
   message("  Sampling fixed future point set ...")
 
