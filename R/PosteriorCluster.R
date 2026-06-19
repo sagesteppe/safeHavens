@@ -172,7 +172,7 @@ PosteriorCluster <- function(
     size = n_pts,
     method = "regular",
     as.points = TRUE,
-    na.rm = TRUE
+    na.rm = FALSE
   )
 
   # Extract predictor values at these fixed points
