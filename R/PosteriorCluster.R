@@ -780,9 +780,53 @@ project_consensus_to_raster <- function(
             paste(dropped, collapse = ", "))
   if (length(keep_rank1) < 2L) {
     stop(
-      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
+      "All rank1 clusters are noise (< ", min_needed, " pts each). ",
       "Try increasing n_pts or decreasing n (number of clusters)."
     )
+  }
+
+  if (length(keep_rank1) == 1L) {
+    message(
+      "Single rank1 cluster '", keep_rank1, "' remains after noise removal — ",
+      "panmixia signal. Painting raster constant; KNN cluster models set to NULL."
+    )
+    pred_rescale <- predictors[[env_vars]]
+    pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
+    names(pred_rescale)[names(pred_rescale) == "x"] <- "coord_x_w"
+    names(pred_rescale)[names(pred_rescale) == "y"] <- "coord_y_w"
+    pred_rescale <- terra::mask(pred_rescale, mask_rast)
+
+    knn_stability <- train_regression_knn(
+      X = pt_train[, cluster_features, drop = FALSE],
+      y = pt_train$stability
+    )
+    stability_raster <- terra::predict(pred_rescale, model = knn_stability, na.rm = TRUE)
+    names(stability_raster) <- "cluster_stability"
+
+    cluster_raster <- terra::rast(mask_rast)
+    cluster_raster[] <- as.integer(keep_rank1)
+    cluster_raster <- terra::mask(cluster_raster, mask_rast)
+    rank2_raster <- cluster_raster
+    rank3_raster <- cluster_raster
+    names(rank2_raster) <- "rank2_cluster"
+    names(rank3_raster) <- "rank3_cluster"
+
+    mask_planar <- terra::project(mask_rast, planar_proj)
+    cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj), mask_planar)
+    stability_raster <- terra::mask(terra::project(stability_raster, planar_proj), mask_planar)
+    rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj), mask_planar)
+    rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj), mask_planar)
+
+    return(list(
+      cluster_raster   = cluster_raster,
+      stability_raster = stability_raster,
+      rank2_raster     = rank2_raster,
+      rank3_raster     = rank3_raster,
+      knn_cluster      = NULL,
+      knn_rank2        = NULL,
+      knn_rank3        = NULL,
+      knn_stability    = knn_stability
+    ))
   }
 
   pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
@@ -1011,12 +1055,31 @@ reassign_cluster_ids <- function(old_rast, new_rast){
   if (length(dropped) > 0L)
     message("Noise clusters (< ", min_needed, " pts), removing from downstream analysis: ",
             paste(dropped, collapse = ", "))
-  if (length(keep_rank1) < 2L) {
+
+  if (length(keep_rank1) == 0L) {
     stop(
-      "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training. ",
+      "All rank1 clusters are noise (< ", min_needed, " pts each). ",
       "Try increasing n_pts or decreasing n (number of clusters)."
     )
   }
+
+  if (length(keep_rank1) == 1L) {
+    knn_stability <- train_regression_knn(
+      X = pt_train[, cluster_features, drop = FALSE],
+      y = pt_train$stability
+    )
+    return(list(
+      cluster_raster   = rast_list$cluster_raster,
+      stability_raster = rast_list$stability_raster,
+      rank2_raster     = rast_list$rank2_raster,
+      rank3_raster     = rast_list$rank3_raster,
+      knn_cluster      = NULL,
+      knn_rank2        = NULL,
+      knn_rank3        = NULL,
+      knn_stability    = knn_stability
+    ))
+  }
+
   pt_rank1 <- pt_train[pt_train$rank1_cluster %in% keep_rank1, ]
   pt_rank1$rank1_cluster <- droplevels(pt_rank1$rank1_cluster)
   knn_data_rank1      <- pt_rank1[, cluster_features, drop = FALSE]
