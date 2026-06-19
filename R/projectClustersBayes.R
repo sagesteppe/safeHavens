@@ -106,6 +106,13 @@ projectClustersBayes <- function(
 
   # --- Unpack posterior_clusters ------------------------------------------------
   knn_consensus <- posterior_clusters$KNNModels$KNN_Cluster
+  if (is.null(knn_consensus)) {
+    stop(
+      "projectClustersBayes: KNN_Cluster is NULL — PosteriorCluster detected panmixia ",
+      "(single cluster after noise removal). Future projection is not meaningful for a ",
+      "panmictic result."
+    )
+  }
   scaling       <- posterior_clusters$ScalingParams
   mean_betas    <- scaling$mean_betas
   beta_draws    <- scaling$beta_draws   # n_stored_draws x n_vars matrix

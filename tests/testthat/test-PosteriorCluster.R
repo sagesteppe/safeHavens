@@ -1291,8 +1291,8 @@ test_that("pcr: fewer than 50 complete predictor rows stops with informative mes
   )
 })
 
-# ── E4.  rank1 with insufficient observations per cluster stops() ─────────────
-test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
+# ── E4.  rank1 with all clusters too small (all noise) triggers stop() ────────
+test_that("pcr: all rank1 clusters too small (all noise) triggers stop()", {
   skip_if_not_installed("terra")
   skip_if_not_installed("caret")
   f <- make_pcr_fixture(n_pts = 80, n_clust = 3)
@@ -1301,7 +1301,7 @@ test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
                              degenerate_labels,
                              degenerate_labels)
   expect_error(
-    withCallingHandlers(
+    suppressWarnings(
       project_consensus_to_raster(
         sample_pts       = f$sample_pts,
         consensus_labels = degenerate_labels,
@@ -1313,10 +1313,9 @@ test_that("pcr: rank1 cluster with only 1 member per cluster triggers stop()", {
         coord_wt         = f$coord_wt,
         mask_rast        = f$mask_rast,
         planar_proj      = f$planar_proj
-      ),
-      warning = function(w) invokeRestart("muffleWarning")
+      )
     ),
-    regexp = "Rank1 clusters: fewer than 2 clusters have sufficient observations for KNN training"
+    regexp = "All rank1 clusters are noise"
   )
 })
 
@@ -1636,6 +1635,110 @@ test_that("pcr: negative mean_betas produce identical rasters to their absolute 
   expect_equal(
     terra::values(res_neg$stability_raster),
     terra::values(res_pos$stability_raster)
+  )
+})
+
+
+# =============================================================================
+# E – panmixia path (single rank1 cluster survives noise filtering)
+# =============================================================================
+
+# Helper: all points in cluster 1 → panmixia on rank1
+make_pcr_panmixia <- function(n_pts = 80, seed = 42) {
+  f <- make_pcr_fixture(n_pts = n_pts, seed = seed)
+  f$consensus_labels <- rep(1L, n_pts)
+  f$top3_labels[, 1] <- 1L
+  f
+}
+
+# ── E21.  Single surviving rank1 cluster emits panmixia message ───────────────
+test_that("pcr: single rank1 cluster triggers panmixia message", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f <- make_pcr_panmixia()
+  expect_message(
+    suppressWarnings(call_pcr(f)),
+    regexp = "panmixia"
+  )
+})
+
+# ── E22.  Panmixia result carries all 8 output keys ──────────────────────────
+test_that("pcr: panmixia path returns list with all 8 output keys", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  expected_keys <- c("cluster_raster", "stability_raster",
+                     "rank2_raster",   "rank3_raster",
+                     "knn_cluster",    "knn_rank2",
+                     "knn_rank3",      "knn_stability")
+  expect_true(all(expected_keys %in% names(res)))
+})
+
+# ── E23.  Panmixia sets KNN cluster models to NULL ───────────────────────────
+test_that("pcr: panmixia sets knn_cluster, knn_rank2, knn_rank3 to NULL", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  expect_null(res$knn_cluster)
+  expect_null(res$knn_rank2)
+  expect_null(res$knn_rank3)
+})
+
+# ── E24.  Panmixia still trains knn_stability (regression, unaffected) ────────
+test_that("pcr: panmixia still trains knn_stability", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  expect_s3_class(res$knn_stability, "train")
+})
+
+# ── E25.  Cluster raster has exactly one unique non-NA value ──────────────────
+test_that("pcr: panmixia cluster raster contains exactly one unique value", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  vals <- unique(terra::values(res$cluster_raster, na.rm = TRUE))
+  expect_length(vals, 1L)
+})
+
+# ── E26.  Cluster raster value matches the surviving cluster label ─────────────
+test_that("pcr: panmixia cluster raster value equals the surviving cluster label", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  vals <- unique(terra::values(res$cluster_raster, na.rm = TRUE))
+  expect_equal(as.integer(vals), 1L)
+})
+
+# ── E27.  rank2/rank3 rasters also painted constant ───────────────────────────
+test_that("pcr: panmixia rank2/rank3 rasters each contain a single unique value", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f   <- make_pcr_panmixia()
+  res <- suppressMessages(suppressWarnings(call_pcr(f)))
+  expect_length(unique(terra::values(res$rank2_raster, na.rm = TRUE)), 1L)
+  expect_length(unique(terra::values(res$rank3_raster, na.rm = TRUE)), 1L)
+})
+
+# ── E28.  Noise cluster message names the dropped label ───────────────────────
+test_that("pcr: noise cluster removal emits message listing the dropped label", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("caret")
+  f  <- make_pcr_fixture(n_pts = 80, n_clust = 3, seed = 42)
+  cl <- f$consensus_labels
+  cl[cl == 3L] <- 1L   # move all cluster-3 pts to cluster-1
+  cl[1]        <- 3L   # leave exactly 1 pt in cluster-3 → noise
+  f$consensus_labels <- cl
+  f$top3_labels[, 1] <- cl
+
+  expect_message(
+    suppressWarnings(call_pcr(f)),
+    regexp = "Noise clusters"
   )
 })
 

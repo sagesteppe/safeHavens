@@ -652,6 +652,28 @@ test_that("Geometry has an ID column with integer-compatible values", {
                 is.numeric(result$Geometry$ID))
 })
 
+# =============================================================================
+# 9. Panmixia guard — NULL KNN_Cluster triggers informative stop()
+# =============================================================================
+
+test_that("projectClustersBayes: NULL KNN_Cluster triggers panmixia stop()", {
+  fake_bsdm <- list(Model = NULL, PredictMatrix = NULL)
+  fake_pc   <- list(KNNModels = list(KNN_Cluster = NULL))
+
+  expect_error(
+    projectClustersBayes(
+      bSDM_object        = fake_bsdm,
+      posterior_clusters = fake_pc,
+      future_predictors  = NULL,
+      current_predictors = NULL,
+      threshold_rasts    = NULL,
+      planar_proj        = "EPSG:3857"
+    ),
+    regexp = "panmixia"
+  )
+})
+
+
 test_that("changes data frame contains cluster_id column and correct structure", {
   skip_on_cran()
   skip_if_not_installed("brms")
