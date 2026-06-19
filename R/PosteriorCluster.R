@@ -33,7 +33,7 @@
 #'   name).
 #' @param planar_proj Numeric EPSG or proj4 string for planar projection.
 #' @param coord_wt Numeric. Coordinate weight, as in [EnvironmentalBasedSample()].
-#'   Defaults to `2.5`.
+#'   Defaults to `1`.
 #' @param consensus_method Character. How to derive the final clustering from
 #'   the co-occurrence matrix. One of:
 #'   \describe{
@@ -93,11 +93,11 @@ PosteriorCluster <- function(
   pred_mat,
   training_data,
   n_draws = 100,
-  n = 25,
+  n = 20,
   n_pts = 1000,
   lyr = "occurrence_prob_mean",
   planar_proj,
-  coord_wt = 2.5,
+  coord_wt = 1,
   consensus_method = c("hierarchical", "pam"),
   beta_draws = NULL,
   seed = 42
@@ -137,16 +137,28 @@ PosteriorCluster <- function(
   # Instead, per-draw reweighting is applied as a beta ratio in the draw loop.
   mean_betas <- colMeans(beta_draws)
 
-  # Guard: drop variables where mean beta is exactly zero (degenerate draws)
-  zero_beta <- abs(mean_betas) < .Machine$double.eps
-  if (any(zero_beta)) {
-    warning(sprintf(
-      "Variable(s) with zero posterior mean beta excluded from clustering: %s",
-      paste(env_vars[zero_beta], collapse = ", ")
+  # Drop variables with negligible standardized beta contribution.
+  # Horseshoe priors shrink coefficients toward zero but rarely collapse them
+  # exactly; low-weight variables add noise to KNN distances without
+  # contributing signal. Threshold at 1% of total |beta| weight.
+  contrib    <- abs(mean_betas) / sum(abs(mean_betas))
+  low_contrib <- contrib < 0.01
+  if (any(low_contrib)) {
+    message(sprintf(
+      "Dropping %d variable(s) with < 1%% standardized beta contribution: %s",
+      sum(low_contrib),
+      paste(env_vars[low_contrib], collapse = ", ")
     ))
-    env_vars   <- env_vars[!zero_beta]
-    mean_betas <- mean_betas[!zero_beta]
+    env_vars   <- env_vars[!low_contrib]
+    mean_betas <- mean_betas[!low_contrib]
     beta_draws <- beta_draws[, env_vars, drop = FALSE]
+  }
+
+  if (length(env_vars) == 0L) {
+    stop(
+      "All environmental variables have < 1% standardized beta contribution. ",
+      "Check that the model contains meaningful fixed effects."
+    )
   }
 
   # -- 4. Fix sample points across all draws ------------------------------------
@@ -158,7 +170,7 @@ PosteriorCluster <- function(
   sample_pts <- terra::spatSample(
     mask_rast,
     size = n_pts,
-    method = "random",
+    method = "regular",
     as.points = TRUE,
     na.rm = TRUE
   )
@@ -396,6 +408,12 @@ PosteriorCluster <- function(
 #' @keywords internal
 #' @noRd
 train_regression_knn <- function(X, y) {
+  # caret::train uses createDataPartition(y) internally for CV splits.
+  # createDataPartition calls cut() on numeric y, which fails when y is
+  # constant (zero variance). Add negligible noise so CV can stratify.
+  if (length(unique(y)) == 1L)
+    y <- y + stats::rnorm(length(y), sd = 1e-8)
+
   data_for_knn <- X
   data_for_knn$y <- y
 
