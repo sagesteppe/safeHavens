@@ -774,7 +774,7 @@ project_consensus_to_raster <- function(
 
   dropped <- setdiff(names(rank1_counts), keep_rank1)
   if (length(dropped) > 0L)
-    message("Noise clusters (< ", min_needed, " pts), removing from downstream analysis: ",
+    message("Noise clusters (< ", min_needed, " pts), remotimsving from downstream analysis: ",
             paste(dropped, collapse = ", "))
 
   if (length(keep_rank1) == 0L) {
