@@ -230,7 +230,7 @@ that the source also includes a ~1km at-equator resolution data set (30
 seconds), but this would take too long for the vignette.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Download WorldClim bioclim at ~10 km</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>bio_current <span class="ot">&lt;-</span> <span class="fu">worldclim_global</span>(<span class="at">var=</span><span class="st">"bioc"</span>, <span class="at">res=</span><span class="fl">2.5</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpySpYXs<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bio.zip</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>Rtmp5IyHKy<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bio.zip</span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>bio_future <span class="ot">&lt;-</span> <span class="fu">cmip6_world</span>(</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">model =</span> <span class="st">"CNRM-CM6-1"</span>, <span class="do">## modelling method</span></span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">ssp   =</span> <span class="st">"245"</span>, <span class="do">## "Middle of the Road" scenario</span></span>
@@ -238,7 +238,7 @@ seconds), but this would take too long for the vignette.</p>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">var   =</span> <span class="st">"bioc"</span>, <span class="co"># just use the bioclim variables</span></span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">res   =</span> <span class="fl">2.5</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>)</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>RtmpySpYXs<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bioc_CNRM<span class="sc">-</span>CM6<span class="dv">-1</span>_ssp245_2041<span class="fl">-2060.</span>tif</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>Cached as<span class="sc">:</span> <span class="er">/</span>tmp<span class="sc">/</span>Rtmp5IyHKy<span class="sc">/</span>climate<span class="sc">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m<span class="sc">/</span><span class="er">/</span>wc2<span class="fl">.1</span>_2<span class="fl">.5</span>m_bioc_CNRM<span class="sc">-</span>CM6<span class="dv">-1</span>_ssp245_2041<span class="fl">-2060.</span>tif</span>
 <span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
 <span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co"># Crop to domain - use a large BB to accomodate range shift</span></span>
 <span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co"># under future time points. </span></span>
@@ -343,7 +343,7 @@ instead.</p>
 <tbody>
 <tr class="odd">
 <td align="left">Sensitivity</td>
-<td align="right">0.8000000</td>
+<td align="right">0.7600000</td>
 </tr>
 <tr class="even">
 <td align="left">Specificity</td>
@@ -351,11 +351,11 @@ instead.</p>
 </tr>
 <tr class="odd">
 <td align="left">Recall</td>
-<td align="right">0.8000000</td>
+<td align="right">0.7600000</td>
 </tr>
 <tr class="even">
 <td align="left">Balanced Accuracy</td>
-<td align="right">0.8423077</td>
+<td align="right">0.8223077</td>
 </tr>
 </tbody>
 </table>
@@ -436,7 +436,7 @@ be used as the one applied to <code>PredictiveProvenance</code>.</p>
 <th align="right">x</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="right">0.4841719</td>
+<td align="right">0.4085785</td>
 </tr></tbody>
 </table>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
@@ -510,14 +510,15 @@ heart of this workflow; it requires the outputs from
  
 ******************************************************************* 
 * Among all indices:                                                
-* 6 proposed 2 as the best number of clusters 
-* 10 proposed 3 as the best number of clusters 
-* 4 proposed 4 as the best number of clusters 
-* 1 proposed 5 as the best number of clusters 
+* 4 proposed 3 as the best number of clusters 
+* 9 proposed 4 as the best number of clusters 
+* 6 proposed 5 as the best number of clusters 
+* 1 proposed 19 as the best number of clusters 
+* 3 proposed 20 as the best number of clusters 
 
                    ***** Conclusion *****                            
  
-* According to the majority rule, the best number of clusters is  3 
+* According to the majority rule, the best number of clusters is  4 
  
  
 ******************************************************************* </code></pre>
@@ -565,14 +566,19 @@ employ to identify the most similar existing climate groups.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="right">6</td>
-<td align="right">NA</td>
-<td align="right">0.6259237</td>
-</tr>
-<tr class="even">
 <td align="right">7</td>
 <td align="right">1</td>
-<td align="right">0.3691745</td>
+<td align="right">0.5707659</td>
+</tr>
+<tr class="even">
+<td align="right">8</td>
+<td align="right">6</td>
+<td align="right">0.5724260</td>
+</tr>
+<tr class="odd">
+<td align="right">9</td>
+<td align="right">3</td>
+<td align="right">0.3136588</td>
 </tr>
 </tbody>
 </table>
@@ -582,13 +588,15 @@ relevant to the future scenarios.</p>
 between the scenarios.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>future_clusts<span class="sc">$</span>changes</span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>       <span class="fl">240313.327</span>     <span class="fl">265112.3428</span>        <span class="fl">10.31945</span>          <span class="fl">66.58470</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="dv">2</span>          <span class="dv">2</span>        <span class="fl">14876.702</span>      <span class="fl">21166.3537</span>        <span class="fl">42.27854</span>          <span class="fl">28.92169</span></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="dv">3</span>          <span class="dv">3</span>         <span class="fl">8018.406</span>      <span class="fl">38198.0808</span>       <span class="fl">376.37999</span>         <span class="fl">259.16551</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="dv">4</span>          <span class="dv">4</span>        <span class="fl">37413.540</span>       <span class="fl">6562.2069</span>       <span class="sc">-</span><span class="fl">82.46034</span>         <span class="fl">167.01276</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="dv">5</span>          <span class="dv">5</span>        <span class="fl">13511.867</span>      <span class="fl">10659.9321</span>       <span class="sc">-</span><span class="fl">21.10689</span>         <span class="fl">466.33214</span></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="dv">6</span>          <span class="dv">6</span>            <span class="fl">0.000</span>       <span class="fl">1846.9721</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="dv">7</span>          <span class="dv">7</span>            <span class="fl">0.000</span>        <span class="fl">708.0309</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span></code></pre></div>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="dv">1</span>          <span class="dv">1</span>      <span class="fl">34939.77668</span>     <span class="fl">254548.7375</span>       <span class="fl">628.53567</span>          <span class="fl">647.1779</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="dv">2</span>          <span class="dv">2</span>     <span class="fl">255019.42468</span>      <span class="fl">31000.2767</span>       <span class="sc">-</span><span class="fl">87.84395</span>          <span class="fl">627.1883</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="dv">3</span>          <span class="dv">3</span>       <span class="fl">6397.66419</span>      <span class="fl">34688.4605</span>       <span class="fl">442.20508</span>          <span class="fl">524.9209</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="dv">4</span>          <span class="dv">4</span>       <span class="fl">2507.88436</span>       <span class="fl">4823.8805</span>        <span class="fl">92.34860</span>          <span class="fl">636.7882</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="dv">5</span>          <span class="dv">5</span>         <span class="fl">51.18131</span>          <span class="fl">0.0000</span>      <span class="sc">-</span><span class="fl">100.00000</span>                <span class="cn">NA</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="dv">6</span>          <span class="dv">6</span>      <span class="fl">50754.80254</span>        <span class="fl">623.7410</span>       <span class="sc">-</span><span class="fl">98.77107</span>          <span class="fl">329.0626</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="dv">7</span>          <span class="dv">7</span>          <span class="fl">0.00000</span>       <span class="fl">8926.8318</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="dv">8</span>          <span class="dv">8</span>          <span class="fl">0.00000</span>        <span class="fl">709.1675</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="dv">9</span>          <span class="dv">9</span>          <span class="fl">0.00000</span>       <span class="fl">4046.5212</span>              <span class="cn">NA</span>                <span class="cn">NA</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

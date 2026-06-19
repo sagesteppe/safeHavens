@@ -128,7 +128,7 @@ but this would take too long for the vignette.
 ``` r
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
-Cached as: /tmp/RtmpySpYXs/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
+Cached as: /tmp/Rtmp5IyHKy/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method
   ssp   = "245", ## "Middle of the Road" scenario
@@ -136,7 +136,7 @@ bio_future <- cmip6_world(
   var   = "bioc", # just use the bioclim variables
   res   = 2.5
 )
-Cached as: /tmp/RtmpySpYXs/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
+Cached as: /tmp/Rtmp5IyHKy/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
 
 # Crop to domain - use a large BB to accomodate range shift
 # under future time points. 
@@ -252,10 +252,10 @@ knitr::kable(eSDM_model$ConfusionMatrix$byClass[
 
 |                   |         x |
 |:------------------|----------:|
-| Sensitivity       | 0.8000000 |
+| Sensitivity       | 0.7600000 |
 | Specificity       | 0.8846154 |
-| Recall            | 0.8000000 |
-| Balanced Accuracy | 0.8423077 |
+| Recall            | 0.7600000 |
+| Balanced Accuracy | 0.8223077 |
 
 ``` r
 
@@ -357,7 +357,7 @@ knitr::kable(threshold_rasts$Threshold$equal_sens_spec)
 
 |         x |
 |----------:|
-| 0.4841719 |
+| 0.4085785 |
 
 ``` r
 
@@ -449,14 +449,15 @@ future_clusts <- projectClusters(
      
     ******************************************************************* 
     * Among all indices:                                                
-    * 6 proposed 2 as the best number of clusters 
-    * 10 proposed 3 as the best number of clusters 
-    * 4 proposed 4 as the best number of clusters 
-    * 1 proposed 5 as the best number of clusters 
+    * 4 proposed 3 as the best number of clusters 
+    * 9 proposed 4 as the best number of clusters 
+    * 6 proposed 5 as the best number of clusters 
+    * 1 proposed 19 as the best number of clusters 
+    * 3 proposed 20 as the best number of clusters 
 
                        ***** Conclusion *****                            
      
-    * According to the majority rule, the best number of clusters is  3 
+    * According to the majority rule, the best number of clusters is  4 
      
      
     ******************************************************************* 
@@ -517,8 +518,9 @@ knitr::kable(future_clusts$novel_similarity)
 
 | novel_cluster_id | nearest_existing_id | avg_silhouette_width |
 |-----------------:|--------------------:|---------------------:|
-|                6 |                  NA |            0.6259237 |
-|                7 |                   1 |            0.3691745 |
+|                7 |                   1 |            0.5707659 |
+|                8 |                   6 |            0.5724260 |
+|                9 |                   3 |            0.3136588 |
 
 It is from these groups that we are most likely to collect germplasm
 relevant to the future scenarios.
@@ -529,13 +531,15 @@ the scenarios.
 ``` r
 future_clusts$changes
   cluster_id current_area_km2 future_area_km2 area_change_pct centroid_shift_km
-1          1       240313.327     265112.3428        10.31945          66.58470
-2          2        14876.702      21166.3537        42.27854          28.92169
-3          3         8018.406      38198.0808       376.37999         259.16551
-4          4        37413.540       6562.2069       -82.46034         167.01276
-5          5        13511.867      10659.9321       -21.10689         466.33214
-6          6            0.000       1846.9721              NA                NA
-7          7            0.000        708.0309              NA                NA
+1          1      34939.77668     254548.7375       628.53567          647.1779
+2          2     255019.42468      31000.2767       -87.84395          627.1883
+3          3       6397.66419      34688.4605       442.20508          524.9209
+4          4       2507.88436       4823.8805        92.34860          636.7882
+5          5         51.18131          0.0000      -100.00000                NA
+6          6      50754.80254        623.7410       -98.77107          329.0626
+7          7          0.00000       8926.8318              NA                NA
+8          8          0.00000        709.1675              NA                NA
+9          9          0.00000       4046.5212              NA                NA
 ```
 
 ## Conclusion
