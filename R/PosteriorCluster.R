@@ -767,9 +767,7 @@ project_consensus_to_raster <- function(
     all(counts >= min_needed)
   }
 
-  # Rank1 (consensus) clusters — drop classes too small for train/test split,
-  # then stop only if fewer than 2 trainable classes survive.
-  # before the stop():
+  # Rank1 (consensus) clusters — drop classes too small for train/test split.
   min_needed <- ceiling(1 / (1 - 0.8))
   rank1_counts <- table(pt_train$rank1_cluster)
   keep_rank1 <- names(rank1_counts[rank1_counts >= min_needed])
@@ -778,7 +776,8 @@ project_consensus_to_raster <- function(
   if (length(dropped) > 0L)
     message("Noise clusters (< ", min_needed, " pts), removing from downstream analysis: ",
             paste(dropped, collapse = ", "))
-  if (length(keep_rank1) < 2L) {
+
+  if (length(keep_rank1) == 0L) {
     stop(
       "All rank1 clusters are noise (< ", min_needed, " pts each). ",
       "Try increasing n_pts or decreasing n (number of clusters)."
