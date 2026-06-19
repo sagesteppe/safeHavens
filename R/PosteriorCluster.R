@@ -168,11 +168,11 @@ PosteriorCluster <- function(
   message("Sampling fixed point set from prediction surface ...")
   mask_rast <- f_rasts[[lyr]]
   sample_pts <- terra::spatSample(
-    mask_rast,
+    terra::crop(mask_rast),
     size = n_pts,
     method = "regular",
     as.points = TRUE,
-    na.rm = FALSE
+    na.rm = TRUE
   )
 
   # Extract predictor values at these fixed points
