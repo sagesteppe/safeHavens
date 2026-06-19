@@ -128,7 +128,7 @@ but this would take too long for the vignette.
 ``` r
 # Download WorldClim bioclim at ~10 km
 bio_current <- worldclim_global(var="bioc", res=2.5)
-Cached as: /tmp/Rtmp5IyHKy/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
+Cached as: /tmp/RtmpoT8Rae/climate/wc2.1_2.5m//wc2.1_2.5m_bio.zip
 bio_future <- cmip6_world(
   model = "CNRM-CM6-1", ## modelling method
   ssp   = "245", ## "Middle of the Road" scenario
@@ -136,7 +136,7 @@ bio_future <- cmip6_world(
   var   = "bioc", # just use the bioclim variables
   res   = 2.5
 )
-Cached as: /tmp/Rtmp5IyHKy/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
+Cached as: /tmp/RtmpoT8Rae/climate/wc2.1_2.5m//wc2.1_2.5m_bioc_CNRM-CM6-1_ssp245_2041-2060.tif
 
 # Crop to domain - use a large BB to accomodate range shift
 # under future time points. 
