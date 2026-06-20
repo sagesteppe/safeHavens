@@ -36,6 +36,15 @@ env_vars <- c("bio_01", "bio_12")
 
 make_scaling_params <- function(n_draws = 10L) {
   set.seed(42L)
+  # Build minimal Tps models in the env raster domain (EPSG:4326, x:-100..-90, y:40..50)
+  n_pts      <- 30L
+  raw_coords <- cbind(x = runif(n_pts, -100, -90), y = runif(n_pts, 40, 50))
+  mds_vals   <- cbind(runif(n_pts, -1, 1), runif(n_pts, -1, 1))
+  invisible(utils::capture.output(
+    tps1 <- fields::Tps(raw_coords, mds_vals[, 1]),
+    tps2 <- fields::Tps(raw_coords, mds_vals[, 2]),
+    type = "output"
+  ))
   list(
     mean_betas = c(bio_01 = 0.8, bio_12 = 0.5),
     beta_draws = matrix(
@@ -43,7 +52,7 @@ make_scaling_params <- function(n_draws = 10L) {
       nrow = n_draws,
       dimnames = list(NULL, c("bio_01", "bio_12"))
     ),
-    coord_wt = 0.5
+    tps_models = list(axis1 = tps1, axis2 = tps2)
   )
 }
 
@@ -276,7 +285,7 @@ test_that("project_future_draws returns a SpatRaster named future_stability", {
     suitable_mask        = suit_mask,
     env_vars             = env_vars,
     beta_draws           = scaling$beta_draws,
-    coord_wt             = 0.5,
+    tps_models           = scaling$tps_models,
     knn_consensus        = mock_knn,
     n_future_pts         = 80L,
     existing_cluster_ids = 1:3
@@ -314,7 +323,7 @@ test_that("project_future_draws stability values are in [0, 1]", {
     suitable_mask        = suit_mask,
     env_vars             = env_vars,
     beta_draws           = scaling$beta_draws,
-    coord_wt             = 0.1,
+    tps_models           = scaling$tps_models,
     knn_consensus        = mock_knn,
     n_future_pts         = 80L,
     existing_cluster_ids = 1:3
@@ -337,7 +346,7 @@ test_that("project_future_draws returns NA raster when no suitable cells", {
       suitable_mask        = suit_mask,
       env_vars             = env_vars,
       beta_draws           = scaling$beta_draws,
-      coord_wt             = 0,
+      tps_models           = scaling$tps_models,
       knn_consensus        = mock_knn,
       n_future_pts         = 20L,
       existing_cluster_ids = 1:3
@@ -386,7 +395,7 @@ test_that("project_future_draws clamps n_future_pts when fewer cells than reques
       suitable_mask        = suit_mask,
       env_vars             = env_vars,
       beta_draws           = scaling$beta_draws,
-      coord_wt             = 0,
+      tps_models           = scaling$tps_models,
       knn_consensus        = mock_knn,
       n_future_pts         = 500L,
       existing_cluster_ids = 1:3

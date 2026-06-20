@@ -1180,28 +1180,34 @@ make_pcr_fixture <- function(n_pts   = 80,
   )
 
   # ── Model parameters ───────────────────────────────────────────────────────
-  env_vars  <- c("bio1", "bio2")
-  var_mu    <- c(bio1 = 5,  bio2 = 12)
-  var_sd    <- c(bio1 = 2,  bio2 = 4)
+  env_vars   <- c("bio1", "bio2")
   mean_betas <- c(bio1 = 0.8, bio2 = -0.5)
-  coord_wt  <- 2.0
   planar_proj <- "EPSG:32632"   # UTM zone 32N – a sensible planar CRS
 
+  # ── MDS coordinates and Tps models (replacing old coord_wt approach) ────────
+  raw_coords <- terra::crds(sample_pts)
+  mds_coords <- matrix(runif(n_pts * 2, -1, 1), nrow = n_pts, ncol = 2)
+  invisible(utils::capture.output(
+    tps1 <- fields::Tps(raw_coords, mds_coords[, 1]),
+    tps2 <- fields::Tps(raw_coords, mds_coords[, 2]),
+    type = "output"
+  ))
+  tps_models <- list(axis1 = tps1, axis2 = tps2)
+
   list(
-    mask_rast       = mask_rast,
-    predictors      = predictors,
-    sample_pts      = sample_pts,
+    mask_rast        = mask_rast,
+    predictors       = predictors,
+    sample_pts       = sample_pts,
     consensus_labels = consensus_labels,
     stability_scores = stability_scores,
-    top3_labels     = top3_labels,
-    env_vars        = env_vars,
-    var_mu          = var_mu,
-    var_sd          = var_sd,
-    mean_betas      = mean_betas,
-    coord_wt        = coord_wt,
-    planar_proj     = planar_proj,
-    n_pts           = n_pts,
-    n_clust         = n_clust
+    top3_labels      = top3_labels,
+    env_vars         = env_vars,
+    mean_betas       = mean_betas,
+    mds_coords       = mds_coords,
+    tps_models       = tps_models,
+    planar_proj      = planar_proj,
+    n_pts            = n_pts,
+    n_clust          = n_clust
   )
 }
 
@@ -1215,7 +1221,8 @@ call_pcr <- function(f, ...) {
     predictors       = f$predictors,
     env_vars         = f$env_vars,
     mean_betas       = f$mean_betas,
-    coord_wt         = f$coord_wt,
+    mds_coords       = f$mds_coords,
+    tps_models       = f$tps_models,
     mask_rast        = f$mask_rast,
     planar_proj      = f$planar_proj,
     ...
@@ -1253,7 +1260,8 @@ test_that("pcr: numeric planar_proj (EPSG integer) is accepted", {
       predictors       = f$predictors,
       env_vars         = f$env_vars,
       mean_betas       = f$mean_betas,
-      coord_wt         = f$coord_wt,
+      mds_coords       = f$mds_coords,
+      tps_models       = f$tps_models,
       mask_rast        = f$mask_rast,
       planar_proj      = 32632L   # numeric
     )
@@ -1283,7 +1291,8 @@ test_that("pcr: fewer than 50 complete predictor rows stops with informative mes
       predictors       = bad_predictors,
       env_vars         = f$env_vars,
       mean_betas       = f$mean_betas,
-      coord_wt         = f$coord_wt,
+      mds_coords       = f$mds_coords,
+      tps_models       = f$tps_models,
       mask_rast        = f$mask_rast,
       planar_proj      = f$planar_proj
     ),
@@ -1310,7 +1319,8 @@ test_that("pcr: all rank1 clusters too small (all noise) triggers stop()", {
         predictors       = f$predictors,
         env_vars         = f$env_vars,
         mean_betas       = f$mean_betas,
-        coord_wt         = f$coord_wt,
+        mds_coords       = f$mds_coords,
+      tps_models       = f$tps_models,
         mask_rast        = f$mask_rast,
         planar_proj      = f$planar_proj
       )
@@ -1473,7 +1483,8 @@ test_that("pcr: numeric EPSG and equivalent string EPSG yield identical output C
     predictors       = f$predictors,
     env_vars         = f$env_vars,
     mean_betas       = f$mean_betas,
-    coord_wt         = f$coord_wt,
+    mds_coords       = f$mds_coords,
+    tps_models       = f$tps_models,
     mask_rast        = f$mask_rast,
     planar_proj      = 32632L
   )
@@ -1536,7 +1547,8 @@ test_that("pcr: partial NAs in predictors (but >= 50 complete rows) proceeds nor
       predictors       = bad_pred,
       env_vars         = f$env_vars,
       mean_betas       = f$mean_betas,
-      coord_wt         = f$coord_wt,
+      mds_coords       = f$mds_coords,
+      tps_models       = f$tps_models,
       mask_rast        = f$mask_rast,
       planar_proj      = f$planar_proj
     )

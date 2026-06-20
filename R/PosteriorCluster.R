@@ -1190,8 +1190,10 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
   diag(cost_mat) <- 0
 
   for (i in seq_len(n_pts)) {
-    cd <- terra::costDist(cost_rast, target = pts_v[i])
-    cost_mat[i, ] <- terra::extract(cd, pts_v)[, 2]
+    cost_i <- cost_rast
+    cost_i[terra::cellFromXY(cost_i, terra::crds(pts_v[i]))] <- 0
+    cd <- terra::costDist(cost_i)
+    cost_mat[i, ] <- as.numeric(terra::extract(cd, pts_v)[, 2])
   }
   cost_mat <- (cost_mat + t(cost_mat)) / 2  # enforce symmetry
 
@@ -1199,8 +1201,16 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
   max_fin <- max(cost_mat[is.finite(cost_mat)], na.rm = TRUE)
   cost_mat[!is.finite(cost_mat)] <- max_fin * 10
 
-  # Classical MDS to 2 axes
-  mds <- stats::cmdscale(cost_mat, k = 2)
+  # Classical MDS to 2 axes.
+  # Degenerate cost matrices (uniform habitat → all pairwise costs equal) produce
+  # fewer than 2 positive eigenvalues. cmdscale warns and may return < 2 columns;
+  # fall back to a zero matrix so scale_axis returns 0 for both axes (the Tps
+  # models then predict 0 everywhere, making the coord features uninformative but
+  # not crashing). Real data never hits this path.
+  mds <- suppressWarnings(stats::cmdscale(cost_mat, k = 2))
+  if (!is.matrix(mds) || ncol(mds) < 2L) {
+    mds <- matrix(0.0, nrow = n_pts, ncol = 2L)
+  }
 
   # Scale axes to coord_wt × max env range, matching old coord weight convention
   ranges     <- terra::global(env_rast[[env_vars]], fun = "range", na.rm = TRUE)
