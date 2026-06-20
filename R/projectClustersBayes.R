@@ -117,6 +117,7 @@ projectClustersBayes <- function(
   mean_betas    <- scaling$mean_betas
   beta_draws    <- scaling$beta_draws   # n_stored_draws x n_vars matrix
   coord_wt      <- scaling$coord_wt     # must match what KNNs were trained on
+  tps_models    <- scaling$tps_models   # Tps models for MDS coord layers
   env_vars      <- names(mean_betas)
 
   # Resolve n_future_draws: default to however many draws came in, cap at 100
@@ -197,10 +198,9 @@ projectClustersBayes <- function(
     training_data = bSDM_object$TrainData,
     pred_mat      = pred_mat
   )
-  future_rescaled <- future_rr$RescaledPredictors
-  future_rescaled <- add_weighted_coordinates(future_rescaled, coord_wt)
-  names(future_rescaled)[names(future_rescaled) == "x"] <- "coord_x_w"
-  names(future_rescaled)[names(future_rescaled) == "y"] <- "coord_y_w"
+  future_rescaled  <- future_rr$RescaledPredictors
+  mds_rast_future  <- predict_mds_to_raster(tps_models, future_rescaled[[1]], suitable_habitat_binary)
+  future_rescaled  <- c(future_rescaled, mds_rast_future)
   # nocov end
 
   # --- 5. Project consensus clusters onto suitable + known areas -----------
@@ -268,7 +268,7 @@ projectClustersBayes <- function(
     suitable_mask        = suitable_habitat_binary,
     env_vars             = env_vars,
     beta_draws           = beta_draws[seq_len(n_future_draws), , drop = FALSE],
-    coord_wt             = coord_wt,
+    tps_models           = tps_models,
     knn_consensus        = knn_consensus,
     n_future_pts         = n_future_pts,
     existing_cluster_ids = unique(posterior_clusters$Geometry$ID)
@@ -348,7 +348,7 @@ project_future_draws <- function(
   suitable_mask,
   env_vars,
   beta_draws,
-  coord_wt,
+  tps_models,
   knn_consensus,
   n_future_pts         = 500L,
   existing_cluster_ids
@@ -426,6 +426,15 @@ project_future_draws <- function(
   ))
 
   # --- 2. Draw loop ------------------------------------------------------
+  # MDS coords are fixed across draws — compute once from the Tps models
+  # trained on current-era sample points. This keeps future points in the same
+  # connectivity-aware coordinate space the KNN consensus was trained on.
+  future_raw_coords  <- terra::crds(sample_pts)
+  mds_coords_future  <- cbind(
+    stats::predict(tps_models$axis1, future_raw_coords),
+    stats::predict(tps_models$axis2, future_raw_coords)
+  )
+
   # Per-draw reweighting: the raster values are already scaled by |mean_beta|
   # via RescaleRasters_bayes. For draw d we rescale by |beta_d| instead, which
   # is equivalent to multiplying by |beta_d| / |mean_beta| per variable.
@@ -452,12 +461,9 @@ project_future_draws <- function(
       }
     }
 
-    pt_full <- add_coord_weights_to_points(
-      sample_pts = sample_pts,
-      pt_env     = pt_scaled,
-      coord_wt   = coord_wt,
-      env_vars   = env_vars
-    )
+    pt_full              <- pt_scaled
+    pt_full$coord_x_w   <- mds_coords_future[, 1]
+    pt_full$coord_y_w   <- mds_coords_future[, 2]
     pt_full <- pt_full[stats::complete.cases(pt_full), , drop = FALSE]
 
     preds     <- stats::predict(knn_consensus, newdata = pt_full)
@@ -484,13 +490,9 @@ project_future_draws <- function(
   # --- 4. Paint stability to raster - one terra::predict call ------------------
   # Use the already-correctly-scaled future_rescaled + coordinates as features,
   # mirroring exactly the feature space the stability regression will generalise over.
-  pt_mean_scaled <- pt_rr
-  pt_mean_scaled <- add_coord_weights_to_points(
-    sample_pts = sample_pts,
-    pt_env     = pt_mean_scaled,
-    coord_wt   = coord_wt,
-    env_vars   = env_vars
-  )
+  pt_mean_scaled             <- pt_rr
+  pt_mean_scaled$coord_x_w  <- mds_coords_future[, 1]
+  pt_mean_scaled$coord_y_w  <- mds_coords_future[, 2]
 
   complete_train <- stats::complete.cases(pt_mean_scaled) & !is.na(stability_scores)
   pt_train       <- pt_mean_scaled[complete_train, , drop = FALSE]
@@ -508,11 +510,10 @@ project_future_draws <- function(
 
   knn_future_stab <- train_regression_knn(X = pt_train, y = stab_train)
 
-  # Prediction raster: future_rescaled (already correct scale) + coord layers
+  # Prediction raster: future_rescaled + MDS coord layers (same Tps models as KNN training)
   pred_rescale_future <- future_rescaled[[env_vars]]
-  pred_rescale_future <- add_weighted_coordinates(pred_rescale_future, coord_wt)
-  names(pred_rescale_future)[names(pred_rescale_future) == "x"] <- "coord_x_w"
-  names(pred_rescale_future)[names(pred_rescale_future) == "y"] <- "coord_y_w"
+  mds_rast_stab       <- predict_mds_to_raster(tps_models, pred_rescale_future[[1]], suitable_mask)
+  pred_rescale_future <- c(pred_rescale_future, mds_rast_stab)
   pred_rescale_future <- terra::mask(pred_rescale_future, suitable_mask)
 
   stability_raster <- terra::predict(

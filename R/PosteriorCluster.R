@@ -188,14 +188,20 @@ PosteriorCluster <- function(
     n_pts
   ))
 
-  # -- 5. Add weighted coordinates to point matrix -------------------------------
-  # Coordinates are added once (they don't vary across beta draws)
-  pt_env_coords <- add_coord_weights_to_points(
-    sample_pts,
-    pt_env,
-    coord_wt,
-    env_vars
-  )  
+  # -- 5. Compute habitat cost-distance MDS coordinates -------------------------
+  # Coordinates are computed once (they don't vary across beta draws).
+  # Cost-distances through the habitat surface replace Euclidean coordinates:
+  # adjacent cells within a patch are only slightly closer than cells separated
+  # by inhospitable habitat, so the MDS axes capture inter-patch structure
+  # rather than within-patch grid noise.
+  message("Computing habitat cost-distance MDS coordinates ...")
+  mds_result    <- compute_habitat_mds(sample_pts, mask_rast, coord_wt, predictors, env_vars)
+  mds_coords    <- mds_result$mds_coords
+  tps_models    <- mds_result$tps_models
+
+  pt_env_coords              <- pt_env
+  pt_env_coords$coord_x_w   <- mds_coords[, 1]
+  pt_env_coords$coord_y_w   <- mds_coords[, 2]
 
   # -- 6. Cluster over posterior draws ------------------------------------------
   message(sprintf("Clustering over %d posterior draws ...", n_draws))
@@ -268,16 +274,17 @@ PosteriorCluster <- function(
   mean_betas <- colMeans(beta_draws)
 
   rast_list <- project_consensus_to_raster(
-    sample_pts = sample_pts,
+    sample_pts       = sample_pts,
     consensus_labels = consensus_labels,
     stability_scores = stability_scores,
-    top3_labels = top3_results$labels_matrix, # n_pts × 3 matrix
-    predictors = predictors,
-    env_vars = env_vars,
-    mean_betas = mean_betas,
-    coord_wt = coord_wt,
-    mask_rast = mask_rast,
-    planar_proj = planar_proj
+    top3_labels      = top3_results$labels_matrix,
+    predictors       = predictors,
+    env_vars         = env_vars,
+    mean_betas       = mean_betas,
+    mds_coords       = mds_coords,
+    tps_models       = tps_models,
+    mask_rast        = mask_rast,
+    planar_proj      = planar_proj
   )
 
   # -- 11. Geographic reordering -------------------------------------------------
@@ -312,7 +319,7 @@ PosteriorCluster <- function(
     stability_scores = stability_scores,
     predictors       = predictors,
     env_vars         = env_vars,
-    coord_wt         = coord_wt
+    mds_coords       = mds_coords
   )
 
   # Project stability raster back to original CRS
@@ -382,7 +389,8 @@ PosteriorCluster <- function(
     ScalingParams = list(
       mean_betas   = mean_betas,   # named numeric: posterior mean |beta| per var
       beta_draws   = beta_draws,   # matrix n_draws x n_vars: raw posterior draws
-      coord_wt     = coord_wt      # numeric: coordinate weight used in clustering
+      coord_wt     = coord_wt,     # numeric: coordinate weight used in clustering
+      tps_models   = tps_models    # list(axis1, axis2): Tps models for projecting MDS coords to raster
     ),
 
     # raw cutree ID -> geographic ID lookup (from reassign_cluster_ids).
@@ -711,7 +719,8 @@ project_consensus_to_raster <- function(
   predictors,
   env_vars,
   mean_betas,
-  coord_wt,
+  mds_coords,
+  tps_models,
   mask_rast,
   planar_proj
 ) {
@@ -749,13 +758,9 @@ project_consensus_to_raster <- function(
   pt_env <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
   pt_rescaled <- as.data.frame(pt_env)
 
-  # -- 3. Add weighted coordinates --------------------------------------------
-  pt_rescaled <- add_coord_weights_to_points(
-    sample_pts,
-    pt_rescaled,
-    coord_wt,
-    env_vars
-  )
+  # -- 3. Attach pre-computed MDS coordinate features -------------------------
+  pt_rescaled$coord_x_w <- mds_coords[, 1]
+  pt_rescaled$coord_y_w <- mds_coords[, 2]
 
   # -- 4. Attach response variables and filter complete cases -----------------
   pt_rescaled$rank1_cluster <- factor(consensus_labels)
@@ -808,9 +813,8 @@ project_consensus_to_raster <- function(
       "panmixia signal. Painting raster constant; KNN cluster models set to NULL."
     )
     pred_rescale <- predictors[[env_vars]]
-    pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
-    names(pred_rescale)[names(pred_rescale) == "x"] <- "coord_x_w"
-    names(pred_rescale)[names(pred_rescale) == "y"] <- "coord_y_w"
+    mds_rast     <- predict_mds_to_raster(tps_models, pred_rescale[[1]], mask_rast)
+    pred_rescale <- c(pred_rescale, mds_rast)
     pred_rescale <- terra::mask(pred_rescale, mask_rast)
 
     knn_stability <- train_regression_knn(
@@ -886,12 +890,9 @@ project_consensus_to_raster <- function(
   # predictors is already RescaleRasters_bayes-scaled — use layers directly.
   pred_rescale <- predictors[[env_vars]]
 
-  # Add weighted coordinates to raster (creates 'x' and 'y' layers)
-  pred_rescale <- add_weighted_coordinates(pred_rescale, coord_wt)
-
-  # Rename to match what KNN expects (coord_x_w, coord_y_w from training data)
-  names(pred_rescale)[names(pred_rescale) == "x"] <- "coord_x_w"
-  names(pred_rescale)[names(pred_rescale) == "y"] <- "coord_y_w"
+  # Interpolate MDS axes to raster via Tps models fitted at sample points
+  mds_rast     <- predict_mds_to_raster(tps_models, pred_rescale[[1]], mask_rast)
+  pred_rescale <- c(pred_rescale, mds_rast)
 
   pred_rescale <- terra::mask(pred_rescale, mask_rast)
 
@@ -1032,16 +1033,15 @@ reassign_cluster_ids <- function(old_rast, new_rast){
   stability_scores,
   predictors,
   env_vars,
-  coord_wt
+  mds_coords
 ) {
   # Rebuild the same feature matrix as project_consensus_to_raster.
   # predictors is already RescaleRasters_bayes-scaled — extract directly,
   # no re-standardisation needed.
   pt_env      <- terra::extract(predictors[[env_vars]], sample_pts, ID = FALSE)
   pt_rescaled <- as.data.frame(pt_env)
-  pt_rescaled <- add_coord_weights_to_points(
-    sample_pts, pt_rescaled, coord_wt, env_vars
-  )
+  pt_rescaled$coord_x_w <- mds_coords[, 1]
+  pt_rescaled$coord_y_w <- mds_coords[, 2]
 
   # Attach geo-remapped labels
   pt_rescaled$rank1_cluster <- factor(consensus_labels)
@@ -1141,4 +1141,95 @@ reassign_cluster_ids <- function(old_rast, new_rast){
     knn_rank3        = knn_rank3$fit.knn,
     knn_stability    = knn_stability
   )
+}
+
+
+# ==============================================================================
+#  MDS coordinate helpers
+# ==============================================================================
+
+#' Compute habitat cost-distance MDS coordinates for sample points
+#'
+#' Uses the habitat suitability surface as a conductance layer: cells with
+#' higher predicted suitability are easier to traverse. Pairwise cost-distances
+#' between sample points are computed via `gdistance`, then reduced to two axes
+#' by classical MDS. Two thin-plate spline models are fitted (one per axis) so
+#' that MDS values can be interpolated to any raster grid in
+#' [predict_mds_to_raster()].
+#'
+#' @param sample_pts `SpatVector` of sample points (post complete-case filter).
+#' @param habitat_rast `SpatRaster` used as conductance surface (e.g. the
+#'   occurrence probability layer from [PostProcessSDM()]).
+#' @param coord_wt Numeric. Scales MDS axes to `coord_wt × max(env range)`,
+#'   matching the intent of the old Euclidean coordinate weighting.
+#' @param env_rast `SpatRaster` of environmental predictors (used only to
+#'   determine the target axis range).
+#' @param env_vars Character vector of variable names in `env_rast`.
+#' @return List with:
+#'   \item{`mds_coords`}{Numeric matrix n_pts × 2 of scaled MDS coordinates.}
+#'   \item{`tps_models`}{List `list(axis1, axis2)` of `fields::Tps` models
+#'     mapping geographic coordinates to MDS values.}
+#' @keywords internal
+#' @noRd
+compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, env_vars) {
+  # Build conductance transition matrix — higher suitability = easier passage
+  hab_r <- raster::raster(habitat_rast)
+  trans <- gdistance::transition(hab_r, transitionFunction = mean, directions = 8)
+  trans <- gdistance::geoCorrection(trans, type = "c")
+
+  # Pairwise cost distances between sample points
+  pts_sp   <- sf::as_Spatial(sf::st_as_sf(sample_pts))
+  cost_mat <- as.matrix(gdistance::costDistance(trans, pts_sp))
+
+  # Fully disconnected pairs get 10× the maximum finite cost
+  max_fin <- max(cost_mat[is.finite(cost_mat)], na.rm = TRUE)
+  cost_mat[!is.finite(cost_mat)] <- max_fin * 10
+
+  # Classical MDS to 2 axes
+  mds <- stats::cmdscale(cost_mat, k = 2)
+
+  # Scale axes to coord_wt × max env range, matching old coord weight convention
+  ranges     <- terra::global(env_rast[[env_vars]], fun = "range", na.rm = TRUE)
+  target     <- max(abs(ranges$max - ranges$min), na.rm = TRUE) * coord_wt
+  scale_axis <- function(v) {
+    rng <- diff(range(v, na.rm = TRUE))
+    if (!is.finite(rng) || rng == 0) return(rep(0, length(v)))
+    (v - mean(v, na.rm = TRUE)) / rng * target
+  }
+  mds[, 1] <- scale_axis(mds[, 1])
+  mds[, 2] <- scale_axis(mds[, 2])
+
+  # Fit thin-plate splines: geographic coords -> MDS values, for raster prediction
+  raw_coords <- terra::crds(sample_pts)
+  tps1 <- fields::Tps(raw_coords, mds[, 1])
+  tps2 <- fields::Tps(raw_coords, mds[, 2])
+
+  list(mds_coords = mds, tps_models = list(axis1 = tps1, axis2 = tps2))
+}
+
+
+#' Interpolate MDS coordinate axes to a raster surface
+#'
+#' Applies the thin-plate spline models from [compute_habitat_mds()] to
+#' predict MDS axis values at every cell of a raster grid. The resulting two
+#' layers (`coord_x_w`, `coord_y_w`) are the spatial features used by the KNN
+#' classifiers, placing them in the same connectivity-aware coordinate space
+#' used during clustering.
+#'
+#' @param tps_models List `list(axis1, axis2)` from [compute_habitat_mds()].
+#' @param template_rast `SpatRaster` defining the prediction grid extent and
+#'   resolution.
+#' @param mask_rast `SpatRaster` used to mask NA cells from the output.
+#' @return `SpatRaster` with two layers named `coord_x_w` and `coord_y_w`.
+#' @keywords internal
+#' @noRd
+predict_mds_to_raster <- function(tps_models, template_rast, mask_rast) {
+  p  <- terra::rast(template_rast)
+  r1 <- terra::interpolate(p, tps_models$axis1)
+  r2 <- terra::interpolate(p, tps_models$axis2)
+  r1 <- terra::mask(r1, mask_rast)
+  r2 <- terra::mask(r2, mask_rast)
+  out <- c(r1, r2)
+  names(out) <- c("coord_x_w", "coord_y_w")
+  out
 }
