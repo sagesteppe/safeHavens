@@ -11,11 +11,11 @@ PosteriorCluster(
   pred_mat,
   training_data,
   n_draws = 100,
-  n = 25,
+  n = 20,
   n_pts = 1000,
   lyr = "occurrence_prob_mean",
   planar_proj,
-  coord_wt = 2.5,
+  coord_wt = 1,
   consensus_method = c("hierarchical", "pam"),
   beta_draws = NULL,
   seed = 42
@@ -51,7 +51,7 @@ name).}
 \item{planar_proj}{Numeric EPSG or proj4 string for planar projection.}
 
 \item{coord_wt}{Numeric. Coordinate weight, as in \code{\link[=EnvironmentalBasedSample]{EnvironmentalBasedSample()}}.
-Defaults to \code{2.5}.}
+Defaults to \code{1}.}
 
 \item{consensus_method}{Character. How to derive the final clustering from
 the co-occurrence matrix. One of:

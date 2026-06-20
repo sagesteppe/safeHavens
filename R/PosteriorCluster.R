@@ -1152,10 +1152,10 @@ reassign_cluster_ids <- function(old_rast, new_rast){
 #'
 #' Uses the habitat suitability surface as a conductance layer: cells with
 #' higher predicted suitability are easier to traverse. Pairwise cost-distances
-#' between sample points are computed via `gdistance`, then reduced to two axes
-#' by classical MDS. Two thin-plate spline models are fitted (one per axis) so
-#' that MDS values can be interpolated to any raster grid in
-#' [predict_mds_to_raster()].
+#' between sample points are computed via `terra::costDist` (one Dijkstra pass
+#' per source point), then reduced to two axes by classical MDS. Two thin-plate
+#' spline models are fitted (one per axis) so that MDS values can be
+#' interpolated to any raster grid in [predict_mds_to_raster()].
 #'
 #' @param sample_pts `SpatVector` of sample points (post complete-case filter).
 #' @param habitat_rast `SpatRaster` used as conductance surface (e.g. the
@@ -1172,14 +1172,32 @@ reassign_cluster_ids <- function(old_rast, new_rast){
 #' @keywords internal
 #' @noRd
 compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, env_vars) {
-  # Build conductance transition matrix — higher suitability = easier passage
-  hab_r <- raster::raster(habitat_rast)
-  trans <- gdistance::transition(hab_r, transitionFunction = mean, directions = 8)
-  trans <- gdistance::geoCorrection(trans, type = "c")
+  # Mask conductance to predictor domain — reduces cells processed without
+  # trimming the extent, so future-scenario rasters (same extent) remain compatible
+  hab_masked <- terra::mask(habitat_rast, env_rast[[env_vars[1]]])
 
-  # Pairwise cost distances between sample points
-  pts_sp   <- sf::as_Spatial(sf::st_as_sf(sample_pts))
-  cost_mat <- as.matrix(gdistance::costDistance(trans, pts_sp))
+  # Invert suitability to traversal cost: high suitability = low cost.
+  # Clamp to a small positive floor so costDist never sees zero-cost cells.
+  cost_rast <- terra::app(hab_masked, fun = function(x) 1 - x)
+  cost_rast <- terra::clamp(cost_rast, lower = 1e-6, values = FALSE)
+
+  # Pairwise accumulated cost-distances via terra::costDist — one Dijkstra pass
+  # per source point. Terra-native: no gdistance / raster / sp conversion needed.
+  pts_v        <- terra::vect(sample_pts)
+  n_pts        <- nrow(pts_v)
+  cost_mat     <- matrix(NA_real_, n_pts, n_pts)
+  diag(cost_mat) <- 0
+
+  src_template <- cost_rast
+  terra::values(src_template) <- NA_real_
+
+  for (i in seq_len(n_pts)) {
+    src_r <- src_template
+    src_r[terra::cellFromXY(src_r, terra::crds(pts_v[i]))] <- 0
+    cd <- terra::costDist(cost_rast, src_r)
+    cost_mat[i, ] <- terra::extract(cd, pts_v)[, 2]
+  }
+  cost_mat <- (cost_mat + t(cost_mat)) / 2  # enforce symmetry
 
   # Fully disconnected pairs get 10× the maximum finite cost
   max_fin <- max(cost_mat[is.finite(cost_mat)], na.rm = TRUE)
@@ -1201,8 +1219,12 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
 
   # Fit thin-plate splines: geographic coords -> MDS values, for raster prediction
   raw_coords <- terra::crds(sample_pts)
-  tps1 <- fields::Tps(raw_coords, mds[, 1])
-  tps2 <- fields::Tps(raw_coords, mds[, 2])
+
+  invisible(utils::capture.output(
+    tps1 <- fields::Tps(raw_coords, mds[, 1]),
+    tps2 <- fields::Tps(raw_coords, mds[, 2]),
+    type = "output"
+  ))
 
   list(mds_coords = mds, tps_models = list(axis1 = tps1, axis2 = tps2))
 }
@@ -1224,11 +1246,18 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
 #' @keywords internal
 #' @noRd
 predict_mds_to_raster <- function(tps_models, template_rast, mask_rast) {
-  p  <- terra::rast(template_rast)
-  r1 <- terra::interpolate(p, tps_models$axis1)
-  r2 <- terra::interpolate(p, tps_models$axis2)
-  r1 <- terra::mask(r1, mask_rast)
-  r2 <- terra::mask(r2, mask_rast)
+  # Crop to occupied extent before interpolation — skips ocean/unmodeled cells
+  # (the bulk of compute for restricted-range species). terra::extend restores
+  # the original extent with NA fill so output geometry is always consistent.
+  mask_trimmed     <- terra::trim(mask_rast)
+  template_cropped <- terra::crop(terra::rast(template_rast), mask_trimmed)
+
+  r1 <- terra::interpolate(template_cropped, tps_models$axis1)
+  r2 <- terra::interpolate(template_cropped, tps_models$axis2)
+
+  r1 <- terra::mask(terra::extend(r1, template_rast), mask_rast)
+  r2 <- terra::mask(terra::extend(r2, template_rast), mask_rast)
+
   out <- c(r1, r2)
   names(out) <- c("coord_x_w", "coord_y_w")
   out

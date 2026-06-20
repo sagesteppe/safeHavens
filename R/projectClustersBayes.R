@@ -335,7 +335,10 @@ projectClustersBayes <- function(
 #' @param suitable_mask `SpatRaster` - binary suitable habitat (1 / NA).
 #' @param env_vars Character vector of environmental predictor names.
 #' @param beta_draws Numeric matrix (n_draws x n_vars) of posterior beta samples.
-#' @param coord_wt Numeric coordinate weight matching [PosteriorCluster()].
+#' @param tps_models List `list(axis1, axis2)` of `fields::Tps` models from
+#'   `posterior_clusters$ScalingParams$tps_models`, mapping geographic coordinates
+#'   to MDS axis values. Used to place future points in the same
+#'   connectivity-aware coordinate space the KNN consensus was trained on.
 #' @param knn_consensus Trained caret KNN (`KNN_Cluster` from [PosteriorCluster()]).
 #' @param n_future_pts Integer. Points to sample from future surface. Default `500`.
 #' @param existing_cluster_ids Integer vector of valid current-era cluster IDs.
