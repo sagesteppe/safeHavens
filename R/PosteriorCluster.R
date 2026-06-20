@@ -1183,7 +1183,7 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
 
   # Pairwise accumulated cost-distances via terra::costDist — one Dijkstra pass
   # per source point. Terra-native: no gdistance / raster / sp conversion needed.
-  pts_v        <- terra::vect(sample_pts)
+  pts_v        <- sample_pts
   n_pts        <- nrow(pts_v)
   cost_mat     <- matrix(NA_real_, n_pts, n_pts)
   diag(cost_mat) <- 0
