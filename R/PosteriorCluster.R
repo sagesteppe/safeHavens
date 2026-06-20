@@ -696,7 +696,7 @@ interpolate_stability_to_raster <- function(
 #' This ensures the spatial projection is faithful to the consensus clustering
 #' rather than being a separate clustering exercise.
 #'
-#' @param sample_pts SpatVector of the original 500 fixed sample points
+#' @param sample_pts SpatVector of the original fixed sample points
 #' @param consensus_labels Integer vector of consensus cluster IDs (length = nrow(sample_pts))
 #' @param stability_scores Numeric vector of stability scores (length = nrow(sample_pts))
 #' @param top3_labels Integer matrix (n_pts × 3) of top-3 cluster assignments
@@ -1183,18 +1183,14 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
 
   # Pairwise accumulated cost-distances via terra::costDist — one Dijkstra pass
   # per source point. Terra-native: no gdistance / raster / sp conversion needed.
+  # sample_pts is already a SpatVector (from spatSample as.points = TRUE).
   pts_v        <- sample_pts
   n_pts        <- nrow(pts_v)
   cost_mat     <- matrix(NA_real_, n_pts, n_pts)
   diag(cost_mat) <- 0
 
-  src_template <- cost_rast
-  terra::values(src_template) <- NA_real_
-
   for (i in seq_len(n_pts)) {
-    src_r <- src_template
-    src_r[terra::cellFromXY(src_r, terra::crds(pts_v[i]))] <- 0
-    cd <- terra::costDist(cost_rast, src_r)
+    cd <- terra::costDist(cost_rast, target = pts_v[i])
     cost_mat[i, ] <- terra::extract(cd, pts_v)[, 2]
   }
   cost_mat <- (cost_mat + t(cost_mat)) / 2  # enforce symmetry
