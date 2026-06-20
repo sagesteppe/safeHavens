@@ -250,13 +250,21 @@ test_that("calculate_changes centroid_shift is NA for lost/gained clusters", {
 # 5. project_future_draws
 # =============================================================================
 
-local_mock_predict <- function(object, newdata, ...) {
-  lvls <- levels(object$finalModel$cl)
-  factor(
-    lvls[(seq_len(nrow(newdata)) %% length(lvls)) + 1L],
-    levels = lvls
-  )
-}
+# Capture the real predict before any mock is applied so the closure below
+# can fall through to it for non-caret objects (e.g. fields::Tps).
+local_mock_predict <- local({
+  real_predict <- stats::predict
+  function(object, newdata, ...) {
+    if (!inherits(object, c("train", "train.formula"))) {
+      return(real_predict(object, newdata, ...))
+    }
+    lvls <- levels(object$finalModel$cl)
+    factor(
+      lvls[(seq_len(nrow(newdata)) %% length(lvls)) + 1L],
+      levels = lvls
+    )
+  }
+})
 
 test_that("project_future_draws returns a SpatRaster named future_stability", {
   set.seed(1L)

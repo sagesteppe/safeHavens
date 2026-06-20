@@ -141,6 +141,9 @@ PosteriorCluster <- function(
   # Horseshoe priors shrink coefficients toward zero but rarely collapse them
   # exactly; low-weight variables add noise to KNN distances without
   # contributing signal. Threshold at 1% of total |beta| weight.
+  # env_vars_all is the pre-filter set needed by downstream brms prediction
+  # and MESS (which must see all original model variables).
+  env_vars_all <- env_vars
   contrib    <- abs(mean_betas) / sum(abs(mean_betas))
   low_contrib <- contrib < 0.01
   if (any(low_contrib)) {
@@ -210,6 +213,8 @@ PosteriorCluster <- function(
     nrow = n_pts_actual,
     ncol = n_draws
   )
+  hc_list  <- vector("list", n_draws)  # saved dendrograms for adaptive k
+  pt_sizes <- integer(n_draws)          # complete-case row counts per draw
 
   for (d in seq_len(n_draws)) {
     if (d %% 25 == 0) {
@@ -236,10 +241,30 @@ PosteriorCluster <- function(
     pt_full <- pt_full[stats::complete.cases(pt_full), , drop = FALSE]
 
     # Hierarchical clustering on Euclidean distances
-    dist_d <- stats::dist(pt_full, method = "euclidean")
-    hc_d <- stats::hclust(dist_d, method = "ward.D2")
+    dist_d        <- stats::dist(pt_full, method = "euclidean")
+    hc_d          <- stats::hclust(dist_d, method = "ward.D2")
+    hc_list[[d]]  <- hc_d
+    pt_sizes[d]   <- nrow(pt_full)
     draw_clusterings[seq_len(nrow(pt_full)), d] <- stats::cutree(hc_d, k = n)
   }
+
+  # -- 6b. Adaptive k: walk down to quorum ------------------------------------
+  # Horseshoe shrinkage can collapse variables, making the requested n too
+  # large — many clusters end up with near-zero membership and cascade through
+  # noise removal downstream. Find the largest k where every cluster clears a
+  # 5 % membership floor in every draw, then re-cut all dendrograms at that k.
+  n_stable <- find_stable_k(hc_list, n_draws, n_max = n, min_pts = 10L, majority = 0.5)
+  if (n_stable < n) {
+    message(sprintf(
+      "Adaptive k: reducing from %d to %d — at k = %d a majority of draws have >= 10 pts in every cluster.",
+      n, n_stable, n_stable
+    ))
+    n <- n_stable
+    for (d in seq_len(n_draws)) {
+      draw_clusterings[seq_len(pt_sizes[d]), d] <- stats::cutree(hc_list[[d]], k = n)
+    }
+  }
+  rm(hc_list)  # release memory before the O(n_pts^2) co-occurrence step
 
   # -- 7. Build co-occurrence matrix --------------------------------------------
   message("Computing co-occurrence matrix ...")
@@ -387,8 +412,9 @@ PosteriorCluster <- function(
     #   (b) replay draws on the future surface to compute forward-looking
     #       stability without re-sampling from the posterior.
     ScalingParams = list(
-      mean_betas   = mean_betas,   # named numeric: posterior mean |beta| per var
-      beta_draws   = beta_draws,   # matrix n_draws x n_vars: raw posterior draws
+      env_vars_all = env_vars_all, # character: all model env vars (pre-horseshoe filter)
+      mean_betas   = mean_betas,   # named numeric: posterior mean |beta| per var (filtered)
+      beta_draws   = beta_draws,   # matrix n_draws x n_vars: raw posterior draws (filtered)
       coord_wt     = coord_wt,     # numeric: coordinate weight used in clustering
       tps_models   = tps_models    # list(axis1, axis2): Tps models for projecting MDS coords to raster
     ),
@@ -591,6 +617,45 @@ add_coord_weights_to_points <- function(
   pt_env$coord_y_w <- scale_to_range(coords[, 2], target_range)
   pt_env
 }
+
+#' Find the largest k where a majority of draws have all clusters above a point floor
+#'
+#' Walks k down from `n_max` to 2. At each k, re-cuts every saved dendrogram
+#' and counts how many draws have at least one cluster with fewer than `min_pts`
+#' points. A k is accepted when the fraction of failing draws is strictly below
+#' `majority` (default 0.5, i.e. more draws pass than fail). Returns `n_max`
+#' immediately if it already satisfies the criterion.
+#'
+#' Using a fixed point floor (`min_pts`) rather than a percentage decouples the
+#' threshold from n_pts: with n_pts = 200 a 5 % floor would be just 10 points
+#' — the same as the KNN minimum — whereas with n_pts = 2000 it would be 100,
+#' far more stringent than needed. A flat 10-point floor matches the practical
+#' minimum for stable KNN training (split_prop = 0.8 requires >= 5 pts per
+#' class; 10 gives a comfortable margin). The majority criterion prevents one
+#' outlier draw with extreme horseshoe shrinkage from forcing k down for all
+#' draws.
+#'
+#' @param hc_list List of `hclust` objects, one per draw.
+#' @param n_draws Integer. Number of draws.
+#' @param n_max Integer. Maximum k (the user-requested n).
+#' @param min_pts Integer. Minimum points per cluster per draw. Default `10L`.
+#' @param majority Numeric in (0, 1). Fraction of draws that must pass for k
+#'   to be accepted. Default `0.5` (strict majority).
+#' @return Integer k.
+#' @keywords internal
+#' @noRd
+find_stable_k <- function(hc_list, n_draws, n_max, min_pts = 10L, majority = 0.5) {
+  for (k in seq.int(n_max, 2L)) {
+    n_fail <- 0L
+    for (d in seq_len(n_draws)) {
+      counts <- tabulate(stats::cutree(hc_list[[d]], k = k), nbins = k)
+      if (any(counts < min_pts)) n_fail <- n_fail + 1L
+    }
+    if (n_fail / n_draws < majority) return(k)
+  }
+  2L
+}
+
 
 #' Build symmetric co-occurrence probability matrix from draw clusterings
 #'
@@ -809,7 +874,7 @@ project_consensus_to_raster <- function(
 
   if (length(keep_rank1) == 1L) {
     message(
-      "Single rank1 cluster '", keep_rank1, "' remains after noise removal — ",
+      "Single rank1 cluster '", keep_rank1, "' remains after noise removal - ",
       "panmixia signal. Painting raster constant; KNN cluster models set to NULL."
     )
     pred_rescale <- predictors[[env_vars]]

@@ -108,7 +108,7 @@ projectClustersBayes <- function(
   knn_consensus <- posterior_clusters$KNNModels$KNN_Cluster
   if (is.null(knn_consensus)) {
     stop(
-      "projectClustersBayes: KNN_Cluster is NULL — PosteriorCluster detected panmixia ",
+      "projectClustersBayes: KNN_Cluster is NULL - PosteriorCluster detected panmixia ",
       "(single cluster after noise removal). Future projection is not meaningful for a ",
       "panmictic result."
     )
@@ -118,7 +118,11 @@ projectClustersBayes <- function(
   beta_draws    <- scaling$beta_draws   # n_stored_draws x n_vars matrix
   coord_wt      <- scaling$coord_wt     # must match what KNNs were trained on
   tps_models    <- scaling$tps_models   # Tps models for MDS coord layers
-  env_vars      <- names(mean_betas)
+  env_vars      <- names(mean_betas)    # filtered: vars with >= 1% beta contribution
+  # env_vars_all: all original model env vars (pre-horseshoe filter). Required
+  # for brms SDM prediction and MESS, both of which need the full model formula.
+  # Falls back to env_vars for objects saved before this field was added.
+  env_vars_all  <- if (!is.null(scaling$env_vars_all)) scaling$env_vars_all else env_vars
 
   # Resolve n_future_draws: default to however many draws came in, cap at 100
   n_stored       <- nrow(beta_draws)
@@ -143,7 +147,7 @@ projectClustersBayes <- function(
   # the GP into future space is more honest than zeroing coordinates.
   future_pred_stack <- .build_future_pred_stack(
     future_predictors = future_predictors,
-    env_vars          = env_vars,
+    env_vars          = env_vars_all,
     planar_proj       = planar_proj
   )
 
@@ -164,13 +168,13 @@ projectClustersBayes <- function(
 
   # --- 2. MESS - identify novel climate --------------------------------------------
   ref_matrix <- terra::as.data.frame(
-    current_predictors[[env_vars]],
+    current_predictors[[env_vars_all]],
     na.rm = TRUE
   )
 
   mess_result <- terra::rast(
     dismo::mess(
-      x    = raster::stack(future_predictors[[env_vars]]),
+      x    = raster::stack(future_predictors[[env_vars_all]]),
       v    = ref_matrix,
       full = FALSE
     )
