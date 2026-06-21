@@ -253,7 +253,7 @@ PosteriorCluster <- function(
   # large — many clusters end up with near-zero membership and cascade through
   # noise removal downstream. Find the largest k where every cluster clears a
   # 5 % membership floor in every draw, then re-cut all dendrograms at that k.
-  n_stable <- find_stable_k(hc_list, n_draws, n_max = n, min_pts = 10L, majority = 0.5)
+  n_stable <- find_stable_k(hc_list, n_draws, n_max = n, min_pts = 12L, majority = 0.5)
   if (n_stable < n) {
     message(sprintf(
       "Adaptive k: reducing from %d to %d — at k = %d a majority of draws have >= 10 pts in every cluster.",
