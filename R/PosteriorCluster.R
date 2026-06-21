@@ -325,7 +325,7 @@ PosteriorCluster <- function(
 
   # -- 11. Geographic reordering -------------------------------------------------
   reordered <- reorder_clusters_geographically(rast_list$cluster_raster)
-  final_raster <- terra::project(reordered$raster, terra::crs(f_rasts))
+  final_raster <- terra::project(reordered$raster, terra::crs(f_rasts),  method = "near")
   cluster_vects <- sf::st_transform(reordered$vectors, terra::crs(f_rasts))
 
   # --- 11b. Extract raw->geographic label mapping and retrain KNNs ---------------
@@ -365,8 +365,8 @@ PosteriorCluster <- function(
   )
 
   # Project top-3 rasters
-  rank2_final <- terra::project(rast_list_geo$rank2_raster, terra::crs(f_rasts))
-  rank3_final <- terra::project(rast_list_geo$rank3_raster, terra::crs(f_rasts))
+  rank2_final <- terra::project(rast_list_geo$rank2_raster, terra::crs(f_rasts), method = "near")
+  rank3_final <- terra::project(rast_list_geo$rank3_raster, terra::crs(f_rasts), method = "near")
 
   # Build tabular lookup with geographically-ordered cluster IDs
   sample_pts_sf <- sf::st_as_sf(sample_pts)
@@ -385,6 +385,10 @@ PosteriorCluster <- function(
     uncertainty = round(100 - top3_results$pct_matrix[, 1], 1)
   )
 
+  final_raster <- terra::as.factor(final_raster)
+  rank2_final  <- terra::as.factor(rank2_final)
+  rank3_final  <- terra::as.factor(rank3_final)
+  
   main_r <- c(final_raster, stability_final)
   names(main_r) <- c('consensus', 'stability')
 
@@ -779,6 +783,46 @@ interpolate_stability_to_raster <- function(
 }
 
 
+#' Paint a class raster from smoothed KNN probability surfaces
+#'
+#' Predicts per-class probabilities, applies a small focal mean to each class
+#' layer (spatial coherence on *confidence*, not on labels), then takes the
+#' per-cell argmax. Confident small patches survive; diffuse low-confidence
+#' flecks near feature-space boundaries get overruled by their neighbours.
+#'
+#' @param model trained KNN (the `$fit.knn` object)
+#' @param pred_rescale SpatRaster feature stack (already masked)
+#' @param mask_rast SpatRaster domain mask
+#' @param w integer focal window side length (cells). Default 3.
+#' @return SpatRaster of class IDs (factor levels of `model`)
+#' @keywords internal
+#' @noRd
+paint_smoothed_class <- function(model, pred_rescale, mask_rast, w = 3) {
+  lv   <- model$levels                 # ordered class levels (post-droplevels)
+  n_lv <- length(lv)
+
+  # Force all prob columns back as layers (terra's index default can return 1).
+  prob <- terra::predict(
+    pred_rescale, model = model, type = "prob",
+    index = seq_len(n_lv), na.rm = TRUE
+  )
+
+  win    <- matrix(1, w, w)
+  prob_s <- terra::rast(lapply(seq_len(terra::nlyr(prob)), function(i) {
+    terra::focal(prob[[i]], w = win, fun = "mean",
+                 na.policy = "omit", na.rm = TRUE)
+  }))
+
+  # which.max returns the LAYER index; layers are in model$levels order, so
+  # index i -> as.integer(lv[i]). No raster-name parsing => no "X3" trap.
+  lab_idx <- terra::which.max(prob_s)
+  terra::mask(
+    terra::subst(lab_idx, from = seq_len(n_lv), to = as.integer(lv)),
+    mask_rast
+  )
+}
+
+
 #' Project consensus clusters to full raster using KNN trained on original points
 #'
 #' Trains KNN classifiers using:
@@ -794,12 +838,12 @@ interpolate_stability_to_raster <- function(
 #' @param top3_labels Integer matrix (n_pts × 3) of top-3 cluster assignments
 #' @param predictors SpatRaster of raw environmental predictors
 #' @param env_vars Character vector of predictor names
-#' @param var_mu Named numeric vector of training means
-#' @param var_sd Named numeric vector of training SDs
 #' @param mean_betas Named numeric vector of posterior mean betas
-#' @param coord_wt Numeric coordinate weight
+#' @param mds_coords Numeric matrix (n_pts × 2) of MDS coordinates
+#' @param tps_models List of Tps models for MDS raster interpolation
 #' @param mask_rast SpatRaster defining spatial domain
 #' @param planar_proj CRS for planar projection
+#' @param smooth_window Integer focal window side length for class painting. Default 3.
 #' @return List with cluster_raster, stability_raster, rank2/3 rasters, knn models
 #' @keywords internal
 #' @noRd
@@ -814,7 +858,8 @@ project_consensus_to_raster <- function(
   mds_coords,
   tps_models,
   mask_rast,
-  planar_proj
+  planar_proj,
+  smooth_window = 3
 ) {
   planar_proj <- planar_proj_terra(planar_proj)
 
@@ -925,10 +970,10 @@ project_consensus_to_raster <- function(
     names(rank3_raster) <- "rank3_cluster"
 
     mask_planar <- terra::project(mask_rast, planar_proj)
-    cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj), mask_planar)
+    cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj, method = "near"), mask_planar)
     stability_raster <- terra::mask(terra::project(stability_raster, planar_proj), mask_planar)
-    rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj), mask_planar)
-    rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj), mask_planar)
+    rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj, method = "near"), mask_planar)
+    rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj, method = "near"), mask_planar)
 
     return(list(
       cluster_raster   = cluster_raster,
@@ -988,24 +1033,22 @@ project_consensus_to_raster <- function(
 
   pred_rescale <- terra::mask(pred_rescale, mask_rast)
 
-  # -- 7. Predict to full raster ----------------------------------------------
-  cluster_raster <- terra::predict(
-    pred_rescale,
-    model = knn_rank1$fit.knn,
-    na.rm = TRUE
+  # -- 7. Paint to full raster (smoothed-probability argmax) ------------------
+  # Each rank painted via paint_smoothed_class: per-class probs, small focal
+  # mean on the probability stack, then argmax. Suppresses low-confidence
+  # flecks while preserving confident small patches. Stability stays a plain
+  # regression predict (continuous, no argmax).
+  cluster_raster <- paint_smoothed_class(
+    knn_rank1$fit.knn, pred_rescale, mask_rast, w = smooth_window
   )
 
-  rank2_raster <- terra::predict(
-    pred_rescale,
-    model = knn_rank2$fit.knn,
-    na.rm = TRUE
+  rank2_raster <- paint_smoothed_class(
+    knn_rank2$fit.knn, pred_rescale, mask_rast, w = smooth_window
   )
   names(rank2_raster) <- "rank2_cluster"
 
-  rank3_raster <- terra::predict(
-    pred_rescale,
-    model = knn_rank3$fit.knn,
-    na.rm = TRUE
+  rank3_raster <- paint_smoothed_class(
+    knn_rank3$fit.knn, pred_rescale, mask_rast, w = smooth_window
   )
   names(rank3_raster) <- "rank3_cluster"
 
@@ -1017,12 +1060,14 @@ project_consensus_to_raster <- function(
   names(stability_raster) <- "cluster_stability"
 
   # --- 8. Project to planar CRS -------------------------------------------
+  # Categorical layers reproject with method = "near" to prevent ID bleed;
+  # continuous stability stays bilinear (default).
   mask_planar <- terra::project(mask_rast, planar_proj)
 
-  cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj), mask_planar)
+  cluster_raster   <- terra::mask(terra::project(cluster_raster,   planar_proj, method = "near"), mask_planar)
   stability_raster <- terra::mask(terra::project(stability_raster, planar_proj), mask_planar)
-  rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj), mask_planar)
-  rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj), mask_planar)
+  rank2_raster     <- terra::mask(terra::project(rank2_raster,     planar_proj, method = "near"), mask_planar)
+  rank3_raster     <- terra::mask(terra::project(rank3_raster,     planar_proj, method = "near"), mask_planar)
 
   list(
     cluster_raster = cluster_raster,
@@ -1324,7 +1369,15 @@ compute_habitat_mds <- function(sample_pts, habitat_rast, coord_wt, env_rast, en
     type = "output"
   ))
 
-  list(mds_coords = mds, tps_models = list(axis1 = tps1, axis2 = tps2))
+  list(
+    mds_coords = mds, 
+    tps_models = list(
+      axis1 = tps1, 
+      axis2 = tps2,
+      range1 = range(mds[, 1], na.rm = TRUE),
+      range2 = range(mds[, 2], na.rm = TRUE)
+    )
+  )
 }
 
 
@@ -1353,6 +1406,11 @@ predict_mds_to_raster <- function(tps_models, template_rast, mask_rast) {
   r1 <- terra::interpolate(template_cropped, tps_models$axis1)
   r2 <- terra::interpolate(template_cropped, tps_models$axis2)
 
+  if (!is.null(tps_models$range1)) {
+    r1 <- terra::clamp(r1, tps_models$range1[1], tps_models$range1[2], values = TRUE)
+    r2 <- terra::clamp(r2, tps_models$range2[1], tps_models$range2[2], values = TRUE)
+  }
+  
   r1 <- terra::mask(terra::extend(r1, template_rast), mask_rast)
   r2 <- terra::mask(terra::extend(r2, template_rast), mask_rast)
 
