@@ -816,10 +816,13 @@ paint_smoothed_class <- function(model, pred_rescale, mask_rast, w = 3) {
   # which.max returns the LAYER index; layers are in model$levels order, so
   # index i -> as.integer(lv[i]). No raster-name parsing => no "X3" trap.
   lab_idx <- terra::which.max(prob_s)
-  terra::mask(
+  out <- terra::mask(
     terra::subst(lab_idx, from = seq_len(n_lv), to = as.integer(lv)),
     mask_rast
   )
+
+  names(out) <- 'class'
+  out
 }
 
 
