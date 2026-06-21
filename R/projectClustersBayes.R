@@ -119,10 +119,18 @@ projectClustersBayes <- function(
   coord_wt      <- scaling$coord_wt     # must match what KNNs were trained on
   tps_models    <- scaling$tps_models   # Tps models for MDS coord layers
   env_vars      <- names(mean_betas)    # filtered: vars with >= 1% beta contribution
-  # env_vars_all: all original model env vars (pre-horseshoe filter). Required
-  # for brms SDM prediction and MESS, both of which need the full model formula.
-  # Falls back to env_vars for objects saved before this field was added.
-  env_vars_all  <- if (!is.null(scaling$env_vars_all)) scaling$env_vars_all else env_vars
+
+  # Re-derive the full (pre-horseshoe-filter) env var list directly from the
+  # brms model formula — it is the authoritative source regardless of whether
+  # ScalingParams$env_vars_all was stored (it may be absent in older objects).
+  # env_vars_all is used ONLY for brms SDM prediction and MESS; KNN features
+  # stay as env_vars so the feature space matches what the KNNs were trained on.
+  fe_names_all <- rownames(brms::fixef(current_model))
+  fe_names_all <- sub("^b_", "", fe_names_all)
+  fe_names_all <- fe_names_all[
+    !grepl("^(Intercept|sgp|sdgp|lscale|s\\(|s[gp])", fe_names_all)
+  ]
+  env_vars_all <- fe_names_all[fe_names_all %in% names(future_predictors)]
 
   # Resolve n_future_draws: default to however many draws came in, cap at 100
   n_stored       <- nrow(beta_draws)
@@ -208,8 +216,13 @@ projectClustersBayes <- function(
   # nocov end
 
   # --- 5. Project consensus clusters onto suitable + known areas -----------
+  # Subset future_rescaled to exactly the features the KNN was trained on.
+  # RescaleRasters_bayes returns ALL model env vars (pre-horseshoe filter);
+  # passing that full stack would include the dropped covariates and could
+  # confuse the KNN or caret's column-matching logic.
+  knn_features   <- c(env_vars, "coord_x_w", "coord_y_w")
   known_clusters <- terra::predict(
-    future_rescaled,
+    future_rescaled[[knn_features]],
     model = knn_consensus,
     na.rm = TRUE
   )
