@@ -23,8 +23,9 @@
 #' @param n_draws Integer. Number of posterior beta draws to cluster over.
 #'   Defaults to `100`. Values between 50–200 give stable co-occurrence
 #'   matrices for typical SDM datasets (< 2000 obs, < 20 vars).
-#' @param n Integer. Number of clusters per draw. Passed to
-#'   [EnvironmentalBasedSample()] internals.
+#' @param n Integer. Per-draw segmentation ceiling, and the upper bound for the
+#'   automatic consensus-K search. Draws are cut finely at `n`; the final number
+#'   of consensus clusters is chosen data-drivenly (CH / Hartigan), not fixed.
 #' @param n_pts Integer. Points to sample per draw for clustering. Defaults to
 #'   `1000`. The same points are used across all draws (fixed spatial frame)
 #'   so co-occurrence is directly comparable.
@@ -81,6 +82,9 @@
 #'   \item{`KNN_Rank3`}{Trained KNN model for rank3 clusters.}
 #'   \item{`KNN_Stability`}{Trained KNN regression model for stability scores.
 #'     Can be reused to predict stability at new locations.}
+#'   \item{`"hierarchical"`}{Average-linkage hierarchical clustering on the
+#'     co-association metric `sqrt(1 - co_occurrence)`, cut at the
+#'     auto-selected k. Stable and interpretable. Default.}
 #' }
 #'
 #' @seealso [RescaleRasters_bayes()], [EnvironmentalBasedSample()],
@@ -248,41 +252,48 @@ PosteriorCluster <- function(
     draw_clusterings[seq_len(nrow(pt_full)), d] <- stats::cutree(hc_d, k = n)
   }
 
-  # -- 6b. Adaptive k: walk down to quorum ------------------------------------
-  # Horseshoe shrinkage can collapse variables, making the requested n too
-  # large — many clusters end up with near-zero membership and cascade through
-  # noise removal downstream. Find the largest k where every cluster clears a
-  # 5 % membership floor in every draw, then re-cut all dendrograms at that k.
-  n_stable <- find_stable_k(hc_list, n_draws, n_max = n, min_pts = 12L, majority = 0.5)
-  if (n_stable < n) {
-    message(sprintf(
-      "Adaptive k: reducing from %d to %d — at k = %d a majority of draws have >= 10 pts in every cluster.",
-      n, n_stable, n_stable
-    ))
-    n <- n_stable
-    for (d in seq_len(n_draws)) {
-      draw_clusterings[seq_len(pt_sizes[d]), d] <- stats::cutree(hc_list[[d]], k = n)
-    }
-  }
-  rm(hc_list)  # release memory before the O(n_pts^2) co-occurrence step
-
   # -- 7. Build co-occurrence matrix --------------------------------------------
   message("Computing co-occurrence matrix ...")
   co_mat <- build_cooccurrence_matrix(draw_clusterings, n_pts_actual, n_draws)
 
   # -- 8. Consensus clustering ---------------------------------------------------
+# -- 8. Consensus clustering --------------------------------------------------
+  # Distances are sqrt(1 - co_mat): co_mat is PSD with unit diagonal, so this is
+  # the metric whose squared form is exactly (1 - co_mat). That lets the CH /
+  # Hartigan sweep read sums of squares straight off the co-association in closed
+  # form — no ordination, no truncated embedding, no information lost projecting.
   message("Deriving consensus clustering ...")
-  diss_mat <- stats::as.dist(1 - co_mat)
+  diss_mat <- stats::as.dist(sqrt(1 - co_mat))
+  hc       <- stats::hclust(diss_mat, method = "average")
+
+  # Data-driven, generous-but-stable K. CH (distance-based pseudo-F) anchors at
+  # its max; Hartigan leans high; take the more generous of the two. Replaces the
+  # old hard k = n. n is now just the ceiling on the search (and per-draw cut).
+  ksel        <- select_consensus_k(hc, 1 - co_mat, k_min = 2L, k_max = n)
+  k_consensus <- ksel$k
+  message(sprintf(
+    "  Consensus k = %d (CH -> %d, Hartigan -> %d).",
+    k_consensus, ksel$k_ch, ksel$k_hart
+  ))
+
   consensus_labels <- switch(
     consensus_method,
-    hierarchical = {
-      hc <- stats::hclust(diss_mat, method = "average")
-      stats::cutree(hc, k = n)
-    },
-    pam = {
-      cluster::pam(diss_mat, k = n, diss = TRUE)$clustering
-    }
+    hierarchical = stats::cutree(hc, k = k_consensus),
+    pam          = cluster::pam(diss_mat, k = k_consensus, diss = TRUE)$clustering
   )
+
+  # -- 8b. Re-cut per-draw partitions at the consensus k ------------------------
+  # co_mat was accumulated from the fine (k = n) per-draw cuts — finer base
+  # partitions give cleaner pairwise evidence, which is the whole point of
+  # evidence accumulation. But the downstream rank2/rank3 + label_lookup path
+  # assumes per-draw labels share the consensus label cardinality, so re-cut the
+  # saved dendrograms to k_consensus before the top-3 tally. This is the only
+  # reason hc_list is held past the co-occurrence step.
+  for (d in seq_len(n_draws)) {
+    draw_clusterings[seq_len(pt_sizes[d]), d] <-
+      stats::cutree(hc_list[[d]], k = k_consensus)
+  }
+  rm(hc_list)
   # -- 9. Stability surface ------------------------------------------------------
   # For each point, stability = mean co-occurrence with all other points
   # sharing its consensus cluster label (its "within-cluster cohesion")
@@ -618,44 +629,60 @@ add_coord_weights_to_points <- function(
   pt_env
 }
 
-#' Find the largest k where a majority of draws have all clusters above a point floor
+#' Select consensus cluster count via CH and Hartigan on co-association distances
 #'
-#' Walks k down from `n_max` to 2. At each k, re-cuts every saved dendrogram
-#' and counts how many draws have at least one cluster with fewer than `min_pts`
-#' points. A k is accepted when the fraction of failing draws is strictly below
-#' `majority` (default 0.5, i.e. more draws pass than fail). Returns `n_max`
-#' immediately if it already satisfies the criterion.
+#' Computes within-cluster sums of squares directly from the squared
+#' co-association distances using the pairwise-distance identity
+#' (Sum ||x_i - xbar||^2 = (1/n_c) Sum_{i<j} d^2_ij), so no point coordinates or
+#' ordination are needed. Because co_mat is PSD with unit diagonal, (1 - co_mat)
+#' is proportional to squared Euclidean distance in the kernel feature space; the
+#' constant factor cancels in both CH and the Hartigan WSS ratio, so the indices
+#' are exact rather than approximations on a truncated embedding.
 #'
-#' Using a fixed point floor (`min_pts`) rather than a percentage decouples the
-#' threshold from n_pts: with n_pts = 200 a 5 % floor would be just 10 points
-#' — the same as the KNN minimum — whereas with n_pts = 2000 it would be 100,
-#' far more stringent than needed. A flat 10-point floor matches the practical
-#' minimum for stable KNN training (split_prop = 0.8 requires >= 5 pts per
-#' class; 10 gives a comfortable margin). The majority criterion prevents one
-#' outlier draw with extreme horseshoe shrinkage from forcing k down for all
-#' draws.
+#' Two generous-but-stable indices are evaluated over k: Calinski-Harabasz
+#' (= distance-based pseudo-F), taken at its maximum as the stability anchor, and
+#' Hartigan, which keeps adding clusters while H(k) > `hartigan_threshold`. The
+#' returned k is the more generous of the two.
 #'
-#' @param hc_list List of `hclust` objects, one per draw.
-#' @param n_draws Integer. Number of draws.
-#' @param n_max Integer. Maximum k (the user-requested n).
-#' @param min_pts Integer. Minimum points per cluster per draw. Default `10L`.
-#' @param majority Numeric in (0, 1). Fraction of draws that must pass for k
-#'   to be accepted. Default `0.5` (strict majority).
-#' @return Integer k.
+#' @param hc An `hclust` object built on the co-association distances.
+#' @param sq_dist Numeric matrix `1 - co_mat` (squared distances, full n x n).
+#' @param k_min,k_max Integer search bounds.
+#' @param hartigan_threshold Numeric. Hartigan stop rule. Default `10`.
+#' @return List: `k`, `k_ch`, `k_hart`, and `ch`/`wss`/`ks` for diagnostics.
 #' @keywords internal
 #' @noRd
-find_stable_k <- function(hc_list, n_draws, n_max, min_pts = 10L, majority = 0.5) {
-  for (k in seq.int(n_max, 2L)) {
-    n_fail <- 0L
-    for (d in seq_len(n_draws)) {
-      counts <- tabulate(stats::cutree(hc_list[[d]], k = k), nbins = k)
-      if (any(counts < min_pts)) n_fail <- n_fail + 1L
-    }
-    if (n_fail / n_draws < majority) return(k)
-  }
-  2L
-}
+select_consensus_k <- function(hc, sq_dist, k_min = 2L, k_max = 20L,
+                               hartigan_threshold = 10) {
+  N     <- nrow(sq_dist)
+  k_max <- min(k_max, N - 1L)
+  ks    <- seq.int(k_min, k_max)
 
+  # Total SS = whole set treated as one cluster (pairwise identity).
+  tss <- sum(sq_dist[upper.tri(sq_dist)]) / N
+
+  wss <- vapply(ks, function(k) {
+    lab <- stats::cutree(hc, k = k)
+    sum(vapply(split(seq_len(N), lab), function(idx) {
+      if (length(idx) < 2L) return(0)
+      sub <- sq_dist[idx, idx, drop = FALSE]
+      sum(sub[upper.tri(sub)]) / length(idx)        # WSS_c = (1/n_c) Sum_{i<j} d^2
+    }, numeric(1)))
+  }, numeric(1))
+  wss <- pmax(wss, .Machine$double.eps)             # guard exact-zero WSS
+
+  # Calinski-Harabasz (distance-based pseudo-F): max value.
+  ch   <- ((tss - wss) / (ks - 1)) / (wss / (N - ks))
+  k_ch <- ks[which.max(ch)]
+
+  # Hartigan: add a cluster while H(k) > threshold; stop at first k that clears.
+  m      <- length(ks)
+  H      <- (wss[-m] / wss[-1] - 1) * (N - ks[-m] - 1)
+  cross  <- which(H <= hartigan_threshold)[1]
+  k_hart <- if (is.na(cross)) k_max else ks[-m][cross]
+
+  list(k = max(k_ch, k_hart), k_ch = k_ch, k_hart = k_hart,
+       ch = ch, wss = wss, ks = ks)
+}
 
 #' Build symmetric co-occurrence probability matrix from draw clusterings
 #'
