@@ -177,7 +177,7 @@ PosteriorCluster <- function(
   sample_pts <- terra::spatSample(
     terra::trim(mask_rast),
     size = n_pts,
-    method = "regular",
+    method = "random",
     as.points = TRUE,
     na.rm = TRUE
   )
