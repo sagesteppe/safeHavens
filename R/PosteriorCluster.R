@@ -85,6 +85,11 @@
 #'   \item{`"hierarchical"`}{Average-linkage hierarchical clustering on the
 #'     co-association metric `sqrt(1 - co_occurrence)`, cut at the
 #'     auto-selected k. Stable and interpretable. Default.}
+#'   \item{`KSelection`}{List from the consensus-k sweep: `k` (chosen, =
+#'     Hartigan), `k_hart`/`k_ch`/`k_gamma` (per-index picks), and the full
+#'     `ks`/`H`/`ch`/`gamma`/`wss` vectors for plotting and per-dataset audit of
+#'     whether high K reflects genuine structure (all three indices climb) or
+#'     WGSS over-splitting (Hartigan climbs, Gamma does not).}
 #' }
 #'
 #' @seealso [RescaleRasters_bayes()], [EnvironmentalBasedSample()],
@@ -272,8 +277,8 @@ PosteriorCluster <- function(
   ksel        <- select_consensus_k(hc, 1 - co_mat, k_min = 2L, k_max = n)
   k_consensus <- ksel$k
   message(sprintf(
-    "  Consensus k = %d (CH -> %d, Hartigan -> %d).",
-    k_consensus, ksel$k_ch, ksel$k_hart
+    "  Consensus k = %d  [Hartigan = %d (primary), CH = %d, Gamma = %d].",
+    k_consensus, ksel$k_hart, ksel$k_ch, ksel$k_gamma
   ))
 
   consensus_labels <- switch(
@@ -407,7 +412,8 @@ PosteriorCluster <- function(
     ## Cluster_data
     ClusterData = list(
       Top3Lookup = top3_lookup,
-      DrawClusterings = draw_clusterings
+      DrawClusterings = draw_clusterings,
+      KSelection = ksel
     ),
 
     SamplePoints = sample_pts_sf,
@@ -633,59 +639,97 @@ add_coord_weights_to_points <- function(
   pt_env
 }
 
-#' Select consensus cluster count via CH and Hartigan on co-association distances
+#' Select consensus cluster count: Hartigan (primary) with CH and Gamma alongside
 #'
-#' Computes within-cluster sums of squares directly from the squared
-#' co-association distances using the pairwise-distance identity
-#' (Sum ||x_i - xbar||^2 = (1/n_c) Sum_{i<j} d^2_ij), so no point coordinates or
-#' ordination are needed. Because co_mat is PSD with unit diagonal, (1 - co_mat)
-#' is proportional to squared Euclidean distance in the kernel feature space; the
-#' constant factor cancels in both CH and the Hartigan WSS ratio, so the indices
-#' are exact rather than approximations on a truncated embedding.
+#' Hartigan is the returned primary — it carries its own stopping rule (add
+#' clusters while H(k) > threshold), which is what you want when high K is
+#' welcome but unbounded argmax is not. CH (distance-based pseudo-F, read at a
+#' knee within `ch_tol` of its peak) and Gamma (Baker-Hubert rank concordance)
+#' are reported alongside as a genuine cross-family consensus: WGSS-curvature,
+#' WGSS-separation, and rank-based, respectively. Agreement is meaningful
+#' because they *could* disagree; divergence is diagnostic, not noise.
 #'
-#' Two generous-but-stable indices are evaluated over k: Calinski-Harabasz
-#' (= distance-based pseudo-F), taken at its maximum as the stability anchor, and
-#' Hartigan, which keeps adding clusters while H(k) > `hartigan_threshold`. The
-#' returned k is the more generous of the two.
+#' All three are computed from `sq_dist = 1 - co_mat` with no embedding. CH and
+#' Hartigan use the pairwise-distance identity for sums of squares; Gamma uses a
+#' distance-value bucketing that exploits the discreteness of co-association
+#' (values are multiples of 1/n_draws), so per-k cost is O(P) counting rather
+#' than O(P log P) sorting. P = N(N-1)/2 grows quadratically in N — at a few
+#' thousand points the one-time pair vectors (ii/jj/dvec/bk) dominate memory;
+#' budget ~160 MB at N = 4000, ~360 MB at N = 6000.
 #'
 #' @param hc An `hclust` object built on the co-association distances.
-#' @param sq_dist Numeric matrix `1 - co_mat` (squared distances, full n x n).
+#' @param sq_dist Numeric matrix `1 - co_mat` (full N x N, squared distances).
 #' @param k_min,k_max Integer search bounds.
 #' @param hartigan_threshold Numeric. Hartigan stop rule. Default `10`.
-#' @return List: `k`, `k_ch`, `k_hart`, and `ch`/`wss`/`ks` for diagnostics.
+#' @param ch_tol Numeric. CH knee tolerance: smallest k whose CH is within this
+#'   fraction of the peak. Default `0.05`.
+#' @return List: `k` (= Hartigan, primary), `k_hart`, `k_ch`, `k_gamma`, and
+#'   `ks`/`wss`/`ch`/`gamma`/`H` for diagnostics and curve inspection.
 #' @keywords internal
 #' @noRd
 select_consensus_k <- function(hc, sq_dist, k_min = 2L, k_max = 20L,
-                               hartigan_threshold = 10) {
+                               hartigan_threshold = 10, ch_tol = 0.05) {
   N     <- nrow(sq_dist)
   k_max <- min(k_max, N - 1L)
   ks    <- seq.int(k_min, k_max)
 
-  # Total SS = whole set treated as one cluster (pairwise identity).
-  tss <- sum(sq_dist[upper.tri(sq_dist)]) / N
+  # -- one-time precompute for the Gamma sweep ---------------------------------
+  # Upper-triangle pair indices (column-major, matching sq_dist[upper.tri])
+  # built arithmetically; cbind() matrix-indexing pulls the P pairwise distances
+  # in O(P) without ever materialising an N x N logical mask.
+  ii   <- sequence(seq_len(N - 1L))             # 1, 1,2, 1,2,3, ...
+  jj   <- rep.int(2:N, times = seq_len(N - 1L))
+  dvec <- sq_dist[cbind(ii, jj)]
 
-  wss <- vapply(ks, function(k) {
-    lab <- stats::cutree(hc, k = k)
-    sum(vapply(split(seq_len(N), lab), function(idx) {
+  # Bucket pairs by distance value once. co_mat is discrete (k/n_draws), so G is
+  # small (<= n_draws + 1) however large N is — this is the whole trick.
+  v          <- sort(unique(dvec))
+  G          <- length(v)
+  bk         <- match(dvec, v)                  # bucket index per pair, 1:G
+  tot_bucket <- tabulate(bk, nbins = G)         # total pairs per bucket
+
+  gamma_at <- function(lab) {
+    within   <- lab[ii] == lab[jj]
+    w_cnt    <- tabulate(bk[within], nbins = G)
+    b_cnt    <- as.numeric(tot_bucket - w_cnt)
+    w_before <- c(0, cumsum(w_cnt)[-G])         # within-pairs strictly closer
+    total_w  <- sum(w_cnt)
+    s_plus   <- sum(b_cnt * w_before)                         # within < between
+    s_minus  <- sum(b_cnt * (total_w - w_before - w_cnt))     # within > between
+    denom    <- s_plus + s_minus
+    if (denom == 0) NA_real_ else (s_plus - s_minus) / denom
+  }
+
+  # -- single sweep over k: WSS (for CH + Hartigan) and Gamma together ----------
+  tss   <- sum(dvec) / N                        # total SS via pairwise identity
+  wss   <- numeric(length(ks))
+  gamma <- numeric(length(ks))
+  for (i in seq_along(ks)) {
+    lab    <- stats::cutree(hc, k = ks[i])      # cut once, reused by both
+    wss[i] <- sum(vapply(split(seq_len(N), lab), function(idx) {
       if (length(idx) < 2L) return(0)
       sub <- sq_dist[idx, idx, drop = FALSE]
-      sum(sub[upper.tri(sub)]) / length(idx)        # WSS_c = (1/n_c) Sum_{i<j} d^2
+      sum(sub[upper.tri(sub)]) / length(idx)    # WSS_c = (1/n_c) Sum_{i<j} d^2
     }, numeric(1)))
-  }, numeric(1))
-  wss <- pmax(wss, .Machine$double.eps)             # guard exact-zero WSS
+    gamma[i] <- gamma_at(lab)
+  }
+  wss <- pmax(wss, .Machine$double.eps)
 
-  # Calinski-Harabasz (distance-based pseudo-F): max value.
-  ch   <- ((tss - wss) / (ks - 1)) / (wss / (N - ks))
-  k_ch <- ks[which.max(ch)]
-
-  # Hartigan: add a cluster while H(k) > threshold; stop at first k that clears.
+  # -- Hartigan (PRIMARY): smallest k clearing the H(k) <= threshold stop -------
   m      <- length(ks)
   H      <- (wss[-m] / wss[-1] - 1) * (N - ks[-m] - 1)
   cross  <- which(H <= hartigan_threshold)[1]
   k_hart <- if (is.na(cross)) k_max else ks[-m][cross]
 
-  list(k = max(k_ch, k_hart), k_ch = k_ch, k_hart = k_hart,
-       ch = ch, wss = wss, ks = ks)
+  # -- CH (corroborating): knee within ch_tol of the peak, not bare argmax ------
+  ch   <- ((tss - wss) / (ks - 1)) / (wss / (N - ks))
+  k_ch <- ks[which(ch >= max(ch) * (1 - ch_tol))[1]]
+
+  # -- Gamma (corroborating, rank-based): maximum value -------------------------
+  k_gamma <- ks[which.max(gamma)]
+
+  list(k = k_hart, k_hart = k_hart, k_ch = k_ch, k_gamma = k_gamma,
+       ks = ks, wss = wss, ch = ch, gamma = gamma, H = H)
 }
 
 #' Build symmetric co-occurrence probability matrix from draw clusterings
@@ -1044,6 +1088,7 @@ project_consensus_to_raster <- function(
   cluster_raster <- paint_smoothed_class(
     knn_rank1$fit.knn, pred_rescale, mask_rast, w = smooth_window
   )
+  names(rank2_raster) <- "class"
 
   rank2_raster <- paint_smoothed_class(
     knn_rank2$fit.knn, pred_rescale, mask_rast, w = smooth_window
