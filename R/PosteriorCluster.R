@@ -1011,7 +1011,7 @@ project_consensus_to_raster <- function(
     cluster_raster <- terra::rast(mask_rast)
     cluster_raster[] <- as.integer(keep_rank1)
     cluster_raster <- terra::mask(cluster_raster, mask_rast)
-    rank2_raster <- cluster_raster
+    rank2_raster <- cluster_raster ### hmmmm
     rank3_raster <- cluster_raster
     names(rank2_raster) <- "rank2_cluster"
     names(rank3_raster) <- "rank3_cluster"
@@ -1088,7 +1088,6 @@ project_consensus_to_raster <- function(
   cluster_raster <- paint_smoothed_class(
     knn_rank1$fit.knn, pred_rescale, mask_rast, w = smooth_window
   )
-  names(rank2_raster) <- "class"
 
   rank2_raster <- paint_smoothed_class(
     knn_rank2$fit.knn, pred_rescale, mask_rast, w = smooth_window
