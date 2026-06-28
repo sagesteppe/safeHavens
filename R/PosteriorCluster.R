@@ -1011,7 +1011,9 @@ project_consensus_to_raster <- function(
     cluster_raster <- terra::rast(mask_rast)
     cluster_raster[] <- as.integer(keep_rank1)
     cluster_raster <- terra::mask(cluster_raster, mask_rast)
-    rank2_raster <- cluster_raster ### hmmmm
+    names(cluster_raster) <- "class"  
+    
+    rank2_raster <- cluster_raster
     rank3_raster <- cluster_raster
     names(rank2_raster) <- "rank2_cluster"
     names(rank3_raster) <- "rank3_cluster"
