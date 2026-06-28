@@ -442,6 +442,7 @@ bayesianSDM <- function(
 #' @param cv_folds CAST knndm object with CV fold indices
 #' @param method Currently only "ffs"
 #' @param min_ffs_var Minimum number of FFS variables to start with.
+#' @param cores Number of cores to use.
 #' @return Character vector of selected predictor names
 #' @keywords internal
 #' @noRd
